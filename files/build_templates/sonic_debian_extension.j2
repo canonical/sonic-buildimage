@@ -342,6 +342,7 @@ for kernel_release in $(ls $FILESYSTEM_ROOT/lib/modules/); do
 done
 fi
 
+
 # Install python-swss-common package and all its dependent packages
 {% if python_swss_debs.strip() -%}
 {% for deb in python_swss_debs.strip().split(' ') -%}
@@ -1089,3 +1090,10 @@ sudo rm -rf $FILESYSTEM_ROOT/tmp/mask_disabled_services.py
 
 
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install python3-dbus
+
+
+# Edit the kdump-tools package script to call a custom one, which shall enable ethernet interfaces in the crash kernel environment
+sudo sed -i "/PATH=\/bin:\/usr\/bin:\/sbin:\/usr\/sbin/a NET_INTERFACE_INIT=/usr/sbin/network-interface-state-init.sh" $FILESYSTEM_ROOT/usr/sbin/kdump-config
+sudo sed -i "/Network not reachable/a . $NET_INTERFACE_INIT" $FILESYSTEM_ROOT/usr/sbin/kdump-config
+
+
