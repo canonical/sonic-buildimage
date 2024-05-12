@@ -680,8 +680,8 @@ def parse_dpg(dpg, hname):
                 vdhcpserver_list = vintfdhcpservers.split(';')
                 vlan_attributes['dhcpv6_servers'] = vdhcpserver_list
                 dhcp_attributes['dhcpv6_servers'] = vdhcpserver_list
-            sonic_vlan_member_name = "Vlan%s" % (vlanid)
-            dhcp_relay_table[sonic_vlan_member_name] = dhcp_attributes
+                sonic_vlan_member_name = "Vlan%s" % (vlanid)
+                dhcp_relay_table[sonic_vlan_member_name] = dhcp_attributes
 
             vlanmac = vintf.find(str(QName(ns, "MacAddress")))
             if vlanmac is not None and vlanmac.text is not None:
@@ -1459,6 +1459,33 @@ def select_mmu_profiles(profile, platform, hwsku):
                 base_file = os.path.join(path, file_item)
                 exec_cmd(["sudo", "cp", file_in_dir, base_file])
 
+def address_type(address):
+    # encode and decode to unicode, because when address is bytes type, ip_network will throw AddressValueError
+    # set strict to False because address may set host bit, for example 192.168.0.1/24
+    return type(ipaddress.ip_network(UNICODE_TYPE(address), False))
+
+def update_forced_mgmt_route(mgmt_intf, mgmt_routes):
+    for mgmt_intf_key in mgmt_intf.keys():
+        forced_mgmt_routes = []
+
+        try:
+            # get mgmt interface type
+            mgmt_intf_addr = mgmt_intf_key[1]
+            mgmt_iftype = address_type(mgmt_intf_addr)
+
+            # add mgmt route to different mgmt interface by address type
+            for mgmt_route in mgmt_routes:
+                route_iftype = address_type(mgmt_route)
+                if mgmt_iftype == route_iftype:
+                    forced_mgmt_routes.append(mgmt_route)
+        except ValueError as e:
+            print("Warning: invalid management routes in minigraph, exception: {}".format(e), file=sys.stderr)
+            continue
+
+        # forced_mgmt_routes yang model not support empty list
+        if len(forced_mgmt_routes) > 0:
+            mgmt_intf[mgmt_intf_key]['forced_mgmt_routes'] = forced_mgmt_routes
+
 ###############################################################################
 #
 # Main functions
@@ -1700,8 +1727,7 @@ def parse_xml(filename, platform=None, port_config_file=None, asic_name=None, hw
     results['BGP_VOQ_CHASSIS_NEIGHBOR'] = bgp_voq_chassis_sessions
     results['BGP_SENTINELS'] = bgp_sentinel_sessions
     if mgmt_routes:
-        # TODO: differentiate v4 and v6
-        next(iter(mgmt_intf.values()))['forced_mgmt_routes'] = mgmt_routes
+        update_forced_mgmt_route(mgmt_intf, mgmt_routes)
     results['MGMT_PORT'] = {}
     results['MGMT_INTERFACE'] = {}
     mgmt_intf_count = 0
@@ -1736,12 +1762,13 @@ def parse_xml(filename, platform=None, port_config_file=None, asic_name=None, hw
     if not is_multi_asic() and asic_name is None:
         results['SNMP_AGENT_ADDRESS_CONFIG'] = {}
         port = '161'
-        for mgmt_intf in mgmt_intf.keys():
-            snmp_key = mgmt_intf[1].split('/')[0] + '|' + port + '|'
-            results['SNMP_AGENT_ADDRESS_CONFIG'][snmp_key] = {}
-        # Add Loopback IP as agent address for single asic
-        for loip in lo_intfs.keys():
-            snmp_key = loip[1].split('/')[0] + '|' + port + '|'
+        for intf in list(mgmt_intf.keys()) + list(lo_intfs.keys()):
+            ip_addr = ipaddress.ip_address(UNICODE_TYPE(intf[1].split('/')[0]))
+            if ip_addr.version == 6 and ip_addr.is_link_local:
+                agent_addr = str(ip_addr) + '%' + intf[0]
+            else:
+                agent_addr = str(ip_addr)
+            snmp_key = agent_addr + '|' + port + '|'
             results['SNMP_AGENT_ADDRESS_CONFIG'][snmp_key] = {}
     else:
         results['SNMP_AGENT_ADDRESS_CONFIG'] = {}
@@ -2288,6 +2315,19 @@ def parse_device_desc_xml(filename):
             results['MGMT_INTERFACE'].update({('eth0', mgmt_prefix_v6): {'gwaddr': gwaddr_v6}})
 
     return results
+
+def parse_hostname(filename):
+    hostName = None
+    if not os.path.isfile(filename):
+        return None
+    root = ET.parse(filename).getroot()
+    hostname_qn = QName(ns, "Hostname")
+    for child in root:
+        if child.tag == str(hostname_qn):
+            hostName = child.text
+            break
+
+    return hostName
 
 def parse_asic_sub_role(filename, asic_name):
     if not os.path.isfile(filename):

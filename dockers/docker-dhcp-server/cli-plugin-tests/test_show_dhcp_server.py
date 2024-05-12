@@ -1,3 +1,4 @@
+import pytest
 import sys
 from unittest import mock
 
@@ -13,6 +14,22 @@ class TestShowDHCPServer(object):
     def test_plugin_registration(self):
         cli = mock.MagicMock()
         show_dhcp_server.register(cli)
+
+    @pytest.mark.parametrize("state", ["disabled", "enabled"])
+    def test_show_dhcp_server_feature_state_checking(self, mock_db, state):
+        runner = CliRunner()
+        db = clicommon.Db()
+        db.db = mock_db
+        mock_db.set("CONFIG_DB", "FEATURE|dhcp_server", "state", state)
+        result = runner.invoke(show_dhcp_server.dhcp_server, obj=db)
+        if state == "disabled":
+            assert result.exit_code == 2, "exit code: {}, Exception: {}, Traceback: {}".format(result.exit_code, result.exception, result.exc_info)
+            assert "Feature dhcp_server is not enabled" in result.output
+        elif state == "enabled":
+            assert result.exit_code == 0, "exit code: {}, Exception: {}, Traceback: {}".format(result.exit_code, result.exception, result.exc_info)
+            assert "Usage: dhcp_server [OPTIONS] COMMAND [ARGS]" in result.output
+        else:
+            assert False
 
     def test_show_dhcp_server_ipv4_lease_without_dhcpintf(self, mock_db):
         expected_stdout = """\
@@ -75,6 +92,10 @@ class TestShowDHCPServer(object):
 | range2  | 100.1.1.9  | 100.1.1.8  | range value is illegal |
 +---------+------------+------------+------------------------+
 | range3  | 100.1.1.10 | 100.1.1.10 | 1                      |
++---------+------------+------------+------------------------+
+| range5  | 100.1.2.10 | 100.1.2.10 | 1                      |
++---------+------------+------------+------------------------+
+| range6  | 100.1.2.11 | 100.1.2.11 | 1                      |
 +---------+------------+------------+------------------------+
 """
         runner = CliRunner()
@@ -181,7 +202,9 @@ class TestShowDHCPServer(object):
 +---------------+-------------+-------------+--------+
 | Option Name   |   Option ID | Value       | Type   |
 +===============+=============+=============+========+
-| option60      |          60 | dummy_value | string |
+| option60      |         163 | dummy_value | string |
++---------------+-------------+-------------+--------+
+| option61      |         164 | dummy_value | string |
 +---------------+-------------+-------------+--------+
 """
         runner = CliRunner()
@@ -196,7 +219,7 @@ class TestShowDHCPServer(object):
 +---------------+-------------+-------------+--------+
 | Option Name   |   Option ID | Value       | Type   |
 +===============+=============+=============+========+
-| option60      |          60 | dummy_value | string |
+| option60      |         163 | dummy_value | string |
 +---------------+-------------+-------------+--------+
 """
         runner = CliRunner()
@@ -212,13 +235,13 @@ class TestShowDHCPServer(object):
 | Interface         | Bind       |
 +===================+============+
 | Vlan100|Ethernet4 | 100.1.1.10 |
-|                   | 10.1.1.11  |
+|                   | 100.1.1.11 |
 +-------------------+------------+
 | Vlan100|Ethernet7 | range1     |
 |                   | range3     |
 +-------------------+------------+
-| Vlan200|Ethernet8 | range1     |
-|                   | range4     |
+| Vlan200|Ethernet8 | range5     |
+|                   | range6     |
 +-------------------+------------+
 | Ethernet9         | range5     |
 |                   | range6     |
@@ -253,7 +276,7 @@ class TestShowDHCPServer(object):
 | Interface         | Bind       |
 +===================+============+
 | Vlan100|Ethernet4 | 100.1.1.10 |
-|                   | 10.1.1.11  |
+|                   | 100.1.1.11 |
 +-------------------+------------+
 | Vlan100|Ethernet7 | range1     |
 |                   | range3     |
@@ -271,8 +294,8 @@ class TestShowDHCPServer(object):
 +-------------------+--------+
 | Interface         | Bind   |
 +===================+========+
-| Vlan200|Ethernet8 | range1 |
-|                   | range4 |
+| Vlan200|Ethernet8 | range5 |
+|                   | range6 |
 +-------------------+--------+
 """
         runner = CliRunner()

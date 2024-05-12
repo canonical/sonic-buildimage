@@ -7,7 +7,8 @@
         },
         "DHCP_SERVER": {
             "192.0.0.8": {},
-            "192.0.0.8": {}
+            "192.0.0.8": {},
+            "2603:10e1:0:6f4::1": {}
         },
         "DNS_NAMESERVER": {
             "1.1.1.1": {},
@@ -88,21 +89,24 @@
                 "min_links": "1",
                 "tpid": "0x8100",
                 "mtu": "9100",
-                "lacp_key": "auto"
+                "lacp_key": "auto",
+                "mode":"trunk"
             },
             "PortChannel0004": {
                 "admin_status": "up",
                 "min_links": "1",
                 "tpid": "0x9200",
                 "mtu": "9100",
-                "lacp_key": "auto"
+                "lacp_key": "auto",
+                "mode":"routed"
             },
             "PortChannel2": {
                 "admin_status": "up",
                 "min_links": "1",
                 "tpid": "0x9200",
                 "mtu": "9100",
-                "lacp_key": "auto"
+                "lacp_key": "auto",
+                "mode":"trunk"
             },
             "PortChannel42": {
                 "admin_status": "up",
@@ -110,7 +114,8 @@
                 "mtu": "9100",
                 "tpid": "0x8100",
                 "fast_rate": "false",
-                "fallback" : "true"
+                "fallback" : "true",
+                "mode":"routed"
             }
         },
         "PORTCHANNEL_INTERFACE": {
@@ -347,6 +352,7 @@
         "DEVICE_METADATA": {
             "localhost": {
                 "type": "ToRRouter",
+                "asic_id": "06:00.0",
                 "mac": "00:11:22:33:dd:5a",
                 "hostname": "asw.dc",
                 "bgp_asn": "64850",
@@ -363,7 +369,8 @@
                 "bgp_adv_lo_prefix_as_128": "true",
                 "yang_config_validation": "disable",
                 "rack_mgmt_map": "dummy_value",
-                "timezone": "Europe/Kiev"
+                "timezone": "Europe/Kiev",
+                "bgp_router_id": "8.8.8.8"
             }
         },
         "VLAN": {
@@ -561,6 +568,9 @@
         "PORT": {
             "Ethernet0": {
                 "alias": "Eth1/1",
+                "core_id": "1",
+                "core_port_id": "1",
+                "num_voq": "8",
                 "lanes": "65",
                 "description": "",
                 "speed": "11100",
@@ -572,10 +582,14 @@
                 "macsec": "test",
                 "link_training": "off",
                 "laser_freq": "191600",
-                "tx_power": "-26.6"
+                "tx_power": "-26.6",
+                "mode":"trunk"
             },
             "Ethernet1": {
                 "alias": "Eth1/2",
+                "core_id": "1",
+                "core_port_id": "1",
+                "num_voq": "8",
                 "lanes": "66",
                 "description": "",
                 "speed": "11100",
@@ -586,19 +600,26 @@
                 "adv_interface_types": "CR,CR4",
                 "link_training": "on",
                 "laser_freq": "191300",
-                "tx_power": "-27.3"
+                "tx_power": "-27.3",
+                "mode":"trunk"
             },
             "Ethernet2": {
                 "alias": "Eth1/3",
+                "core_id": "1",
+                "core_port_id": "1",
+                "num_voq": "8",
                 "lanes": "67",
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
                 "admin_status": "up",
+                "role": "Dpc",
                 "autoneg": "on",
                 "adv_speeds": "all",
                 "adv_interface_types": "all",
-                "subport" : "0"
+                "subport" : "0",
+                "mode":"trunk",
+                "dom_polling":"enabled"
             },
             "Ethernet3": {
                 "alias": "Eth1/4",
@@ -607,7 +628,8 @@
                 "speed": "11100",
                 "tpid": "0x88A8",
                 "admin_status": "up",
-                "subport": "1"
+                "subport": "1",
+                "mode":"trunk"
             },
             "Ethernet4": {
                 "alias": "Eth2/1",
@@ -616,7 +638,9 @@
                 "speed": "11100",
                 "tpid": "0x9100",
                 "admin_status": "up",
-                "subport": "2"
+                "subport": "2",
+                "mode":"trunk",
+                "dom_polling":"enabled"
             },
             "Ethernet5": {
                 "alias": "Eth2/2",
@@ -625,7 +649,8 @@
                 "speed": "11100",
                 "tpid": "0x9200",
                 "admin_status": "up",
-                "subport": "3"
+                "subport": "3",
+                "mode":"trunk"
             },
             "Ethernet6": {
                 "alias": "Eth2/3",
@@ -634,7 +659,8 @@
                 "speed": "11100",
                 "tpid": "0x8100",
                 "admin_status": "up",
-                "subport": "4"
+                "subport": "4",
+                "mode":"trunk"
             },
             "Ethernet7": {
                 "alias": "Eth2/4",
@@ -643,7 +669,8 @@
                 "speed": "11100",
                 "tpid": "0x8100",
                 "admin_status": "up",
-                "subport": "5"
+                "subport": "5",
+                "mode":"routed"
             },
             "Ethernet8": {
                 "alias": "Eth3/1",
@@ -652,7 +679,8 @@
                 "speed": "11100",
                 "tpid": "0x8100",
                 "admin_status": "up",
-                "subport": "6"
+                "subport": "6",
+                "mode":"routed"
             },
             "Ethernet9": {
                 "alias": "Eth3/2",
@@ -661,7 +689,8 @@
                 "speed": "11100",
                 "tpid": "0x8100",
                 "admin_status": "up",
-                "subport": "7"
+                "subport": "7",
+                "mode":"routed"
             },
             "Ethernet10": {
                 "alias": "Eth3/3",
@@ -670,7 +699,8 @@
                 "speed": "11100",
                 "tpid": "0x8100",
                 "admin_status": "up",
-                "subport": "8"
+                "subport": "8",
+                "mode":"routed"
             },
             "Ethernet11": {
                 "alias": "Eth3/4",
@@ -678,7 +708,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet12": {
                 "alias": "Eth4/1",
@@ -686,7 +717,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet13": {
                 "alias": "Eth4/2",
@@ -694,7 +726,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet14": {
                 "alias": "Eth4/3",
@@ -702,7 +735,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet15": {
                 "alias": "Eth4/4",
@@ -710,7 +744,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet16": {
                 "alias": "Eth5/1",
@@ -718,7 +753,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet17": {
                 "alias": "Eth5/2",
@@ -726,7 +762,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet18": {
                 "alias": "Eth5/3",
@@ -734,7 +771,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet19": {
                 "alias": "Eth5/4",
@@ -742,7 +780,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet20": {
                 "alias": "Eth6/1",
@@ -750,7 +789,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet21": {
                 "alias": "Eth6/2",
@@ -758,7 +798,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet22": {
                 "alias": "Eth6/3",
@@ -766,7 +807,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet23": {
                 "alias": "Eth6/4",
@@ -774,7 +816,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet24": {
                 "alias": "Eth7/1",
@@ -782,7 +825,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet25": {
                 "alias": "Eth7/2",
@@ -790,7 +834,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet26": {
                 "alias": "Eth7/3",
@@ -798,7 +843,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet27": {
                 "alias": "Eth7/4",
@@ -806,7 +852,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet28": {
                 "alias": "Eth8/1",
@@ -814,7 +861,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet29": {
                 "alias": "Eth8/2",
@@ -822,7 +870,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet30": {
                 "alias": "Eth8/3",
@@ -830,7 +879,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet31": {
                 "alias": "Eth8/4",
@@ -838,7 +888,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet32": {
                 "alias": "Eth9/1",
@@ -846,7 +897,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet33": {
                 "alias": "Eth9/2",
@@ -854,7 +906,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet34": {
                 "alias": "Eth9/3",
@@ -862,7 +915,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet35": {
                 "alias": "Eth9/4",
@@ -870,7 +924,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet36": {
                 "alias": "Eth10/1",
@@ -878,7 +933,8 @@
                 "description": "",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"trunk"
             },
             "Ethernet112": {
                 "alias": "Eth29/1",
@@ -887,7 +943,8 @@
                 "fec": "fc",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet120": {
                 "alias": "Eth31/1",
@@ -896,7 +953,8 @@
                 "fec": "auto",
                 "speed": "11100",
                 "tpid": "0x8100",
-                "admin_status": "up"
+                "admin_status": "up",
+                "mode":"routed"
             },
             "Ethernet-BP0": {
                 "admin_status": "up",
@@ -909,7 +967,8 @@
                 "pfc_asym": "off",
                 "role": "Int",
                 "speed": "40000",
-                "tpid": "0x8100"
+                "tpid": "0x8100",
+                "mode":"routed"
             },
             "Ethernet-BP4": {
                 "admin_status": "up",
@@ -922,7 +981,8 @@
                 "pfc_asym": "off",
                 "role": "Int",
                 "speed": "40000",
-                "tpid": "0x8100"
+                "tpid": "0x8100",
+                "mode":"routed"
             }
         },
         "LOGGER": {
@@ -1246,6 +1306,13 @@
                 "report_type": "periodic"
             }
         },
+        "BMP": {
+            "table": {
+                "bgp_neighbor_table": "true",
+                "bgp_rib_in_table": "false",
+                "bgp_rib_out_table": "false"
+            }
+        },
         "GNMI": {
             "certs": {
                 "ca_crt": "/etc/sonic/credentials/dsmsroot.cer",
@@ -1565,6 +1632,22 @@
                 "timeout": "5"
             }
         },
+        "LDAP": {
+            "global": {
+                "bind_dn": "test_bind",
+                "bind_password": "secret",
+                "bind_timeout": "5",
+                "version": "3",
+                "base_dn": "test_base",
+                "port": "389",
+                "timeout": "5"
+            }
+        },
+        "LDAP_SERVER": {
+            "192.168.1.1": {
+                "priority": "5"
+            }
+        },
         "NAT_BINDINGS": {
             "bind1": {
                 "nat_pool": "pool1",
@@ -1655,7 +1738,7 @@
                 "ip_range": [
                     "10.1.0.0/24"
                 ],
-                "name": "BGPSentinel", 
+                "name": "BGPSentinel",
                 "src_address": "10.1.0.32"
             },
             "BGPSentinelV6": {
@@ -1926,7 +2009,7 @@
         "DHCP_SERVER_IPV4_CUSTOMIZED_OPTIONS": {
             "option60": {
                 "id": "60",
-                "type": "text",
+                "type": "string",
                 "value": "dummy_value"
             }
         },
@@ -2458,6 +2541,12 @@
             }
 
         },
+        "SUPPRESS_ASIC_SDK_HEALTH_EVENT": {
+            "notice": {
+                "categories": ["firmware", "asic_hw"],
+                "max_events": "1024"
+            }
+        },
         "SYSTEM_DEFAULTS": {
             "tunnel_qos_remap": {
                 "status": "enabled"
@@ -2578,6 +2667,14 @@
             },
             "dpu1": {
                 "midplane_interface": "dpu1"
+            }
+        },
+        "BANNER_MESSAGE": {
+            "global": {
+                "state": "enabled",
+                "login": "Some login message",
+                "motd": "Some message of the day",
+                "logout": "Some logout message"
             }
         }
     },

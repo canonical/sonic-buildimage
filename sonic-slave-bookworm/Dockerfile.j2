@@ -68,7 +68,7 @@ RUN pip3 install virtualenv
 RUN mkdir /python_virtualenv
 RUN cd /python_virtualenv && python3 -m virtualenv --copies -p /usr/bin/python3 env3
 
-RUN PATH=/python_virtualenv/env3/bin/:$PATH pip3 install setuptools==66.1.1 wheel==0.38.4 fastentrypoints pytest pytest-cov pytest-runner==5.2 nose==1.3.7 mockredispy==2.9.3 mock==3.0.5 PyYAML==6.0.1 redis==3.5.3 pexpect==4.8.0 Pympler==0.8 parameterized natsort==6.2.1 MarkupSafe==2.0.1 Jinja2==3.0.3 click tabulate netaddr netifaces pyroute2 pyfakefs sphinx && ln -s /python_virtualenv/env3/bin/pytest /python_virtualenv/env3/bin/pytest-3
+RUN PATH=/python_virtualenv/env3/bin/:$PATH pip3 install setuptools==66.1.1 setuptools-scm==8.0.4 setuptools-scm-git-archive==1.4.1 wheel==0.38.4 fastentrypoints pytest pytest-cov pytest-runner==5.2 nose==1.3.7 mockredispy==2.9.3 mock==3.0.5 PyYAML==6.0.1 redis==3.5.3 pexpect==4.8.0 Pympler==0.8 parameterized natsort==6.2.1 MarkupSafe==2.0.1 Jinja2==3.0.3 click tabulate netaddr netifaces pyroute2 pyfakefs sphinx && ln -s /python_virtualenv/env3/bin/pytest /python_virtualenv/env3/bin/pytest-3
 
 RUN apt-get --fix-broken install -y
 RUN LIBPYTHON3_DEPS="`apt-cache depends libpython3-dev:$arch |grep Depends|awk {'print \$2;'}|tr "\n" " "`" && apt-get install -y libpython2.7-dev:$arch $LIBPYTHON3_DEPS libxml2-dev:$arch libxslt-dev:$arch libssl-dev:$arch libz-dev:$arch
@@ -91,6 +91,7 @@ RUN apt-get update && apt-get install -y \
         {{ GZ_COMPRESS_PROGRAM }} \
         git \
         build-essential \
+        remake \
         libtool \
         lintian \
         sudo \
@@ -258,6 +259,7 @@ RUN apt-get update && apt-get install -y \
         python3-nose \
         python3-venv \
         gcovr \
+        lcov \
         python3-pytest-cov \
         python3-pytest-cov \
         python3-parse \
@@ -418,7 +420,32 @@ RUN apt-get update && apt-get install -y \
         auditd \
 # For protobuf
         protobuf-compiler \
-        libprotobuf-dev
+        libprotobuf-dev \
+# For sonic-dhcp6relay build
+        libjsoncpp-dev \
+#for nvidia-blufield driver compilation
+        pciutils \
+        dh-dkms \
+        rpm2cpio \
+        libsnmp-dev \
+        libpopt-dev \
+        libfuse-dev \
+{%- if CONFIGURED_ARCH == "arm64" %}
+        grub-efi-arm64-bin \
+{%- endif %}
+        efibootmgr \
+        watchdog \
+        dmidecode \
+# For nvidia-blufield sdk compilation
+        cython3 \
+        pandoc \
+        valgrind \
+        udev \
+        inkscape \
+        meson \
+        python3-pyelftools \
+        hwdata \
+        libzip-dev
 
 {%- if CROSS_BUILD_ENVIRON == "y" %}
 # Arm vs. amd64 versions conflict - remove amd64 packages
@@ -479,6 +506,10 @@ RUN patch -p1 -i /disable-non-manylinux.patch /usr/local/lib/python3.11/dist-pac
 # For building sonic-utilities
 RUN pip3 install fastentrypoints mock
 
+# For building sonic_ycabled
+# Note: Match version in bookworm
+RUN pip3 install grpcio==1.51.1 grpcio-tools==1.51.1
+
 # For running Python unit tests
 RUN pip3 install pytest-runner==5.2
 RUN pip3 install mockredispy==2.9.3
@@ -509,6 +540,9 @@ RUN pip3 install pyang==2.4.0
 
 # For mgmt-framework build
 RUN pip3 install mmh3==2.5.1
+
+# For ptf-py3 0.10.0
+RUN pip3 install setuptools==66.1.1 setuptools-scm==8.0.4 setuptools-scm-git-archive==1.4.1
 
 RUN apt-get install -y xsltproc
 
@@ -557,6 +591,12 @@ RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # Install m2crypto package, needed by SWI tools
 RUN apt-get install python3-m2crypto
+
+# Install libthrift package needed by saithrift
+RUN apt-get install  libthrift-0.17 \
+        libthrift-dev \
+        thrift-compiler\
+        python3-thrift
 
 # Install swi tools
 RUN pip3 install git+https://github.com/aristanetworks/swi-tools.git@bead66bf261770237f7dd21ace3774ba04a017e9

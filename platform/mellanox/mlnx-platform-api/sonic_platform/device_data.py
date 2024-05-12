@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES.
+# Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES.
 # Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,11 +112,27 @@ DEVICE_DATA = {
             }
         }
     },
+    'x86_64-nvidia_sn5400-r0': {
+        'thermal': {
+            "capability": {
+                "comex_amb": False,
+                "pch_temp": True
+            }
+        }
+    },
     'x86_64-nvidia_sn5600-r0': {
         'thermal': {
             "capability": {
                 "comex_amb": False,
                 "pch_temp": True
+            }
+        }
+    },
+    'x86_64-nvidia_sn4280_simx-r0': {
+        'thermal': {
+            "capability": {
+                "cpu_pack": False,
+                "comex_amb": False
             }
         }
     }
@@ -242,7 +258,7 @@ class DeviceDataManager:
 
     @classmethod
     @utils.read_only_cache()
-    def is_independent_mode(cls):
+    def is_module_host_management_mode(cls):
         from sonic_py_common import device_info
         _, hwsku_dir = device_info.get_paths_to_platform_and_hwsku_dirs()
         sai_profile_file = os.path.join(hwsku_dir, 'sai.profile')
@@ -258,7 +274,7 @@ class DeviceDataManager:
         """
         conditions = []
         sysfs_nodes = ['power_mode', 'power_mode_policy', 'present', 'reset', 'status', 'statuserror']
-        if cls.is_independent_mode():
+        if cls.is_module_host_management_mode():
             sysfs_nodes.extend(['control', 'frequency', 'frequency_support', 'hw_present', 'hw_reset',
                                 'power_good', 'power_limit', 'power_on', 'temperature/input'])
         else:

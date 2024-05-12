@@ -1,2 +1,2 @@
-filelock==3.13.0
-pycairo==1.25.1
+pygobject==3.42.2
+pyyaml==6.0.1

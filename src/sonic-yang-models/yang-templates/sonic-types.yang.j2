@@ -76,8 +76,10 @@ module sonic-types {
             enum IPV4;
             enum IPV6;
             enum IPv4ANY;
+            enum IPV4ANY;
             enum NON_IP4;
             enum IPv6ANY;
+            enum IPV6ANY;
             enum NON_IPv6;
             enum ARP;
         }
@@ -207,6 +209,14 @@ module sonic-types {
         type string {
             pattern "0x8100|0x9100|0x9200|0x88a8|0x88A8";
         }
+    }
+
+    typedef switchport_mode {
+        type string {
+            pattern "routed|access|trunk";
+        }
+        description
+            "SwitchPort Modes for Port & PortChannel";
     }
 
     typedef meter_type {
