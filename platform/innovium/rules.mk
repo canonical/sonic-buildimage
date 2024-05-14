@@ -6,6 +6,7 @@ include $(PLATFORM_PATH)/platform-modules-marvell.mk
 include $(PLATFORM_PATH)/docker-syncd-invm.mk
 include $(PLATFORM_PATH)/docker-syncd-invm-rpc.mk
 include $(PLATFORM_PATH)/one-image.mk
+include $(PLATFORM_PATH)/docker-saiserver-invm.mk
 include $(PLATFORM_PATH)/libsaithrift-dev.mk
 include $(PLATFORM_PATH)/python-saithrift.mk
 
