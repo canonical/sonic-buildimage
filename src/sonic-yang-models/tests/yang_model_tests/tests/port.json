@@ -143,6 +143,14 @@
          "eStrKey": "Range",
          "eStr": "0..8"
      },
+     "PORT_VALID_DHCP_RATE_LIMIT": {
+         "desc": "PORT_VALID_DHCP_RATE_LIMIT no failure."
+     },
+     "PORT_INVALID_DHCP_RATE_LIMIT": {
+         "desc": "Out of range for dhcp rate",
+         "eStrKey": "Range",
+         "eStr": "0..800000"
+     },
      "PORT_VALID_DOM_POLLING": {
         "desc": "PORT_VALID_DOM_POLLING no failure."
     },

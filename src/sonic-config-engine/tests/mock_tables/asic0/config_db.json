@@ -10,6 +10,8 @@
         "role": "Ext",
         "speed": "40000",
         "asic_port_name": "Eth0-ASIC0"
+
+
     },
     "PORT|Ethernet4": {
         "index": "1",
@@ -34,6 +36,7 @@
         "role": "Ext",
         "speed": "40000",
         "asic_port_name": "Eth2-ASIC0"
+
     },
     "PORT|Ethernet12": {
         "index": "3",
