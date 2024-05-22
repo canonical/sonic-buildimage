@@ -5,7 +5,6 @@
 # scripts using this must provide implementations of the following functions:
 #
 # startplatform
-# waitplatform
 # stopplatform1 and stopplatform2
 #
 # For examples of these, see gbsyncd.sh and syncd.sh.
@@ -140,8 +139,6 @@ wait() {
             debug "Started ${SERVICE}$DEV service..."
         fi
     fi
-
-    waitplatform
 
     /usr/bin/${SERVICE}.sh wait $DEV
 }
