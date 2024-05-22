@@ -1,0 +1,18 @@
+[Unit]
+Description=Chassis module up & down operation
+ConditionPathExists=/etc/sonic/chassisdb.conf
+Requires=database.service updategraph.service
+After=database.service updategraph.service
+StartLimitIntervalSec=1200
+StartLimitBurst=3
+BindsTo=sonic.target
+After=sonic.target
+
+[Service]
+User=root
+ExecStart=/usr/bin/python3 /usr/local/bin/chassis_module_config.py
+ExecStop=/bin/kill -SIGINT $MAINPID
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
