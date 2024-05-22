@@ -1,0 +1,4 @@
+group:sonic-bmp
+program:openbmpd
+program:bmpcfgd
+{%- endif %}
