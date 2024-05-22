@@ -15,10 +15,6 @@ function startplatform() {
     done
 }
 
-function waitplatform() {
-    :
-}
-
 function stopplatform1() {
     if ! docker top gbsyncd$DEV | grep -q /usr/bin/syncd; then
         debug "syncd process in container gbsyncd$DEV is not running"
