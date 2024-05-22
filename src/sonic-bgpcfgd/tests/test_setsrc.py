@@ -7,8 +7,7 @@ from copy import deepcopy
 from . import swsscommon_test
 from swsscommon import swsscommon
 
-with patch.dict("sys.modules", swsscommon=swsscommon_test):
-    from bgpcfgd.managers_setsrc import ZebraSetSrc
+from bgpcfgd.managers_setsrc import ZebraSetSrc
 
 TEMPLATE_PATH = os.path.abspath('../../dockers/docker-fpm-frr/frr')
 
