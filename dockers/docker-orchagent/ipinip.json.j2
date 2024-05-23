@@ -49,7 +49,6 @@
     {
         "TUNNEL_DECAP_TABLE:IPINIP_TUNNEL" : {
             "tunnel_type":"IPINIP",
-            "dst_ip":"{% for prefix in ipv4_addresses|sort %}{{ prefix | ip }}{% if not loop.last %},{% endif %}{% endfor %}",
             "dscp_mode":"uniform",
 {% if "mlnx" in DEVICE_METADATA.localhost.platform %}
             "ecn_mode":"standard",
@@ -59,15 +58,24 @@
             "ttl_mode":"pipe"
         },
         "OP": "SET"
-    }
+    }{% if ipv4_addresses %},
 {% endif %}
-{% if ipv4_loopback_addresses and ipv6_loopback_addresses %}    ,
+{% for prefix in ipv4_addresses|sort %}
+    {
+        "TUNNEL_DECAP_TERM_TABLE:IPINIP_TUNNEL:{{ prefix | ip }}" : {
+            "term_type":"P2MP"
+        },
+        "OP": "SET"
+    }{% if not loop.last %},
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if ipv4_loopback_addresses and ipv6_loopback_addresses %},
 {% endif %}
 {% if ipv6_loopback_addresses %}
     {
         "TUNNEL_DECAP_TABLE:IPINIP_V6_TUNNEL" : {
             "tunnel_type":"IPINIP",
-            "dst_ip":"{% for prefix in ipv6_addresses|sort %}{{ prefix | ip }}{% if not loop.last %},{% endif %}{% endfor %}",
             "dscp_mode":"uniform",
 {% if "mlnx" in DEVICE_METADATA.localhost.platform %}
             "ecn_mode":"standard",
@@ -77,8 +85,19 @@
             "ttl_mode":"pipe"
         },
         "OP": "SET"
-    }
+    }{% if ipv6_addresses %},
 {% endif %}
+{% for prefix in ipv6_addresses|sort %}
+    {
+        "TUNNEL_DECAP_TERM_TABLE:IPINIP_V6_TUNNEL:{{ prefix | ip }}" : {
+            "term_type":"P2MP"
+        },
+        "OP": "SET"
+    }{% if not loop.last %},
+{% endif %}
+{% endfor %}
+{% endif %}
+
 ]
 {% endif %}
 
