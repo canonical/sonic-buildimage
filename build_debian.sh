@@ -158,14 +158,17 @@ sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install pigz
 ## 2. mount supports squashfs
 ## However, 'dpkg -i' plus 'apt-get install -f' will ignore the recommended dependency. So
 ## we install busybox explicitly
-sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install busybox linux-base
+sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install busybox busybox-initramfs linux-base
 echo '[INFO] Install SONiC linux kernel image'
+sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install klibc-utils cpio kmod udev
 ## Note: duplicate apt-get command to ensure every line return zero
 sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/initramfs-tools-core_*.deb || \
     sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
 sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/initramfs-tools_*.deb || \
     sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
-sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/linux-image-${LINUX_KERNEL_VERSION}-*_${CONFIGURED_ARCH}.deb || \
+sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/linux-modules-6.5.0-9-generic_6.5.0-9.9_amd64.deb || \
+    sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
+sudo dpkg --root=$FILESYSTEM_ROOT -i $debs_path/linux-image-unsigned-6.5.0-9-generic_6.5.0-9.9_amd64.deb || \
     sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -f
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install acl
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
@@ -259,13 +262,13 @@ if [[ $CONFIGURED_ARCH == armhf ]]; then
     # update ssl ca certificates for secure pem
     sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT c_rehash
 fi
-sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -o /tmp/docker.asc -fsSL https://download.docker.com/linux/debian/gpg
+sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -o /tmp/docker.asc -fsSL https://download.docker.com/linux/ubuntu/gpg
 sudo LANG=C chroot $FILESYSTEM_ROOT mv /tmp/docker.asc /etc/apt/trusted.gpg.d/
 sudo tee $FILESYSTEM_ROOT/etc/apt/sources.list.d/docker.list >/dev/null <<EOF
-deb [arch=$CONFIGURED_ARCH] https://download.docker.com/linux/debian $IMAGE_DISTRO stable
+deb [arch=$CONFIGURED_ARCH] https://download.docker.com/linux/ubuntu $IMAGE_DISTRO stable
 EOF
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get update
-sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install docker-ce=${DOCKER_VERSION} docker-ce-cli=${DOCKER_VERSION} containerd.io=${CONTAINERD_IO_VERSION}
+sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install docker-ce docker-ce-cli containerd.io
 
 install_kubernetes () {
     local ver="$1"
@@ -329,11 +332,11 @@ echo "$USERNAME:$PASSWORD" | sudo LANG=C chroot $FILESYSTEM_ROOT chpasswd
 sudo LANG=C chroot $FILESYSTEM_ROOT groupadd -f redis
 sudo LANG=C chroot $FILESYSTEM_ROOT usermod -aG redis $USERNAME
 
-if [[ $CONFIGURED_ARCH == amd64 ]]; then
-    ## Pre-install hardware drivers
-    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install      \
-        firmware-linux-nonfree
-fi
+#if [[ $CONFIGURED_ARCH == amd64 ]]; then
+#    ## Pre-install hardware drivers
+#    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install      \
+#        firmware-linux-nonfree
+#fi
 
 ## Pre-install the fundamental packages
 ## Note: gdisk is needed for sgdisk in install.sh
@@ -390,15 +393,12 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
     python3-pip             \
     python-is-python3       \
     cron                    \
-    libprotobuf32           \
-    libgrpc29               \
-    libgrpc++1.51           \
     haveged                 \
     fdisk                   \
     gpg                     \
     jq                      \
     auditd                  \
-    linux-perf              \
+    linux-tools-common      \
     resolvconf              \
     lsof                    \
     sysstat                 \
@@ -536,6 +536,10 @@ sudo cp files/image_config/pip/pip.conf $FILESYSTEM_ROOT/etc/pip.conf
 # For building Python packages
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install python3-setuptools python3-wheel
 
+
+#requests hotfix breaks build https://github.com/docker/docker-py/pull/3257/files
+sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install 'requests==2.31.0'
+
 # docker Python API package is needed by Ansible docker module as well as some SONiC applications
 sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install 'docker==7.1.0'
 
@@ -572,6 +576,7 @@ if [ -f files/image_config/ntp/ntpsec ]; then
 fi
 
 if [ -f files/image_config/ntp/ntp-systemd-wrapper ]; then
+    sudo mkdir $FILESYSTEM_ROOT/usr/libexec/ntpsec/
     sudo cp ./files/image_config/ntp/ntp-systemd-wrapper $FILESYSTEM_ROOT/usr/libexec/ntpsec/
 fi
 

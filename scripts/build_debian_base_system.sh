@@ -23,11 +23,14 @@ generate_version_file()
     sudo LANG=C chroot $FILESYSTEM_ROOT /bin/bash -c "dpkg-query -W -f '\${Package}==\${Version}\n'" > $TARGET_BASEIMAGE_PATH/versions-deb-${IMAGE_DISTRO}-${CONFIGURED_ARCH}
 }
 
-MIRROR_URL=http://deb.debian.org/debian
-if [ "$MIRROR_SNAPSHOT" == y ]; then
-    SNAPSHOT_TIMESTAMP=$(grep "^debian==" $TARGET/versions/default/versions-mirror | tail -n 1 | sed 's/.*==//')
-    MIRROR_URL=http://packages.trafficmanager.net/snapshot/debian/$SNAPSHOT_TIMESTAMP
-fi
+#MIRROR_URL=http://deb.debian.org/debian
+#if [ "$MIRROR_SNAPSHOT" == y ]; then
+#    SNAPSHOT_TIMESTAMP=$(grep "^debian==" $TARGET/versions/default/versions-mirror | tail -n 1 | sed 's/.*==//')
+#    MIRROR_URL=http://packages.trafficmanager.net/snapshot/debian/$SNAPSHOT_TIMESTAMP
+#fi
+
+MIRROR_URL=http://archive.ubuntu.com/ubuntu
+
 
 if [ "$ENABLE_VERSION_CONTROL_DEB" != "y" ] || [ ! -d files/build/versions/host-base-image ]; then
     if [[ $CONFIGURED_ARCH == armhf || $CONFIGURED_ARCH == arm64 ]]; then
@@ -78,7 +81,8 @@ rm -rf $BASEIMAGE_TARBALLPATH $BASEIMAGE_TARBALL
 ARCHIEVES=$BASEIMAGE_TARBALLPATH/var/cache/apt/archives
 APTLIST=$BASEIMAGE_TARBALLPATH/var/lib/apt/lists
 TARGET_DEBOOTSTRAP=$BASEIMAGE_TARBALLPATH/debootstrap
-APTDEBIAN="$APTLIST/deb.debian.org_debian_dists_${DISTRO}_main_binary-${CONFIGURED_ARCH}_Packages"
+#APTDEBIAN="$APTLIST/deb.debian.org_debian_dists_${DISTRO}_main_binary-${CONFIGURED_ARCH}_Packages"
+APTDEBIAN="$APTLIST/archive.ubuntu.com_debian_dists_${DISTRO}_main_binary-${CONFIGURED_ARCH}_Packages"
 DEBPATHS=$TARGET_DEBOOTSTRAP/debpaths
 DEBOOTSTRAP_BASE=$TARGET_DEBOOTSTRAP/base
 DEBOOTSTRAP_REQUIRED=$TARGET_DEBOOTSTRAP/required

@@ -43,6 +43,8 @@ BULLSEYE_DEBS_PATH = $(TARGET_PATH)/debs/bullseye
 BULLSEYE_FILES_PATH = $(TARGET_PATH)/files/bullseye
 BOOKWORM_DEBS_PATH = $(TARGET_PATH)/debs/bookworm
 BOOKWORM_FILES_PATH = $(TARGET_PATH)/files/bookworm
+JAMMY_DEBS_PATH = $(TARGET_PATH)/debs/jammy
+JAMMY_FILES_PATH = $(TARGET_PATH)/files/jammy
 DBG_IMAGE_MARK = dbg
 DBG_SRC_ARCHIVE_FILE = $(TARGET_PATH)/sonic_src.tar.gz
 BUILD_WORKDIR = /sonic
@@ -64,12 +66,12 @@ ifeq ($(CONFIGURED_ARCH),arm64)
 endif
 endif
 
-IMAGE_DISTRO := bookworm
+IMAGE_DISTRO := jammy
 IMAGE_DISTRO_DEBS_PATH = $(TARGET_PATH)/debs/$(IMAGE_DISTRO)
 IMAGE_DISTRO_FILES_PATH = $(TARGET_PATH)/files/$(IMAGE_DISTRO)
 
 # Python 2 packages will not be available in Bullseye and newer
-ifneq ($(filter bullseye bookworm,$(BLDENV)),)
+ifneq ($(filter bullseye bookworm jammy,$(BLDENV)),)
 ENABLE_PY2_MODULES = n
 else
 ENABLE_PY2_MODULES = y
@@ -119,12 +121,14 @@ configure :
 	$(Q)mkdir -p $(BUSTER_DEBS_PATH)
 	$(Q)mkdir -p $(BULLSEYE_DEBS_PATH)
 	$(Q)mkdir -p $(BOOKWORM_DEBS_PATH)
+	$(Q)mkdir -p $(JAMMY_DEBS_PATH)
 	$(Q)mkdir -p $(FILES_PATH)
 	$(Q)mkdir -p $(JESSIE_FILES_PATH)
 	$(Q)mkdir -p $(STRETCH_FILES_PATH)
 	$(Q)mkdir -p $(BUSTER_FILES_PATH)
 	$(Q)mkdir -p $(BULLSEYE_FILES_PATH)
 	$(Q)mkdir -p $(BOOKWORM_FILES_PATH)
+	$(Q)mkdir -p $(JAMMY_FILES_PATH)
 	$(Q)mkdir -p $(PYTHON_DEBS_PATH)
 	$(Q)mkdir -p $(PYTHON_WHEELS_PATH)
 	$(Q)mkdir -p $(DPKG_ADMINDIR_PATH)
@@ -941,7 +945,7 @@ $(addprefix $(PYTHON_WHEELS_PATH)/, $(SONIC_PYTHON_WHEELS)) : $(PYTHON_WHEELS_PA
 ifneq ($(CROSS_BUILD_ENVIRON),y)
 		# Use pip instead of later setup.py to install dependencies into user home, but uninstall self
 		pip$($*_PYTHON_VERSION) install . && pip$($*_PYTHON_VERSION) uninstall --yes `python$($*_PYTHON_VERSION) setup.py --name`
-ifeq ($(BLDENV),bookworm)
+ifeq ($(BLDENV),jammy)
 		if [ ! "$($*_TEST)" = "n" ]; then pip$($*_PYTHON_VERSION) install ".[testing]" && pip$($*_PYTHON_VERSION) uninstall --yes `python$($*_PYTHON_VERSION) setup.py --name` && python$($*_PYTHON_VERSION) -m pytest $(LOG); fi
 		python$($*_PYTHON_VERSION) -m build -n $(LOG)
 else

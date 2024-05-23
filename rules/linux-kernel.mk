@@ -1,13 +1,14 @@
 # linux kernel package
 
-KVERSION_SHORT = 6.1.0-11-2
-KVERSION = $(KVERSION_SHORT)-$(CONFIGURED_ARCH)
-KERNEL_VERSION = 6.1.38
-KERNEL_SUBVERSION = 4
+KVERSION_SHORT = 6.5.0-9
+KVERSION = $(KVERSION_SHORT)-generic
+KERNEL_VERSION = 6.5.0
+KERNEL_SUBVERSION = 9.9
 ifeq ($(CONFIGURED_ARCH), armhf)
 # Override kernel version for ARMHF as it uses arm MP (multi-platform) for short version
 KVERSION = $(KVERSION_SHORT)-armmp
 endif
+
 
 # Place an URL here to .tar.gz file if you want to include those patches
 EXTERNAL_KERNEL_PATCH_URL =
@@ -21,16 +22,19 @@ export EXTERNAL_KERNEL_PATCH_URL
 export INCLUDE_EXTERNAL_PATCHES
 export EXTERNAL_KERNEL_PATCH_LOC
 
-LINUX_HEADERS_COMMON = linux-headers-$(KVERSION_SHORT)-common_$(KERNEL_VERSION)-$(KERNEL_SUBVERSION)_all.deb
+#LINUX_HEADERS_COMMON = linux-headers-$(KVERSION_SHORT)-common_$(KERNEL_VERSION)-$(KERNEL_SUBVERSION)_all.deb
+LINUX_HEADERS_COMMON = linux-headers-6.5.0-9_6.5.0-9.9_all.deb
 $(LINUX_HEADERS_COMMON)_SRC_PATH = $(SRC_PATH)/sonic-linux-kernel
 SONIC_MAKE_DEBS += $(LINUX_HEADERS_COMMON)
 
-LINUX_HEADERS = linux-headers-$(KVERSION)_$(KERNEL_VERSION)-$(KERNEL_SUBVERSION)_$(CONFIGURED_ARCH).deb
+#LINUX_HEADERS = linux-headers-$(KVERSION)_$(KERNEL_VERSION)-$(KERNEL_SUBVERSION)_$(CONFIGURED_ARCH).deb
+LINUX_HEADERS = linux-headers-6.5.0-9-generic_6.5.0-9.9_amd64.deb
 $(eval $(call add_derived_package,$(LINUX_HEADERS_COMMON),$(LINUX_HEADERS)))
 
 ifeq ($(CONFIGURED_ARCH), armhf)
 	LINUX_KERNEL = linux-image-$(KVERSION)_$(KERNEL_VERSION)-$(KERNEL_SUBVERSION)_$(CONFIGURED_ARCH).deb
 else
-	LINUX_KERNEL = linux-image-$(KVERSION)-unsigned_$(KERNEL_VERSION)-$(KERNEL_SUBVERSION)_$(CONFIGURED_ARCH).deb
+	#LINUX_KERNEL = linux-image-$(KVERSION)-unsigned_$(KERNEL_VERSION)-$(KERNEL_SUBVERSION)_$(CONFIGURED_ARCH).deb
+	LINUX_KERNEL = linux-image-unsigned-6.5.0-9-generic_6.5.0-9.9_amd64.deb
 endif
 $(eval $(call add_derived_package,$(LINUX_HEADERS_COMMON),$(LINUX_KERNEL)))

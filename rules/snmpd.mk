@@ -3,6 +3,9 @@
 ifeq ($(BLDENV),bookworm)
 SNMPD_VERSION = 5.9.3+dfsg
 SNMPD_VERSION_FULL = $(SNMPD_VERSION)-2
+else ifeq ($(BLDENV),jammy)
+SNMPD_VERSION = 5.9.4+dfsg
+SNMPD_VERSION_FULL = $(SNMPD_VERSION)-1.1ubuntu3
 else ifeq ($(BLDENV),bullseye)
 SNMPD_VERSION = 5.9+dfsg
 SNMPD_VERSION_FULL = $(SNMPD_VERSION)-4+deb11u1
@@ -42,6 +45,8 @@ $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(SNMPD_DBG)))
 
 ifeq ($(BLDENV),bookworm)
 LIBSNMP = libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+ifeq ($(BLDENV),jammy)
+LIBSNMP = libsnmp40t64_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 else ifeq ($(BLDENV),bullseye)
 LIBSNMP = libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 else
@@ -64,6 +69,10 @@ $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(LIBSNMP_DBG)))
 LIBSNMP_DEV = libsnmp-dev_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 $(LIBSNMP_DEV)_DEPENDS += $(LIBSNMP)
 $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(LIBSNMP_DEV)))
+
+LIBSNMPTRAPD = libnetsnmptrapd40t64_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+$(LIBSNMPTRAPD)_RDEPENDS += $(LIBSNMP_DEV)
+$(eval $(call add_derived_package,$(LIBSNMP_BASE),$(LIBSNMPTRAPD)))
 
 LIBSNMP_PERL = libsnmp-perl_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 $(LIBSNMP_PERL)_DEPENDS += $(LIBSNMP)

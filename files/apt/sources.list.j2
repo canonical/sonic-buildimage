@@ -7,6 +7,20 @@
 {%- set nonfree_component='non-free' -%}
 {%- endif %}
 
+{% if DISTRIBUTION == 'jammy' -%}
+{% for mirror_url in MIRROR_URLS.split(',') %}
+deb [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }} main restricted multiverse universe
+deb-src [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }} main restricted multiverse universe
+deb [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }}-updates main restricted multiverse universe 
+deb-src [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }}-updates main restricted multiverse universe
+deb [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }}-backports main restricted multiverse universe
+{% endfor %}
+{% for mirror_url in MIRROR_SECURITY_URLS.split(',') %}
+{% set dist_separator='/' %}{% if 'packages.trafficmanager.net/debian' in mirror_url %}{% set dist_separator='_' %}{% endif %}
+deb [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }}-security main restricted multiverse universe
+deb-src [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }}-security main restricted multiverse universe
+{% endfor %}
+{%- else -%}
 {% for mirror_url in MIRROR_URLS.split(',') %}
 deb [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }} main contrib {{ nonfree_component }}
 deb-src [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }} main contrib {{ nonfree_component }}
@@ -24,3 +38,4 @@ deb [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }}-security main 
 deb-src [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }}-security main contrib {{ nonfree_component }}
 {% endif %}
 {% endfor %}
+{% endif %}

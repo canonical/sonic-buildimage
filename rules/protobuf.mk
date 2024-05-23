@@ -1,7 +1,7 @@
 # protobuf package
 # Protobuf 3.21.12 has been released in bookworm, So we only need to build it
 # in the bullseye environment.
-ifeq ($(BLDENV),bullseye)
+ifeq ($(BLDENV),jammy)
 
     PROTOBUF_VERSION = 3.21.12
     PROTOBUF_VERSION_FULL = $(PROTOBUF_VERSION)-3

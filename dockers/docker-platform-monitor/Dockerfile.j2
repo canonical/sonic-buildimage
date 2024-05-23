@@ -1,5 +1,5 @@
 {% from "dockers/dockerfile-macros.j2" import install_debian_packages, install_python_wheels, copy_files %}
-FROM docker-config-engine-bookworm-{{DOCKER_USERNAME}}:{{DOCKER_USERTAG}}
+FROM docker-config-engine-jammy-{{DOCKER_USERNAME}}:{{DOCKER_USERTAG}}
 
 ARG docker_container_name
 ARG image_version
@@ -30,7 +30,7 @@ RUN apt-get update &&   \
         ethtool
 
 # smartmontools version should match the installed smartmontools in sonic_debian_extension build template
-RUN apt-get install -y -t bookworm-backports \
+RUN apt-get install -y -t jammy-backports \
         smartmontools
 
 # On Arista devices, the sonic_platform wheel is not installed in the container.

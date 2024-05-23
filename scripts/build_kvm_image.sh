@@ -42,7 +42,7 @@ prepare_installer_disk()
 
     tmpdir=$(mktemp -d)
 
-    mount -o loop $INSTALLER_DISK $tmpdir
+    sudo mount -o loop $INSTALLER_DISK $tmpdir
 
     cp $INSTALLER $tmpdir/onie-installer.bin
 
