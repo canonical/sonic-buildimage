@@ -6,6 +6,9 @@ FRR_BRANCH = frr/8.5
 FRR_TAG = frr-8.5.4
 export FRR_VERSION FRR_SUBVERSION FRR_BRANCH FRR_TAG
 
+#gbp:error: Either 'EMAIL' or 'DEBEMAIL' must be set in the environment for 'dch' to work
+EMAIL=ubuntu@ubuntu.com
+export EMAIL
 
 FRR = frr_$(FRR_VERSION)-sonic-$(FRR_SUBVERSION)_$(CONFIGURED_ARCH).deb
 $(FRR)_DEPENDS += $(LIBSNMP_DEV) $(LIBYANG2) $(LIBYANG2_DEV)

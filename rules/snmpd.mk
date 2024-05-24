@@ -4,8 +4,8 @@ ifeq ($(BLDENV),bookworm)
 SNMPD_VERSION = 5.9.3+dfsg
 SNMPD_VERSION_FULL = $(SNMPD_VERSION)-2
 else ifeq ($(BLDENV),jammy)
-SNMPD_VERSION = 5.9.4+dfsg
-SNMPD_VERSION_FULL = $(SNMPD_VERSION)-1.1ubuntu3
+SNMPD_VERSION = 5.9.1+dfsg
+SNMPD_VERSION_FULL = $(SNMPD_VERSION)-1ubuntu2.6
 else ifeq ($(BLDENV),bullseye)
 SNMPD_VERSION = 5.9+dfsg
 SNMPD_VERSION_FULL = $(SNMPD_VERSION)-4+deb11u1
@@ -15,6 +15,8 @@ SNMPD_VERSION_FULL = $(SNMPD_VERSION)-5
 endif
 
 export SNMPD_VERSION SNMPD_VERSION_FULL
+
+export DBG_DEB
 
 LIBSNMP_BASE = libsnmp-base_$(SNMPD_VERSION_FULL)_all.deb
 $(LIBSNMP_BASE)_SRC_PATH = $(SRC_PATH)/snmpd
@@ -37,16 +39,16 @@ $(SNMPD)_DEPENDS += $(LIBSNMP)
 $(SNMPD)_RDEPENDS += $(LIBSNMP)
 $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(SNMPD)))
 
-SNMP_DBG = snmp-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+SNMP_DBG = snmp-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB)
 $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(SNMP_DBG)))
 
-SNMPD_DBG = snmpd-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+SNMPD_DBG = snmpd-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB)
 $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(SNMPD_DBG)))
 
 ifeq ($(BLDENV),bookworm)
 LIBSNMP = libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 else ifeq ($(BLDENV),jammy)
-LIBSNMP = libsnmp40t64_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+LIBSNMP = libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 else ifeq ($(BLDENV),bullseye)
 LIBSNMP = libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 else
@@ -55,7 +57,9 @@ endif
 $(LIBSNMP)_RDEPENDS += $(LIBSNMP_BASE)
 $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(LIBSNMP)))
 
-ifeq ($(BLDENV),bookworm)
+ifeq ($(BLDENV),jammy)
+LIBSNMP_DBG = libsnmp40-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB)
+else ifeq ($(BLDENV),bookworm)
 LIBSNMP_DBG = libsnmp40-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 else ifeq ($(BLDENV),bullseye)
 LIBSNMP_DBG = libsnmp40-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb

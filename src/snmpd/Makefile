@@ -7,23 +7,22 @@ ifneq (,$(findstring 5.9,$(SNMPD_VERSION)))
 DERIVED_TARGETS = snmptrapd_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  snmp_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  snmpd_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  snmp-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  snmpd-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
+		  snmp-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
+		  snmpd-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
 		  libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  libsnmp40-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
+		  libsnmp40-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
 		  libsnmp-dev_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  libsnmp-perl_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  tkmib_$(SNMPD_VERSION_FULL)_all.deb
-
 SNMPD_MAKE_JOBS_NUM = $(SONIC_CONFIG_MAKE_JOBS)
 else
 DERIVED_TARGETS = snmptrapd_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  snmp_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  snmpd_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  snmp-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  snmpd-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
+		  snmp-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
+		  snmpd-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
 		  libsnmp30_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  libsnmp30-dbg_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
+		  libsnmp30-dbg_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
 		  libsnmp-dev_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  libsnmp-perl_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  tkmib_$(SNMPD_VERSION_FULL)_all.deb
@@ -35,7 +34,11 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf net-snmp-$(SNMPD_VERSION)
 
 	# download debian net-snmp
+ifneq ($(BLDENV),jammy)
 	dget -u https://sonicstorage.blob.core.windows.net/debian/pool/main/n/net-snmp/net-snmp_$(SNMPD_VERSION_FULL).dsc
+else 
+	dget -u http://archive.ubuntu.com/ubuntu/pool/main/n/net-snmp/net-snmp_5.9.1+dfsg-1ubuntu2.6.dsc
+endif
 
 	pushd net-snmp-$(SNMPD_VERSION)
 	git init
@@ -43,8 +46,10 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	git commit -m "unmodified snmpd source"
 
 	# Apply patches
+ifneq ($(BLDENV),jammy)
 	stg init
 	stg import -s ../patch-$(SNMPD_VERSION)/series
+endif
 
 ifneq ($(CROSS_BUILD_ENVIRON), y)
 	dpkg-buildpackage -rfakeroot -b -d -us -uc -j$(SNMPD_MAKE_JOBS_NUM) --admindir $(SONIC_DPKG_ADMINDIR)
