@@ -18,7 +18,7 @@ SONIC_MAKE_DEBS += $(LIBYANG)
 LIBYANG_DEV = libyang-dev_$(LIBYANG_VERSION)_$(CONFIGURED_ARCH).deb
 $(eval $(call add_derived_package,$(LIBYANG),$(LIBYANG_DEV)))
 
-LIBYANG_DBGSYM = libyang-dbgsym_$(LIBYANG_VERSION)_$(CONFIGURED_ARCH).deb
+LIBYANG_DBGSYM = libyang-dbgsym_$(LIBYANG_VERSION)_$(CONFIGURED_ARCH).$(DBG_DEB)
 $(eval $(call add_derived_package,$(LIBYANG),$(LIBYANG_DBGSYM)))
 
 LIBYANG_CPP = libyang-cpp_$(LIBYANG_VERSION)_$(CONFIGURED_ARCH).deb

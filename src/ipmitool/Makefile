@@ -7,7 +7,7 @@ DERIVED_TARGETS = $(IPMITOOL_DBG)
 
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Remove any stale files
-	rm -rf ./ipmitool-$(IPMITOOL_VERSION) ./ipmitool*.{deb,udeb,dsc,gz,xz}
+	rm -rf ./ipmitool-$(IPMITOOL_VERSION) ./ipmitool*.{deb,ddeb,udeb,dsc,gz,xz}
 	# Obtain ipmitool
 	dget -u https://deb.debian.org/debian/pool/main/i/ipmitool/ipmitool_$(IPMITOOL_VERSION_FULL).dsc
 	# Build source and Debian packages

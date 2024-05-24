@@ -77,6 +77,13 @@ else
 ENABLE_PY2_MODULES = y
 endif
 
+# debug package suffix is changed to ddeb
+ifeq ($(BLDENV),jammy)
+DBG_DEB = ddeb
+else
+DBG_DEB = deb
+endif
+
 # Python version for PTF image
 PTF_ENV_PY_VER = $(if $(SONIC_PTF_ENV_PY_VER),$(SONIC_PTF_ENV_PY_VER),mixed)
 
