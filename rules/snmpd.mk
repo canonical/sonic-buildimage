@@ -45,7 +45,7 @@ $(eval $(call add_derived_package,$(LIBSNMP_BASE),$(SNMPD_DBG)))
 
 ifeq ($(BLDENV),bookworm)
 LIBSNMP = libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
-ifeq ($(BLDENV),jammy)
+else ifeq ($(BLDENV),jammy)
 LIBSNMP = libsnmp40t64_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 else ifeq ($(BLDENV),bullseye)
 LIBSNMP = libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
