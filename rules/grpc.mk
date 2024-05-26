@@ -1,7 +1,7 @@
 # grpc package
 # A newer GRPC has been released in bookworm, So we only need to build it
 # in the bullseye environment.
-ifeq ($(BLDENV),bullseye)
+ifeq ($(BLDENV),jammy)
 
     GRPC_VERSION = 1.30.2
     GRPC_VERSION_FULL = $(GRPC_VERSION)-3

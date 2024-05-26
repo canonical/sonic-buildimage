@@ -394,7 +394,7 @@ sudo chmod 755 $FILESYSTEM_ROOT/usr/bin/restart_service
 
 # Installed smartmontools version should match installed smartmontools in docker-platform-monitor Dockerfile
 # TODO: are mismatching versions fine for bookworm?
-if [[$BLD_ENV == 'jammy' ]]; then
+if [[$BLDENV == 'jammy' ]]; then
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -t jammy-backports smartmontools
 else 
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install -t bookworm-backports smartmontools
