@@ -3,7 +3,7 @@
 	url = https://github.com/sonic-net/sonic-swss-common
 [submodule "sonic-linux-kernel"]
 	path = src/sonic-linux-kernel
-	url = https://github.com/canonical/sonic-linux-kernel
+	url = git@github.com:canonical/sonic-linux-kernel.git
 	branch = feature_jammy_build
 [submodule "sonic-sairedis"]
 	path = src/sonic-sairedis
@@ -125,3 +125,6 @@
 [submodule "platform/innovium/sonic-platform-marvell"]
 	path = platform/innovium/sonic-platform-marvell
 	url = https://github.com/Marvell-switching/sonic-platform-marvell
+[submodule "src/sonic-linux-kernel"]
+	url = git@github.com:canonical/sonic-linux-kernel.git
+	branch = feature_jammy_build
