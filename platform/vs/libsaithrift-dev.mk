@@ -17,6 +17,6 @@ SAISERVER = saiserver_$(SAI_VER)_$(CONFIGURED_ARCH).deb
 $(SAISERVER)_RDEPENDS += $(LIBTHRIFT) $(LIBSAIVS)
 $(eval $(call add_extra_package,$(LIBSAITHRIFT_DEV),$(SAISERVER)))
 
-SAISERVER_DBG = saiserver-dbg_$(SAI_VER)_$(CONFIGURED_ARCH).deb
+SAISERVER_DBG = saiserver-dbg_$(SAI_VER)_$(CONFIGURED_ARCH).$(DBG_DEB)
 $(SAISERVER_DBG)_RDEPENDS += $(SAISERVER)
 $(eval $(call add_extra_package,$(LIBSAITHRIFT_DEV),$(SAISERVER_DBG)))
