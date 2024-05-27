@@ -1,11 +1,7 @@
 # docker image for vs gbsyncd
 
 DOCKER_GBSYNCD_PLATFORM_CODE = vs
-ifeq ($(BLDENV),jammy)
 include $(PLATFORM_PATH)/../template/docker-gbsyncd-jammy.mk
-else
-include $(PLATFORM_PATH)/../template/docker-gbsyncd-bookworm.mk
-endif
 
 $(DOCKER_GBSYNCD_BASE)_DEPENDS += $(SYNCD_VS)
 
