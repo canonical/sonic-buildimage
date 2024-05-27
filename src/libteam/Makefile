@@ -6,9 +6,9 @@ MAIN_TARGET = libteam5_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 DERIVED_TARGETS = libteam-dev_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  libteamdctl0_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  libteam-utils_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  libteam5-dbgsym_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  libteamdctl0-dbgsym_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  libteam-utils-dbgsym_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+		  libteam5-dbgsym_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
+		  libteamdctl0-dbgsym_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
+		  libteam-utils-dbgsym_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB)
 
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Remove any stale files

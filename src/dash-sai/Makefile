@@ -38,7 +38,8 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	sed -i.bak '/checkancestry.sh/d' SAI/SAI/meta/Makefile
 	sed -i.bak '/checkstructs.sh/d' SAI/SAI/meta/Makefile
 	pushd SAI/SAI/meta/
-	CFLAGS=-Wdangling-pointer=1 make all libsaimetadata.so
+#	CFLAGS=-Wdangling-pointer=1 make all libsaimetadata.so
+	make all libsaimetadata.so
 	popd
 
 # Compile sai library
