@@ -1,0 +1,31 @@
+name: make vs
+
+on:
+  push:
+    branches: [ "feature_jammy_build" ]
+  pull_request:
+    branches: [ "feature_jammy_build" ]
+
+jobs:
+  build:
+
+    runs-on: [self-hosted, jammy, x64, xlarge]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: sudo apt install -y python3-pip
+
+    - name: install j2cli
+      run: pip3 install --user j2cli
+
+    - name: Run make init
+      run: make init
+
+    - name: Run make configure
+      run: make configure PLATFORM=vs 
+      
+    - name: Run make all
+      run: make SONIC_BUILD_JOBS=4 all
+      
