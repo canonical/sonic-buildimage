@@ -19,6 +19,11 @@ jobs:
       with:
         ref: ${{ inputs.branch_name }}
 
+    # Make sure the @v0.9.0 matches the current version of the action
+    - uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+       
     - name: Install dependencies
       run: sudo apt install -y python3-pip
 
