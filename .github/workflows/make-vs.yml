@@ -1,11 +1,14 @@
 name: make vs
 
 on:
-  push:
-    branches: [ "feature_jammy_build" ]
-  pull_request:
-    branches: [ "feature_jammy_build" ]
-
+  workflow_dispatch:
+     inputs:
+       branch_name:
+          description: 'branch name'
+          required: true
+          default: 'master'
+          type: string
+          
 jobs:
   build:
 
@@ -13,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.branch_name }}
 
     - name: Install dependencies
       run: sudo apt install -y python3-pip
