@@ -1,6 +1,6 @@
 # linux kernel package
 
-KVERSION_SHORT = 6.5.0-15-2
+KVERSION_SHORT = 6.5.0-15
 KVERSION = $(KVERSION_SHORT)-$(CONFIGURED_ARCH)
 KERNEL_VERSION = 6.5.0
 KERNEL_SUBVERSION = 15
@@ -8,6 +8,10 @@ KERNEL_SUBVERSION = 15
 ifeq ($(CONFIGURED_ARCH), armhf)
 # Override kernel version for ARMHF as it uses arm MP (multi-platform) for short version
 KVERSION = $(KVERSION_SHORT)-armmp
+endif
+
+ifeq ($(BLDENV),jammy)
+KVERSION = $(KVERSION_SHORT)-generic
 endif
 
 
