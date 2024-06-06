@@ -225,6 +225,7 @@ RUN apt-get update && apt-get install -y \
         linux-compiler-gcc-12-arm \
 {%- endif %}
         kbuild \
+	lz4    \
 # teamd build
         libdaemon-dev \
         libdbus-1-dev \
@@ -462,6 +463,14 @@ RUN apt-get update && apt-get install -y \
         ruby-googleapis-common-protos-types \
         ruby-simplecov                      \
         cython3                             \
+# For kernel build
+	bindgen-0.56     \
+	kernel-wedge     \
+	libstd-rust-1.62 \
+	libstd-rust-1.62-dev \
+	rust-1.62-src        \
+	rustc-1.62           \
+	rustfmt-1.62         \
 # For p4 libraries
         valgrind \
         python3-protobuf \
