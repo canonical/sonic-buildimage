@@ -1,0 +1,195 @@
+name: docker-gbsyncd-vs
+summary: SONiC gbsyncd-vs container
+description: A Chiselled rock for SONiC gbsyncd-vs container
+version: "1.0.0"
+
+# Use a "bare" base for an even smaller rock
+base: ubuntu@22.04 
+
+# Meeting requirement R1 by making sure the rock builds on Jammy
+build-base: ubuntu@22.04
+
+license: Apache-2.0
+
+# Target architecture is amd64
+platforms:
+  amd64:  # Make sure this value matches your computer's architecture
+
+services:
+  supervisor:
+    command: "/usr/local/bin/supervisord"
+    startup: enabled
+    override: replace
+
+# For meeting requirement R2, simply don't specify any entrypoint (aka "services")
+
+parts:
+  install-libnl-3-200_3.5.0-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libnl-3-200_3.5.0-1_amd64.deb
+
+  install-libnl-route-3-200_3.5.0-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libnl-route-3-200_3.5.0-1_amd64.deb
+
+  install-libnl-genl-3-200_3.5.0-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libnl-genl-3-200_3.5.0-1_amd64.deb
+
+  install-libnl-nf-3-200_3.5.0-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libnl-nf-3-200_3.5.0-1_amd64.deb
+
+  install-libnl-cli-3-200_3.5.0-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libnl-cli-3-200_3.5.0-1_amd64.deb
+
+  install-libyang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang_1.0.73_amd64.deb
+
+  install-libswsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libswsscommon_1.0.0_amd64.deb
+
+  install-libyang-cpp_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang-cpp_1.0.73_amd64.deb
+
+  install-python3-yang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-yang_1.0.73_amd64.deb 
+
+  install-python3-swsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-swsscommon_1.0.0_amd64.deb
+
+  install-sonic-db-cli_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-db-cli_1.0.0_amd64.deb
+
+  install-sonic-eventd_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
+
+  # docker-syncd-vs specific packages
+  install-libsairedis_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsairedis_1.0.0_amd64.deb
+
+  install-libsaimetadata_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsaimetadata_1.0.0_amd64.deb
+
+  install-libsaivs_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsaivs_1.0.0_amd64.deb
+
+  install-syncd-vs_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/syncd-vs_1.0.0_amd64.deb
+
+  install-packages:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - python3.10
+      - libpython3.10
+      # docker-syncd-vs specific packages
+      - iproute2
+      # package dependencies
+      - libhiredis0.14
+      - libzmq5
+      - libboost-serialization1.74.0
+      - libuuid1
+      # lldp_syncd-vs
+      - libxml2
+      - libevent-2.1-7
+      - libcap2-bin
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # inherited from docker-config-engine-jammy
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # j2 template package
+      - j2cli
+      # supervisor packages
+      - click
+      - supervisor==4.2.5
+      - supervisord-dependent-startup==1.4.0
+    stage-packages:
+      - python3.10-venv
+    organize:
+      bin/supervisord: usr/local/bin/supervisord
+
+  install-common-files:
+    plugin: nil
+    source: .
+    source-type: local
+    after: [install-packages, install-python]
+    override-prime: |
+      # common - templates&scripts
+      mkdir -p usr/share/sonic/templates/
+      mkdir -p usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+ 
+      # common - rsyslog
+      mkdir -p etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
+
+      # common - supervisor config files
+      mkdir -p etc/supervisor/conf.d
+      mkdir -p var/log/supervisor
+
+      cp ${CRAFT_PROJECT_DIR}/etc/supervisor/supervisord.conf etc/supervisor/
+      cp ${CRAFT_PROJECT_DIR}/supervisord.conf        etc/supervisor/conf.d/
+
+      # common - supervisor related
+      mkdir -p usr/share/sonic/templates
+      cp ${CRAFT_PROJECT_DIR}/critical_processes      etc/supervisor/
+
+      mkdir -p etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
+
+      # docker-syncd-vs specifc
+      mkdir -p usr/bin
+      cp ${CRAFT_PROJECT_DIR}/start.sh                usr/bin/
+
+  add-user:
+    plugin: nil
+    after: [install-common-files]
+
+    overlay-script: |
+      #syslog user
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+
+    prime:
+      - etc/passwd
+      - etc/group
