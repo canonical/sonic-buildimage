@@ -150,6 +150,9 @@ parts:
     source-type: local
     after: [install-packages, install-python]
     override-prime: |
+      # common - manifest.json
+      cp ${CRAFT_PROJECT_DIR}/manifest.json              ./ 
+
       # common - templates&scripts
       mkdir -p usr/share/sonic/templates/
       mkdir -p usr/share/sonic/scripts/
