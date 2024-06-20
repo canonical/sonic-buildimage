@@ -122,6 +122,7 @@ parts:
       - libxml2
       - libevent-2.1-7
       - libcap2-bin
+      - jq
 
   install-python:
     plugin: python
