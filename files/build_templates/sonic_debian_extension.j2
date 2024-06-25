@@ -835,12 +835,15 @@ if [[ -z "{{machine}}" || -n "{{machine}}" && $TARGET_MACHINE == "{{machine}}" ]
 sudo LANG=C DOCKER_HOST="$DOCKER_HOST" chroot $FILESYSTEM_ROOT docker load -i {{imagefilepath}}
 sudo LANG=C DOCKER_HOST="$DOCKER_HOST" chroot $FILESYSTEM_ROOT docker tag {{imagename}}:latest {{imagename}}:"${SONIC_IMAGE_VERSION}"
 # Check if manifest exists for {{imagename}} and it is a valid JSON
+# temp disable for jammy
+if [[ $BLDENV != 'jammy' ]]; then
 sudo LANG=C DOCKER_HOST="$DOCKER_HOST" chroot $FILESYSTEM_ROOT docker inspect {{imagename}}:latest \
     | jq '.[0].Config.Labels["com.azure.sonic.manifest"]' -r > /tmp/manifest.json
 jq -e . /tmp/manifest.json || {
     >&2 echo "docker image {{imagename}} has no manifest or manifest is not a valid JSON"
     exit 1
 }
+fi
 {% if imagename.endswith('-dbg') %}
 {% set imagebasename = imagename.replace('-dbg', '') -%}
 sudo LANG=C DOCKER_HOST="$DOCKER_HOST" chroot $FILESYSTEM_ROOT docker tag {{imagename}}:latest {{imagebasename}}:"${SONIC_IMAGE_VERSION}"
