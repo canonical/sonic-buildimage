@@ -1144,10 +1144,14 @@ $(addprefix $(TARGET_PATH)/, $(DOCKER_IMAGES)) : $(TARGET_PATH)/%.gz : .platform
 		mkdir -p $($*.gz_PATH)/python-debs $(LOG)
 		mkdir -p $($*.gz_PATH)/python-wheels $(LOG)
 		mkdir -p $(TARGET_PATH)/vcache/$* $($*.gz_PATH)/vcache $(LOG)
-		sudo mount --bind $($*.gz_DEBS_PATH) $($*.gz_PATH)/debs $(LOG)
-		sudo mount --bind $($*.gz_FILES_PATH) $($*.gz_PATH)/files $(LOG)
-		sudo mount --bind $(PYTHON_DEBS_PATH) $($*.gz_PATH)/python-debs $(LOG)
-		sudo mount --bind $(PYTHON_WHEELS_PATH) $($*.gz_PATH)/python-wheels $(LOG)
+		#sudo mount --bind $($*.gz_DEBS_PATH) $($*.gz_PATH)/debs $(LOG)
+		#sudo mount --bind $($*.gz_FILES_PATH) $($*.gz_PATH)/files $(LOG)
+		#sudo mount --bind $(PYTHON_DEBS_PATH) $($*.gz_PATH)/python-debs $(LOG)
+		#sudo mount --bind $(PYTHON_WHEELS_PATH) $($*.gz_PATH)/python-wheels $(LOG)
+		cp -r $($*.gz_DEBS_PATH)/* $($*.gz_PATH)/debs/
+		cp -r $($*.gz_FILES_PATH)/* $($*.gz_PATH)/files/
+		cp -r $(PYTHON_DEBS_PATH)/* $($*.gz_PATH)/python-debs/
+		cp -r $(PYTHON_WHEELS_PATH)/* $($*.gz_PATH)/python-wheels/
 		# Export variables for j2. Use path for unique variable names, e.g. docker_orchagent_debs
 		export include_system_eventd="$(INCLUDE_SYSTEM_EVENTD)"
 		export build_reduce_image_size="$(BUILD_REDUCE_IMAGE_SIZE)"
@@ -1175,23 +1179,27 @@ $(addprefix $(TARGET_PATH)/, $(DOCKER_IMAGES)) : $(TARGET_PATH)/%.gz : .platform
 		DBGOPT='$(DBGOPT)' \
 		scripts/prepare_docker_buildinfo.sh $* $($*.gz_PATH)/Dockerfile $(CONFIGURED_ARCH) $(LOG)
 		docker info $(LOG)
-		docker build --no-cache $$( [[ "$($*.gz_SQUASH)" != n ]] && echo --squash)\
-			--build-arg http_proxy=$(HTTP_PROXY) \
-			--build-arg https_proxy=$(HTTPS_PROXY) \
-			--build-arg no_proxy=$(NO_PROXY) \
-			--build-arg user=$(USER) \
-			--build-arg uid=$(UID) \
-			--build-arg guid=$(GUID) \
-			--build-arg docker_container_name=$($*.gz_CONTAINER_NAME) \
-			--build-arg frr_user_uid=$(FRR_USER_UID) \
-			--build-arg frr_user_gid=$(FRR_USER_GID) \
-			--build-arg SONIC_VERSION_CACHE=$(SONIC_VERSION_CACHE) \
-			--build-arg SONIC_VERSION_CACHE_SOURCE=$(SONIC_VERSION_CACHE_SOURCE) \
-			--build-arg image_version=$(SONIC_IMAGE_VERSION) \
-			--label com.azure.sonic.manifest="$$(cat $($*.gz_PATH)/manifest.json)" \
-			--label Tag=$(SONIC_IMAGE_VERSION) \
-		        $($(subst -,_,$(notdir $($*.gz_PATH)))_labels) \
-			-t $(DOCKER_IMAGE_REF) $($*.gz_PATH) $(LOG)
+		#docker build --no-cache $$( [[ "$($*.gz_SQUASH)" != n ]] && echo --squash)\
+		#	--build-arg http_proxy=$(HTTP_PROXY) \
+		#	--build-arg https_proxy=$(HTTPS_PROXY) \
+		#	--build-arg no_proxy=$(NO_PROXY) \
+		#	--build-arg user=$(USER) \
+		#	--build-arg uid=$(UID) \
+		#	--build-arg guid=$(GUID) \
+		#	--build-arg docker_container_name=$($*.gz_CONTAINER_NAME) \
+		#	--build-arg frr_user_uid=$(FRR_USER_UID) \
+		#	--build-arg frr_user_gid=$(FRR_USER_GID) \
+		#	--build-arg SONIC_VERSION_CACHE=$(SONIC_VERSION_CACHE) \
+		#	--build-arg SONIC_VERSION_CACHE_SOURCE=$(SONIC_VERSION_CACHE_SOURCE) \
+		#	--build-arg image_version=$(SONIC_IMAGE_VERSION) \
+		#	--label com.azure.sonic.manifest="$$(cat $($*.gz_PATH)/manifest.json)" \
+		#	--label Tag=$(SONIC_IMAGE_VERSION) \
+		#        $($(subst -,_,$(notdir $($*.gz_PATH)))_labels) \
+		#	-t $(DOCKER_IMAGE_REF) $($*.gz_PATH) $(LOG)
+		pushd $($*.gz_PATH)
+                rockcraft pack -v 
+		sudo skopeo --insecure-policy copy oci-archive:$($*.gz_PATH).rock docker-daemon:$($*.gz_PATH):latest
+		popd
 
 		if [ x$(SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD) == x"y" ]; then docker tag $(DOCKER_IMAGE_REF) $*; fi
 		SONIC_VERSION_CACHE=$(SONIC_VERSION_CACHE) ARCH=${CONFIGURED_ARCH}\
