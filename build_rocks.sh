@@ -15,7 +15,9 @@ rocklist=("dockers/docker-nat" \
 	  "dockers/docker-lldp" \
 	  "dockers/docker-eventd" \
 	  "dockers/docker-sflow" \
-	  "dockers/docker-snmp")
+	  "dockers/docker-snmp" \
+          "platform/vs/docker-syncd-vs" \
+          "platform/vs/docker-gbsyncd-vs")
 
 for rockitem in "${rocklist[@]}"
 do
