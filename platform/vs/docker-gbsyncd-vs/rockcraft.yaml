@@ -170,12 +170,12 @@ parts:
       mkdir -p etc/supervisor/conf.d
       mkdir -p var/log/supervisor
 
-      cp ${CRAFT_PROJECT_DIR}/etc/supervisor/supervisord.conf etc/supervisor/
-      cp ${CRAFT_PROJECT_DIR}/supervisord.conf        etc/supervisor/conf.d/
+      cp ${CRAFT_PROJECT_DIR}/files/supervisord.conf     etc/supervisor/
+      cp ${CRAFT_PROJECT_DIR}/supervisord.conf           etc/supervisor/conf.d/
 
       # common - supervisor related
       mkdir -p usr/share/sonic/templates
-      cp ${CRAFT_PROJECT_DIR}/critical_processes      etc/supervisor/
+      cp ${CRAFT_PROJECT_DIR}/critical_processes         etc/supervisor/
 
       mkdir -p etc/sysctl.d/
       cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
@@ -183,7 +183,7 @@ parts:
 
       # docker-syncd-vs specifc
       mkdir -p usr/bin
-      cp ${CRAFT_PROJECT_DIR}/start.sh                usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/start.sh                   usr/bin/
 
   add-user:
     plugin: nil
