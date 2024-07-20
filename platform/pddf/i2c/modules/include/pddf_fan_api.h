@@ -20,7 +20,7 @@
 #ifndef __PDDF_FAN_API_H__
 #define __PDDF_FAN_API_H__
 
-extern int pddf_fan_post_probe_default(struct i2c_client *client, const struct i2c_device_id *dev_id);
+extern int pddf_fan_post_probe_default(struct i2c_client *client);
 extern uint32_t pddf_fan_dc_to_pwm_default(uint32_t dc);
 extern uint32_t pddf_fan_pwm_to_dc_default(uint32_t reg_val);
 

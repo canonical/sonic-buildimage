@@ -393,8 +393,7 @@ EXPORT_SYMBOL(get_fan_access_data);
 
 
 
-static int pddf_fan_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int pddf_fan_probe(struct i2c_client *client)
 {
     struct fan_data *data;
     int status=0,i,num, j=0;
@@ -413,7 +412,7 @@ static int pddf_fan_probe(struct i2c_client *client,
 
 	if (pddf_fan_ops.pre_probe)
 	{
-		status = (pddf_fan_ops.pre_probe)(client, dev_id);
+		status = (pddf_fan_ops.pre_probe)(client);
 		if (status != 0)
 			goto exit;
 	}
@@ -528,7 +527,7 @@ static int pddf_fan_probe(struct i2c_client *client,
 	/* Add a support for post probe function */
 	if (pddf_fan_ops.post_probe)
 	{
-		status = (pddf_fan_ops.post_probe)(client, dev_id);
+		status = (pddf_fan_ops.post_probe)(client);
 		if (status != 0)
 			goto exit_remove;
 	}

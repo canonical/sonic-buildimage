@@ -113,8 +113,8 @@ struct pddf_ops_t
     int (*pre_init)(void);
     int (*post_init)(void);
     /*probe ops*/
-    int (*pre_probe)(struct i2c_client *, const struct i2c_device_id *);
-    int (*post_probe)(struct i2c_client *, const struct i2c_device_id *);
+    int (*pre_probe)(struct i2c_client *);
+    int (*post_probe)(struct i2c_client *);
     /*remove ops*/
     int (*pre_remove)(struct i2c_client *);
     int (*post_remove)(struct i2c_client *);

@@ -34,8 +34,8 @@ sname:=opennsl
 PACKAGE=opennsl-modules
 # modifieable for experiments or debugging m-a
 MA_DIR ?= /usr/share/modass
-KVERSION ?= 6.2.0-39-generic
-KERNVERSION ?= 6.2.0-39
+KVERSION ?= 6.8.0-40-generic
+KERNVERSION ?= 6.8.0-40
 
 # load generic variable handling
 -include $(MA_DIR)/include/generic.make
@@ -65,10 +65,10 @@ kdist_clean: clean
 	dh_clean
 	SDK=$(realpath .) LINUX_UAPI_SPLIT=1 DEBIAN_LINUX_HEADER=1 BUILD_KNET_CB=1 \
 	    KERNDIR=/usr/src/linux-headers-$(KERNVERSION)-generic \
-	    KERNEL_SRC=/usr/src/linux-hwe-6.2-headers-$(KERNVERSION) \
+	    KERNEL_SRC=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
 	    $(MAKE) -C systems/linux/user/x86-smp_generic_64-2_6 clean
 	SDK=$(realpath .) BUILD_KNET_CB=1 \
-	    KDIR=/usr/src/linux-hwe-6.2-headers-$(KERNVERSION) \
+	    KDIR=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
 	    $(MAKE) -C sdklt/ clean
 #	rm -f driver/*.o driver/*.ko
 #
@@ -90,18 +90,18 @@ build-arch-stamp:
 	cd /; sudo mkdir -p /lib/modules/$(KERNVERSION)-generic
 	cd /; sudo rm -rf /lib/modules/$(KERNVERSION)-generic/build
 	cd /; sudo rm -rf /lib/modules/$(KERNVERSION)-generic/source
-	cd /; sudo ln -s /usr/src/linux-hwe-6.2-headers-$(KERNVERSION)/ /lib/modules/$(KERNVERSION)-generic/source
+	cd /; sudo ln -s /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/ /lib/modules/$(KERNVERSION)-generic/source
 	cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/ /lib/modules/$(KERNVERSION)-generic/build
-	cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/include/generated/ /usr/src/linux-hwe-6.2-headers-$(KERNVERSION)/include/generated
-	cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/arch/x86/include/generated/ /usr/src/linux-hwe-6.2-headers-$(KERNVERSION)/arch/x86/include/generated
-	#cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/arch/x86/module.lds /usr/src/linux-hwe-6.2-headers-$(KERNVERSION)/arch/x86/module.lds
-	cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/include/config/ /usr/src/linux-hwe-6.2-headers-$(KERNVERSION)/include/config
-	cd /; sudo cp /usr/src/linux-headers-$(KERNVERSION)-generic/Module.symvers /usr/src/linux-hwe-6.2-headers-$(KERNVERSION)/Module.symvers
+	#cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/include/generated/ /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/include/generated
+	#cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/arch/x86/include/generated/ /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/arch/x86/include/generated
+	#cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/arch/x86/module.lds /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/arch/x86/module.lds
+	#cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/include/config/ /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/include/config
+	#cd /; sudo cp /usr/src/linux-headers-$(KERNVERSION)-generic/Module.symvers /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/Module.symvers
 
 	# Add here command to compile/build the package.
 	SDK=$(realpath .) LINUX_UAPI_SPLIT=1 DEBIAN_LINUX_HEADER=1 BUILD_KNET_CB=1 \
 	    KERNDIR=/usr/src/linux-headers-$(KERNVERSION)-generic \
-	    KERNEL_SRC=/usr/src/linux-hwe-6.2-headers-$(KERNVERSION) \
+	    KERNEL_SRC=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
 	    $(MAKE) -C systems/linux/user/x86-smp_generic_64-2_6
 
 	SDK=$(realpath .) BUILD_KNET_CB=1 \
@@ -132,12 +132,12 @@ clean:
 
 	# Add here commands to clean up after the build process.
 	SDK=$(realpath .) LINUX_UAPI_SPLIT=1 DEBIAN_LINUX_HEADER=1 BUILD_KNET_CB=1 \
-	    KERNDIR=/usr/src/linux-hwe-6.2-headers-$(KERNVERSION) \
+	    KERNDIR=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
 	    KERNEL_SRC=/usr/src/linux-headers-$(KERNVERSION)-generic \
 	    $(MAKE) -C systems/linux/user/x86-smp_generic_64-2_6 clean
 
 	SDK=$(realpath .) BUILD_KNET_CB=1 \
-	    KDIR=/usr/src/linux-hwe-6.2-headers-$(KERNVERSION) \
+	    KDIR=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
 	    $(MAKE) -C sdklt/ clean
 
 	dh_clean

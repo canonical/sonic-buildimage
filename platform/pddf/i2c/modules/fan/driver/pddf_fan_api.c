@@ -1020,7 +1020,7 @@ exit:
     return sprintf(buf, "%s\n", attr_info->val.strval);
 }
 
-int pddf_fan_post_probe_default(struct i2c_client *client, const struct i2c_device_id *dev_id)
+int pddf_fan_post_probe_default(struct i2c_client *client)
 {
 
 	/*Dummy func for now - check the respective platform modules*/

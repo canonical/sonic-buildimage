@@ -1310,7 +1310,7 @@ static int __init dell_s6000_platform_init(void)
     }
     gpio_allocated = true;
 
-    ret = gpio_export(GPIO_I2C_MUX_PIN, false);
+    ret = gpiod_export(GPIO_I2C_MUX_PIN, false);
     if(ret < 0) {
         printk(KERN_WARNING "Failed to export gpio 10");
         goto error_gpio_init;

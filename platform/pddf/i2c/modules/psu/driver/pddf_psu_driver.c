@@ -144,8 +144,7 @@ void *get_psu_access_data(char *name)
 EXPORT_SYMBOL(get_psu_access_data);
 
 
-static int psu_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int psu_probe(struct i2c_client *client)
 {
     struct psu_data *data;
     int status =0;
@@ -163,7 +162,7 @@ static int psu_probe(struct i2c_client *client,
 
 	if (pddf_psu_ops.pre_probe)
     {
-        status = (pddf_psu_ops.pre_probe)(client, dev_id);
+        status = (pddf_psu_ops.pre_probe)(client);
         if (status != 0)
             goto exit;
     }
@@ -255,7 +254,7 @@ static int psu_probe(struct i2c_client *client,
 	/* Add a support for post probe function */
     if (pddf_psu_ops.post_probe)
     {
-        status = (pddf_psu_ops.post_probe)(client, dev_id);
+        status = (pddf_psu_ops.post_probe)(client);
         if (status != 0)
             goto exit_remove;
     }

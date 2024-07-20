@@ -411,8 +411,7 @@ static int pca954x_init(struct i2c_client *client, struct pca954x *data)
 /*
  * I2C init/probing/exit functions
  */
-static int pca954x_probe(struct i2c_client *client,
-			 const struct i2c_device_id *id)
+static int pca954x_probe(struct i2c_client *client)
 {
 	struct i2c_adapter *adap = client->adapter;
 	struct pca954x_platform_data *pdata = dev_get_platdata(&client->dev);
@@ -446,26 +445,26 @@ static int pca954x_probe(struct i2c_client *client,
 		udelay(1);
 	}
 
-	data->chip = device_get_match_data(dev);
-	if (!data->chip)
-		data->chip = &chips[id->driver_data];
+	//data->chip = device_get_match_data(dev);
+	//if (!data->chip)
+	//	data->chip = &chips[id->driver_data];
 
-	if (data->chip->id.manufacturer_id != I2C_DEVICE_ID_NONE) {
-		struct i2c_device_identity id;
+	//if (data->chip->id.manufacturer_id != I2C_DEVICE_ID_NONE) {
+	//	struct i2c_device_identity id;
 
-		ret = i2c_get_device_id(client, &id);
-		if (ret && ret != -EOPNOTSUPP)
-			return ret;
+	//	ret = i2c_get_device_id(client, &id);
+	//	if (ret && ret != -EOPNOTSUPP)
+	//		return ret;
 
-		if (!ret &&
-		    (id.manufacturer_id != data->chip->id.manufacturer_id ||
-		     id.part_id != data->chip->id.part_id)) {
-			dev_warn(dev, "unexpected device id %03x-%03x-%x\n",
-				 id.manufacturer_id, id.part_id,
-				 id.die_revision);
-			return -ENODEV;
-		}
-	}
+	//	if (!ret &&
+	//	    (id.manufacturer_id != data->chip->id.manufacturer_id ||
+	//	     id.part_id != data->chip->id.part_id)) {
+	//		dev_warn(dev, "unexpected device id %03x-%03x-%x\n",
+	//			 id.manufacturer_id, id.part_id,
+	//			 id.die_revision);
+	//		return -ENODEV;
+	//	}
+	//}
 
 	data->idle_state = MUX_IDLE_AS_IS;
 	if (device_property_read_u32(dev, "idle-state", &data->idle_state)) {
