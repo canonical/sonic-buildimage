@@ -96,7 +96,7 @@
 #if defined(CONFIG_CMA) && defined(CONFIG_CMA_SIZE_MBYTES)
 #define DMA_MAX_ALLOC_SIZE (CONFIG_CMA_SIZE_MBYTES * 1024 * 1024)
 #else
-#define DMA_MAX_ALLOC_SIZE (1 << (NR_PAGE_ORDERS - 1 + PAGE_SHIFT)) /* Maximum size the kernel can allocate in one allocation */
+#define DMA_MAX_ALLOC_SIZE (1 << (MAX_PAGE_ORDER - 1 + PAGE_SHIFT)) /* Maximum size the kernel can allocate in one allocation */
 #endif
 #endif /* _SIMPLE_MEMORY_ALLOCATION_ */
 
@@ -141,7 +141,7 @@
 #endif
 
 #ifndef KMALLOC_MAX_SIZE
-#define KMALLOC_MAX_SIZE (1UL << (NR_PAGE_ORDERS - 1 + PAGE_SHIFT))
+#define KMALLOC_MAX_SIZE (1UL << (MAX_PAGE_ORDER - 1 + PAGE_SHIFT))
 #endif
 
 /* Compatibility */
