@@ -9,8 +9,8 @@ DERIVED_TARGETS = snmptrapd_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  snmpd_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  snmp-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
 		  snmpd-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
-		  libsnmp40_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
-		  libsnmp40-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
+		  libsnmp40t64_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
+		  libsnmp40t64-dbgsym_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).$(DBG_DEB) \
 		  libsnmp-dev_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  libsnmp-perl_$(SNMPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb \
 		  tkmib_$(SNMPD_VERSION_FULL)_all.deb
@@ -34,10 +34,10 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf net-snmp-$(SNMPD_VERSION)
 
 	# download debian net-snmp
-ifneq ($(BLDENV),jammy)
+ifneq ($(BLDENV),noble)
 	dget -u https://sonicstorage.blob.core.windows.net/debian/pool/main/n/net-snmp/net-snmp_$(SNMPD_VERSION_FULL).dsc
 else 
-	dget -u http://archive.ubuntu.com/ubuntu/pool/main/n/net-snmp/net-snmp_5.9.1+dfsg-1ubuntu2.6.dsc
+	dget -u http://archive.ubuntu.com/ubuntu/pool/main/n/net-snmp/net-snmp_5.9.4+dfsg-1.1ubuntu3.dsc
 endif
 
 	pushd net-snmp-$(SNMPD_VERSION)
@@ -46,7 +46,7 @@ endif
 	git commit -m "unmodified snmpd source"
 
 	# Apply patches
-ifneq ($(BLDENV),jammy)
+ifneq ($(BLDENV),noble)
 	stg init
 	stg import -s ../patch-$(SNMPD_VERSION)/series
 endif

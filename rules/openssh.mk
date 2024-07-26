@@ -1,6 +1,7 @@
 # openssh package
 
-OPENSSH_VERSION = 9.2p1-2+deb12u1
+#OPENSSH_VERSION = 9.2p1-2+deb12u1
+OPENSSH_VERSION = 9.7p1-6
 
 export OPENSSH_VERSION
 export DBG_DEB

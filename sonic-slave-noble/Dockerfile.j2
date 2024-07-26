@@ -1,22 +1,22 @@
 {% set prefix = DEFAULT_CONTAINER_REGISTRY %}
 {%- if CONFIGURED_ARCH == "armhf" and MULTIARCH_QEMU_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-arm-7.2.0-1 as qemu
-FROM --platform=linux/arm/v7 {{ prefix }}ubuntu:22.04
+FROM --platform=linux/arm/v7 {{ prefix }}ubuntu:24.04
 COPY --from=qemu /usr/bin/qemu-arm-static /usr/bin
 {%- elif CONFIGURED_ARCH == "arm64" and MULTIARCH_QEMU_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-aarch64-7.2.0-1 as qemu
-FROM --platform=linux/arm64 {{ prefix }}ubuntu:22.04
+FROM --platform=linux/arm64 {{ prefix }}ubuntu:24.04
 COPY --from=qemu /usr/bin/qemu-aarch64-static /usr/bin
 {%- elif CONFIGURED_ARCH == "armhf" and CROSS_BUILD_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-arm-7.2.0-1 as qemu
-FROM {{ prefix }}ubuntu:22.04
+FROM {{ prefix }}ubuntu:24.04
 COPY --from=qemu /usr/bin/qemu-arm-static /usr/bin
 {%- elif CONFIGURED_ARCH == "arm64" and CROSS_BUILD_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-aarch64-7.2.0-1 as qemu
-FROM {{ prefix }}ubuntu:22.04
+FROM {{ prefix }}ubuntu:24.04
 COPY --from=qemu /usr/bin/qemu-aarch64-static /usr/bin
 {%- else -%}
-FROM {{ prefix }}ubuntu:22.04
+FROM {{ prefix }}ubuntu:24.04
 {%- endif %}
 
 MAINTAINER gulv@microsoft.com
@@ -58,7 +58,7 @@ COPY ["pip.conf", "/etc/pip.conf"]
 
 {%- if CROSS_BUILD_ENVIRON == "y" %}
 RUN apt-get install -y python3 python3-pip
-RUN apt-get install -y python3-minimal:$arch python3.11:$arch python3:$arch python3-dev:$arch python3-setuptools:$arch
+RUN apt-get install -y python3-minimal:$arch python3.12:$arch python3:$arch python3-dev:$arch python3-setuptools:$arch
 RUN apt-get download python3-distutils && dpkg --force-all -i python3-distutils*
 RUN apt-get download python3-pip && dpkg --force-all -i python3-pip*
 RUN which pip3 && pip3 install enum34
@@ -219,7 +219,7 @@ RUN apt-get update && apt-get install -y \
         zip \
 # For broadcom sdk build
 {%- if CONFIGURED_ARCH == "amd64" %}
-        gcc-12-i686-linux-gnu \
+        gcc-14-i686-linux-gnu \
 {%- endif %}
 {%- if CONFIGURED_ARCH == "armhf" and CROSS_BUILD_ENVIRON != "y" %}
         linux-compiler-gcc-12-arm \
@@ -272,7 +272,7 @@ RUN apt-get update && apt-get install -y \
         libpci-dev \
         libpci3 \
         libsensors5 \
-        libsensors4-dev \
+        libsensors-dev \
         libwrap0-dev \
 # For lldpd
         debhelper \
@@ -395,7 +395,7 @@ RUN apt-get update && apt-get install -y \
         libboost-dev \
         libboost-program-options-dev \
         libboost-system-dev \
-        libboost-serialization1.74-dev \
+        libboost-serialization-dev \
         libboost-thread-dev \
         libboost-atomic-dev \
         libboost-chrono-dev \
@@ -464,21 +464,22 @@ RUN apt-get update && apt-get install -y \
         ruby-simplecov                      \
         cython3                             \
 # For kernel build
-	bindgen-0.56     \
+	bindgen-0.65     \
 	kernel-wedge     \
-	libstd-rust-1.62 \
-	libstd-rust-1.62-dev \
-	rust-1.62-src        \
-	rustc-1.62           \
-	rustfmt-1.62         \
+	libstd-rust-1.75 \
+	libstd-rust-dev \
+	rust-src        \
+	rustc         \
+	rustfmt       \
 # For p4 libraries
         valgrind \
         python3-protobuf \
         python3-grpcio \
+	python3-grpc-tools\
         thrift-compiler \
         gfortran \
         libopenmpi-dev \
-        libthrift-0.16.0 \
+        libthrift-0.19.0 \
         libthrift-dev \
         libboost-all-dev \
         libboost-graph-dev \
@@ -537,16 +538,16 @@ RUN apt-get install -y golang-go \
  && ln -sf /usr/lib/go-1.18 /usr/local/go
 {%- endif %}
 
-RUN pip3 install --upgrade pip
-RUN apt-get purge -y python3-pip
+#RUN pip3 install --upgrade pip
+#RUN apt-get purge -y python3-pip
 
 {%- if CONFIGURED_ARCH == "armhf" %}
 # Allow only manylinux wheels on armhf, to ensure that binaries/libraries work correctly on armhf
 COPY ["disable-non-manylinux.patch", "/"]
 {%- if CROSS_BUILD_ENVIRON == "y" %}
-RUN patch -p1 -i /disable-non-manylinux.patch /python_virtualenv/env3/lib/python3.11/site-packages/pip/_vendor/packaging/tags.py
+RUN patch -p1 -i /disable-non-manylinux.patch /python_virtualenv/env3/lib/python3.12/site-packages/pip/_vendor/packaging/tags.py
 {%- else %}
-RUN patch -p1 -i /disable-non-manylinux.patch /usr/local/lib/python3.11/dist-packages/pip/_vendor/packaging/tags.py
+RUN patch -p1 -i /disable-non-manylinux.patch /usr/local/lib/python3.12/dist-packages/pip/_vendor/packaging/tags.py
 {%- endif %}
 {%- endif %}
 
@@ -558,7 +559,7 @@ RUN pip3 install jsonpath_ng
 
 # For building sonic_ycabled
 # Note: Match version in bookworm
-RUN pip3 install grpcio==1.51.1 grpcio-tools==1.51.1
+#RUN pip3 install grpcio==1.51.1 grpcio-tools==1.51.1
 
 # For running Python unit tests
 RUN pip3 install pytest-runner==5.2
@@ -644,10 +645,10 @@ RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
 RUN apt-get install python3-m2crypto
 
 # Install libthrift package needed by saithrift
-RUN apt-get install  libthrift-0.16 \
-        libthrift-dev \
-        thrift-compiler\
-        python3-thrift
+#RUN apt-get install  libthrift-0.19.0 \
+#        libthrift-dev \
+#        thrift-compiler\
+#        python3-thrift
 
 # Install swi tools
 RUN pip3 install git+https://github.com/aristanetworks/swi-tools.git@bead66bf261770237f7dd21ace3774ba04a017e9
@@ -738,7 +739,7 @@ RUN PATH=/python_virtualenv/env3/bin/:$PATH pip3 install pycairo
 # Install libpcsclite-dev for wpasupplicant using download because regular install removes amd64 python package
 RUN apt-get download libpcsclite1:$arch && dpkg --force-all -i libpcsclite1* && apt-get download libpcsclite-dev:$arch && dpkg --force-all -i libpcsclite-dev*
 # Install python3-dev for frr (/usr/bin/python3-config for $arch) using download because regular install removes amd64 python package
-RUN apt-get download python3.11-dev:$arch && apt-get download python3-dev:$arch && dpkg --force-all -i python3*-dev*
+RUN apt-get download python3.12-dev:$arch && apt-get download python3-dev:$arch && dpkg --force-all -i python3*-dev*
 {% endif %}
 
 # Tell azure pipeline to use node.js in the docker
