@@ -1,5 +1,5 @@
 {% from "dockers/dockerfile-macros.j2" import install_debian_packages, install_python_wheels, copy_files %}
-FROM docker-base-jammy-{{DOCKER_USERNAME}}:{{DOCKER_USERTAG}}
+FROM docker-base-noble-{{DOCKER_USERNAME}}:{{DOCKER_USERTAG}}
 
 ## Make apt-get non-interactive
 ENV DEBIAN_FRONTEND=noninteractive
@@ -27,20 +27,20 @@ RUN pip3 uninstall -y enum34
 # Install python-redis
 RUN pip3 install redis==5.0.1
 
-{% if docker_config_engine_jammy_debs.strip() %}
+{% if docker_config_engine_noble_debs.strip() %}
 # Copy locally-built Debian package dependencies
-{{ copy_files("debs/", docker_config_engine_jammy_debs.split(' '), "/debs/") }}
+{{ copy_files("debs/", docker_config_engine_noble_debs.split(' '), "/debs/") }}
 
 # Install locally-built Debian packages and implicitly install their dependencies
-{{ install_debian_packages(docker_config_engine_jammy_debs.split(' ')) }}
+{{ install_debian_packages(docker_config_engine_noble_debs.split(' ')) }}
 {% endif %}
 
-{% if docker_config_engine_jammy_whls.strip() %}
+{% if docker_config_engine_noble_whls.strip() %}
 # Copy locally-built Python wheel dependencies
-{{ copy_files("python-wheels/", docker_config_engine_jammy_whls.split(' '), "/python-wheels/") }}
+{{ copy_files("python-wheels/", docker_config_engine_noble_whls.split(' '), "/python-wheels/") }}
 
 # Install locally-built Python wheel dependencies
-{{ install_python_wheels(docker_config_engine_jammy_whls.split(' ')) }}
+{{ install_python_wheels(docker_config_engine_noble_whls.split(' ')) }}
 {% endif %}
 
 # Copy files

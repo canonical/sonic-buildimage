@@ -1,15 +1,15 @@
 # protobuf package
 # Protobuf 3.21.12 has been released in bookworm, So we only need to build it
 # in the bullseye environment.
-ifeq ($(BLDENV),jammy)
+ifeq ($(BLDENV),noble)
 
     PROTOBUF_VERSION = 3.21.12
-    PROTOBUF_VERSION_FULL = $(PROTOBUF_VERSION)-3
+    PROTOBUF_VERSION_FULL = $(PROTOBUF_VERSION)-8.2build1
 
     export PROTOBUF_VERSION
     export PROTOBUF_VERSION_FULL
 
-    PROTOBUF = libprotobuf32_$(PROTOBUF_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+    PROTOBUF = libprotobuf32t64_$(PROTOBUF_VERSION_FULL)_$(CONFIGURED_ARCH).deb
     $(PROTOBUF)_SRC_PATH = $(SRC_PATH)/protobuf
     SONIC_MAKE_DEBS += $(PROTOBUF)
 
@@ -17,10 +17,10 @@ ifeq ($(BLDENV),jammy)
     $(PROTOBUF_DEV)_DEPENDS = $(PROTOBUF) $(PROTOBUF_LITE)
     $(eval $(call add_derived_package,$(PROTOBUF),$(PROTOBUF_DEV)))
 
-    PROTOBUF_LITE = libprotobuf-lite32_$(PROTOBUF_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+    PROTOBUF_LITE = libprotobuf-lite32t64_$(PROTOBUF_VERSION_FULL)_$(CONFIGURED_ARCH).deb
     $(eval $(call add_derived_package,$(PROTOBUF),$(PROTOBUF_LITE)))
 
-    PROTOC32 = libprotoc32_$(PROTOBUF_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+    PROTOC32 = libprotoc32t64_$(PROTOBUF_VERSION_FULL)_$(CONFIGURED_ARCH).deb
     $(PROTOC32)_RDEPENDS = $(PROTOBUF) $(PROTOBUF_LITE)
     $(eval $(call add_derived_package,$(PROTOBUF),$(PROTOC32)))
 

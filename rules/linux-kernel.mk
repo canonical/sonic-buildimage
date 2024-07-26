@@ -10,7 +10,7 @@ ifeq ($(CONFIGURED_ARCH), armhf)
 KVERSION = $(KVERSION_SHORT)-armmp
 endif
 
-ifeq ($(BLDENV),jammy)
+ifeq ($(BLDENV),noble)
 KVERSION = $(KVERSION_SHORT)-generic
 endif
 

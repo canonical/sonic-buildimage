@@ -122,8 +122,8 @@ else
 TARGET_BOOTLOADER = uboot
 endif
 
-ifeq ($(BLDENV), jammy)
-SLAVE_DIR = sonic-slave-jammy
+ifeq ($(BLDENV), noble)
+SLAVE_DIR = sonic-slave-noble
 else ifeq ($(BLDENV), bullseye)
 SLAVE_DIR = sonic-slave-bullseye
 else ifeq ($(BLDENV), buster)
@@ -178,9 +178,9 @@ endif
 SLAVE_IMAGE = $(SLAVE_BASE_IMAGE)-$(USER_LC)
 DOCKER_ROOT = $(PWD)/fsroot.docker.$(BLDENV)
 
-# FIPS not yet available on jammy
-ifeq ($(BLDENV),jammy)
-$(warning FIPS support not yet available on jammy)
+# FIPS not yet available on noble
+ifeq ($(BLDENV),noble)
+$(warning FIPS support not yet available on noble)
 INCLUDE_FIPS := n
 endif
 

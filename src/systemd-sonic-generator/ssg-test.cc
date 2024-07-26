@@ -10,6 +10,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <linux/limits.h>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
