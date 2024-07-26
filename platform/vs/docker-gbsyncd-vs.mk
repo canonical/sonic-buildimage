@@ -1,7 +1,7 @@
 # docker image for vs gbsyncd
 
 DOCKER_GBSYNCD_PLATFORM_CODE = vs
-include $(PLATFORM_PATH)/../template/docker-gbsyncd-jammy.mk
+include $(PLATFORM_PATH)/../template/docker-gbsyncd-noble.mk
 
 $(DOCKER_GBSYNCD_BASE)_DEPENDS += $(SYNCD_VS)
 
