@@ -4,7 +4,7 @@ NOJESSIE ?= 1
 NOSTRETCH ?= 1
 NOBUSTER ?= 1
 NOBULLSEYE ?= 1
-NOJAMMY ?= 0
+NONOBLE ?= 0
 
 override Q := @
 ifeq ($(QUIET),n)
@@ -30,8 +30,8 @@ ifeq ($(NOBULLSEYE),0)
 BUILD_BULLSEYE=1
 endif
 
-ifeq ($(NOJAMMY),0)
-BUILD_JAMMY=1
+ifeq ($(NONOBLE),0)
+BUILD_NOBLE=1
 endif
 
 PLATFORM_PATH := platform/$(if $(PLATFORM),$(PLATFORM),$(CONFIGURED_PLATFORM))
@@ -54,10 +54,10 @@ endif
 ifeq ($(NOBULLSEYE), 0)
 	$(MAKE_WITH_RETRY) EXTRA_DOCKER_TARGETS=$(notdir $@) BLDENV=bullseye -f Makefile.work bullseye
 endif
-ifeq ($(NOJAMMY), 0)
-	$(MAKE_WITH_RETRY) BLDENV=jammy -f Makefile.work $@
+ifeq ($(NONOBLE), 0)
+	$(MAKE_WITH_RETRY) BLDENV=noble -f Makefile.work $@
 endif
-	BLDENV=jammy $(MAKE) -f Makefile.work docker-cleanup
+	BLDENV=noble $(MAKE) -f Makefile.work docker-cleanup
 
 jessie:
 	@echo "+++ Making $@ +++"
@@ -96,7 +96,7 @@ define make_work
 	$(if $(BUILD_STRETCH),BLDENV=stretch $(MAKE) -f Makefile.work $@,)
 	$(if $(BUILD_BUSTER),BLDENV=buster $(MAKE) -f Makefile.work $@,)
 	$(if $(BUILD_BULLSEYE),BLDENV=bullseye $(MAKE) -f Makefile.work $@,)
-	$(if $(BUILD_JAMMY),BLDENV=jammy $(MAKE) -f Makefile.work $@,)
+	$(if $(BUILD_NOBLE),BLDENV=noble $(MAKE) -f Makefile.work $@,)
 endef
 
 .PHONY: $(PLATFORM_PATH)

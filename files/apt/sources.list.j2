@@ -7,7 +7,7 @@
 {%- set nonfree_component='non-free' -%}
 {%- endif %}
 
-{% if DISTRIBUTION == 'jammy' -%}
+{% if DISTRIBUTION == 'noble' -%}
 {% for mirror_url in MIRROR_URLS.split(',') %}
 deb [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }} main restricted multiverse universe
 deb-src [arch={{ ARCHITECTURE }}] {{ mirror_url }} {{ DISTRIBUTION }} main restricted multiverse universe

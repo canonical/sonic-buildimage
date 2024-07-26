@@ -25,9 +25,9 @@ do
     mkdir -p $rockitem/files
     mkdir -p $rockitem/python-wheels
 
-    cp -r target/debs/jammy/*  $rockitem/debs/
-    cp -r target/files/jammy/* $rockitem/files/
-    cp -r target/python-wheels/jammy/* $rockitem/python-wheels/
+    cp -r target/debs/noble/*  $rockitem/debs/
+    cp -r target/files/noble/* $rockitem/files/
+    cp -r target/python-wheels/noble/* $rockitem/python-wheels/
 
     pushd $rockitem
 

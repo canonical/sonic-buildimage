@@ -65,10 +65,10 @@ kdist_clean: clean
 	dh_clean
 	SDK=$(realpath .) LINUX_UAPI_SPLIT=1 DEBIAN_LINUX_HEADER=1 BUILD_KNET_CB=1 \
 	    KERNDIR=/usr/src/linux-headers-$(KERNVERSION)-generic \
-	    KERNEL_SRC=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
+	    KERNEL_SRC=/usr/src/linux-headers-$(KERNVERSION) \
 	    $(MAKE) -C systems/linux/user/x86-smp_generic_64-2_6 clean
 	SDK=$(realpath .) BUILD_KNET_CB=1 \
-	    KDIR=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
+	    KDIR=/usr/src/linux-headers-$(KERNVERSION) \
 	    $(MAKE) -C sdklt/ clean
 #	rm -f driver/*.o driver/*.ko
 #
@@ -90,7 +90,7 @@ build-arch-stamp:
 	cd /; sudo mkdir -p /lib/modules/$(KERNVERSION)-generic
 	cd /; sudo rm -rf /lib/modules/$(KERNVERSION)-generic/build
 	cd /; sudo rm -rf /lib/modules/$(KERNVERSION)-generic/source
-	cd /; sudo ln -s /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/ /lib/modules/$(KERNVERSION)-generic/source
+	cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)/ /lib/modules/$(KERNVERSION)-generic/source
 	cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/ /lib/modules/$(KERNVERSION)-generic/build
 	#cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/include/generated/ /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/include/generated
 	#cd /; sudo ln -s /usr/src/linux-headers-$(KERNVERSION)-generic/arch/x86/include/generated/ /usr/src/linux-hwe-6.8-headers-$(KERNVERSION)/arch/x86/include/generated
@@ -101,7 +101,7 @@ build-arch-stamp:
 	# Add here command to compile/build the package.
 	SDK=$(realpath .) LINUX_UAPI_SPLIT=1 DEBIAN_LINUX_HEADER=1 BUILD_KNET_CB=1 \
 	    KERNDIR=/usr/src/linux-headers-$(KERNVERSION)-generic \
-	    KERNEL_SRC=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
+	    KERNEL_SRC=/usr/src/linux-headers-$(KERNVERSION) \
 	    $(MAKE) -C systems/linux/user/x86-smp_generic_64-2_6
 
 	SDK=$(realpath .) BUILD_KNET_CB=1 \
@@ -132,12 +132,12 @@ clean:
 
 	# Add here commands to clean up after the build process.
 	SDK=$(realpath .) LINUX_UAPI_SPLIT=1 DEBIAN_LINUX_HEADER=1 BUILD_KNET_CB=1 \
-	    KERNDIR=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
+	    KERNDIR=/usr/src/linux-headers-$(KERNVERSION) \
 	    KERNEL_SRC=/usr/src/linux-headers-$(KERNVERSION)-generic \
 	    $(MAKE) -C systems/linux/user/x86-smp_generic_64-2_6 clean
 
 	SDK=$(realpath .) BUILD_KNET_CB=1 \
-	    KDIR=/usr/src/linux-hwe-6.8-headers-$(KERNVERSION) \
+	    KDIR=/usr/src/linux-headers-$(KERNVERSION) \
 	    $(MAKE) -C sdklt/ clean
 
 	dh_clean
