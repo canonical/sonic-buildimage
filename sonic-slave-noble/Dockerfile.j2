@@ -299,7 +299,7 @@ RUN apt-get update && apt-get install -y \
 {%- if CONFIGURED_ARCH == "armhf" or CONFIGURED_ARCH == "arm64" %}
         libxslt-dev \
 {%- endif %}
-        j2cli \
+#        j2cli \
 # For lockfile
         procmail \
 # For gtest
@@ -551,6 +551,9 @@ RUN patch -p1 -i /disable-non-manylinux.patch /usr/local/lib/python3.12/dist-pac
 {%- endif %}
 {%- endif %}
 
+# For templates
+RUN pip3 install jinjanator
+
 # For building sonic-utilities
 RUN pip3 install fastentrypoints mock
 
@@ -558,8 +561,8 @@ RUN pip3 install fastentrypoints mock
 RUN pip3 install jsonpath_ng
 
 # For building sonic_ycabled
-# Note: Match version in bookworm
-#RUN pip3 install grpcio==1.51.1 grpcio-tools==1.51.1
+# Note: Match version in 24.04
+RUN pip3 install grpcio==1.65.1 grpcio-tools==1.65.1
 
 # For running Python unit tests
 RUN pip3 install pytest-runner==5.2
