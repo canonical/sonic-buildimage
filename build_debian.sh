@@ -391,7 +391,6 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
     makedumpfile            \
     conntrack               \
     python3                 \
-    python3-distutils       \
     python3-pip             \
     python-is-python3       \
     cron                    \
@@ -578,7 +577,7 @@ if [ -f files/image_config/ntp/ntpsec ]; then
 fi
 
 if [ -f files/image_config/ntp/ntp-systemd-wrapper ]; then
-    sudo mkdir $FILESYSTEM_ROOT/usr/libexec/ntpsec/
+#    sudo mkdir $FILESYSTEM_ROOT/usr/libexec/ntpsec/
     sudo cp ./files/image_config/ntp/ntp-systemd-wrapper $FILESYSTEM_ROOT/usr/libexec/ntpsec/
 fi
 
