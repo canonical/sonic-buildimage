@@ -535,7 +535,7 @@ RUN wget -O golang-go.deb 'https://sonicstorage.blob.core.windows.net/public/fip
  && rm golang-go.deb golang-src.deb
 {%- else %}
 RUN apt-get install -y golang-go \
- && ln -sf /usr/lib/go-1.18 /usr/local/go
+ && ln -sf /usr/lib/go-1.22 /usr/local/go
 {%- endif %}
 
 #RUN pip3 install --upgrade pip
