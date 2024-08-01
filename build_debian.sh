@@ -843,6 +843,7 @@ sudo mkdir -p $FILESYSTEM_ROOT/var/lib/docker
 
 ## Clear DNS configuration inherited from the build server
 sudo rm -f $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d/original
+sudo mkdir -p $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d
 sudo cp files/image_config/resolv-config/resolv.conf.head $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d/head
 
 ## Optimize filesystem size
