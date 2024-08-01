@@ -68,7 +68,7 @@ SHELL = /bin/bash
 USER := $(shell id -un)
 PWD := $(shell pwd)
 USER_LC := $(shell echo $(USER) | tr A-Z a-z)
-DOCKER_MACHINE := $(shell docker run --rm ubuntu:22.04 uname -m)
+DOCKER_MACHINE := $(shell docker run --rm ubuntu:24.04 uname -m)
 HOST_DOCKERD_GID := $(shell getent group docker | cut -d : -f3)
 
 comma := ,
@@ -87,7 +87,7 @@ $(error Add your user account to docker group and use your user account to make.
 endif
 
 # Check for j2cli availability
-J2_VER := $(shell j2 --version 2>&1 | grep j2 | awk -F, '{printf $1}' | awk '{printf $2}')
+J2_VER := $(shell j2 --version 2>&1 | grep j2 | awk -F, '{printf $$1}' | awk '{printf $$2}')
 ifeq ($(J2_VER),)
 $(error Please install j2cli (sudo pip install jinjanator))
 endif
