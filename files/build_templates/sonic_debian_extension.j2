@@ -137,8 +137,8 @@ sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install ipaddr
 
 # Install Python module for grpcio and grpcio-toole
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
-    sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install "grpcio==1.51.1"
-    sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install "grpcio-tools==1.51.1"
+    sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install "grpcio==1.65.1"
+    sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT pip3 install "grpcio-tools==1.65.1"
 fi
 
 # Install sonic-py-common Python 3 package
