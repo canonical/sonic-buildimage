@@ -495,7 +495,7 @@ sudo cp $IMAGE_CONFIGS/resolv-config/resolv-config.service $FILESYSTEM_ROOT_USR_
 sudo cp $IMAGE_CONFIGS/resolv-config/resolv-config.sh $FILESYSTEM_ROOT/usr/bin/
 sudo cp $IMAGE_CONFIGS/resolv-config/resolv.conf.j2 $FILESYSTEM_ROOT_USR_SHARE_SONIC_TEMPLATES/
 echo "resolv-config.service" | sudo tee -a $GENERATED_SERVICE_FILE
-sudo LANG=C chroot $FILESYSTEM_ROOT systemctl disable resolvconf.service
+sudo LANG=C chroot $FILESYSTEM_ROOT systemctl disable resolv-config.service
 sudo mkdir -p $FILESYSTEM_ROOT/etc/resolvconf/update-libc.d/
 sudo cp $IMAGE_CONFIGS/resolv-config/update-containers $FILESYSTEM_ROOT/etc/resolvconf/update-libc.d/
 
