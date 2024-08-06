@@ -382,6 +382,155 @@ index bd9c442..b2b688c 100644
 +go 1.21
 +
 +toolchain go1.22.2
+Submodule src/sonic-platform-common contains modified content
+diff --git a/src/sonic-platform-common/sonic_platform_base/sonic_pcie/pcie_common.py b/src/sonic-platform-common/sonic_platform_base/sonic_pcie/pcie_common.py
+index 127c614..39fd6af 100644
+--- a/src/sonic-platform-common/sonic_platform_base/sonic_pcie/pcie_common.py
++++ b/src/sonic-platform-common/sonic_platform_base/sonic_pcie/pcie_common.py
+@@ -37,8 +37,6 @@ class PcieUtil(PcieBase):
+     def get_pcie_device(self):
+         pciDict = {}
+         pciList = []
+-        p1 = "^(\w+):(\w+)\.(\w)\s(.*)\s*\(*.*\)*"
+-        p2 = "^.*:.*:.*:(\w+)\s*\(*.*\)*"
+         command1 = ["sudo", "lspci"]
+         command2 = ["sudo", "lspci", "-n"]
+         # run command 1
+@@ -61,8 +59,8 @@ class PcieUtil(PcieBase):
+         else:
+             for (line1, line2) in zip(output1, output2):
+                 pciDict.clear()
+-                match1 = re.search(p1, line1.strip())
+-                match2 = re.search(p2, line2.strip())
++                match1 = re.search(r"^(\w+):(\w+)\.(\w)\s(.*)\s*\(*.*\)*", line1.strip())
++                match2 = re.search(r"^.*:.*:.*:(\w+)\s*\(*.*\)*", line2.strip())
+                 if match1 and match2:
+                     Bus = match1.group(1)
+                     Dev = match1.group(2)
+diff --git a/src/sonic-platform-common/sonic_platform_base/sonic_storage/ssd.py b/src/sonic-platform-common/sonic_platform_base/sonic_storage/ssd.py
+index 710311a..777a209 100644
+--- a/src/sonic-platform-common/sonic_platform_base/sonic_storage/ssd.py
++++ b/src/sonic-platform-common/sonic_platform_base/sonic_storage/ssd.py
+@@ -151,25 +151,25 @@ class SsdUtil(StorageCommon):
+     # Health and temperature values may be overwritten with vendor specific data
+     def parse_generic_ssd_info(self):
+         if "nvme" in self.dev:
+-            self.model = self._parse_re('Model Number:\s*(.+?)\n', self.ssd_info)
++            self.model = self._parse_re(r'Model Number:\s*(.+?)\n', self.ssd_info)
+ 
+-            health_raw = self._parse_re('Percentage Used\s*(.+?)\n', self.ssd_info)
++            health_raw = self._parse_re(r'Percentage Used\s*(.+?)\n', self.ssd_info)
+             if health_raw == NOT_AVAILABLE:
+                 self.health = NOT_AVAILABLE
+             else:
+                 health_raw = health_raw.split()[-1]
+                 self.health = 100 - float(health_raw.strip('%'))
+ 
+-            temp_raw = self._parse_re('Temperature\s*(.+?)\n', self.ssd_info)
++            temp_raw = self._parse_re(r'Temperature\s*(.+?)\n', self.ssd_info)
+             if temp_raw == NOT_AVAILABLE:
+                 self.temperature = NOT_AVAILABLE
+             else:
+                 temp_raw = temp_raw.split()[-2]
+                 self.temperature = float(temp_raw)
+         else:
+-            self.model = self._parse_re('Device Model:\s*(.+?)\n', self.ssd_info)
++            self.model = self._parse_re(r'Device Model:\s*(.+?)\n', self.ssd_info)
+ 
+-            health_raw = self._parse_re('Remaining_Lifetime_Perc\s*(.+?)\n', self.ssd_info)
++            health_raw = self._parse_re(r'Remaining_Lifetime_Perc\s*(.+?)\n', self.ssd_info)
+             if health_raw == NOT_AVAILABLE:
+                 health_raw = self.parse_id_number(GENERIC_HEALTH_ID, self.ssd_info)
+                 if health_raw == NOT_AVAILABLE:
+@@ -178,14 +178,14 @@ class SsdUtil(StorageCommon):
+             else:
+                 self.health = health_raw.split()[-1]
+ 
+-            temp_raw = self._parse_re('Temperature_Celsius\s*(.+?)\n', self.ssd_info)
++            temp_raw = self._parse_re(r'Temperature_Celsius\s*(.+?)\n', self.ssd_info)
+             if temp_raw == NOT_AVAILABLE:
+                 self.temperature = NOT_AVAILABLE
+             else:
+                 self.temperature = temp_raw.split()[7].split()[0]
+ 
+-        self.serial = self._parse_re('Serial Number:\s*(.+?)\n', self.ssd_info)
+-        self.firmware = self._parse_re('Firmware Version:\s*(.+?)\n', self.ssd_info)
++        self.serial = self._parse_re(r'Serial Number:\s*(.+?)\n', self.ssd_info)
++        self.firmware = self._parse_re(r'Firmware Version:\s*(.+?)\n', self.ssd_info)
+ 
+         io_reads_raw = self.parse_id_number(GENERIC_IO_READS_ID, self.ssd_info)
+         self.disk_io_reads = NOT_AVAILABLE if io_reads_raw == NOT_AVAILABLE else io_reads_raw.split()[-1]
+@@ -202,10 +202,10 @@ class SsdUtil(StorageCommon):
+ 
+     def parse_innodisk_info(self):
+         if self.vendor_ssd_info:
+-            if self.health == NOT_AVAILABLE: self.health = self._parse_re('Health:\s*(.+?)%', self.vendor_ssd_info)
+-            if self.temperature == NOT_AVAILABLE: self.temperature = self._parse_re('Temperature\s*\[\s*(.+?)\]', self.vendor_ssd_info)
+-            if self.firmware == NOT_AVAILABLE: self.firmware = (self._parse_re('.*FW.*', self.vendor_ssd_info)).split()[-1]
+-            if self.serial == NOT_AVAILABLE: self.serial = (self._parse_re('.*Serial.*', self.vendor_ssd_info)).split()[-1]
++            if self.health == NOT_AVAILABLE: self.health = self._parse_re(r'Health:\s*(.+?)%', self.vendor_ssd_info)
++            if self.temperature == NOT_AVAILABLE: self.temperature = self._parse_re(r'Temperature\s*\[\s*(.+?)\]', self.vendor_ssd_info)
++            if self.firmware == NOT_AVAILABLE: self.firmware = (self._parse_re(r'.*FW.*', self.vendor_ssd_info)).split()[-1]
++            if self.serial == NOT_AVAILABLE: self.serial = (self._parse_re(r'.*Serial.*', self.vendor_ssd_info)).split()[-1]
+ 
+         if self.health == NOT_AVAILABLE:
+             health_raw = self.parse_id_number("[{}]".format(hex(INNODISK_HEALTH_ID)[2:]).upper(), self.vendor_ssd_info)
+@@ -240,9 +240,9 @@ class SsdUtil(StorageCommon):
+ 
+     def parse_virtium_info(self):
+         if self.vendor_ssd_info:
+-            self.temperature = self._parse_re('Temperature_Celsius\s*\d*\s*(\d+?)\s+', self.vendor_ssd_info)
+-            nand_endurance = self._parse_re('NAND_Endurance\s*\d*\s*(\d+?)\s+', self.vendor_ssd_info)
+-            avg_erase_count = self._parse_re('Average_Erase_Count\s*\d*\s*(\d+?)\s+', self.vendor_ssd_info)
++            self.temperature = self._parse_re(r'Temperature_Celsius\s*\d*\s*(\d+?)\s+', self.vendor_ssd_info)
++            nand_endurance = self._parse_re(r'NAND_Endurance\s*\d*\s*(\d+?)\s+', self.vendor_ssd_info)
++            avg_erase_count = self._parse_re(r'Average_Erase_Count\s*\d*\s*(\d+?)\s+', self.vendor_ssd_info)
+             if nand_endurance != NOT_AVAILABLE and avg_erase_count != NOT_AVAILABLE:
+                 try:
+                     self.health = 100 - (float(avg_erase_count) * 100 / float(nand_endurance))
+@@ -259,8 +259,7 @@ class SsdUtil(StorageCommon):
+                         health_raw = self.parse_id_number(VIRTIUM_HEALTH_ID, self.vendor_ssd_info)
+                         self.health = float(health_raw.split()[2]) if health_raw != NOT_AVAILABLE else NOT_AVAILABLE
+                     else:
+-                        pattern = 'Remaining_Life_Left\s*\d*\s*(\d+?)\s+'
+-                        health_raw = self._parse_re(pattern, self.vendor_ssd_info)
++                        health_raw = self._parse_re(r'Remaining_Life_Left\s*\d*\s*(\d+?)\s+', self.vendor_ssd_info)
+                         self.health = float(health_raw.split()[-1]) if health_raw != NOT_AVAILABLE else NOT_AVAILABLE
+                 except ValueError as ex:
+                     self.log.log_info("SsdUtil parse_virtium_info exception: {}".format(ex))
+@@ -302,9 +301,9 @@ class SsdUtil(StorageCommon):
+ 
+     def parse_micron_info(self):
+         if self.vendor_ssd_info:
+-            health_raw = self._parse_re('{}\s*(.+?)\n'.format('Percent_Lifetime_Used'), self.vendor_ssd_info)
++            health_raw = self._parse_re(r'{}\s*(.+?)\n'.format('Percent_Lifetime_Used'), self.vendor_ssd_info)
+             if health_raw == NOT_AVAILABLE:
+-                health_raw = self._parse_re('{}\s*(.+?)\n'.format('Percent_Lifetime_Remain'), self.vendor_ssd_info)
++                health_raw = self._parse_re(r'{}\s*(.+?)\n'.format('Percent_Lifetime_Remain'), self.vendor_ssd_info)
+                 self.health = health_raw.split()[-1]
+             else:
+                 self.health = str(100 - int(health_raw.split()[-1]))
+@@ -338,15 +337,15 @@ class SsdUtil(StorageCommon):
+ 
+     def parse_transcend_info(self):
+         if self.vendor_ssd_info:
+-            self.model = self._parse_re('Model\s*:(.+?)\s*\n', self.vendor_ssd_info)
+-            self.serial = self._parse_re('Serial No\s*:(.+?)\s*\n', self.vendor_ssd_info)
+-            self.firmware = self._parse_re('FW Version\s*:(.+?)\s*\n', self.vendor_ssd_info)
+-            health_raw = self._parse_re('{}\s*(.+?)\n'.format(hex(TRANSCEND_HEALTH_ID).upper()[2:]), self.vendor_ssd_info) #169 -> A9
++            self.model = self._parse_re(r'Model\s*:(.+?)\s*\n', self.vendor_ssd_info)
++            self.serial = self._parse_re(r'Serial No\s*:(.+?)\s*\n', self.vendor_ssd_info)
++            self.firmware = self._parse_re(r'FW Version\s*:(.+?)\s*\n', self.vendor_ssd_info)
++            health_raw = self._parse_re(r'{}\s*(.+?)\n'.format(hex(TRANSCEND_HEALTH_ID).upper()[2:]), self.vendor_ssd_info) #169 -> A9
+             if health_raw == NOT_AVAILABLE:
+                 self.health = NOT_AVAILABLE
+             else:
+                 self.health = health_raw.split()[-1]
+-            temp_raw = self._parse_re('{}\s*(.+?)\n'.format(hex(TRANSCEND_TEMPERATURE_ID).upper()[2:]), self.vendor_ssd_info) #194 -> C2
++            temp_raw = self._parse_re(r'{}\s*(.+?)\n'.format(hex(TRANSCEND_TEMPERATURE_ID).upper()[2:]), self.vendor_ssd_info) #194 -> C2
+             if temp_raw == NOT_AVAILABLE:
+                 self.temperature = NOT_AVAILABLE
+             else:
 Submodule src/sonic-sairedis contains modified content
 diff --git a/src/sonic-sairedis/lib/Makefile.am b/src/sonic-sairedis/lib/Makefile.am
 index a441b519..ada48c1a 100644
@@ -749,6 +898,19 @@ index a07fadc..663d421 100644
  
  if YANGMODS
 Submodule src/sonic-utilities contains modified content
+diff --git a/src/sonic-utilities/scripts/lldpshow b/src/sonic-utilities/scripts/lldpshow
+index fe40296f..25590b14 100755
+--- a/src/sonic-utilities/scripts/lldpshow
++++ b/src/sonic-utilities/scripts/lldpshow
+@@ -163,7 +163,7 @@ class Lldpshow(object):
+         def alphanum_key(key):
+             key = key.split("#")[0]
+             return [re.findall('[A-Za-z]+', key) + [int(port_num)
+-                                                    for port_num in re.findall('\d+', key)]]
++                                                    for port_num in re.findall(r'\d+', key)]]
+         return sorted(summary, key=alphanum_key)
+ 
+     def get_summary_output(self, lldp_detail_info):
 diff --git a/src/sonic-utilities/setup.py b/src/sonic-utilities/setup.py
 index 6a66f012..3db67e84 100644
 --- a/src/sonic-utilities/setup.py
