@@ -90,7 +90,7 @@
 	url = https://github.com/nokia/sonic-platform.git
 [submodule "src/linkmgrd"]
 	path = src/linkmgrd
-	url = https://github.com/sonic-net/sonic-linkmgrd.git
+	url = https://github.com/canonical/sonic-linkmgrd.git
 [submodule "src/sonic-p4rt/sonic-pins"]
 	path = src/sonic-p4rt/sonic-pins
 	url = https://github.com/sonic-net/sonic-pins.git
