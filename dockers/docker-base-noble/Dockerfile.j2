@@ -88,6 +88,14 @@ RUN pip3 install 'python-lzf==0.2.4'
 # Install rdbtools
 RUN pip3 install 'rdbtools==0.1.15'
 
+# Install libnl
+RUN apt-get -y install libnl-3-200 \
+                       libnl-route-3-200 \
+                       libnl-genl-3-200 \
+                       libnl-nf-3-200 \
+                       libnl-cli-3-200
+
+
 # Uninstall gcc, libc6-dev and python3-dev for compiling python-lzf
 RUN apt-get -y purge build-essential libc6-dev python3-dev
 
