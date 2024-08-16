@@ -1,5 +1,7 @@
 # libnl3
 
+ifneq ($(BLDENV),noble)
+
 LIBNL3_VERSION_BASE = 3.5.0
 LIBNL3_VERSION = $(LIBNL3_VERSION_BASE)-1
 
@@ -51,3 +53,5 @@ $(eval $(call add_derived_package,$(LIBNL3),$(LIBNL_CLI_DEV)))
 # are archived into debug one image to facilitate debugging.
 #
 DBG_SRC_ARCHIVE += libnl3
+
+endif
