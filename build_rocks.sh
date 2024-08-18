@@ -33,6 +33,7 @@ do
 
     rockname=$(basename $rockitem)
     rockfullname="${rockname}_1.0.0_amd64.rock"
+    rockcraft clean
     rockcraft pack -v
     sudo skopeo  --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:latest
 
