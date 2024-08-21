@@ -37,6 +37,14 @@ enum as7716_32xb_oom_sysfs_attributes {
     TEMP1_MAX
 };
 
+static const struct i2c_device_id as7716_32xb_oom_id[] = {
+    { "as7716_32xb_oom", 0 },    
+    {}
+};
+MODULE_DEVICE_TABLE(i2c, as7716_32xb_oom_id);
+
+
+
 /* sysfs attributes for hwmon 
  */
 
@@ -154,10 +162,10 @@ static const struct attribute_group as7716_32xb_oom_group = {
     .attrs = as7716_32xb_oom_attributes,
 };
 
-static int as7716_32xb_oom_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int as7716_32xb_oom_probe(struct i2c_client *client)
 {
     struct as7716_32xb_oom_data *data;
+    const struct i2c_device_id *dev_id;
     int status;
 
     data = kzalloc(sizeof(struct as7716_32xb_oom_data), GFP_KERNEL);
@@ -165,6 +173,9 @@ static int as7716_32xb_oom_probe(struct i2c_client *client,
         status = -ENOMEM;
         goto exit;
     }
+
+    dev_id = i2c_match_id(as7716_32xb_oom_id, client);
+
     i2c_set_clientdata(client, data);
     data->index = dev_id->driver_data;
     mutex_init(&data->lock);
@@ -207,12 +218,6 @@ static void as7716_32xb_oom_remove(struct i2c_client *client)
     
 }
 
-
-static const struct i2c_device_id as7716_32xb_oom_id[] = {
-    { "as7716_32xb_oom", 0 },    
-    {}
-};
-MODULE_DEVICE_TABLE(i2c, as7716_32xb_oom_id);
 
 static struct i2c_driver as7716_32xb_oom_driver = {
     .class        = I2C_CLASS_HWMON,

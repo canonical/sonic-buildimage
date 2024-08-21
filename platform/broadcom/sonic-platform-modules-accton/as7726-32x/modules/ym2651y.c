@@ -362,8 +362,7 @@ static const struct attribute_group ym2651y_group = {
     .attrs = ym2651y_attributes,
 };
 
-static int ym2651y_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int ym2651y_probe(struct i2c_client *client)
 {
     struct ym2651y_data *data;
     int status;

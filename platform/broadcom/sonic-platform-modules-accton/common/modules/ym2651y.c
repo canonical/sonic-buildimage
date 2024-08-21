@@ -46,6 +46,18 @@ enum chips {
 	YPEB1200AM
 };
 
+static const struct i2c_device_id ym2651y_id[] = {
+    { "ym2651", YM2651 },
+    { "ym2401", YM2401 },
+    { "ym2851", YM2851 },
+    { "ym1401a",YM1401A},
+    { "ype1200am", YPEB1200AM },
+    {}
+};
+MODULE_DEVICE_TABLE(i2c, ym2651y_id);
+
+
+
 /* Each client has this additional data
  */
 struct ym2651y_data {
@@ -438,10 +450,10 @@ static const struct attribute_group ym2651y_group = {
     .attrs = ym2651y_attributes,
 };
 
-static int ym2651y_probe(struct i2c_client *client,
-                         const struct i2c_device_id *dev_id)
+static int ym2651y_probe(struct i2c_client *client)
 {
     struct ym2651y_data *data;
+    const struct i2c_device_id *dev_id;
     int status;
 
     if (!i2c_check_functionality(client->adapter,
@@ -457,6 +469,8 @@ static int ym2651y_probe(struct i2c_client *client,
         status = -ENOMEM;
         goto exit;
     }
+
+    dev_id = i2c_match_id(ym2651y_id, client);
 
     i2c_set_clientdata(client, data);
     mutex_init(&data->update_lock);
@@ -498,16 +512,6 @@ static void ym2651y_remove(struct i2c_client *client)
     kfree(data);
 
 }
-
-static const struct i2c_device_id ym2651y_id[] = {
-    { "ym2651", YM2651 },
-    { "ym2401", YM2401 },
-    { "ym2851", YM2851 },
-    { "ym1401a",YM1401A},
-    { "ype1200am", YPEB1200AM },
-    {}
-};
-MODULE_DEVICE_TABLE(i2c, ym2651y_id);
 
 static struct i2c_driver ym2651y_driver = {
     .class        = I2C_CLASS_HWMON,

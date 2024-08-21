@@ -1788,15 +1788,17 @@ exit:
 }
 
 /* Platform dependent +++ */
-static int sfp_device_probe(struct i2c_client *client,
-                            const struct i2c_device_id *dev_id)
+static int sfp_device_probe(struct i2c_client *client)
 {
     int ret = 0;
     struct sfp_port_data *data = NULL;
+    const struct i2c_device_id *dev_id;
 
     if (client->addr != SFP_EEPROM_A0_I2C_ADDR) {
         return -ENODEV;
     }
+
+    dev_id = i2c_match_id(sfp_device_id, client);
 
     if (dev_id->driver_data < as7312_54x_port1 || dev_id->driver_data > as7312_54x_port54) {
         return -ENXIO;

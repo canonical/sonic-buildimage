@@ -43,6 +43,19 @@ extern int accton_i2c_cpld_read(unsigned short cpld_addr, u8 reg);
  */
 static const unsigned short normal_i2c[] = { 0x50, 0x53, I2C_CLIENT_END };
 
+enum psu_index 
+{ 
+    as7712_32x_psu1, 
+    as7712_32x_psu2
+};
+
+static const struct i2c_device_id as7712_32x_psu_id[] = {
+    { "as7712_32x_psu1", as7712_32x_psu1 },
+    { "as7712_32x_psu2", as7712_32x_psu2 },
+    {}
+};
+MODULE_DEVICE_TABLE(i2c, as7712_32x_psu_id);
+
 /* Each client has this additional data 
  */
 struct as7712_32x_psu_data {
@@ -105,10 +118,10 @@ static const struct attribute_group as7712_32x_psu_group = {
     .attrs = as7712_32x_psu_attributes,
 };
 
-static int as7712_32x_psu_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int as7712_32x_psu_probe(struct i2c_client *client)
 {
     struct as7712_32x_psu_data *data;
+    const struct i2c_device_id *dev_id;
     int status;
 
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
@@ -121,6 +134,8 @@ static int as7712_32x_psu_probe(struct i2c_client *client,
         status = -ENOMEM;
         goto exit;
     }
+
+    dev_id = i2c_match_id(as7712_32x_psu_id, client);
 
     i2c_set_clientdata(client, data);
     data->valid = 0;
@@ -164,19 +179,6 @@ static void as7712_32x_psu_remove(struct i2c_client *client)
     kfree(data);
     
 }
-
-enum psu_index 
-{ 
-    as7712_32x_psu1, 
-    as7712_32x_psu2
-};
-
-static const struct i2c_device_id as7712_32x_psu_id[] = {
-    { "as7712_32x_psu1", as7712_32x_psu1 },
-    { "as7712_32x_psu2", as7712_32x_psu2 },
-    {}
-};
-MODULE_DEVICE_TABLE(i2c, as7712_32x_psu_id);
 
 static struct i2c_driver as7712_32x_psu_driver = {
     .class        = I2C_CLASS_HWMON,

@@ -1079,15 +1079,17 @@ exit:
 	return status;	
 }
 
-static int sfp_device_probe(struct i2c_client *client,
-			const struct i2c_device_id *dev_id)
+static int sfp_device_probe(struct i2c_client *client)
 {
 	struct sfp_port_data *data = NULL;
+	const struct i2c_device_id *dev_id;
 
 	data = kzalloc(sizeof(struct sfp_port_data), GFP_KERNEL);
 	if (!data) {
 		return -ENOMEM;
 	}
+
+	dev_id = i2c_match_id(sfp_device_id, client);
 
 	i2c_set_clientdata(client, data);
 	mutex_init(&data->update_lock);

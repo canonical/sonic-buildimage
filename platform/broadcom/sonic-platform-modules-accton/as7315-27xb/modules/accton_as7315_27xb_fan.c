@@ -569,13 +569,13 @@ static int _add_attributes(struct i2c_client *client,
     return 0;
 }
 
-static int fan_probe(struct i2c_client *client,
-                     const struct i2c_device_id *dev_id)
+static int fan_probe(struct i2c_client *client)
 {
     int status;
     struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
     struct fan_data_t *data = NULL;
     struct device *dev = &client->dev;
+
 
 
     if (!i2c_check_functionality(adap, I2C_FUNC_SMBUS_BYTE_DATA))

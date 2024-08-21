@@ -70,6 +70,13 @@ struct as7716_32x_cpld_data {
  */
 static const unsigned short normal_i2c[] = { I2C_CLIENT_END };
 
+static const struct i2c_device_id as7716_32x_cpld_id[] = {
+    { "as7716_32x_cpld1", 0 },
+    {}
+};
+MODULE_DEVICE_TABLE(i2c, as7716_32x_cpld_id);
+
+
 #define TRANSCEIVER_PRESENT_ATTR_ID(index)   MODULE_PRESENT_##index
 #define TRANSCEIVER_RESET_ATTR_ID(index)     MODULE_RESET_##index
 
@@ -521,11 +528,11 @@ static void as7716_32x_cpld_remove_client(struct i2c_client *client)
 	mutex_unlock(&list_lock);
 }
 
-static int as7716_32x_cpld_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int as7716_32x_cpld_probe(struct i2c_client *client)
 {
     int status;
-	struct as7716_32x_cpld_data *data = NULL;
+    struct as7716_32x_cpld_data *data = NULL;
+    const struct i2c_device_id *dev_id;
 
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
         dev_dbg(&client->dev, "i2c_check_functionality failed (0x%x)\n", client->addr);
@@ -538,6 +545,8 @@ static int as7716_32x_cpld_probe(struct i2c_client *client,
         status = -ENOMEM;
         goto exit;
     }
+
+    dev_id = i2c_match_id(as7716_32x_cpld_id, client);
 
     i2c_set_clientdata(client, data);
     mutex_init(&data->update_lock);
@@ -741,13 +750,6 @@ exit:
 	return status;
 }
 
-
-
-static const struct i2c_device_id as7716_32x_cpld_id[] = {
-    { "as7716_32x_cpld1", 0 },
-    {}
-};
-MODULE_DEVICE_TABLE(i2c, as7716_32x_cpld_id);
 
 static struct i2c_driver as7716_32x_cpld_driver = {
     .class        = I2C_CLASS_HWMON,

@@ -614,8 +614,7 @@ static struct as7716_32xb_fan_data *as7716_32xb_fan_update_device(struct device 
     return data;
 }
 
-static int as7716_32xb_fan_probe(struct i2c_client *client,
-                                 const struct i2c_device_id *dev_id)
+static int as7716_32xb_fan_probe(struct i2c_client *client)
 {
     struct as7716_32xb_fan_data *data;
     int status;

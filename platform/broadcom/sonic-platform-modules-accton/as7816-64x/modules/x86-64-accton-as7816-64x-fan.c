@@ -375,10 +375,10 @@ static struct as7816_64x_fan_data *as7816_64x_fan_update_device(struct device *d
     return data;
 }
 
-static int as7816_64x_fan_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int as7816_64x_fan_probe(struct i2c_client *client)
 {
     struct as7816_64x_fan_data *data;
+
     int status;
 
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {

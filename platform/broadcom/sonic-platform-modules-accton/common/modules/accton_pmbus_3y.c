@@ -1936,15 +1936,17 @@ static int limited_models(const struct i2c_device_id *id)
     return 0;
 }
 
-static int pmbus_probe(struct i2c_client *client,
-                       const struct i2c_device_id *id)
+static int pmbus_probe(struct i2c_client *client)
 {
     struct pmbus_driver_info *info;
+    const struct i2c_device_id *id;
 
     info = devm_kzalloc(&client->dev, sizeof(struct pmbus_driver_info),
                         GFP_KERNEL);
     if (!info)
         return -ENOMEM;
+
+    id = i2c_match_id(pmbus_ids, client);
 
     info->identify = pmbus_identify;
 

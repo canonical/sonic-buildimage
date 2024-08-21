@@ -1192,13 +1192,13 @@ static ssize_t show_version(struct device *dev, struct device_attribute *attr, c
 /*
  * I2C init/probing/exit functions
  */
-static int as5812_54x_cpld_mux_probe(struct i2c_client *client,
-                                     const struct i2c_device_id *id)
+static int as5812_54x_cpld_mux_probe(struct i2c_client *client)
 {
     struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
     int num, force, class;
     struct i2c_mux_core *muxc;
     struct as5812_54x_cpld_data *data;
+    const struct i2c_device_id *id;
     int ret = 0;
     const struct attribute_group *group = NULL;
 
@@ -1210,6 +1210,8 @@ static int as5812_54x_cpld_mux_probe(struct i2c_client *client,
                          as5812_54x_cpld_mux_select_chan, as5812_54x_cpld_mux_deselect_mux);
     if (!muxc)
         return -ENOMEM;
+
+    id = i2c_match_id(as5812_54x_cpld_mux_id, client);
 
     i2c_set_clientdata(client, muxc);
     data = i2c_mux_priv(muxc);

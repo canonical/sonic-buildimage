@@ -444,10 +444,10 @@ static const struct attribute_group as5812_54x_sfp_group = {
     .attrs = as5812_54x_sfp_attributes,
 };
 
-static int as5812_54x_sfp_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int as5812_54x_sfp_probe(struct i2c_client *client)
 {
     struct as5812_54x_sfp_data *data;
+    const struct i2c_device_id *dev_id;
     int status;
 
     extern int platform_accton_as5812_54x(void);
@@ -465,6 +465,8 @@ static int as5812_54x_sfp_probe(struct i2c_client *client,
         status = -ENOMEM;
         goto exit;
     }
+
+    dev_id = i2c_match_id(as5812_54x_sfp_id, client);
 
     mutex_init(&data->update_lock);
     data->port = dev_id->driver_data;

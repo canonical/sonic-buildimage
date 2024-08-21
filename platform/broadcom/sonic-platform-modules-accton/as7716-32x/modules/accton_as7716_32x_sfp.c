@@ -167,10 +167,10 @@ static const struct attribute_group as7716_32x_sfp_group = {
 	.attrs = as7716_32x_sfp_attributes,
 };
 
-static int as7716_32x_sfp_probe(struct i2c_client *client,
-			const struct i2c_device_id *dev_id)
+static int as7716_32x_sfp_probe(struct i2c_client *client)
 {
 	struct as7716_32x_sfp_data *data;
+	const struct i2c_device_id *dev_id;
 	int status;
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
@@ -183,6 +183,8 @@ static int as7716_32x_sfp_probe(struct i2c_client *client,
 		status = -ENOMEM;
 		goto exit;
 	}
+
+	dev_id = i2c_match_id(as7716_32x_sfp_id, client);
 
 	mutex_init(&data->update_lock);
 	data->port = dev_id->driver_data;

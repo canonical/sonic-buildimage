@@ -47,6 +47,15 @@ static ssize_t set_duty_cycle(struct device *dev, struct device_attribute *da,
                               const char *buf, size_t count);
 static ssize_t get_sys_temp(struct device *dev, struct device_attribute *da, char *buf);                              
 
+
+static const struct i2c_device_id as7726_32x_fan_id[] = {
+    { "as7726_32x_fan", 0 },
+    {}
+};
+MODULE_DEVICE_TABLE(i2c, as7726_32x_fan_id);
+
+
+
 /* fan related data, the index should match sysfs_fan_attributes
  */
 static const u8 fan_reg[] = {
@@ -407,10 +416,10 @@ static struct as7726_32x_fan_data *as7726_32x_fan_update_device(struct device *d
     return data;
 }
 
-static int as7726_32x_fan_probe(struct i2c_client *client,
-                                const struct i2c_device_id *dev_id)
+static int as7726_32x_fan_probe(struct i2c_client *client)
 {
     struct as7726_32x_fan_data *data;
+    const struct i2c_device_id *dev_id;
     int status;
 
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
@@ -423,6 +432,8 @@ static int as7726_32x_fan_probe(struct i2c_client *client,
         status = -ENOMEM;
         goto exit;
     }
+
+    dev_id = i2c_match_id(as7726_32x_fan_id, client);
 
     i2c_set_clientdata(client, data);
     data->valid = 0;
@@ -466,13 +477,6 @@ static void as7726_32x_fan_remove(struct i2c_client *client)
 
 /* Addresses to scan */
 static const unsigned short normal_i2c[] = { 0x66, I2C_CLIENT_END };
-
-static const struct i2c_device_id as7726_32x_fan_id[] = {
-    { "as7726_32x_fan", 0 },
-    {}
-};
-MODULE_DEVICE_TABLE(i2c, as7726_32x_fan_id);
-
 static struct i2c_driver as7726_32x_fan_driver = {
     .class        = I2C_CLASS_HWMON,
     .driver = {

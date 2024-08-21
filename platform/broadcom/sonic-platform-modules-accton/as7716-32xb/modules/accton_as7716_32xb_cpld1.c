@@ -760,8 +760,7 @@ static void as7716_32xb_cpld_remove_client(struct i2c_client *client)
     mutex_unlock(&list_lock);
 }
 
-static int as7716_32xb_cpld_probe(struct i2c_client *client,
-                                  const struct i2c_device_id *dev_id)
+static int as7716_32xb_cpld_probe(struct i2c_client *client)
 {
     int status;
     struct as7716_32xb_cpld_data *data = NULL;

@@ -864,10 +864,10 @@ static int _add_mux_channels(struct i2c_client *client,
     return 0;
 }
 
-static int as7315_i2c_cpld_probe(struct i2c_client *client,
-                                 const struct i2c_device_id *dev_id)
+static int as7315_i2c_cpld_probe(struct i2c_client *client)
 {
     struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
+    const struct i2c_device_id *dev_id;
     int status;
     struct cpld_data *data = NULL;
     struct device *dev = &client->dev;
@@ -879,6 +879,9 @@ static int as7315_i2c_cpld_probe(struct i2c_client *client,
     if (!data) {
         return -ENOMEM;
     }
+
+    dev_id = i2c_match_id(as7315_cpld_id, client);
+
     data->model = dev_id->driver_data;
     data->attrs = &models_attr[data->model];
     get_sfp_spec(data->model, &data->sfp_num, &data->sfp_types);

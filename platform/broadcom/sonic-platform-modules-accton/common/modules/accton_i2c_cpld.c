@@ -47,6 +47,7 @@
 #define CPLD_ADDRS {I2C_ADDR_CPLD1, I2C_ADDR_CPLD2, I2C_ADDR_CPLD3}
 
 
+
 /*
  * Number of additional attribute pointers to allocate
  * with each call to krealloc
@@ -90,6 +91,16 @@ enum sfp_attrs {
     SFP_LP_MODE,
     NUM_SFP_ATTR
 };
+
+static const struct i2c_device_id accton_i2c_cpld_id[] = {
+    { "cpld_as7712", AS7712_32X},
+    { "cpld_as7716", AS7716_32X},
+    { "cpld_as7816", AS7816_64X},
+    { "cpld_as7312", AS7312_54X},    
+    { "cpld_plain", PLAIN_CPLD},
+    { },
+};
+MODULE_DEVICE_TABLE(i2c, accton_i2c_cpld_id);
 
 struct cpld_sensor {
     struct cpld_sensor *next;
@@ -722,12 +733,12 @@ static int add_attributes(struct i2c_client *client,
     return 0;
 }
 
-static int accton_i2c_cpld_probe(struct i2c_client *client,
-                                 const struct i2c_device_id *dev_id)
+static int accton_i2c_cpld_probe(struct i2c_client *client)
 {
     int status;
     struct cpld_data *data = NULL;
     struct device *dev = &client->dev;
+    const struct i2c_device_id *dev_id;
 
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
         dev_dbg(dev, "i2c_check_functionality failed (0x%x)\n", client->addr);
@@ -738,6 +749,8 @@ static int accton_i2c_cpld_probe(struct i2c_client *client,
     if (!data) {
         return -ENOMEM;
     }
+
+    dev_id = i2c_match_id(accton_i2c_cpld_id, client);
 
     data->model = dev_id->driver_data;
     data->cmn_attr = &models_attr[data->model];
@@ -845,16 +858,6 @@ int accton_i2c_cpld_write(unsigned short cpld_addr, u8 reg, u8 value)
 }
 EXPORT_SYMBOL(accton_i2c_cpld_write);
 
-
-static const struct i2c_device_id accton_i2c_cpld_id[] = {
-    { "cpld_as7712", AS7712_32X},
-    { "cpld_as7716", AS7716_32X},
-    { "cpld_as7816", AS7816_64X},
-    { "cpld_as7312", AS7312_54X},    
-    { "cpld_plain", PLAIN_CPLD},
-    { },
-};
-MODULE_DEVICE_TABLE(i2c, accton_i2c_cpld_id);
 
 static struct i2c_driver accton_i2c_cpld_driver = {
     .class        = I2C_CLASS_HWMON,

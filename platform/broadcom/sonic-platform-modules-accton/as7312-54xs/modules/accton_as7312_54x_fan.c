@@ -50,6 +50,14 @@ static ssize_t set_enable(struct device *dev, struct device_attribute *da,
 extern int accton_i2c_cpld_read(unsigned short cpld_addr, u8 reg);
 extern int accton_i2c_cpld_write(unsigned short cpld_addr, u8 reg, u8 value);
 
+static const struct i2c_device_id as7312_54x_fan_id[] = {
+    { "as7312_54x_fan", 0 },
+    {}
+};
+MODULE_DEVICE_TABLE(i2c, as7312_54x_fan_id);
+
+
+
 /* fan related data, the index should match sysfs_fan_attributes
  */
 static const u8 fan_reg[] = {
@@ -446,8 +454,7 @@ static struct as7312_54x_fan_data *as7312_54x_fan_update_device(struct device *d
     return data;
 }
 
-static int as7312_54x_fan_probe(struct i2c_client *client,
-                                const struct i2c_device_id *dev_id)
+static int as7312_54x_fan_probe(struct i2c_client *client)
 {
     struct as7312_54x_fan_data *data;
     int status;
@@ -506,12 +513,6 @@ static void as7312_54x_fan_remove(struct i2c_client *client)
 
 /* Addresses to scan */
 static const unsigned short normal_i2c[] = { 0x66, I2C_CLIENT_END };
-
-static const struct i2c_device_id as7312_54x_fan_id[] = {
-    { "as7312_54x_fan", 0 },
-    {}
-};
-MODULE_DEVICE_TABLE(i2c, as7312_54x_fan_id);
 
 static struct i2c_driver as7312_54x_fan_driver = {
     .class        = I2C_CLASS_HWMON,

@@ -40,6 +40,14 @@
  */
 static const unsigned short normal_i2c[] = { 0x3c, 0x3d, 0x3e, 0x3f, I2C_CLIENT_END };
 
+static const struct i2c_device_id cpr_4011_4mxx_id[] = {
+    { "cpr_4011_4mxx", 0 },
+    {}
+};
+MODULE_DEVICE_TABLE(i2c, cpr_4011_4mxx_id);
+
+
+
 /* Each client has this additional data 
  */
 struct cpr_4011_4mxx_data {
@@ -217,10 +225,10 @@ static const struct attribute_group cpr_4011_4mxx_group = {
     .attrs = cpr_4011_4mxx_attributes,
 };
 
-static int cpr_4011_4mxx_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int cpr_4011_4mxx_probe(struct i2c_client *client)
 {
     struct cpr_4011_4mxx_data *data;
+    const struct i2c_device_id *dev_id;
     int status;
 
     if (!i2c_check_functionality(client->adapter, 
@@ -234,6 +242,8 @@ static int cpr_4011_4mxx_probe(struct i2c_client *client,
         status = -ENOMEM;
         goto exit;
     }
+
+    dev_id = i2c_match_id(cpr_4011_4mxx_id, client);
 
     i2c_set_clientdata(client, data);
     data->valid = 0;
@@ -276,12 +286,6 @@ static void cpr_4011_4mxx_remove(struct i2c_client *client)
     kfree(data);
     
 }
-
-static const struct i2c_device_id cpr_4011_4mxx_id[] = {
-    { "cpr_4011_4mxx", 0 },
-    {}
-};
-MODULE_DEVICE_TABLE(i2c, cpr_4011_4mxx_id);
 
 static struct i2c_driver cpr_4011_4mxx_driver = {
     .class        = I2C_CLASS_HWMON,

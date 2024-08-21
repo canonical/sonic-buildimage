@@ -1003,13 +1003,13 @@ static ssize_t show_version(struct device *dev, struct device_attribute *attr, c
 /*
  * I2C init/probing/exit functions
  */
-static int as5835_54x_cpld_probe(struct i2c_client *client,
-			 const struct i2c_device_id *id)
+static int as5835_54x_cpld_probe(struct i2c_client *client)
 {
 	struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
 	struct as5835_54x_cpld_data *data;
 	int ret = -ENODEV;
 	const struct attribute_group *group = NULL;
+	const struct i2c_device_id *id;
 
 	if (!i2c_check_functionality(adap, I2C_FUNC_SMBUS_BYTE))
 		goto exit;
@@ -1019,6 +1019,8 @@ static int as5835_54x_cpld_probe(struct i2c_client *client,
 		ret = -ENOMEM;
 		goto exit;
 	}
+
+	id = i2c_match_id(as5835_54x_cpld_id, client);
 
 	i2c_set_clientdata(client, data);
     mutex_init(&data->update_lock);

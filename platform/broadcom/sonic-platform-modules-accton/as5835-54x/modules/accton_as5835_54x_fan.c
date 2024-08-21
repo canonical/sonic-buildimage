@@ -398,8 +398,7 @@ static ssize_t show_version(struct device *dev, struct device_attribute *attr, c
     return sprintf(buf, "%d\n", val);
 }
 
-static int as5835_54x_fan_probe(struct i2c_client *client,
-            const struct i2c_device_id *dev_id)
+static int as5835_54x_fan_probe(struct i2c_client *client)
 {
     struct as5835_54x_fan_data *data;
     int status;
