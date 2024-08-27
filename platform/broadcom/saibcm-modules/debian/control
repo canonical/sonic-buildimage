@@ -10,5 +10,5 @@ Standards-Version: 3.9.3
 Package: opennsl-modules
 Architecture: amd64
 Section: main
-Depends: linux-image-unsigned-6.8.0-40-generic
+Depends: linux-image-unsigned-6.8.0-1000-sonic
 Description: kernel modules for broadcom SAI

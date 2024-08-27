@@ -1,8 +1,8 @@
-systems/linux/user/x86-smp_generic_64-2_6/linux-bcm-knet.ko lib/modules/6.8.0-40-generic/extra
-systems/linux/user/x86-smp_generic_64-2_6/linux-kernel-bde.ko lib/modules/6.8.0-40-generic/extra
-systems/linux/user/x86-smp_generic_64-2_6/linux-user-bde.ko lib/modules/6.8.0-40-generic/extra
-systems/linux/user/x86-smp_generic_64-2_6/linux-knet-cb.ko lib/modules/6.8.0-40-generic/extra
+systems/linux/user/x86-smp_generic_64-2_6/linux-bcm-knet.ko lib/modules/6.8.0-1000-sonic/extra
+systems/linux/user/x86-smp_generic_64-2_6/linux-kernel-bde.ko lib/modules/6.8.0-1000-sonic/extra
+systems/linux/user/x86-smp_generic_64-2_6/linux-user-bde.ko lib/modules/6.8.0-1000-sonic/extra
+systems/linux/user/x86-smp_generic_64-2_6/linux-knet-cb.ko lib/modules/6.8.0-1000-sonic/extra
 systemd/opennsl-modules.service lib/systemd/system
-sdklt/build/bde/linux_ngbde.ko lib/modules/6.8.0-40-generic/extra
-sdklt/build/knet/linux_ngknet.ko lib/modules/6.8.0-40-generic/extra
-sdklt/build/knetcb/linux_ngknetcb.ko lib/modules/6.8.0-40-generic/extra
+sdklt/build/bde/linux_ngbde.ko lib/modules/6.8.0-1000-sonic/extra
+sdklt/build/knet/linux_ngknet.ko lib/modules/6.8.0-1000-sonic/extra
+sdklt/build/knetcb/linux_ngknetcb.ko lib/modules/6.8.0-1000-sonic/extra
