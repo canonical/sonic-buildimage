@@ -1,9 +1,9 @@
 # linux kernel package
 
-KVERSION_SHORT = 6.8.0-40
+KVERSION_SHORT = 6.8.0-1000
 KVERSION = $(KVERSION_SHORT)-$(CONFIGURED_ARCH)
 KERNEL_VERSION = 6.8.0
-KERNEL_SUBVERSION = 40
+KERNEL_SUBVERSION = 1000
 
 ifeq ($(CONFIGURED_ARCH), armhf)
 # Override kernel version for ARMHF as it uses arm MP (multi-platform) for short version
@@ -11,7 +11,7 @@ KVERSION = $(KVERSION_SHORT)-armmp
 endif
 
 ifeq ($(BLDENV),noble)
-KVERSION = $(KVERSION_SHORT)-generic
+KVERSION = $(KVERSION_SHORT)-sonic
 endif
 
 
