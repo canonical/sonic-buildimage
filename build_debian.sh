@@ -33,7 +33,7 @@ CONFIGURED_ARCH=$([ -f .arch ] && cat .arch || echo amd64)
 ## docker engine version (with platform)
 DOCKER_VERSION=5:24.0.2-1~debian.12~$IMAGE_DISTRO
 CONTAINERD_IO_VERSION=1.6.21-1
-LINUX_KERNEL_VERSION=6.8.0-40
+LINUX_KERNEL_VERSION=6.8.0-1000
 
 ## Working directory to prepare the file system
 FILESYSTEM_ROOT=./fsroot
@@ -177,7 +177,7 @@ if [[ $CONFIGURED_ARCH == amd64 ]]; then
     sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install dmidecode hdparm
 fi
 
-sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-mark hold linux-modules-6.8.0-40-generic linux-modules-extra-6.8.0-40-generic linux-image-unsigned-6.8.0-40-generic 
+sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-mark hold linux-modules-6.8.0-1000-sonic linux-image-unsigned-6.8.0-1000-sonic 
 
 
 ## Sign the Linux kernel
