@@ -512,6 +512,9 @@ rm /files/lib/systemd/system/rsyslog.service/Service/ExecStart/arguments
 set /files/lib/systemd/system/rsyslog.service/Service/ExecStart/arguments/1 -n
 "
 
+#apparmor to allow plugin execution for rsyslogd
+sudo cp files/image_config/rsyslog/rsyslog-apparmor $FILESYSTEM_ROOT/etc/apparmor.d/local/usr.sbin.rsyslogd
+
 sudo mkdir -p $FILESYSTEM_ROOT/var/core
 
 # Config sysctl

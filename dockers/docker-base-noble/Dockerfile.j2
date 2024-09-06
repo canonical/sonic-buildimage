@@ -126,6 +126,8 @@ RUN apt-get clean -y                     && \
 COPY ["etc/rsyslog.conf", "/etc/rsyslog.conf"]
 COPY ["etc/rsyslog.d/*", "/etc/rsyslog.d/"]
 COPY ["root/.vimrc", "/root/.vimrc"]
+COPY ["etc/rsyslog-apparmor", "/etc/apparmor.d/local/usr.sbin.rsyslogd"]
+
 
 RUN ln /usr/bin/vim.tiny /usr/bin/vim
 
