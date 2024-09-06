@@ -1,0 +1,6 @@
+# Apparmor configuration
+# /etc/apparmor.d/local/usr.sbin.rsyslogd
+
+  /usr/bin/rsyslog_plugin      mixr,
+  /etc/sonic/init_cfg.json     r,
+  /proc/**/cmdline             r,
