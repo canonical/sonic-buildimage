@@ -4,10 +4,10 @@ description: A Chiselled rock for SONiC syncd-vs container
 version: "1.0.0"
 
 # Use a "bare" base for an even smaller rock
-base: ubuntu@22.04 
+base: ubuntu@24.04 
 
 # Meeting requirement R1 by making sure the rock builds on Jammy
-build-base: ubuntu@22.04
+build-base: ubuntu@24.04
 
 license: Apache-2.0
 
@@ -24,31 +24,6 @@ services:
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
 parts:
-  install-libnl-3-200_3.5.0-1_amd64:
-    plugin: dump
-    source-type: deb
-    source: ./debs/libnl-3-200_3.5.0-1_amd64.deb
-
-  install-libnl-route-3-200_3.5.0-1_amd64:
-    plugin: dump
-    source-type: deb
-    source: ./debs/libnl-route-3-200_3.5.0-1_amd64.deb
-
-  install-libnl-genl-3-200_3.5.0-1_amd64:
-    plugin: dump
-    source-type: deb
-    source: ./debs/libnl-genl-3-200_3.5.0-1_amd64.deb
-
-  install-libnl-nf-3-200_3.5.0-1_amd64:
-    plugin: dump
-    source-type: deb
-    source: ./debs/libnl-nf-3-200_3.5.0-1_amd64.deb
-
-  install-libnl-cli-3-200_3.5.0-1_amd64:
-    plugin: dump
-    source-type: deb
-    source: ./debs/libnl-cli-3-200_3.5.0-1_amd64.deb
-
   install-libyang_1.0.73_amd64:
     plugin: dump
     source-type: deb
@@ -109,12 +84,11 @@ parts:
     plugin: nil
     stage-packages:
       - rsyslog
-      - python3.10
-      - libpython3.10
+      - python3
+      - libpython3.12
       # docker-syncd-vs specific packages
       - iproute2
       # package dependencies
-      - libhiredis0.14
       - libzmq5
       - libboost-serialization1.74.0
       - libuuid1
@@ -123,6 +97,12 @@ parts:
       - libevent-2.1-7
       - libcap2-bin
       - jq
+      - libnl-3-200
+      - libnl-route-3-200
+      - libnl-genl-3-200
+      - libnl-nf-3-200
+      - libnl-cli-3-200
+      - libhiredis1.1.0
 
   install-python:
     plugin: python
@@ -141,7 +121,7 @@ parts:
       - supervisor==4.2.5
       - supervisord-dependent-startup==1.4.0
     stage-packages:
-      - python3.10-venv
+      - python3-venv
     organize:
       bin/supervisord: usr/local/bin/supervisord
 
