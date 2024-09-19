@@ -1,0 +1,22 @@
+fix RawConfigParser compatibility with python3.12
+
+From: Ubuntu <ubuntu@ip-172-31-11-102.us-west-2.compute.internal>
+
+
+---
+ ifupdown2/ifupdown/main.py |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ifupdown2/ifupdown/main.py b/ifupdown2/ifupdown/main.py
+index 5ab07fa..141a922 100644
+--- a/ifupdown2/ifupdown/main.py
++++ b/ifupdown2/ifupdown/main.py
+@@ -139,7 +139,7 @@ class Ifupdown2:
+         configStr = '[ifupdown2]\n' + config
+         configFP = io.StringIO(configStr)
+         parser = configparser.RawConfigParser()
+-        parser.readfp(configFP)
++        parser.read_file(configFP)
+         configmap_g = dict(parser.items('ifupdown2'))
+ 
+         # Preprocess config map
