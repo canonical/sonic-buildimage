@@ -1,0 +1,211 @@
+name: snap-syncd-brcm
+summary: SONiC broadcom syncd container
+description: A Chiselled rock for SONiC broadcom syncd container
+version: "1.0.0"
+
+# Use a "bare" base for an even smaller rock
+base: core24
+
+license: Apache-2.0
+
+# Target architecture is amd64
+platforms:
+  amd64:
+
+confinement: strict
+
+environment:
+  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
+  PATH: $SNAP/usr/bin:$SNAP/bin:$SNAP/usr/sbin:$SNAP/sbin:$PATH
+  LD_LIBRARY_PATH: ${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+
+apps:
+  snap-syncd-brcm:
+    command: "usr/local/bin/supervisord"
+    daemon: simple
+    plugs:
+      - network
+      - network-bind
+
+# For meeting requirement R2, simply don't specify any entrypoint (aka "services")
+
+parts:
+  install-libyang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang_1.0.73_amd64.deb
+
+  install-libswsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libswsscommon_1.0.0_amd64.deb
+
+  install-libsairedis_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsairedis_1.0.0_amd64.deb
+
+  install-libyang-cpp_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang-cpp_1.0.73_amd64.deb
+
+  install-python3-yang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-yang_1.0.73_amd64.deb 
+
+  install-python3-swsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-swsscommon_1.0.0_amd64.deb
+
+  install-sonic-db-cli_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-db-cli_1.0.0_amd64.deb
+
+  install-sonic-eventd_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
+
+  install-libsaimetadata_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsaimetadata_1.0.0_amd64.deb
+
+  install-syncd_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/syncd_1.0.0_amd64.deb
+
+  install-libsaibcm_10.1.7.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsaibcm_10.1.7.0_amd64.deb
+
+  install-packages:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - python3
+      - libpython3.12
+      # docker-lldp specific packages
+      - iproute2
+      - kmod
+      - ethtool
+      # package dependencies
+      - libhiredis1.1.0
+      - libzmq5
+      - libboost-serialization1.83.0
+      - libuuid1
+      # syncd
+      - libxml2
+      - libevent-2.1-7
+      - libsensors5
+      - libpci3
+      - libperl5.38t64
+      - libwrap0
+      - libpcre3
+      - libcap2-bin
+      - jq
+      - libyaml-0-2
+      # libnl-3-200
+      - libnl-3-200
+      - libnl-route-3-200
+      - libnl-genl-3-200
+      - libnl-nf-3-200
+      - libnl-cli-3-200
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # inherited from docker-config-engine-noble
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      - jinjanator
+      - lxml
+      - click
+      - supervisor==4.2.5
+      - supervisord-dependent-startup==1.4.0
+    stage-packages:
+      - python3
+      - python3-pip
+      - python3-minimal
+      - python3.12-minimal
+      - libpython3-stdlib
+      - libpython3.12-stdlib
+      - libpython3.12-minimal
+      - python3-venv
+    organize:
+      bin/supervisord: usr/local/bin/supervisord
+    stage:
+      - -pyvenv.cfg
+
+  install-common-files:
+    plugin: nil
+    source: .
+    source-type: local
+    after: [install-packages, install-python]
+    override-prime: |
+      craftctl default
+      # common - manifest.json
+      cp ${CRAFT_PROJECT_DIR}/manifest.json              ./ 
+
+      # common - templates&scripts
+      mkdir -p usr/share/sonic/templates/
+      mkdir -p usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+ 
+      # common - rsyslog
+      # mkdir -p etc/rsyslog.d/
+      # cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
+      # cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
+
+      # common - supervisor config files
+      mkdir -p etc/supervisor/conf.d
+      # mkdir -p var/log/supervisor
+
+      cp ${CRAFT_PROJECT_DIR}/supervisord.conf.snap      etc/supervisor/sueprvisord.conf
+
+      # common - supervisor related
+      cp ${CRAFT_PROJECT_DIR}/supervisord.conf           etc/supervisor/conf.d/ 
+      cp ${CRAFT_PROJECT_DIR}/critical_processes         etc/supervisor/
+
+      mkdir -p etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
+
+      # docker-syncd specifc
+      mkdir -p usr/bin
+      cp ${CRAFT_PROJECT_DIR}/files/dsserve           usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/bcmcmd            usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/start.sh                usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/start_led.sh            usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/bcmsh                   usr/bin/
+
+layout:
+  /etc/supervisor:
+    bind: $SNAP/etc/supervisor
+  /var/log/supervisor:
+    bind: $SNAP_DATA/var/log/supervisor
+
+      #  add-user:
+      #    plugin: nil
+      #    after: [install-common-files]
+      #
+      #    overlay-script: |
+      #      #syslog user
+      #      groupadd -R $CRAFT_OVERLAY syslog
+      #      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+      #
+      #    prime:
+      #      - etc/passwd
+      #      - etc/group
