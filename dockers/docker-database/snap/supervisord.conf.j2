@@ -13,20 +13,20 @@ events=PROCESS_STATE
 buffer_size=1024
 
 [eventlistener:supervisor-proc-exit-listener]
-command=/usr/bin/supervisor-proc-exit-listener --container-name database
+command=supervisor-proc-exit-listener --container-name database
 events=PROCESS_STATE_EXITED,PROCESS_STATE_RUNNING
 autostart=true
 autorestart=unexpected
 buffer_size=1024
 
-[program:rsyslogd]
-command=/usr/sbin/rsyslogd -n -iNONE
-priority=1
-autostart=false
-autorestart=false
-stdout_logfile=syslog
-stderr_logfile=syslog
-dependent_startup=true
+; [program:rsyslogd]
+; command=/usr/sbin/rsyslogd -n -iNONE
+; priority=1
+; autostart=false
+; autorestart=false
+; stdout_logfile=syslog
+; stderr_logfile=syslog
+; dependent_startup=true
 
 {% if INSTANCES %}
 {%     for redis_inst, redis_items in INSTANCES.items() %}
@@ -40,9 +40,9 @@ dependent_startup=true
 {%- set LOOPBACK_IP = '' -%}
 {%- set ADDITIONAL_OPTS = '' %}
 {%- endif -%}
-command=/bin/bash -c "{ [[ -s /var/lib/{{ redis_inst }}/dump.rdb ]] || rm -f /var/lib/{{ redis_inst }}/dump.rdb; } && mkdir -p /var/lib/{{ redis_inst }} && exec /usr/bin/redis-server /etc/redis/redis.conf --bind {{ LOOPBACK_IP }} {{ redis_items['hostname'] }} --port {{ redis_items['port'] }} --unixsocket {{ redis_items['unix_socket_path'] }} --pidfile /var/run/redis/{{ redis_inst }}.pid --dir /var/lib/{{ redis_inst }} {{ ADDITIONAL_OPTS }}"
+command=/bin/bash -c "{ [[ -s /var/lib/database/{{ redis_inst }}/dump.rdb ]] || rm -f /var/lib/database/{{ redis_inst }}/dump.rdb; } && mkdir -p /var/lib/database/{{ redis_inst }} && exec redis-server /etc/redis/redis.conf --bind {{ LOOPBACK_IP }} {{ redis_items['hostname'] }} --port {{ redis_items['port'] }} --unixsocket {{ redis_items['unix_socket_path'] }} --pidfile /var/run/snap.database/redis/{{ redis_inst }}.pid --dir /var/lib/database/{{ redis_inst }} {{ ADDITIONAL_OPTS }}"
 priority=2
-user=redis
+; user=redis
 autostart=true
 autorestart=false
 stdout_logfile=syslog
@@ -51,7 +51,7 @@ stderr_logfile=syslog
 {% endif %}
 
 [program:flushdb]
-command=/bin/bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
+command=/bin/bash -c "sleep 300 && usr/local/bin/flush_unused_database"
 priority=3
 autostart=false
 autorestart=false

@@ -1,28 +1,47 @@
-name: docker-database
+name: database
 summary: SONiC database container
 description: A Chiselled rock for SONiC database container
 version: "1.0.0"
 
 # Use a "bare" base for an even smaller rock
-base: ubuntu@24.04 
-
-# Meeting requirement R1 by making sure the rock builds on Jammy
-build-base: ubuntu@24.04
+base: core24 
 
 license: Apache-2.0
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: strict # use 'strict' once you have the right plugs and slots
+layout:
+  /etc/supervisor.conf.d:
+    bind: $SNAP_DATA/etc/supervisor/conf.d
+  /etc/supervisor.critical_processes:
+    bind-file: $SNAP_DATA/etc/supervisor/critical_processes
+  /etc/supervisor:
+    bind: $SNAP/etc/supervisor
+  /var/log/supervisor:
+    bind: $SNAP_DATA/var/log/supervisor
+  /var/lib/database:
+    bind: $SNAP_DATA/var/lib/database
+  /var/lib/redis:
+    bind: $SNAP_DATA/var/lib/redis
+  /etc/redis:
+    bind: $SNAP/etc/redis
 
 # Target architecture is amd64
 platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
-services:
-   supervisor:
-     command: "/usr/local/bin/docker-database-init.sh"
-     startup: enabled
-     override: replace
-     on-failure: shutdown 
+environment:
+  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
+  PATH: $SNAP/usr/bin:$SNAP/bin:$SNAP/usr/sbin:$SNAP/sbin:${SNAP}/usr/local/bin/:$PATH
+  LD_LIBRARY_PATH: ${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
-# For meeting requirement R2, simply don't specify any entrypoint (aka "services")
+
+apps:
+   database:
+     command: usr/local/bin/snap-database-init.sh
+     daemon: simple
+     plugs:
+       - network
+       - network-bind
 
 parts:
   install-libyang_1.0.73_amd64:
@@ -105,73 +124,46 @@ parts:
       - supervisord-dependent-startup==1.4.0
       - lxml
     stage-packages:
+      - python3
+      - python3-pip
+      - python3-minimal
+      - python3.12-minimal
+      - libpython3-stdlib
+      - libpython3.12-stdlib
+      - libpython3.12-minimal
       - python3-venv
     organize:
       bin/supervisord: usr/local/bin/supervisord
 
+  install-common-files-dump:
+    plugin: dump
+    source: ./snap
+    source-type: local
+    after: [install-packages, install-python]
+    organize:
+      swss_vars.j2: usr/share/sonic/templates/
+      readiness_probe.sh: usr/bin/
+      container_startup.py: usr/share/sonic/scripts/
+      00-load-omprog.conf: etc/rsyslog.d/
+      supervisord.conf: etc/supervisor/
+      supervisord.conf.j2: usr/share/sonic/templates/
+      critical_processes.j2: usr/share/sonic/templates/
+      sysctl-net.conf: etc/sysctl.d/
+      supervisor-proc-exit-listener: usr/bin/
+      snap-database-init.sh: usr/local/bin/
+      flush_unused_database: usr/local/bin/
+      update_chassisdb_config: usr/local/bin/
+      database_config.json.j2: usr/share/sonic/templates/
+      database_global.json.j2: usr/share/sonic/templates/
 
-  install-common-files:
+  install-conflict-files:
     plugin: nil
     source: .
     source-type: local
-    after: [install-packages, install-python]
+    after: [install-common-files-dump]
     override-prime: |
-      # common - manifest.json
-      cp ${CRAFT_PROJECT_DIR}/manifest.json              ./ 
-
-      # common - templates&scripts
-      mkdir -p usr/share/sonic/templates/
-      mkdir -p usr/share/sonic/scripts/
-      cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
-      cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
-      cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
- 
-      # common - rsyslog
-      mkdir -p etc/rsyslog.d/
-      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
-      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
-
-      # common - supervisor config files
-      mkdir -p etc/supervisor/conf.d
       mkdir -p var/log/supervisor
-
-      cp ${CRAFT_PROJECT_DIR}/files/supervisord.conf     etc/supervisor/
-      # common - supervisor related
-      mkdir -p usr/share/sonic/templates
-      cp ${CRAFT_PROJECT_DIR}/supervisord.conf.j2        usr/share/sonic/templates/
-      cp ${CRAFT_PROJECT_DIR}/critical_processes.j2      usr/share/sonic/templates/
-
-      mkdir -p etc/sysctl.d/
-      cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
-      cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
-
-
-      # common - redis config files
+      mkdir -p etc/supervisor/conf.d
       mkdir -p etc/redis/
       cp ${CRAFT_PROJECT_DIR}/redis.conf                 etc/redis/
-
-      # docker-database specifc
-      mkdir -p usr/local/bin
-      cp ${CRAFT_PROJECT_DIR}/docker-database-init.sh             usr/local/bin/
-      cp ${CRAFT_PROJECT_DIR}/flush_unused_database               usr/local/bin/
-      cp ${CRAFT_PROJECT_DIR}/files/update_chassisdb_config       usr/local/bin/
-
-      cp ${CRAFT_PROJECT_DIR}/database_config.json.j2 usr/share/sonic/templates/
-      cp ${CRAFT_PROJECT_DIR}/database_global.json.j2 usr/share/sonic/templates/
-
-  add-user:
-    plugin: nil
-    after: [install-common-files]
-
-    overlay-script: |
-      #syslog user
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-
-      #redis user
-      groupadd -R $CRAFT_OVERLAY redis
-      useradd -R $CRAFT_OVERLAY -M -r --system -g redis redis
-
-    prime:
-      - etc/passwd
-      - etc/group
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/

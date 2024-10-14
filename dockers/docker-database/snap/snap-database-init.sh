@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
+export DEV=""
 
 # For linux host namespace, in both single and multi ASIC platform use the loopback interface
 # For other namespaces, use eth0 interface which is connected to the docker0 bridge in the host.
@@ -43,12 +44,12 @@ fi
 
 REDIS_DIR=/var/run/redis$NAMESPACE_ID
 mkdir -p $REDIS_DIR/sonic-db
-mkdir -p /etc/supervisor/conf.d/
+# mkdir -p /etc/supervisor/conf.d/
 
-if [ -f /etc/sonic/database_config$NAMESPACE_ID.json ]; then
-    cp /etc/sonic/database_config$NAMESPACE_ID.json $REDIS_DIR/sonic-db/database_config.json
+if [ -f ${SNAP}/etc/sonic/database_config$NAMESPACE_ID.json ]; then
+    cp ${SNAP}/etc/sonic/database_config$NAMESPACE_ID.json $REDIS_DIR/sonic-db/database_config.json
 else
-    HOST_IP=$host_ip REDIS_PORT=$redis_port DATABASE_TYPE=$DATABASE_TYPE j2 /usr/share/sonic/templates/database_config.json.j2 > $REDIS_DIR/sonic-db/database_config.json
+    HOST_IP=$host_ip REDIS_PORT=$redis_port DATABASE_TYPE=$DATABASE_TYPE DEV="" j2 ${SNAP}/usr/share/sonic/templates/database_config.json.j2 > $REDIS_DIR/sonic-db/database_config.json
 fi
 
 # on VoQ system, we only publish redis_chassis instance and CHASSIS_APP_DB when
@@ -63,7 +64,7 @@ fi
 start_chassis_db=0
 chassis_db_address=""
 chassis_db_port=""
-chassisdb_config="/usr/share/sonic/platform/chassisdb.conf"
+chassisdb_config="${SNAP}/usr/share/sonic/platform/chassisdb.conf"
 [ -f $chassisdb_config ] && source $chassisdb_config
 
 db_cfg_file="/var/run/redis/sonic-db/database_config.json"
@@ -72,35 +73,35 @@ cp $db_cfg_file $db_cfg_file_tmp
 
 if [[ $DATABASE_TYPE == "chassisdb" ]]; then
     # Docker init for database-chassis
-    echo "Init docker-database-chassis..."
+    echo "Init ${SNAP_NAME}-chassis..."
     VAR_LIB_REDIS_CHASSIS_DIR="/var/lib/redis_chassis"
     mkdir -p $VAR_LIB_REDIS_CHASSIS_DIR   
     update_chassisdb_config -j $db_cfg_file_tmp -k -p $chassis_db_port
     # generate all redis server supervisord configuration file
     sonic-cfggen -j $db_cfg_file_tmp \
-    -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
-    -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
+    -t ${SNAP}/usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor.conf.d/supervisord.conf \
+    -t ${SNAP}/usr/share/sonic/templates/critical_processes.j2,/etc/supervisor.critical_processes
     rm $db_cfg_file_tmp
     chown -R redis:redis $VAR_LIB_REDIS_CHASSIS_DIR
     chown -R redis:redis $REDIS_DIR
-    exec /usr/local/bin/supervisord
+    exec ${SNAP}/usr/local/bin/supervisord
     exit 0
 fi
 
 # copy/generate the database_global.json file if this is global database service in multi asic/smart switch platform.
 if [[ $NAMESPACE_ID == "" && $DATABASE_TYPE == "" && ( $NAMESPACE_COUNT -gt 1 || $NUM_DPU -gt 1) ]]
 then
-    if [ -f /etc/sonic/database_global.json ]; then
-        cp /etc/sonic/database_global.json $REDIS_DIR/sonic-db/database_global.json
+    if [ -f ${SNAP}/etc/sonic/database_global.json ]; then
+        cp ${SNAP}/etc/sonic/database_global.json $REDIS_DIR/sonic-db/database_global.json
     else
-        j2 /usr/share/sonic/templates/database_global.json.j2 > $REDIS_DIR/sonic-db/database_global.json
+        j2 ${SNAP}/usr/share/sonic/templates/database_global.json.j2 > $REDIS_DIR/sonic-db/database_global.json
     fi
 fi
 # delete chassisdb config to generate supervisord config
 update_chassisdb_config -j $db_cfg_file_tmp -d
 sonic-cfggen -j $db_cfg_file_tmp \
--t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
--t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
+-t ${SNAP}/usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor.conf.d/supervisord.conf \
+-t ${SNAP}/usr/share/sonic/templates/critical_processes.j2,/etc/supervisor.critical_processes
 
 if [[ "$start_chassis_db" != "1" ]] && [[ -z "$chassis_db_address" ]]; then
      cp $db_cfg_file_tmp $db_cfg_file
@@ -111,7 +112,7 @@ rm $db_cfg_file_tmp
 
 # copy dump.rdb file to each instance for restoration
 DUMPFILE=/var/lib/redis/dump.rdb
-redis_inst_list=`/usr/bin/python3 -c "from swsscommon import swsscommon; print(' '.join(swsscommon.SonicDBConfig.getInstanceList().keys()))"`
+redis_inst_list=`${SNAP}/usr/bin/python3 -c "from swsscommon import swsscommon; print(' '.join(swsscommon.SonicDBConfig.getInstanceList().keys()))"`
 for inst in $redis_inst_list
 do
     mkdir -p /var/lib/$inst
@@ -125,12 +126,12 @@ do
     fi
 done
 
-TZ=$(cat /etc/timezone)
-rm -rf /etc/localtime
-ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+# TZ=$(cat ${SNAP}/etc/timezone)
+# rm -rf ${SNAP}/etc/localtime
+# ln -sf ${SNAP}/usr/share/zoneinfo/$TZ ${SNAP}/etc/localtime
 
-chown -R redis:redis $REDIS_DIR
-chown -R redis:redis /etc/redis/redis.conf
-chown -R redis:redis /var/lib/redis/
+# chown -R redis:redis $REDIS_DIR
+# chown -R redis:redis ${SNAP}/etc/redis/redis.conf
+# chown -R redis:redis /var/lib/redis/
 
-exec /usr/local/bin/supervisord
+exec ${SNAP}/usr/local/bin/supervisord
