@@ -26,7 +26,7 @@ WATCH_PROCESSES_FILE = '/etc/supervisor/watchdog_processes'
 #
 # program:<process_name>
 # group:<group_name>
-CRITICAL_PROCESSES_FILE = '/etc/supervisor.critical_processes'
+CRITICAL_PROCESSES_FILE = '/etc/supervisor/critical_processes'
 
 # The FEATURE table in config db contains auto-restart field
 FEATURE_TABLE_NAME = 'FEATURE'

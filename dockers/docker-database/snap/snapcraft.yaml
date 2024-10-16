@@ -10,12 +10,8 @@ license: Apache-2.0
 grade: devel # must be 'stable' to release into candidate/stable channels
 confinement: strict # use 'strict' once you have the right plugs and slots
 layout:
-  /etc/supervisor.conf.d:
-    bind: $SNAP_DATA/etc/supervisor/conf.d
-  /etc/supervisor.critical_processes:
-    bind-file: $SNAP_DATA/etc/supervisor/critical_processes
   /etc/supervisor:
-    bind: $SNAP/etc/supervisor
+    bind: $SNAP_DATA/etc/supervisor
   /var/log/supervisor:
     bind: $SNAP_DATA/var/log/supervisor
   /var/lib/database:
@@ -88,7 +84,7 @@ parts:
     plugin: nil
     stage-packages:
       - rsyslog
-      - python3
+      # - python3
       - libpython3.12
       # docker-database specific packages
       - redis-tools
@@ -146,7 +142,7 @@ parts:
       supervisord.conf: etc/supervisor/
       supervisord.conf.j2: usr/share/sonic/templates/
       critical_processes.j2: usr/share/sonic/templates/
-      sysctl-net.conf: etc/sysctl.d/
+      # sysctl-net.conf: etc/sysctl.d/
       supervisor-proc-exit-listener: usr/bin/
       snap-database-init.sh: bin/
       flush_unused_database: usr/local/bin/

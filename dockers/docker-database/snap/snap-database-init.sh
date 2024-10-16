@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 export DEV=""
+cp -r ${SNAP}/etc/supervisor/ ${SNAP_DATA}/etc/
 
 # For linux host namespace, in both single and multi ASIC platform use the loopback interface
 # For other namespaces, use eth0 interface which is connected to the docker0 bridge in the host.
@@ -78,8 +79,8 @@ if [[ $DATABASE_TYPE == "chassisdb" ]]; then
     update_chassisdb_config -j $db_cfg_file_tmp -k -p $chassis_db_port
     # generate all redis server supervisord configuration file
     sonic-cfggen -j $db_cfg_file_tmp \
-    -t ${SNAP}/usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor.conf.d/supervisord.conf \
-    -t ${SNAP}/usr/share/sonic/templates/critical_processes.j2,/etc/supervisor.critical_processes
+    -t ${SNAP}/usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
+    -t ${SNAP}/usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
     rm $db_cfg_file_tmp
     chown -R redis:redis $VAR_LIB_REDIS_CHASSIS_DIR
     chown -R redis:redis $REDIS_DIR
@@ -99,8 +100,8 @@ fi
 # delete chassisdb config to generate supervisord config
 update_chassisdb_config -j $db_cfg_file_tmp -d
 sonic-cfggen -j $db_cfg_file_tmp \
--t ${SNAP}/usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor.conf.d/supervisord.conf \
--t ${SNAP}/usr/share/sonic/templates/critical_processes.j2,/etc/supervisor.critical_processes
+-t ${SNAP}/usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
+-t ${SNAP}/usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
 
 if [[ "$start_chassis_db" != "1" ]] && [[ -z "$chassis_db_address" ]]; then
      cp $db_cfg_file_tmp $db_cfg_file
