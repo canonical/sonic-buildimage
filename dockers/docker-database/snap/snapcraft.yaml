@@ -36,12 +36,12 @@ environment:
 
 
 apps:
-   database:
-     command: usr/local/bin/snap-database-init.sh
-     daemon: simple
-     plugs:
-       - network
-       - network-bind
+  database:
+    command: bin/snap-database-init.sh
+    # daemon: simple
+    plugs:
+      - network
+      - network-bind
 
 parts:
   install-libyang_1.0.73_amd64:
@@ -132,8 +132,6 @@ parts:
       - libpython3.12-stdlib
       - libpython3.12-minimal
       - python3-venv
-    organize:
-      bin/supervisord: usr/local/bin/supervisord
 
   install-common-files-dump:
     plugin: dump
@@ -150,7 +148,7 @@ parts:
       critical_processes.j2: usr/share/sonic/templates/
       sysctl-net.conf: etc/sysctl.d/
       supervisor-proc-exit-listener: usr/bin/
-      snap-database-init.sh: usr/local/bin/
+      snap-database-init.sh: bin/
       flush_unused_database: usr/local/bin/
       update_chassisdb_config: usr/local/bin/
       database_config.json.j2: usr/share/sonic/templates/
@@ -165,5 +163,5 @@ parts:
       mkdir -p var/log/supervisor
       mkdir -p etc/supervisor/conf.d
       mkdir -p etc/redis/
-      cp ${CRAFT_PROJECT_DIR}/redis.conf                 etc/redis/
-      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
+      cp ${CRAFT_PROJECT_DIR}/snap/redis.conf     etc/redis/
+      cp ${CRAFT_PROJECT_DIR}/snap/rsyslog.conf   etc/

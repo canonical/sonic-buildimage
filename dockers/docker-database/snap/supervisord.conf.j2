@@ -51,7 +51,7 @@ stderr_logfile=syslog
 {% endif %}
 
 [program:flushdb]
-command=/bin/bash -c "sleep 300 && usr/local/bin/flush_unused_database"
+command=/bin/bash -c "sleep 300 && python3 /snap/database/x1/bin/flush_unused_database"
 priority=3
 autostart=false
 autorestart=false

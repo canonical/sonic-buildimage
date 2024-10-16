@@ -44,7 +44,6 @@ fi
 
 REDIS_DIR=/var/run/redis$NAMESPACE_ID
 mkdir -p $REDIS_DIR/sonic-db
-# mkdir -p /etc/supervisor/conf.d/
 
 if [ -f ${SNAP}/etc/sonic/database_config$NAMESPACE_ID.json ]; then
     cp ${SNAP}/etc/sonic/database_config$NAMESPACE_ID.json $REDIS_DIR/sonic-db/database_config.json
@@ -134,4 +133,4 @@ done
 # chown -R redis:redis ${SNAP}/etc/redis/redis.conf
 # chown -R redis:redis /var/lib/redis/
 
-exec ${SNAP}/usr/local/bin/supervisord
+exec ${SNAP}/bin/supervisord
