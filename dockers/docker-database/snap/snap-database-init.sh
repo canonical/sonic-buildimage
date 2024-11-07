@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 export DEV=""
+mkdir -p /var/run/snap.database/
 cp -r ${SNAP}/etc/supervisor/ ${SNAP_DATA}/etc/
 
 # For linux host namespace, in both single and multi ASIC platform use the loopback interface
