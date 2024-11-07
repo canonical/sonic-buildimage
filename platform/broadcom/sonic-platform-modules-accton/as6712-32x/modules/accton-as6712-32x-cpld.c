@@ -644,6 +644,12 @@ static int as6712_32x_cpld_mux_probe(struct i2c_client *client)
     if (!i2c_check_functionality(adap, I2C_FUNC_SMBUS_BYTE))
         return -ENODEV;
 
+    id = i2c_match_id(as6712_32x_cpld_mux_id, client);
+    if (!id) {
+        return -ENODEV;
+    }
+
+
     muxc = i2c_mux_alloc(adap, &client->dev,
                          chips[id->driver_data].nchans,
                          sizeof(*data), 0,
@@ -651,8 +657,6 @@ static int as6712_32x_cpld_mux_probe(struct i2c_client *client)
                          as6712_32x_cpld_mux_deselect_mux);
     if (!muxc)
         return -ENOMEM;
-
-    id = i2c_match_id(as6712_32x_cpld_mux_id, client);
 
     i2c_set_clientdata(client, muxc);
     data = i2c_mux_priv(muxc);

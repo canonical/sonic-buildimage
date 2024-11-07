@@ -1205,13 +1205,17 @@ static int as5812_54x_cpld_mux_probe(struct i2c_client *client)
     if (!i2c_check_functionality(adap, I2C_FUNC_SMBUS_BYTE))
         return -ENODEV;
 
+    id = i2c_match_id(as5812_54x_cpld_mux_id, client);
+
+    if(!id){
+	return -ENODEV;
+    }
+
     muxc = i2c_mux_alloc(adap, &client->dev,
                          chips[id->driver_data].nchans, sizeof(*data), 0,
                          as5812_54x_cpld_mux_select_chan, as5812_54x_cpld_mux_deselect_mux);
     if (!muxc)
         return -ENOMEM;
-
-    id = i2c_match_id(as5812_54x_cpld_mux_id, client);
 
     i2c_set_clientdata(client, muxc);
     data = i2c_mux_priv(muxc);
