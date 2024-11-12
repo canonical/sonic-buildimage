@@ -27,14 +27,15 @@ platforms:
 
 environment:
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
-  PATH: $SNAP/usr/bin:$SNAP/bin:$SNAP/usr/sbin:$SNAP/sbin:${SNAP}/usr/local/bin/:$PATH
+  # PATH: $SNAP/usr/bin:$SNAP/bin:$SNAP/usr/sbin:$SNAP/sbin:${SNAP}/usr/local/bin/:$PATH
   LD_LIBRARY_PATH: ${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
 
 apps:
   database:
     command: bin/snap-database-init.sh
-    # daemon: simple
+    daemon: simple
+    install-mode: disabled
     plugs:
       - network
       - network-bind
