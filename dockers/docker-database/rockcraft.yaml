@@ -1,0 +1,177 @@
+name: docker-database
+summary: SONiC database container
+description: A Chiselled rock for SONiC database container
+version: "1.0.0"
+
+# Use a "bare" base for an even smaller rock
+base: ubuntu@24.04 
+
+# Meeting requirement R1 by making sure the rock builds on Jammy
+build-base: ubuntu@24.04
+
+license: Apache-2.0
+
+# Target architecture is amd64
+platforms:
+  amd64:  # Make sure this value matches your computer's architecture
+
+services:
+   supervisor:
+     command: "/usr/local/bin/docker-database-init.sh"
+     startup: enabled
+     override: replace
+     on-failure: shutdown 
+
+# For meeting requirement R2, simply don't specify any entrypoint (aka "services")
+
+parts:
+  install-libyang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang_1.0.73_amd64.deb
+
+  install-libswsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libswsscommon_1.0.0_amd64.deb
+
+  install-libyang-cpp_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang-cpp_1.0.73_amd64.deb
+
+  install-python3-yang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-yang_1.0.73_amd64.deb 
+
+  install-python3-swsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-swsscommon_1.0.0_amd64.deb
+
+  install-sonic-db-cli_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-db-cli_1.0.0_amd64.deb
+
+  install-sonic-eventd_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
+
+  install-libdashapi_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libdashapi_1.0.0_amd64.deb
+
+  install-packages:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - python3
+      - libpython3.12
+      # docker-database specific packages
+      - redis-tools
+      - redis-server
+      - iproute2
+      # package dependencies
+      - libhiredis1.1.0
+      - libzmq5
+      - libboost-serialization1.83.0
+      - libuuid1
+      - libpcre3
+      # libnl-3-200
+      - libnl-3-200
+      - libnl-route-3-200
+      - libnl-genl-3-200
+      - libnl-nf-3-200
+      - libnl-cli-3-200
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # common - inherited from docker-config-engine
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      - jinjanator
+      # docker-database specific packages
+      - click
+      - supervisor==4.2.5
+      - supervisord-dependent-startup==1.4.0
+      - lxml
+    stage-packages:
+      - python3-venv
+    organize:
+      bin/supervisord: usr/local/bin/supervisord
+
+
+  install-common-files:
+    plugin: nil
+    source: .
+    source-type: local
+    after: [install-packages, install-python]
+    override-prime: |
+      # common - manifest.json
+      cp ${CRAFT_PROJECT_DIR}/manifest.json              ./ 
+
+      # common - templates&scripts
+      mkdir -p usr/share/sonic/templates/
+      mkdir -p usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+ 
+      # common - rsyslog
+      mkdir -p etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
+
+      # common - supervisor config files
+      mkdir -p etc/supervisor/conf.d
+      mkdir -p var/log/supervisor
+
+      cp ${CRAFT_PROJECT_DIR}/files/supervisord.conf     etc/supervisor/
+      # common - supervisor related
+      mkdir -p usr/share/sonic/templates
+      cp ${CRAFT_PROJECT_DIR}/supervisord.conf.j2        usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/critical_processes.j2      usr/share/sonic/templates/
+
+      mkdir -p etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
+
+
+      # common - redis config files
+      mkdir -p etc/redis/
+      cp ${CRAFT_PROJECT_DIR}/redis.conf                 etc/redis/
+
+      # docker-database specifc
+      mkdir -p usr/local/bin
+      cp ${CRAFT_PROJECT_DIR}/docker-database-init.sh             usr/local/bin/
+      cp ${CRAFT_PROJECT_DIR}/flush_unused_database               usr/local/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/update_chassisdb_config       usr/local/bin/
+
+      cp ${CRAFT_PROJECT_DIR}/database_config.json.j2 usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/database_global.json.j2 usr/share/sonic/templates/
+
+  add-user:
+    plugin: nil
+    after: [install-common-files]
+
+    overlay-script: |
+      #syslog user
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+
+      #redis user
+      groupadd -R $CRAFT_OVERLAY redis
+      useradd -R $CRAFT_OVERLAY -M -r --system -g redis redis
+
+    prime:
+      - etc/passwd
+      - etc/group
