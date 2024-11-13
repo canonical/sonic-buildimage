@@ -13,7 +13,6 @@ platforms:
 
 environment:
   PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
-  # PATH: $SNAP/usr/bin:$SNAP/bin:$SNAP/usr/sbin:$SNAP/sbin:${SNAP}/usr/local/bin/:$PATH
   LD_LIBRARY_PATH: ${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
 layout:
@@ -30,7 +29,7 @@ layout:
 
 apps:
   lldp:
-    command: usr/bin/docker-lldp-init.sh
+    command: usr/bin/snap-lldp-init.sh
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -158,13 +157,12 @@ parts:
       supervisord.conf.j2: usr/share/sonic/templates/
       critical_processes: etc/supervisor/
       supervisor-proc-exit-listener: usr/bin/
-      docker-lldp-init.sh:    usr/bin/
+      snap-lldp-init.sh:    usr/bin/
       start.sh:               usr/bin/
       waitfor_lldp_ready.sh:  usr/bin/
       lldpd.conf.j2:          usr/share/sonic/templates/
       lldpdSysDescr.conf.j2:  usr/share/sonic/templates/
-      lldpd:                  etc/default/
-      lldpmgrd:               usr/bin
+      lldpmgrd:               usr/bin/
 
   install-conflict-files:
     plugin: nil
@@ -174,4 +172,6 @@ parts:
     override-prime: |
       mkdir -p var/log/supervisor
       mkdir -p etc/supervisor/conf.d
+      mkdir -p etc/default/
       cp ${CRAFT_PROJECT_DIR}/snap/rsyslog.conf   etc/
+      cp ${CRAFT_PROJECT_DIR}/snap/lldpd   etc/default/
