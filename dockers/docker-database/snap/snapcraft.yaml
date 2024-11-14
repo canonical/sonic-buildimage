@@ -1,4 +1,4 @@
-name: database
+name: snap-database
 summary: SONiC database container
 description: A Chiselled rock for SONiC database container
 version: "1.0.0"
@@ -35,7 +35,7 @@ apps:
   database:
     command: bin/snap-database-init.sh
     daemon: simple
-    install-mode: disabled
+    install-mode: disable
     plugs:
       - network
       - network-bind
@@ -146,8 +146,8 @@ parts:
       # sysctl-net.conf: etc/sysctl.d/
       supervisor-proc-exit-listener: usr/bin/
       snap-database-init.sh: bin/
-      flush_unused_database: usr/local/bin/
-      update_chassisdb_config: usr/local/bin/
+      flush_unused_database: usr/bin/
+      update_chassisdb_config: usr/bin/
       database_config.json.j2: usr/share/sonic/templates/
       database_global.json.j2: usr/share/sonic/templates/
 

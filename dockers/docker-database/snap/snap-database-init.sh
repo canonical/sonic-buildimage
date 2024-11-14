@@ -47,8 +47,8 @@ fi
 REDIS_DIR=/var/run/redis$NAMESPACE_ID
 mkdir -p $REDIS_DIR/sonic-db
 
-if [ -f ${SNAP}/etc/sonic/database_config$NAMESPACE_ID.json ]; then
-    cp ${SNAP}/etc/sonic/database_config$NAMESPACE_ID.json $REDIS_DIR/sonic-db/database_config.json
+if [ -f /etc/sonic/database_config$NAMESPACE_ID.json ]; then
+    cp /etc/sonic/database_config$NAMESPACE_ID.json $REDIS_DIR/sonic-db/database_config.json
 else
     HOST_IP=$host_ip REDIS_PORT=$redis_port DATABASE_TYPE=$DATABASE_TYPE DEV="" j2 ${SNAP}/usr/share/sonic/templates/database_config.json.j2 > $REDIS_DIR/sonic-db/database_config.json
 fi
