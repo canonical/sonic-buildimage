@@ -1,4 +1,4 @@
-name: lldp
+name: snap-lldp
 summary: SONiC lldp container
 description: A Chiselled rock for SONiC lldp container
 version: "1.0.0"
@@ -28,7 +28,7 @@ layout:
     bind: $SNAP/etc/sysctl.d
 
 apps:
-  lldp:
+  snap-lldp:
     command: usr/bin/snap-lldp-init.sh
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
