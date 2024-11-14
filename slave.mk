@@ -1539,7 +1539,12 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
 			)
 		fi
 
-		j2 files/build_templates/docker_image_ctl.j2 > $($(docker:-dbg.gz=.gz)_CONTAINER_NAME).sh
+		if [ x$($(docker:-dbg.gz=.gz)_CONTAINER_NAME) == x"database" ]; then
+			j2 files/build_templates/docker_image_ctl.$($(docker:-dbg.gz=.gz)_CONTAINER_NAME).j2 > $($(docker:-dbg.gz=.gz)_CONTAINER_NAME).sh
+		else
+			j2 files/build_templates/docker_image_ctl.j2 > $($(docker:-dbg.gz=.gz)_CONTAINER_NAME).sh
+		fi
+
 		chmod +x $($(docker:-dbg.gz=.gz)_CONTAINER_NAME).sh
 
 		$(if $($(docker:-dbg.gz=.gz)_MACHINE),\
