@@ -32,7 +32,7 @@ environment:
 
 
 apps:
-  database:
+  snap-database:
     command: bin/snap-database-init.sh
     daemon: simple
     install-mode: disable

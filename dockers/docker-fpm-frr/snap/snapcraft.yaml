@@ -1,0 +1,243 @@
+name: snap-fpm-frr
+summary: SONiC fpm-frr container
+description: A Chiselled rock for SONiC fpm-frr container
+version: "1.0.0"
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: strict
+base: core24
+license: Apache-2.0
+
+platforms:
+  amd64:  # Make sure this value matches your computer's architecture
+
+environment:
+  PYTHONPATH: "$SNAP/lib/python3.12/site-packages:${PYTHONPATH}"
+  LD_LIBRARY_PATH: ${SNAP}/lib/:${SNAP}/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}:${SNAP}/usr/lib/:${SNAP}/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+
+layout:
+  /etc/supervisor:
+    bind: $SNAP_DATA/etc/supervisor
+  /etc/frr:
+    bind: $SNAP_DATA/etc/frr
+  /etc/rsyslog.d:
+    bind: $SNAP/etc/rsyslog.d
+  /etc/sysctl.d:
+    bind: $SNAP/etc/sysctl.d
+  /var/log/supervisor:
+    bind: $SNAP_DATA/var/log/supervisor
+
+apps:
+  snap-fpm-frr:
+    command: usr/bin/snap-fpm-frr-init.sh
+    daemon: simple
+    install-mode: disable
+    plugs:
+    - etc-sonic
+
+plugs:
+  etc-sonic:
+    interface: system-files
+    read:
+    - /etc/sonic/constants.yml
+    write:
+    - /etc/sonic/constants.yml
+
+parts:
+  install-libyang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang_1.0.73_amd64.deb
+
+  install-libyang2_2.0.112-6_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang2_2.0.112-6_amd64.deb
+
+  install-libswsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libswsscommon_1.0.0_amd64.deb
+
+  install-libyang-cpp_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang-cpp_1.0.73_amd64.deb
+
+  install-python3-yang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-yang_1.0.73_amd64.deb 
+
+  install-python3-swsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-swsscommon_1.0.0_amd64.deb
+
+  install-sonic-db-cli_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-db-cli_1.0.0_amd64.deb
+
+  install-sonic-eventd_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
+
+  # docker-swss-layer-noble packages
+  install-swss_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/swss_1.0.0_amd64.deb
+
+  install-libsairedis_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsairedis_1.0.0_amd64.deb
+
+  install-libsaimetadata_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsaimetadata_1.0.0_amd64.deb
+
+  install-libteam5_1.31-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libteam5_1.31-1_amd64.deb
+
+  install-libteamdctl0_1.31-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libteamdctl0_1.31-1_amd64.deb
+
+  install-libdashapi_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libdashapi_1.0.0_amd64.deb
+
+  install-sonic-rsyslog-plugin_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-rsyslog-plugin_1.0.0-0_amd64.deb
+
+  install-libsnmp40t64_5.9.4+dfsg-1.1ubuntu3_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsnmp40t64_5.9.4+dfsg-1.1ubuntu3_amd64.deb
+
+  install-libsnmp-base_5.9.4+dfsg-1.1ubuntu3_all:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsnmp-base_5.9.4+dfsg-1.1ubuntu3_all.deb
+
+  install-frr_8.5.4-sonic-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/frr_8.5.4-sonic-0_amd64.deb
+
+  install-frr-snmp_8.5.4-sonic-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/frr-snmp_8.5.4-sonic-0_amd64.deb
+
+  install-packages:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - libpython3.12
+      # package dependencies
+      - libhiredis1.1.0
+      - libzmq5
+      - libboost-serialization1.83.0
+      - libuuid1
+      # from docker-swss-layer-noble
+      - iputils-ping
+      # fpm-frr dependencies
+      - libc-ares2
+      - iproute2
+      - logrotate
+      - libunwind8
+      - jq
+      - libjson-c5
+      - libpcre3
+      - liblua5.1-0
+      - libjansson4
+      - libdbus-1-3
+      # zebra dependencies
+      - libwrap0
+      - libperl5.38t64
+      # libnl-3-200
+      - libnl-3-200
+      - libnl-route-3-200
+      - libnl-genl-3-200
+      - libnl-nf-3-200
+      - libnl-cli-3-200
+      # protobuf
+      - libprotobuf32
+      - libprotobuf-lite32
+      - python3-protobuf
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # inherited from docker-config-engine-noble
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # supervisor
+      - supervisor==4.2.5
+      - supervisord-dependent-startup==1.4.0
+      # from docker-orchagent
+      - jinjanator
+      - lxml
+      - ./python-wheels/sonic_bgpcfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_frr_mgmt_framework-1.0-py3-none-any.whl
+
+    stage-packages:
+      - python3
+      - python3-pip
+      - python3-minimal
+      - python3.12-minimal
+      - libpython3-stdlib
+      - libpython3.12-stdlib
+      - libpython3.12-minimal
+      - python3-venv
+    organize:
+      bin/supervisord: usr/bin/supervisord
+      bin/bgpcfgd: usr/local/bin/bgpcfgd
+      bin/bgpmon: usr/local/bin/bgpmon
+      bin/staticroutebfd: usr/local/bin/staticroutebfd
+
+  install-common-files-dump:
+    plugin: dump
+    source: ./snap
+    source-type: local
+    after: [install-packages, install-python]
+    organize:
+      swss_vars.j2: usr/share/sonic/templates/
+      readiness_probe.sh: usr/bin/
+      container_startup.py: usr/share/sonic/scripts/
+      bgp_events.conf: etc/rsyslog.d/
+      00-load-omprog.conf: etc/rsyslog.d/
+      supervisord.conf: etc/supervisor/
+      supervisord.conf.j2: usr/share/sonic/templates/
+      sysctl-net.conf: etc/sysctl.d/
+      supervisor-proc-exit-listener: usr/bin/
+      snap-fpm-frr-init.sh: usr/bin/
+      TSA: usr/bin/
+      TSB: usr/bin/
+      TSC: usr/bin/
+      TS: usr/bin/
+      zsocket.sh: usr/bin/
+      snmp.conf: etc/snmp/frr.conf
+      frr/: usr/share/sonic/templates/
+
+  install-conflict-files:
+    plugin: nil
+    source: .
+    source-type: local
+    after: [install-common-files-dump]
+    override-prime: |
+      cp ${CRAFT_PROJECT_DIR}/snap/rsyslog.conf   etc/
