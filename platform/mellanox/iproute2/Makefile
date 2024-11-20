@@ -28,7 +28,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf iproute2*
 
 	# Download iproute2 from debian repository
-	dget http://deb.debian.org/debian/pool/main/i/iproute2/iproute2_$(IPROUTE2_MLNX_VERSION_FULL).dsc
+	dget -u http://deb.debian.org/debian/pool/main/i/iproute2/iproute2_$(IPROUTE2_MLNX_VERSION_FULL).dsc
 
 ifneq ($(MLNX_SDK_SOURCE_BASE_URL), )
 	wget $(MLNX_SDK_SOURCE_BASE_URL)/code_package.zip

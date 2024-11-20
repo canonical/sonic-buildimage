@@ -88,7 +88,7 @@ $(addprefix $(DEST)/, $(KERNEL_MFT_TARGET)): $(DEST)/% :
 	sudo dkms build kernel-mft-dkms/$(MFT_VERSION) -k $(KVERSION) -a $(CONFIGURED_ARCH)
 
 	# copy the built modules
-	cp -r $(DKMS_CTRL)/kernel-$(KVERSION)-$(CONFIGURED_ARCH)/module/*.ko \
+	cp -r $(DKMS_CTRL)/kernel-$(KVERSION)-$(MFT_ARCH)/module/*.ko \
 			$(DKMS_TMP)/lib/modules/$(KVERSION)/updates/dkms/
 
 	pushd $(MFT_NAME)/DEBS

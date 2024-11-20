@@ -93,7 +93,7 @@ class MPFAManager(object):
 
         cp = configparser.ConfigParser()
         with io.open(metadata_path, 'r') as metadata_ini:
-            cp.readfp(metadata_ini)
+            cp.read_file(metadata_ini, metadata_path)
 
         self.__metadata = cp
 
