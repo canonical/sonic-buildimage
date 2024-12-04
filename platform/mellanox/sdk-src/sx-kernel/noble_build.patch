@@ -1,0 +1,80 @@
+diff --git a/drivers/net/mlx_sx/sx_clock_spc1.c b/drivers/net/mlx_sx/sx_clock_spc1.c
+index 4f56c0a..8fbebe1 100644
+--- a/drivers/net/mlx_sx/sx_clock_spc1.c
++++ b/drivers/net/mlx_sx/sx_clock_spc1.c
+@@ -295,7 +295,8 @@ static const struct ptp_clock_info __clock_info_spc1 = {
+     .n_ext_ts = 0,
+     .n_per_out = 0,
+     .pps = 0,
+-    .adjfreq = __adjfreq_spc1,
++    // .adjfreq = __adjfreq_spc1,
++    .adjfine = __adjfreq_spc1,
+     .adjtime = __adjtime_spc1,
+     .SX_CLOCK_GETTIME = __gettime_spc1,
+     .SX_CLOCK_SETTIME = __settime_spc1,
+diff --git a/drivers/net/mlx_sx/sx_clock_spc2_3.c b/drivers/net/mlx_sx/sx_clock_spc2_3.c
+index 090cacc..294e5ab 100644
+--- a/drivers/net/mlx_sx/sx_clock_spc2_3.c
++++ b/drivers/net/mlx_sx/sx_clock_spc2_3.c
+@@ -534,7 +534,7 @@ static const struct ptp_clock_info __clock_info_spc2 = {
+     .n_ext_ts = 0,
+     .n_per_out = 0,
+     .pps = 1,
+-    .adjfreq = __adjfreq_spc2,
++    // .adjfreq = __adjfreq_spc2,
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
+     .adjfine = __adjfine_spc2,
+ #endif
+diff --git a/drivers/net/sx_netdev/sx_netdev_main.c b/drivers/net/sx_netdev/sx_netdev_main.c
+index 7e72853..7e41447 100644
+--- a/drivers/net/sx_netdev/sx_netdev_main.c
++++ b/drivers/net/sx_netdev/sx_netdev_main.c
+@@ -4379,7 +4379,7 @@ static struct device devlink_dummy_dev = {
+     .release = devlink_dummy_dev_release,
+ };
+ 
+-static const struct devlink_ops devlink_dummy_ops = {
++static const struct devlink_port_ops devlink_dummy_ops = {
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)) || defined(CONFIG_SX_RHEL_9_4)
+     /* for now, ops is empty. split/unsplit callbacks moved to 'struct devlink_port_ops' */
+ #else /* (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5 ,0)) || defined(CONFIG_SX_RHEL_9_4) */
+diff --git a/sx_scripts/configure b/sx_scripts/configure
+index a6d75c2..b010ab8 100755
+--- a/sx_scripts/configure
++++ b/sx_scripts/configure
+@@ -225,9 +225,12 @@ if [ ! -e ${kernel_patching_marker_file} ]; then
+             	;;
+             6.1.*)
+                         MODULES_DIR=/lib/modules/${KVERSION}/update
++                ;;
++            6.8.*)
++                        MODULES_DIR=/lib/modules/${KVERSION}/update
+                 ;;	
+ 		*)
+-			echo "Kernel version ${KVERSION} is not supported, supported versions are 3.10.*, 3.13.*, 3.14.*, 3.16.*, 4.9.0, 4.15.*, 4.18.0-372*, 4.19.*, 5.10.* 5.14.* and 6.1.*"
++			echo "Kernel version ${KVERSION} is not supported, supported versions are 3.10.*, 3.13.*, 3.14.*, 3.16.*, 4.9.0, 4.15.*, 4.18.0-372*, 4.19.*, 5.10.* 5.14.*, 6.1.* and 6.8.*"
+ 			exit 1
+ 		;;
+ 	esac
+diff --git a/sx_scripts/makefile b/sx_scripts/makefile
+index 0057d74..70599a1 100644
+--- a/sx_scripts/makefile
++++ b/sx_scripts/makefile
+@@ -111,7 +111,7 @@ endif
+ 
+ V ?= 1
+ 
+-ifneq ($(findstring 3.10,$(KVERSION))$(findstring 3.13,$(KVERSION))$(findstring 3.14,$(KVERSION))$(findstring 3.16,$(KVERSION))$(findstring 4.9,$(KVERSION))$(findstring 4.15,$(KVERSION))$(findstring 4.18,$(KVERSION))$(findstring 4.19,$(KVERSION))$(findstring 5.10,$(KVERSION))$(findstring 5.14,$(KVERSION))$(findstring 6.1,$(KVERSION)),)
++ifneq ($(findstring 3.10,$(KVERSION))$(findstring 3.13,$(KVERSION))$(findstring 3.14,$(KVERSION))$(findstring 3.16,$(KVERSION))$(findstring 4.9,$(KVERSION))$(findstring 4.15,$(KVERSION))$(findstring 4.18,$(KVERSION))$(findstring 4.19,$(KVERSION))$(findstring 5.10,$(KVERSION))$(findstring 5.14,$(KVERSION))$(findstring 6.1,$(KVERSION))$(findstring 6.8,$(KVERSION)),)
+ MLNX_LINUX_AUTOCONF_FILE = include/generated/autoconf.h
+ MLNX_LINUX_KCONFIG_FILE =  $(KCONFIG_H)
+ ifeq (exists, $(shell [ -d "/lib/modules/${KVERSION}/source" ] && echo exists ))
+@@ -178,7 +178,7 @@ kernel:
+ 		CONFIG_MEMTRACK=$(CONFIG_MEMTRACK) \
+ 		CONFIG_DEBUG_INFO=$(CONFIG_DEBUG_INFO) \
+ 		LINUXINCLUDE='$(LINUXINCLUDE)' \
+-		KCFLAGS="$(KCFLAGS) -Werror -Wall -Wswitch -Wunused -Wno-format-truncation -Wno-stringop-truncation -Wframe-larger-than=4096 $(GCC_NO_DATE_TIME)" \
++		KCFLAGS="$(KCFLAGS) -Werror -Wall -Wswitch -Wunused -Wno-format-truncation -Wno-stringop-truncation -Wframe-larger-than=4096 -Wno-unused-function -Wno-missing-prototypes -Wno-missing-declarations -Wno-incompatible-pointer-types -Wno-enum-conversion $(GCC_NO_DATE_TIME)" \
+ 		modules
+ 
+ 

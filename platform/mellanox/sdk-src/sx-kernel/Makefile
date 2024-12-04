@@ -10,29 +10,28 @@ MLNX_SX_KERNEL_GITHUB_URL_BASE = $(MLNX_SDK_DRIVERS_GITHUB_URL)/archive/refs/hea
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# get sources
 
-	#if [ ! -z "$(MLNX_SDK_SOURCE_BASE_URL)" ]; then
-	#	rm -rf sx_kernel-$(MLNX_SDK_VERSION)-$(MLNX_SDK_ISSU_VERSION)
-	#	wget -c $(MLNX_SDK_SOURCE_BASE_URL)/$(PACKAGE_NAME)-$(MLNX_SDK_VERSION)-$(MLNX_SDK_ISSU_VERSION).tar.gz -O - | tar -xz
-	#	pushd sx_kernel-$(MLNX_SDK_VERSION)-$(MLNX_SDK_ISSU_VERSION)
-	#else
-	#	rm -rf Spectrum-SDK-Drivers-$(MLNX_SDK_VERSION)
-	#	wget -c $(MLNX_SX_KERNEL_GITHUB_URL_BASE)/$(MLNX_SDK_VERSION).zip
-	#	unzip $(MLNX_SDK_VERSION).zip
-	#	rm -rf $(MLNX_SDK_VERSION).zip
-
-	#	pushd Spectrum-SDK-Drivers-$(MLNX_SDK_VERSION)
-	#	ln -s ./sx_scripts/Makefile ./Makefile
-	#	ln -s ./sx_scripts/makefile ./makefile
-	#	ln -s ./sx_scripts/configure ./configure
-	#fi
+	if [ ! -z "$(MLNX_SDK_SOURCE_BASE_URL)" ]; then
+		rm -rf sx_kernel-$(MLNX_SDK_VERSION)-$(MLNX_SDK_ISSU_VERSION)
+		wget -c $(MLNX_SDK_SOURCE_BASE_URL)/$(PACKAGE_NAME)-$(MLNX_SDK_VERSION)-$(MLNX_SDK_ISSU_VERSION).tar.gz -O - | tar -xz
+		pushd sx_kernel-$(MLNX_SDK_VERSION)-$(MLNX_SDK_ISSU_VERSION)
+	else
+		rm -rf Spectrum-SDK-Drivers-$(MLNX_SDK_VERSION)
+		git clone -b $(MLNX_SDK_VERSION) $(MLNX_SDK_DRIVERS_GITHUB_URL)
+		mv Spectrum-SDK-Drivers/ Spectrum-SDK-Drivers-$(MLNX_SDK_VERSION)
+	
+		pushd Spectrum-SDK-Drivers-$(MLNX_SDK_VERSION)
+		ln -s ./sx_scripts/Makefile ./Makefile
+		ln -s ./sx_scripts/makefile ./makefile
+		ln -s ./sx_scripts/configure ./configure
+	fi
 	pushd Spectrum-SDK-Drivers-$(MLNX_SDK_VERSION)
- 
+
+	cp ../noble_build.patch .
+	git apply noble_build.patch
 
 	# build
 
-	#debuild -e KVERSION=$(KVERSION) -e KSRC_EXT=/lib/modules/$(KVERSION)/source/ -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS)
-	debuild -e KVERSION=$(KVERSION) -e KSRC_EXT=/usr/src/linux-sonic-headers-$(KERNVERSION)/ -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS)
- 
+	debuild -e KVERSION=$(KVERSION) -e KSRC_EXT=/usr/src/linux-sonic-headers-$(KERNVERSION)/ -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) 
 
 	popd
 
