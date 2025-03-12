@@ -1,0 +1,6 @@
+sonic-netweb-platform-modules (1.1) unstable; urgency=low
+
+  * Add support for  Netweb F48C810R G48C210R
+  * Initial release
+
+ -- Accton Network <roy_lee@netweb.com>  Thu, 01 Jun 2017 14:06:38 +0800
