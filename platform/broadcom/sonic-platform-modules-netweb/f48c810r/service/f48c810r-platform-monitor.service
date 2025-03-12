@@ -1,0 +1,17 @@
+[Unit]
+Description=F48C810R Platform Monitoring service
+Before=pmon.service
+After=f48c810r-platform-handle_mac.service
+DefaultDependencies=no
+
+[Service]
+ExecStartPre=/usr/local/bin/netweb_f48c810r_util.py install
+ExecStart=/usr/local/bin/netweb_f48c810r_monitor.py
+KillSignal=SIGKILL
+SuccessExitStatus=SIGKILL
+
+# Resource Limitations
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target
