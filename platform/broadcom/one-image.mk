@@ -26,6 +26,8 @@ $(SONIC_ONE_IMAGE)_LAZY_INSTALLS += $(DELL_S6000_PLATFORM_MODULE) \
                                $(INGRASYS_S9100_PLATFORM_MODULE) \
                                $(INGRASYS_S8810_32Q_PLATFORM_MODULE) \
                                $(INGRASYS_S9200_64X_PLATFORM_MODULE) \
+			       $(NETWEB_F48C810R_PLATFORM_MODULE) \
+			       $(NETWEB_G48C210R_PLATFORM_MODULE) \
                                $(ACCTON_AS7712_32X_PLATFORM_MODULE) \
                                $(ACCTON_AS5712_54X_PLATFORM_MODULE) \
                                $(ACCTON_AS7816_64X_PLATFORM_MODULE) \
