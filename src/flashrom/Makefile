@@ -11,8 +11,8 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	git clone https://github.com/flashrom/flashrom.git flashrom-$(FLASHROM_VERSION_FULL)
 	pushd ./flashrom-$(FLASHROM_VERSION_FULL)
 
-	# Check out tag: tags/0.9.7
-	git checkout -b flashrom-src tags/$(FLASHROM_VERSION_FULL)
+	# Check out tag: tags/v0.9.7
+	git checkout -b flashrom-src tags/v$(FLASHROM_VERSION_FULL)
 
 	# Apply patch series
 	stg init
