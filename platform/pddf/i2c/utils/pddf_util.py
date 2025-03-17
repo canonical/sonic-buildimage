@@ -82,7 +82,7 @@ def main():
 
     if 'custom_kos' in pddf_obj.data['PLATFORM']:
         custom_kos = pddf_obj.data['PLATFORM']['custom_kos']
-        kos.extend(['modprobe -f '+i for i in custom_kos])
+        kos.extend(['modprobe  '+i for i in custom_kos])
 
     for opt, arg in options:
         if opt in ('-h', '--help'):
