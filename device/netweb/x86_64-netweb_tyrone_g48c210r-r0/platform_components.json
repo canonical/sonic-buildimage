@@ -1,0 +1,11 @@
+{
+    "chassis": {
+        "G48C210R-O-AC-F": {
+            "component": {
+                "CPLD1": { },
+                "CPLD2": { },
+                "BIOS": { }
+            }
+        }
+    }
+}
