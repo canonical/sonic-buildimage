@@ -6,8 +6,6 @@ core_clock_frequency=266
 #core_clock_frequency=893
 #dpp_clock_ratio=2:3
 
-core_clock_to_pm_clock_factor=2
-
 oversubscribe_mode=2
 #port_gmii_mode_1=1 #Q mode
 

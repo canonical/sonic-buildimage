@@ -17,8 +17,6 @@ pbmp_xport_xe=0x1FFE00FFFFFFFFFFFF
 #Core clock Frequency
 core_clock_frequency=266
 
-# VLAN Counter Disable
-sai_vlan_counter_alloc_disable=1
 
 dport_map_port_25=1
 dport_map_port_26=2
