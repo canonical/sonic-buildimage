@@ -1,8 +1,5 @@
 from setuptools import setup
 
-DEVICE_NAME = 'netweb'
-HW_SKU = 'x86_64-netweb_tyrone_g48c210r-r0'  
-
 setup(
     name='sonic-platform',
     version='1.0',
@@ -16,8 +13,6 @@ setup(
     packages=[
         'sonic_platform',
     ],
-    package_dir={
-        'sonic_platform': '../../../../device/{}/{}/sonic_platform'.format(DEVICE_NAME, HW_SKU)},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Plugins',
