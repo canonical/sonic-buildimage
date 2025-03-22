@@ -412,7 +412,7 @@ static ssize_t set_tx_disable(struct device *dev, struct device_attribute *da,
             break;
         case MODULE_TXDISABLE_51 ... MODULE_TXDISABLE_52:
             reg=0x6;
-            mask=0x1 << (attr->index==MODULE_TXFAULT_51?7:3);
+            mask=0x1 << (attr->index==MODULE_TXDISABLE_51?7:3);
             break;
      
 	    default:
@@ -714,14 +714,14 @@ exit:
 /*
  * I2C init/probing/exit functions
  */
-static int as4630_54te_cpld_probe(struct i2c_client *client)
+static int as4630_54te_cpld_probe(struct i2c_client *client,
+			 const struct i2c_device_id *id)
 {
 	struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
 	struct as4630_54te_cpld_data *data;
 	int ret = -ENODEV;
 //	int status;	
 	const struct attribute_group *group = NULL;
-	const struct i2c_device_id *id;
 
 	if (!i2c_check_functionality(adap, I2C_FUNC_SMBUS_BYTE))
 		goto exit;
@@ -731,8 +731,6 @@ static int as4630_54te_cpld_probe(struct i2c_client *client)
 		ret = -ENOMEM;
 		goto exit;
 	}
-
-	id = i2c_match_id(as4630_54te_cpld_id, client);
 
 	i2c_set_clientdata(client, data);
     mutex_init(&data->update_lock);
