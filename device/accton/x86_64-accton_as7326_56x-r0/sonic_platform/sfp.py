@@ -6,9 +6,10 @@
 #
 #############################################################################
 
+import os
 import time
 import sys
-import subprocess
+
 from ctypes import create_string_buffer
 
 try:
@@ -39,7 +40,7 @@ class Sfp(SfpOptoeBase):
     # Path to sysfs
     PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
     PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
-    HOST_CHK_CMD = ["which", "systemctl"]
+    HOST_CHK_CMD = "which systemctl > /dev/null 2>&1"
 
     PLATFORM = "x86_64-accton_as7326_56x-r0"
     HWSKU = "Accton-AS7326-56X"
@@ -143,7 +144,7 @@ class Sfp(SfpOptoeBase):
         return True
 
     def __is_host(self):
-        return subprocess.call(self.HOST_CHK_CMD) == 0
+        return os.system(self.HOST_CHK_CMD) == 0
 
     def __get_path_to_port_config_file(self):
         platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])

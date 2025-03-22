@@ -3,8 +3,10 @@
 # provides the sfp device status which are available in the platform
 #############################################################################
 try:
+    import os
     import time
     import subprocess
+    import syslog
     from ctypes import create_string_buffer
     from sonic_platform_base.sfp_base import SfpBase
     from sonic_platform_base.sonic_sfp.sff8472 import sff8472Dom
@@ -171,7 +173,7 @@ class Sfp(SfpBase):
 
     PLATFORM_ROOT_PATH = '/usr/share/sonic/device'
     PMON_HWSKU_PATH = '/usr/share/sonic/hwsku'
-    HOST_CHK_CMD = ["docker"]
+    HOST_CHK_CMD = "docker > /dev/null 2>&1"
 
     PLATFORM = "x86_64-accton_as7116_54x-r0"
     HWSKU = "Accton-AS7116-54X-R0"
@@ -231,7 +233,7 @@ class Sfp(SfpBase):
         return ""
 
     def __is_host(self):
-        return subprocess.call(self.HOST_CHK_CMD) == 0
+        return os.system(self.HOST_CHK_CMD) == 0
 
     def __get_path_to_port_config_file(self):
         platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
