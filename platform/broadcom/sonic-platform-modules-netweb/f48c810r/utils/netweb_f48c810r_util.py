@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (C) 2016 Netweb Networks, Inc.
+# Copyright (C) 2016 Accton Networks, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,9 +100,9 @@ def show_help():
 
 
 def dis_i2c_ir3570a(addr):
-    cmd = ["i2cset", "-y", "0", "0x"+"%x"%addr, "0xE5", "0x01"]
+    cmd = ["i2cset", "-y", "-a", "0", "0x"+"%x"%addr, "0xE5", "0x01"]
     status, output = getstatusoutput_noshell(cmd)
-    cmd = ["i2cset", "-y", "0", "0x"+"%x"%addr, "0x12", "0x02"]
+    cmd = ["i2cset", "-y", "-a", "0", "0x"+"%x"%addr, "0x12", "0x02"]
     status, output = getstatusoutput_noshell(cmd)
     return status
 
