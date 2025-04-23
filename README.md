@@ -141,7 +141,8 @@ A good choice of OS for building SONiC is currently Ubuntu 20.04.
 
 ```shell
 sudo apt install -y python3-pip
-pip3 install --user j2cli
+pip3 install --user j2cli --break-system-packages
+pip3 install --user jinjanator --break-system-packages
 ```
 
 * Install [Docker](https://docs.docker.com/engine/install/) and configure your
@@ -160,7 +161,7 @@ pip3 install --user j2cli
 To clone the code repository recursively:
 
 ```shell
-git clone --recurse-submodules https://github.com/sonic-net/sonic-buildimage.git
+git clone --recurse-submodules https://github.com/canonical/sonic-buildimage.git
 ```
 
 ## Usage
@@ -203,6 +204,17 @@ The supported ASIC vendors are:
 * PLATFORM=nvidia-bluefield
 * PLATFORM=innovium
 * PLATFORM=vs
+
+## Usage for build broadcom 
+
+```shell
+git clone -b feature_noble_build  git@github.com:canonical/sonic-buildimage.git
+git submodule init
+git submodule update --recursive
+make init
+make configure PLATFORM=broadcom
+make SONIC_BUILD_JOBS=4 target/sonic-broadcom.bin
+```
 
 ## Usage for ARM Architecture
 
@@ -326,7 +338,7 @@ it is recommended to read this short [Documentation](README.buildsystem.md).
 
 SONiC build system supports building dockers and ONIE-image with debug tools
 and debug symbols, to help with live & core debugging.
-For details refer to [SONiC Buildimage Guide](https://github.com/sonic-net/sonic-buildimage/blob/master/README.buildsystem.md).
+For details refer to [SONiC Buildimage Guide](https://github.com/canonical/sonic-buildimage/blob/master/README.buildsystem.md).
 
 ## SAI Version
 
