@@ -1,4 +1,4 @@
-name: make vs
+name: Build sonic-vs.img
 
 on:
   workflow_dispatch:
@@ -29,13 +29,11 @@ jobs:
     - name: Verify Python version
       run: python --version
 
-    # - name: Install dependencies
-    #   run: sudo apt install -y python3-pip
-
     - name: install j2cli
-      run: pip3 install --user j2cli |
-           pip3 install --user j2cli --break-system-packages
-           pip3 install --user jinjanator --break-system-packages
+      run: |
+        pip3 install --user j2cli
+        pip3 install --user j2cli --break-system-packages
+        pip3 install --user jinjanator --break-system-packages
 
     - name: Run make init
       run: make init
