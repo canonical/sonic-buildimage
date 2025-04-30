@@ -1,4 +1,4 @@
-name: Build sonic-vs.img
+name: Build SONiC target
 
 on:
   workflow_dispatch:
@@ -12,39 +12,6 @@ on:
     branches: [ tests/vs-t0 ]
 
 jobs:
-  build:
-
-    runs-on: [self-hosted, jammy, x64, xlarge]
-
-    steps:
-    - name: Checkout branch
-      uses: actions/checkout@v3
-      with:
-        ref: ${{ inputs.branch_name }}
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
-
-    - name: Verify Python version
-      run: python --version
-
-    - name: install j2cli
-      run: |
-        pip3 install --user j2cli
-        pip3 install --user j2cli --break-system-packages
-        pip3 install --user jinjanator --break-system-packages
-
-    - name: Run make init
-      run: make init
-
-    - name: Run make configure
-      run: make configure PLATFORM=vs 
-      
-    - name: Run make all
-      run: make target/sonic-vs.img.gz
-
   testflinger-build:
     runs-on: [self-hosted, testflinger]
     steps:
@@ -57,7 +24,7 @@ jobs:
         with:
           poll: true
           job: |
-            job_queue: torchtusk
+            job_queue: krunch # TODO(yan.jiang): dynamically find available queue?
             provision_data:
               distro: jammy
             test_data:
@@ -66,13 +33,22 @@ jobs:
                 ssh ubuntu@$DEVICE_IP sudo modprobe overlay
                 ssh ubuntu@$DEVICE_IP sudo apt update
                 ssh ubuntu@$DEVICE_IP sudo apt install -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx
-
+                ssh ubuntu@$DEVICE_IP pip3 install --user j2cli --break-system-packages
+                ssh ubuntu@$DEVICE_IP pip3 install --user jinjanator --break-system-packages
+        
                 ssh ubuntu@$DEVICE_IP sudo gpasswd -a ubuntu docker
                 ssh ubuntu@$DEVICE_IP sudo systemctl restart docker
                 ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
                 ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
                 ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make configure PLATFORM=vs"
+                ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz"
 
       - name: Display results
         run: |
           testflinger results ${{ steps.submit-job.outputs.id }}"
+
+      - name: Upload vs image
+        uses: actions/upload-artifact@master
+        with:
+          name: sonic-vs.img.gz
+          path: target/sonic-vs.img.gz
