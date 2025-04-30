@@ -1,0 +1,78 @@
+name: Build sonic-vs.img
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'branch name'
+        required: true
+        default: 'tests/vs-t0'
+        type: string
+  push:
+    branches: [ tests/vs-t0 ]
+
+jobs:
+  build:
+
+    runs-on: [self-hosted, jammy, x64, xlarge]
+
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.branch_name }}
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Verify Python version
+      run: python --version
+
+    - name: install j2cli
+      run: |
+        pip3 install --user j2cli
+        pip3 install --user j2cli --break-system-packages
+        pip3 install --user jinjanator --break-system-packages
+
+    - name: Run make init
+      run: make init
+
+    - name: Run make configure
+      run: make configure PLATFORM=vs 
+      
+    - name: Run make all
+      run: make target/sonic-vs.img.gz
+
+  testflinger-build:
+    runs-on: [self-hosted, testflinger]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Submit job
+        id: submit-job
+        uses: canonical/testflinger/.github/actions/submit@main
+        with:
+          poll: true
+          job: |
+            job_queue: torchtusk
+            provision_data:
+              distro: jammy
+            test_data:
+              test_cmds: |
+                ssh ubuntu@$DEVICE_IP git clone -b feature_noble_build --recurse-submodules https://github.com/canonical/sonic-buildimage.git
+                ssh ubuntu@$DEVICE_IP sudo modprobe overlay
+                ssh ubuntu@$DEVICE_IP sudo apt update
+                ssh ubuntu@$DEVICE_IP sudo apt install -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx
+
+                ssh ubuntu@$DEVICE_IP sudo gpasswd -a ubuntu docker
+                ssh ubuntu@$DEVICE_IP sudo systemctl restart docker
+                ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
+                ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
+                ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make configure PLATFORM=vs"
+
+      - name: Display results
+        run: |
+          testflinger results ${{ steps.submit-job.outputs.id }}"
