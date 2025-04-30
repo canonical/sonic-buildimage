@@ -12,6 +12,7 @@ fsroot/
 fs.*
 target/
 *.deb
+*.ddeb
 *.udeb
 *.changes
 *.buildinfo
@@ -128,3 +129,5 @@ src/openssh/openssh-server/
 src/rasdaemon/rasdaemon/
 
 fsroot-vs/
+fsroot-broadcom/
+fsroot-broadcom-dnx/
