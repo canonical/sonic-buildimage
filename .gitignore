@@ -43,6 +43,9 @@ platform/*/docker-*/*manifest*
 
 # Installer-related files and directories
 installer/x86_64/platforms/
+installer/platforms/
+installer/platforms_asic
+installer/platforms_asic/
 
 # Misc. files
 asic_config_checksum
@@ -117,3 +120,11 @@ sources.list.*
 
 # Generated mirror configs
 apt-retries-count
+
+# Downloaded source code
+src/ipmitool/ipmitool-1.8.19/
+src/ipmitool/ipmitool_1.8.19-9.dsc
+src/openssh/openssh-server/
+src/rasdaemon/rasdaemon/
+
+fsroot-vs/
