@@ -131,3 +131,8 @@ src/rasdaemon/rasdaemon/
 fsroot-vs/
 fsroot-broadcom/
 fsroot-broadcom-dnx/
+platform/broadcom/saibcm-modules/sdklt/linux/knet/generated/
+src/flashrom/flashrom-0.9.7/
+src/iccpd/config/
+src/ifupdown2/ifupdown2-3.0.0-1/
+src/sonic-yang-models/cvlyang-models/

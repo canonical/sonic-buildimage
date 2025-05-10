@@ -24,7 +24,7 @@ jobs:
         with:
           poll: true
           job: |
-            job_queue: krunch # TODO(yan.jiang): dynamically find available queue?
+            job_queue: torchtusk
             provision_data:
               distro: jammy
             test_data:
@@ -42,12 +42,12 @@ jobs:
                 ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make configure PLATFORM=vs"
                 for i in {1..3}; do ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz" && break; echo "Attempt $i failed. Retrying..."; done
 
-      - name: Display results
-        run: |
-          testflinger results ${{ steps.submit-job.outputs.id }}"
+      # - name: Display results
+      #   run: |
+      #     testflinger results ${{ steps.submit-job.outputs.id }}
 
-      - name: Upload vs image
-        uses: actions/upload-artifact@master
-        with:
-          name: sonic-vs.img.gz
-          path: target/sonic-vs.img.gz
+      # - name: Upload vs image
+      #   uses: actions/upload-artifact@master
+      #   with:
+      #     name: sonic-vs.img.gz
+      #     path: target/sonic-vs.img.gz
