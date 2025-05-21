@@ -24,12 +24,12 @@ jobs:
         with:
           poll: true
           job: |
-            job_queue: torchtusk
+            job_queue: krunch
             provision_data:
               distro: jammy
             test_data:
               test_cmds: |
-                ssh ubuntu@$DEVICE_IP git clone -b feature_noble_build --recurse-submodules https://github.com/canonical/sonic-buildimage.git
+                ssh ubuntu@$DEVICE_IP git clone -b tests/vs-t0 --recurse-submodules https://github.com/canonical/sonic-buildimage.git
                 ssh ubuntu@$DEVICE_IP sudo modprobe overlay
                 ssh ubuntu@$DEVICE_IP sudo apt update
                 ssh ubuntu@$DEVICE_IP sudo apt install -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx
