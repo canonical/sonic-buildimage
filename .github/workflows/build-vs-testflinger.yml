@@ -42,5 +42,17 @@ jobs:
                 for i in {1..3}; do ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz" && break; echo "Attempt $i failed. Retrying..."; done
 
       - name: Display results
+        id: get-results
         run: |
-          testflinger results ${{ steps.submit-job.outputs.id }}
+          testflinger results ${{ steps.submit-job.outputs.id }} > results.json
+
+      - name: Check test status
+        run: |
+          status=$(jq '.test_status' results.json)
+          if [ "$status" -ne 0 ]; then
+            echo "testflinger task failed with status $status"
+            jq -r '.test_output' results.json
+            exit 1
+          else
+            echo "testflinger task succeeded"
+          fi
