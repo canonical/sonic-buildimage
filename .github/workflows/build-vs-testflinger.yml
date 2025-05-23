@@ -14,32 +14,36 @@ on:
 jobs:
   testflinger-build:
     runs-on: [self-hosted, testflinger]
+    strategy:
+      matrix:
+        platform: [vs, broadcom]
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Jinja2 CLI
+        run: pip install jinja2
+
+      - name: Check current directory
+        run: pwd && ls -al
+
+      - name: Generate job YAML
+        id: create-job
+        run: |
+          export BRANCH=${{ github.head_ref || github.ref_name }}
+          export PLATFORM=${{ matrix.platform }}
+          export OUTPUT_PATH=build_${{ matrix.platform }}.yaml
+          python3 ${{ github.workspace }}/.github/testflinger/generate.py
+          echo "job-path=$OUTPUT_PATH" >> $GITHUB_OUTPUT
+
+      - name: Check real job yaml
+        run: echo "yaml file path=" ${{ steps.create-job.outputs.job-path }}
+
       - name: Submit job
         id: submit-job
         uses: canonical/testflinger/.github/actions/submit@main
         with:
-          poll: true
-          job: |
-            job_queue: krunch
-            provision_data:
-              distro: jammy
-            output_timeout: 1800
-            test_data:
-              test_cmds: |
-                set -e
-                ssh ubuntu@$DEVICE_IP git clone -q -b ${{ github.head_ref || github.ref_name }} --recurse-submodules https://github.com/canonical/sonic-buildimage.git
-                ssh ubuntu@$DEVICE_IP sudo modprobe overlay
-                ssh ubuntu@$DEVICE_IP sudo apt update -qq
-                ssh ubuntu@$DEVICE_IP sudo apt install -qq -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx
-                ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli
-                ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator
-                ssh ubuntu@$DEVICE_IP sudo gpasswd -a ubuntu docker
-                ssh ubuntu@$DEVICE_IP sudo systemctl restart docker
-                ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
-                ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
-                ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make configure PLATFORM=vs"
-                for i in {1..3}; do ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz" && break; echo "Attempt $i failed. Retrying..."; done
+          # poll: true
+          job-path: ${{ steps.create-job.outputs.job-path }}
 
       - name: Display results
         id: get-results

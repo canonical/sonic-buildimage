@@ -1,0 +1,18 @@
+job_queue: krunch
+provision_data:
+  distro: jammy
+test_data:
+  test_cmds: |
+    set -e
+    ssh ubuntu@$DEVICE_IP git clone -q -b {{ branch }} --recurse-submodules https://github.com/canonical/sonic-buildimage.git
+    ssh ubuntu@$DEVICE_IP sudo modprobe overlay
+    ssh ubuntu@$DEVICE_IP sudo apt update -qq
+    ssh ubuntu@$DEVICE_IP sudo apt install -qq -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx
+    ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli
+    ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator
+    ssh ubuntu@$DEVICE_IP sudo gpasswd -a ubuntu docker
+    ssh ubuntu@$DEVICE_IP sudo systemctl restart docker
+    ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
+    ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
+    ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make configure PLATFORM={{ platform }}"
+    for i in {1..3}; do ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz" && break; echo "Attempt $i failed. Retrying..."; done
