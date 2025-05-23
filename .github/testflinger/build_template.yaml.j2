@@ -15,4 +15,6 @@ test_data:
     ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
     ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
     ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make configure PLATFORM={{ platform }}"
-    for i in {1..3}; do ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz" && break; echo "Attempt $i failed. Retrying..."; done
+    status=1
+    for i in {1..3}; do ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make SONIC_BUILD_JOBS=4 all" && { status=0; break;}; echo "Attempt $i failed. Retrying..."; done
+    exit $status

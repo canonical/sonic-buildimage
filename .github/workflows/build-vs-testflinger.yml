@@ -13,42 +13,42 @@ on:
 
 jobs:
   testflinger-build:
-    runs-on: [self-hosted, testflinger]
+    runs-on: [self-hosted , testflinger]
     strategy:
       matrix:
         platform: [vs, broadcom]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Jinja2 CLI
-        run: pip install jinja2
-
-      - name: Check current directory
-        run: pwd && ls -al
-
       - name: Generate job YAML
-        id: create-job
-        run: |
-          export BRANCH=${{ github.head_ref || github.ref_name }}
-          export PLATFORM=${{ matrix.platform }}
-          export OUTPUT_PATH=build_${{ matrix.platform }}.yaml
-          python3 ${{ github.workspace }}/.github/testflinger/generate.py
-          echo "job-path=$OUTPUT_PATH" >> $GITHUB_OUTPUT
+        uses: cuchi/jinja2-action@v1.3.0
+        with:
+          template: ${{ github.workspace }}/.github/testflinger/build_template.yaml.j2
+          output_file: tmp_build_${{ matrix.platform }}.yaml
+          strict: true
+          variables: |
+            branch=${{ github.head_ref || github.ref_name }}
+            platform=${{ matrix.platform }}
 
-      - name: Check real job yaml
-        run: echo "yaml file path=" ${{ steps.create-job.outputs.job-path }}
+      - name: Check job yaml
+        run: |
+          # Copy to solve the file permission issue
+          cp tmp_build_${{ matrix.platform }}.yaml build_${{ matrix.platform }}.yaml
+          ls -al build_${{ matrix.platform }}.yaml
+          cat build_${{ matrix.platform }}.yaml
 
       - name: Submit job
         id: submit-job
         uses: canonical/testflinger/.github/actions/submit@main
         with:
-          # poll: true
-          job-path: ${{ steps.create-job.outputs.job-path }}
+          poll: true
+          job-path: build_${{ matrix.platform }}.yaml
 
       - name: Display results
         id: get-results
         run: |
           testflinger results ${{ steps.submit-job.outputs.id }} > results.json
+          cat result.json
 
       - name: Check test status
         run: |
