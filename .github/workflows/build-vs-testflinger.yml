@@ -48,7 +48,7 @@ jobs:
         id: get-results
         run: |
           testflinger results ${{ steps.submit-job.outputs.id }} > results.json
-          cat result.json
+          cat results.json
 
       - name: Check test status
         run: |

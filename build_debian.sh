@@ -107,7 +107,7 @@ sudo LANG=C chroot $FILESYSTEM_ROOT /bin/bash -c 'echo "sysfs /sys sysfs default
 ## Setup proxy
 [ -n "$http_proxy" ] && sudo /bin/bash -c "echo 'Acquire::http::Proxy \"$http_proxy\";' > $FILESYSTEM_ROOT/etc/apt/apt.conf.d/01proxy"
 
-trap_push 'sudo LANG=C chroot $FILESYSTEM_ROOT umount /proc || true'
+trap_push 'sudo LANG=C umount $FILESYSTEM_ROOT/proc || true'
 sudo LANG=C chroot $FILESYSTEM_ROOT mount proc /proc -t proc
 ## Note: mounting is necessary to makedev and install linux image
 echo '[INFO] Mount all'
