@@ -14,10 +14,10 @@ test_data:
     ssh ubuntu@$DEVICE_IP sudo systemctl restart docker
     ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
     ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
-    ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make configure PLATFORM={{ platform }}"
+    ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && MIRROR_SECURITY_URLS=http://mirror.csclub.uwaterloo.ca/ubuntu/ MIRROR_URLS=http://mirror.csclub.uwaterloo.ca/ubuntu/ make configure PLATFORM={{ platform }}"
     ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && DBGOPT=1 SONIC_BUILD_RETRY_COUNT=15 make SONIC_BUILD_JOBS=4 all"
-reserve_data:
-  ssh_keys:
-    - lp:yanjiangpku
-    - gh:jy5275
-  timeout: 21600
+# reserve_data:
+#   ssh_keys:
+#     - lp:yanjiangpku
+#     - gh:jy5275
+#   timeout: 21600
