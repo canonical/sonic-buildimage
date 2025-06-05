@@ -4,6 +4,7 @@ provision_data:
 test_data:
   test_cmds: |
     set -e
+    set -x
     ssh ubuntu@$DEVICE_IP git clone -q -b {{ branch }} --recurse-submodules https://github.com/canonical/sonic-buildimage.git
     ssh ubuntu@$DEVICE_IP sudo modprobe overlay
     ssh ubuntu@$DEVICE_IP sudo apt update -qq
