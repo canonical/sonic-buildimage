@@ -42,6 +42,7 @@ if [ "$ENABLE_VERSION_CONTROL_DEB" != "y" ] || [ ! -d files/build/versions/host-
         sudo http_proxy=$HTTP_PROXY SKIP_BUILD_HOOK=y debootstrap --foreign --variant=minbase --arch $CONFIGURED_ARCH $IMAGE_DISTRO $FILESYSTEM_ROOT "$MIRROR_URL"
         sudo rm $FILESYSTEM_ROOT/proc -rf
         sudo mkdir $FILESYSTEM_ROOT/proc
+        trap_push 'sudo LANG=C umount $FILESYSTEM_ROOT/proc || true'
         sudo mount -t proc proc $FILESYSTEM_ROOT/proc
         sudo LANG=C chroot $FILESYSTEM_ROOT /debootstrap/debootstrap --second-stage
     else
