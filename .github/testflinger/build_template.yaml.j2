@@ -1,0 +1,23 @@
+job_queue: sonic-ci
+provision_data:
+  distro: jammy
+test_data:
+  test_cmds: |
+    set -e
+    ssh ubuntu@$DEVICE_IP git clone -q -b {{ branch }} --recurse-submodules https://github.com/canonical/sonic-buildimage.git
+    ssh ubuntu@$DEVICE_IP sudo modprobe overlay
+    ssh ubuntu@$DEVICE_IP sudo apt update -qq
+    ssh ubuntu@$DEVICE_IP sudo apt install -qq -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx
+    ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli
+    ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator
+    ssh ubuntu@$DEVICE_IP sudo gpasswd -a ubuntu docker
+    ssh ubuntu@$DEVICE_IP sudo systemctl restart docker
+    ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
+    ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
+    ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && MIRROR_SECURITY_URLS=http://mirror.csclub.uwaterloo.ca/ubuntu/ MIRROR_URLS=http://mirror.csclub.uwaterloo.ca/ubuntu/ make configure PLATFORM={{ platform }}"
+    ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && DBGOPT=1 SONIC_BUILD_RETRY_COUNT=15 make SONIC_BUILD_JOBS=4 all"
+# reserve_data:
+#   ssh_keys:
+#     - lp:yanjiangpku
+#     - gh:jy5275
+#   timeout: 21600

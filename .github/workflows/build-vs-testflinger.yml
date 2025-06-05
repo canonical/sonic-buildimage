@@ -1,0 +1,62 @@
+name: Build SONiC target
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'branch name'
+        required: true
+        default: 'tests/vs-t0'
+        type: string
+  push:
+    branches: [ tests/vs-t0 ]
+
+jobs:
+  testflinger-build:
+    runs-on: [self-hosted , testflinger]
+    strategy:
+      matrix:
+        platform: [vs, broadcom]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate job YAML
+        uses: cuchi/jinja2-action@v1.3.0
+        with:
+          template: ${{ github.workspace }}/.github/testflinger/build_template.yaml.j2
+          output_file: tmp_build_${{ matrix.platform }}.yaml
+          strict: true
+          variables: |
+            branch=${{ github.head_ref || github.ref_name }}
+            platform=${{ matrix.platform }}
+
+      - name: Check job yaml
+        run: |
+          # Copy to solve the file permission issue
+          cp tmp_build_${{ matrix.platform }}.yaml build_${{ matrix.platform }}.yaml
+          ls -al build_${{ matrix.platform }}.yaml
+          cat build_${{ matrix.platform }}.yaml
+
+      - name: Submit job
+        id: submit-job
+        uses: canonical/testflinger/.github/actions/submit@main
+        with:
+          poll: true
+          job-path: build_${{ matrix.platform }}.yaml
+
+      - name: Display results
+        id: get-results
+        run: |
+          testflinger results ${{ steps.submit-job.outputs.id }} > results.json
+          cat results.json
+
+      - name: Check test status
+        run: |
+          status=$(jq '.test_status' results.json)
+          if [ "$status" -ne 0 ]; then
+            echo "testflinger task failed with status $status"
+            jq -r '.test_output' results.json
+            exit 1
+          else
+            echo "testflinger task succeeded"
+          fi

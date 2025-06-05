@@ -12,6 +12,7 @@ fsroot/
 fs.*
 target/
 *.deb
+*.ddeb
 *.udeb
 *.changes
 *.buildinfo
@@ -43,6 +44,9 @@ platform/*/docker-*/*manifest*
 
 # Installer-related files and directories
 installer/x86_64/platforms/
+installer/platforms/
+installer/platforms_asic
+installer/platforms_asic/
 
 # Misc. files
 asic_config_checksum
@@ -117,3 +121,18 @@ sources.list.*
 
 # Generated mirror configs
 apt-retries-count
+
+# Downloaded source code
+src/ipmitool/ipmitool-1.8.19/
+src/ipmitool/ipmitool_1.8.19-9.dsc
+src/openssh/openssh-server/
+src/rasdaemon/rasdaemon/
+
+fsroot-vs/
+fsroot-broadcom/
+fsroot-broadcom-dnx/
+platform/broadcom/saibcm-modules/sdklt/linux/knet/generated/
+src/flashrom/flashrom-0.9.7/
+src/iccpd/config/
+src/ifupdown2/ifupdown2-3.0.0-1/
+src/sonic-yang-models/cvlyang-models/

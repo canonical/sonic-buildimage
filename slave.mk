@@ -150,6 +150,18 @@ distclean : .platform clean
 list :
 	$(Q)$(foreach target,$(SONIC_TARGET_LIST),echo $(target);)
 
+print-depends:
+	@echo "==== All *_DEPENDS variables ===="
+	@$(foreach v,$(sort $(filter %_DEPENDS,$(.VARIABLES))), \
+		echo "$(v) = $($(v))"; \
+	)
+
+print-derived:
+	@echo "==== All *_DERIVED_DEBS variables ===="
+	@$(foreach v,$(sort $(filter %_DERIVED_DEBS,$(.VARIABLES))), \
+		echo "$(v) = $($(v))"; \
+	)
+
 ###############################################################################
 ## Include other rules
 ###############################################################################
@@ -505,7 +517,7 @@ endef
 $(foreach installer,$(SONIC_INSTALLERS),$(eval $(call rfs_define_target,$(installer))))
 $(foreach installer, $(SONIC_INSTALLERS), $(eval $(installer)_RFS_DEPENDS=$(call rfs_get_installer_dependencies,$(installer))))
 
-SONIC_TARGET_LIST += $(addprefix $(TARGET_PATH)/, $(SONIC_RFS_TARGETS))
+SONIC_TARGET_LIST += $(addprefix RFS_TARGETS-$(TARGET_PATH)/, $(SONIC_RFS_TARGETS))
 
 # Overwrite the buildinfo in slave container
 ifeq ($(filter clean,$(MAKECMDGOALS)),)
@@ -627,7 +639,7 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_COPY_DEBS)) : $(DEBS_PATH)/% : .platform \
 	$(FOOTER)
 
 
-SONIC_TARGET_LIST += $(addprefix $(DEBS_PATH)/, $(SONIC_COPY_DEBS))
+SONIC_TARGET_LIST += $(addprefix COPY_DEBS-$(DEBS_PATH)/, $(SONIC_COPY_DEBS))
 
 # Copy regular files from local directory
 # Add new package for copy:
@@ -639,7 +651,7 @@ $(addprefix $(FILES_PATH)/, $(SONIC_COPY_FILES)) : $(FILES_PATH)/% : .platform
 	cp $($*_PATH)/$* $(FILES_PATH)/ $(LOG) || exit 1
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(FILES_PATH)/, $(SONIC_COPY_FILES))
+SONIC_TARGET_LIST += $(addprefix COPY_FILES-$(FILES_PATH)/, $(SONIC_COPY_FILES))
 
 ###############################################################################
 ## Online targets
@@ -668,7 +680,7 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_ONLINE_DEBS)) : $(DEBS_PATH)/% : .platform \
 	fi
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(DEBS_PATH)/, $(SONIC_ONLINE_DEBS))
+SONIC_TARGET_LIST += $(addprefix ONLINE_DEBS-$(DEBS_PATH)/, $(SONIC_ONLINE_DEBS))
 
 # Download regular files from online location
 # Files are stored in deb packages directory for convenience
@@ -681,7 +693,7 @@ $(addprefix $(FILES_PATH)/, $(SONIC_ONLINE_FILES)) : $(FILES_PATH)/% : .platform
 	SKIP_BUILD_HOOK=$($*_SKIP_VERSION) curl -L -f -o $@ $($*_CURL_OPTIONS) $($*_URL) $(LOG)
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(FILES_PATH)/, $(SONIC_ONLINE_FILES))
+SONIC_TARGET_LIST += $(addprefix ONLINE_FILES-$(FILES_PATH)/, $(SONIC_ONLINE_FILES))
 
 ###############################################################################
 ## Build targets
@@ -724,7 +736,7 @@ $(addprefix $(FILES_PATH)/, $(SONIC_MAKE_FILES)) : $(FILES_PATH)/% : .platform $
 
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(FILES_PATH)/, $(SONIC_MAKE_FILES))
+SONIC_TARGET_LIST += $(addprefix MAKE_FILES-$(FILES_PATH)/, $(SONIC_MAKE_FILES))
 
 ###############################################################################
 ## Debian package related targets
@@ -738,7 +750,8 @@ SONIC_TARGET_LIST += $(addprefix $(FILES_PATH)/, $(SONIC_MAKE_FILES))
 #     $(SOME_NEW_DEB)_SRC_PATH = $(SRC_PATH)/project_name
 #     $(SOME_NEW_DEB)_DEPENDS = $(SOME_OTHER_DEB1) $(SOME_OTHER_DEB2) ...
 #     SONIC_MAKE_DEBS += $(SOME_NEW_DEB)
-$(addprefix $(DEBS_PATH)/, $(SONIC_MAKE_DEBS)) : $(DEBS_PATH)/% : .platform $$(addsuffix -install,$$(addprefix $(DEBS_PATH)/,$$($$*_DEPENDS))) \
+$(addprefix $(DEBS_PATH)/, $(SONIC_MAKE_DEBS)) : $(DEBS_PATH)/% : .platform  \
+			$$(addsuffix -install,$$(addprefix $(DEBS_PATH)/,$$($$*_DEPENDS))) \
 			$$(addsuffix -install,$$(addprefix $(PYTHON_WHEELS_PATH)/,$$($$*_WHEEL_DEPENDS))) \
 			$$(addprefix $(DEBS_PATH)/,$$($$*_AFTER)) \
 			$$(addprefix $(FILES_PATH)/,$$($$*_FILES)) \
@@ -771,7 +784,7 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_MAKE_DEBS)) : $(DEBS_PATH)/% : .platform $$(a
 
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(DEBS_PATH)/, $(SONIC_MAKE_DEBS))
+SONIC_TARGET_LIST += $(addprefix MAKE_DEBS-$(DEBS_PATH)/, $(SONIC_MAKE_DEBS))
 
 # Build project with dpkg-buildpackage
 # Add new package for build:
@@ -818,7 +831,7 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS)) : $(DEBS_PATH)/% : .platform $$(a
 
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS))
+SONIC_TARGET_LIST += $(addprefix DPKG_DEBS-$(DEBS_PATH)/, $(SONIC_DPKG_DEBS))
 
 # Rules for derived debian packages (dev, dbg, etc.)
 # All noise takes place in main deb recipe, so we are just telling that
@@ -833,7 +846,7 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_DERIVED_DEBS)) : $(DEBS_PATH)/% : .platform $
 	[ -f $@ ] && touch $@
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(DEBS_PATH)/, $(SONIC_DERIVED_DEBS))
+SONIC_TARGET_LIST += $(addprefix DERIVED_DEBS-$(DEBS_PATH)/, $(SONIC_DERIVED_DEBS))
 
 # Rules for extra debian packages
 # All noise takes place in main deb recipe, so we are just telling that
@@ -848,7 +861,7 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_EXTRA_DEBS)) : $(DEBS_PATH)/% : .platform $$(
 	[ -f $@ ] && touch $@
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(DEBS_PATH)/, $(SONIC_EXTRA_DEBS))
+SONIC_TARGET_LIST += $(addprefix EXTRA_DEBS-$(DEBS_PATH)/, $(SONIC_EXTRA_DEBS))
 
 # Targets for installing debian packages prior to build one that depends on them
 SONIC_INSTALL_DEBS = $(addsuffix -install,$(addprefix $(DEBS_PATH)/, \
@@ -925,7 +938,7 @@ $(addprefix $(PYTHON_DEBS_PATH)/, $(SONIC_PYTHON_STDEB_DEBS)) : $(PYTHON_DEBS_PA
 
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(PYTHON_DEBS_PATH)/, $(SONIC_PYTHON_STDEB_DEBS))
+SONIC_TARGET_LIST += $(addprefix PYTHON_STDEB_DEBS-$(PYTHON_DEBS_PATH)/, $(SONIC_PYTHON_STDEB_DEBS))
 
 # Build project using python setup.py bdist_wheel
 # Projects that generate python wheels
@@ -981,7 +994,7 @@ endif
 
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(PYTHON_WHEELS_PATH)/, $(SONIC_PYTHON_WHEELS))
+SONIC_TARGET_LIST += $(addprefix PYTHON_WHEELS-$(PYTHON_WHEELS_PATH)/, $(SONIC_PYTHON_WHEELS))
 
 # Targets for installing python wheels.
 # Autogenerated
@@ -1050,7 +1063,7 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_SIMPLE_DOCKER_IMAGES)) : $(TARGET_PATH)/%.g
 	if [ -f $($*.gz_PATH).patch/series ]; then pushd $($*.gz_PATH) && quilt pop -a -f; [ -d .pc ] && rm -rf .pc; popd; fi
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(TARGET_PATH)/, $(SONIC_SIMPLE_DOCKER_IMAGES))
+SONIC_TARGET_LIST += $(addprefix SIMPLE_DOCKER_IMAGES-$(TARGET_PATH)/, $(SONIC_SIMPLE_DOCKER_IMAGES))
 
 DOCKER_IMAGES_FOR_INSTALLERS := $(sort $(foreach installer,$(SONIC_INSTALLERS),$($(installer)_DOCKERS)))
 
@@ -1218,7 +1231,7 @@ $(addprefix $(TARGET_PATH)/, $(DOCKER_IMAGES)) : $(TARGET_PATH)/%.gz : .platform
 
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(TARGET_PATH)/, $(DOCKER_IMAGES))
+SONIC_TARGET_LIST += $(addprefix DOCKER_IMAGES-$(TARGET_PATH)/, $(DOCKER_IMAGES))
 
 # Targets for building docker debug images
 $(addprefix $(TARGET_PATH)/, $(DOCKER_DBG_IMAGES)) : $(TARGET_PATH)/%-$(DBG_IMAGE_MARK).gz : .platform docker-start \
@@ -1283,7 +1296,7 @@ $(addprefix $(TARGET_PATH)/, $(DOCKER_DBG_IMAGES)) : $(TARGET_PATH)/%-$(DBG_IMAG
 
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(TARGET_PATH)/, $(DOCKER_DBG_IMAGES))
+SONIC_TARGET_LIST += $(addprefix DOCKER_DBG_IMAGES-$(TARGET_PATH)/, $(DOCKER_DBG_IMAGES))
 
 DOCKER_LOAD_TARGETS = $(addsuffix -load,$(addprefix $(TARGET_PATH)/, \
 		      $(SONIC_SIMPLE_DOCKER_IMAGES) \
@@ -1653,7 +1666,7 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
 	chmod a+x $@
 	$(FOOTER)
 
-SONIC_TARGET_LIST += $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS))
+SONIC_TARGET_LIST += $(addprefix INSTALLERS-$(TARGET_PATH)/, $(SONIC_INSTALLERS))
 
 ###############################################################################
 ## Clean targets
