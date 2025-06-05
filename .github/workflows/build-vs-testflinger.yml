@@ -6,7 +6,7 @@ on:
       branch_name:
         description: 'branch name'
         required: true
-        default: 'tests/vs-t0'
+        default: 'feature_noble_build'
         type: string
   push:
     branches: [ feature_noble_build ]
