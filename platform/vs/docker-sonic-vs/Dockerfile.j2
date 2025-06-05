@@ -9,16 +9,16 @@ RUN [ -f /etc/rsyslog.conf ] && sed -ri "s/%syslogtag%/$docker_container_name#%s
 ## Make apt-get non-interactive
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y gnupg
+RUN apt-get update -qq &&  apt-get install -qq -y gnupg
 
-RUN apt-get install -y net-tools \
+RUN  apt-get install -qq -y net-tools \
                        arping \
                        ndisc6 \
                        ethtool \
                        tcpdump \
                        ifupdown \
                        bridge-utils \
-                       python-ply \
+                       python3-ply \
                        libqt5core5a \
                        libqt5network5 \
                        libgmp10 \
@@ -69,7 +69,7 @@ RUN apt-get install -y net-tools \
                        libgssrpc4 \
                        libkdb5-10
 
-RUN apt-get install -y -t noble-backports iproute2
+RUN  apt-get install -qq -y -t noble-backports iproute2
 
 # For sonic-config-engine Python 3 package
 # Install pyangbind here, outside sonic-config-engine dependencies, as pyangbind causes enum34 to be installed.
@@ -93,7 +93,7 @@ RUN pip3 install \
 {{ install_debian_packages(docker_sonic_vs_debs.split(' ')) }}
 {%- endif %}
 
-RUN apt-get install -y libzmq3-dev
+RUN  apt-get install -qq -y libzmq3-dev
 
 {% if docker_sonic_vs_pydebs.strip() -%}
 # Copy built Debian packages
