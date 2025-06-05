@@ -9,7 +9,7 @@ on:
         default: 'tests/vs-t0'
         type: string
   push:
-    branches: [ tests/vs-t0 ]
+    branches: [ feature_noble_build ]
 
 jobs:
   testflinger-build:
