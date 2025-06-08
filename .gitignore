@@ -35,6 +35,9 @@ sonic-slave*/Dockerfile.cleanup
 dockers/*/Dockerfile
 dockers/*/Dockerfile.cleanup
 dockers/*/Dockerfile-dbg.cleanup
+dockers/*/debs
+dockers/*/files
+dockers/*/python-wheels
 platform/*/docker-*/Dockerfile
 platform/*/docker-*/Dockerfile.cleanup
 platform/*/docker-*/Dockerfile-dbg.cleanup
