@@ -12,37 +12,80 @@ on:
     branches: [ feature_noble_build, tests/vs-* ]
 
 jobs:
-  testflinger-build:
+  testflinger-vs:
     runs-on: [self-hosted , testflinger]
-    strategy:
-      matrix:
-        platform: [vs, broadcom]
     steps:
       - uses: actions/checkout@v4
 
       - name: Generate job YAML
         uses: cuchi/jinja2-action@v1.3.0
         with:
-          template: ${{ github.workspace }}/.github/testflinger/build_template.yaml.j2
-          output_file: tmp_build_${{ matrix.platform }}.yaml
+          template: ${{ github.workspace }}/.github/testflinger/vs_template.yaml.j2
+          output_file: tmp_build_vs.yaml
           strict: true
           variables: |
             branch=${{ github.head_ref || github.ref_name }}
-            platform=${{ matrix.platform }}
 
       - name: Check job yaml
         run: |
           # Copy to solve the file permission issue
-          cp tmp_build_${{ matrix.platform }}.yaml build_${{ matrix.platform }}.yaml
-          ls -al build_${{ matrix.platform }}.yaml
-          cat build_${{ matrix.platform }}.yaml
+          cp tmp_build_vs.yaml build_vs.yaml
+          ls -al build_vs.yaml
+          cat build_vs.yaml
 
       - name: Submit job
         id: submit-job
         uses: canonical/testflinger/.github/actions/submit@main
         with:
           poll: true
-          job-path: build_${{ matrix.platform }}.yaml
+          job-path: build_vs.yaml
+
+      - name: Display results
+        id: get-results
+        run: |
+          testflinger results ${{ steps.submit-job.outputs.id }} > results.json
+          cat results.json
+
+      - name: Check test status
+        run: |
+          status=$(jq '.test_status' results.json)
+          if [ "$status" -ne 0 ]; then
+            echo "testflinger task failed with status $status"
+            jq -r '.test_output' results.json
+            exit 1
+          else
+            echo "testflinger task succeeded"
+          fi
+
+
+  testflinger-broadcom:
+    runs-on: [self-hosted , testflinger]
+    needs: testflinger-vs
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate job YAML
+        uses: cuchi/jinja2-action@v1.3.0
+        with:
+          template: ${{ github.workspace }}/.github/testflinger/broadcom_template.yaml.j2
+          output_file: tmp_build_broadcom.yaml
+          strict: true
+          variables: |
+            branch=${{ github.head_ref || github.ref_name }}
+
+      - name: Check job yaml
+        run: |
+          # Copy to solve the file permission issue
+          cp tmp_build_broadcom.yaml build_broadcom.yaml
+          ls -al build_broadcom.yaml
+          cat build_broadcom.yaml
+
+      - name: Submit job
+        id: submit-job
+        uses: canonical/testflinger/.github/actions/submit@main
+        with:
+          poll: true
+          job-path: build_broadcom.yaml
 
       - name: Display results
         id: get-results
