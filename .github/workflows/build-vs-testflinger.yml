@@ -1,4 +1,4 @@
-name: Build SONiC target
+name: SONiC testbed
 
 on:
   workflow_dispatch:

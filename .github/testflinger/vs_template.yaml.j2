@@ -21,15 +21,18 @@ test_data:
     ssh ubuntu@$DEVICE_IP ./.local/bin/gdown -O /home/ubuntu/veos-vm/images/cEOS64-lab-4.29.3M.tar https://drive.google.com/uc?id=1ze1VRtLO8AGv-ntysLEmWmzwlZTi5v7J
     ssh ubuntu@$DEVICE_IP ./.local/bin/gdown -O /home/ubuntu/veos-vm/images/sonic-vs.img.gz https://drive.google.com/uc?id=1wuFBYbNFo_qssVS9zUsWcs9Kj0Vq9hMj
     ssh ubuntu@$DEVICE_IP gzip -d /home/ubuntu/veos-vm/images/sonic-vs.img.gz
-    ssh ubuntu@$DEVICE_IP mv sonic-vs.img /home/ubuntu/veos-vm/images/sonic-vs.img
     ssh ubuntu@$DEVICE_IP cp /home/ubuntu/veos-vm/images/sonic-vs.img /home/ubuntu/sonic-vm/images/sonic-vs.img
     ssh ubuntu@$DEVICE_IP "cd sonic-mgmt && ./setup-container.sh -n mgmt -d /data"
     export MGMT_IP=$(ssh ubuntu@$DEVICE_IP docker inspect mgmt | jq -r '.[0].NetworkSettings.IPAddress')
     export HOST_IP=$(ssh ubuntu@$DEVICE_IP docker inspect mgmt | jq -r '.[0].NetworkSettings.Gateway')
-    ssh ubuntu@$DEVICE_IP docker exec -it mgmt 
     ssh ubuntu@$DEVICE_IP 'echo "ubuntu ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers > /dev/null' # Does it work?
 
+    ssh ubuntu@$DEVICE_IP docker exec -it -w /data/sonic-mgmt/ansible mgmt ./testbed-cli.sh -t vtestbed.yaml -m veos_vtb -k ceos add-topo vms-kvm-t0 password.txt
+    ssh ubuntu@$DEVICE_IP docker exec -it -w /data/sonic-mgmt/ansible mgmt ./testbed-cli.sh -t vtestbed.yaml -m veos_vtb deploy-mg vms-kvm-t0 veos_vtb password.txt
+    ssh ubuntu@$DEVICE_IP docker exec -it -w /data/sonic-mgmt/tests mgmt ./run_tests.sh -n vms-kvm-t0 -d vlab-01 -c bgp/test_bgp_fact.py -f vtestbed.yaml -i ../ansible/veos_vtb
+    
 output_timeout: 1800 # 30min
+
 reserve_data:
   ssh_keys:
     - lp:yanjiangpku
