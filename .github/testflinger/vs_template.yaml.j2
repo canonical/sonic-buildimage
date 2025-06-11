@@ -7,6 +7,7 @@ test_data:
     set -x
     # skip build commands
     ssh ubuntu@$DEVICE_IP sudo apt update -qq
+    ssh ubuntu@$DEVICE_IP sudo apt remove -qq -y containerd
     ssh ubuntu@$DEVICE_IP sudo apt install -qq -y python3 python-is-python3 docker.io python3-pip pipx curl j2cli make docker-buildx
     ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli
     ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator
@@ -18,7 +19,7 @@ test_data:
     ssh ubuntu@$DEVICE_IP git clone -b sonic_on_ubuntu https://github.com/jy5275/sonic-mgmt
     ssh ubuntu@$DEVICE_IP "cd sonic-mgmt/ansible && sudo -H ./setup-management-network.sh"
     ssh ubuntu@$DEVICE_IP mkdir -p /home/ubuntu/veos-vm/images /home/ubuntu/sonic-vm/images
-    ssh ubuntu@$DEVICE_IP ./.local/bin/gdown -O /home/ubuntu/veos-vm/images/cEOS64-lab-4.29.3M.tar https://drive.google.com/uc?id=1ze1VRtLO8AGv-ntysLEmWmzwlZTi5v7J
+    ssh ubuntu@$DEVICE_IP ./.local/bin/gdown -O /home/ubuntu/veos-vm/images/cEOS64-lab-4.32.5M.tar https://drive.google.com/uc?id=1RP6EoDFByacEJQZgyUbW6-9MhpKGb9R7
     ssh ubuntu@$DEVICE_IP ./.local/bin/gdown -O /home/ubuntu/veos-vm/images/sonic-vs.img.gz https://drive.google.com/uc?id=1wuFBYbNFo_qssVS9zUsWcs9Kj0Vq9hMj
     ssh ubuntu@$DEVICE_IP gzip -d /home/ubuntu/veos-vm/images/sonic-vs.img.gz
     ssh ubuntu@$DEVICE_IP cp /home/ubuntu/veos-vm/images/sonic-vs.img /home/ubuntu/sonic-vm/images/sonic-vs.img
