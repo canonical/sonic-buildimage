@@ -7,10 +7,10 @@ test_data:
     set -x
     ssh ubuntu@$DEVICE_IP git clone -q -b {{ branch }} --recurse-submodules https://github.com/canonical/sonic-buildimage.git
     ssh ubuntu@$DEVICE_IP sudo modprobe overlay
-    ssh ubuntu@$DEVICE_IP sudo apt update -qq
-    ssh ubuntu@$DEVICE_IP sudo apt install -qq -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx
-    ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli
-    ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator
+    ssh ubuntu@$DEVICE_IP sudo apt update > /dev/null
+    ssh ubuntu@$DEVICE_IP sudo apt install -y python3 python-is-python3 docker.io python3-pip curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx > /dev/null
+    ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli > /dev/null
+    ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator > /dev/null
     ssh ubuntu@$DEVICE_IP sudo gpasswd -a ubuntu docker
     ssh ubuntu@$DEVICE_IP sudo systemctl restart docker
     ssh ubuntu@$DEVICE_IP sudo chmod a+rw /var/run/docker.sock
