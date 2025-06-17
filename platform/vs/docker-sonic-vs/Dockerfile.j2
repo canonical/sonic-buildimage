@@ -9,9 +9,9 @@ RUN [ -f /etc/rsyslog.conf ] && sed -ri "s/%syslogtag%/$docker_container_name#%s
 ## Make apt-get non-interactive
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -qq &&  apt-get install -qq -y gnupg
+RUN apt-get update > /dev/null &&  apt-get install -y gnupg > /dev/null
 
-RUN  apt-get install -qq -y net-tools \
+RUN  apt-get install -y net-tools \
                        arping \
                        ndisc6 \
                        ethtool \
@@ -67,23 +67,23 @@ RUN  apt-get install -qq -y net-tools \
                        # For libkrb5-dev
                        comerr-dev \
                        libgssrpc4 \
-                       libkdb5-10
+                       libkdb5-10 > /dev/null
 
-RUN  apt-get install -qq -y -t noble-backports iproute2
+RUN  apt-get install -y -t noble-backports iproute2 > /dev/null
 
 # For sonic-config-engine Python 3 package
 # Install pyangbind here, outside sonic-config-engine dependencies, as pyangbind causes enum34 to be installed.
 # Then immediately uninstall enum34, as enum34 should not be installed for Python >= 3.4, as it causes a
 # conflict with the new 'enum' module in the standard library
 # https://github.com/robshakir/pyangbind/issues/232
-RUN pip3 install pyangbind==0.8.1
-RUN pip3 uninstall -y enum34
+RUN pip3 install pyangbind==0.8.1 > /dev/null
+RUN pip3 uninstall -y enum34 > /dev/null
 
 # Dependencies of restore_neighbors.py
 RUN pip3 install \
          scapy==2.4.4 \
          pyroute2==0.5.14 \
-         netifaces==0.10.9
+         netifaces==0.10.9 > /dev/null
 
 {% if docker_sonic_vs_debs.strip() -%}
 # Copy built Debian packages
@@ -93,7 +93,7 @@ RUN pip3 install \
 {{ install_debian_packages(docker_sonic_vs_debs.split(' ')) }}
 {%- endif %}
 
-RUN  apt-get install -qq -y libzmq3-dev
+RUN  apt-get install -y libzmq3-dev > /dev/null
 
 {% if docker_sonic_vs_pydebs.strip() -%}
 # Copy built Debian packages
