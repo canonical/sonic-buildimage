@@ -14,14 +14,14 @@ on:
 jobs:
   testflinger-vs:
     runs-on: [self-hosted , testflinger]
-    timeout-minutes: 1440   # 24 hours
+    timeout-minutes: 1440   # Time limit for this GitHub workflow job (not testflinger job!): 24 hours
     steps:
       - uses: actions/checkout@v4
 
       - name: Generate job YAML
         uses: cuchi/jinja2-action@v1.3.0
         with:
-          template: ${{ github.workspace }}/.github/testflinger/vs_template.yaml.j2
+          template: ${{ github.workspace }}/.github/testflinger/vs_build.yaml.j2
           output_file: tmp_build_vs.yaml
           strict: true
           variables: |
@@ -65,16 +65,15 @@ jobs:
           fi
 
 
-  testflinger-broadcom:
+  testflinger-broadcom-build-tftp:
     runs-on: [self-hosted , testflinger]
-    needs: testflinger-vs
     steps:
       - uses: actions/checkout@v4
 
       - name: Generate job YAML
         uses: cuchi/jinja2-action@v1.3.0
         with:
-          template: ${{ github.workspace }}/.github/testflinger/broadcom_template.yaml.j2
+          template: ${{ github.workspace }}/.github/testflinger/broadcom_build_tftp.yaml.j2
           output_file: tmp_build_broadcom.yaml
           strict: true
           variables: |
@@ -100,7 +99,7 @@ jobs:
           testflinger results ${{ steps.submit-job.outputs.id }} > results.json
           cat results.json
 
-      - name: Check test status
+      - name: Check build job status
         run: |
           set -e
           testflinger results ${{ steps.submit-job.outputs.id }} > results.json
