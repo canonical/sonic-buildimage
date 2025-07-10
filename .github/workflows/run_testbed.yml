@@ -21,7 +21,7 @@ jobs:
       - name: Generate job YAML
         uses: cuchi/jinja2-action@v1.3.0
         with:
-          template: ${{ github.workspace }}/.github/testflinger/vs_build.yaml.j2
+          template: ${{ github.workspace }}/.github/testflinger/vs_build_run.yaml.j2
           output_file: tmp_build_vs.yaml
           strict: true
           variables: |
@@ -65,7 +65,7 @@ jobs:
           fi
 
 
-  testflinger-broadcom-build-tftp:
+  testflinger-broadcom:
     runs-on: [self-hosted , testflinger]
     steps:
       - uses: actions/checkout@v4
@@ -73,8 +73,8 @@ jobs:
       - name: Generate job YAML
         uses: cuchi/jinja2-action@v1.3.0
         with:
-          template: ${{ github.workspace }}/.github/testflinger/broadcom_build_tftp.yaml.j2
-          output_file: tmp_build_broadcom.yaml
+          template: ${{ github.workspace }}/.github/testflinger/broadcom_install.yaml.j2
+          output_file: tmp_broadcom_install.yaml
           strict: true
           variables: |
             branch=${{ github.head_ref || github.ref_name }}
@@ -82,16 +82,16 @@ jobs:
       - name: Check job yaml
         run: |
           # Copy to solve the file permission issue
-          cp tmp_build_broadcom.yaml build_broadcom.yaml
-          ls -al build_broadcom.yaml
-          cat build_broadcom.yaml
+          cp tmp_broadcom_install.yaml broadcom_install.yaml
+          ls -al broadcom_install.yaml
+          cat broadcom_install.yaml
 
       - name: Submit job
         id: submit-job
         uses: canonical/testflinger/.github/actions/submit@main
         with:
           poll: true
-          job-path: build_broadcom.yaml
+          job-path: broadcom_install.yaml
 
       - name: Display results
         id: get-results
