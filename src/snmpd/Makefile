@@ -35,7 +35,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 
 	# download debian net-snmp
 ifneq ($(BLDENV),noble)
-	dget -u https://sonicstorage.blob.core.windows.net/debian/pool/main/n/net-snmp/net-snmp_$(SNMPD_VERSION_FULL).dsc
+	dget -u https://packages.trafficmanager.net/public/debian/pool/main/n/net-snmp/net-snmp_$(SNMPD_VERSION_FULL).dsc
 else 
 	dget -u http://archive.ubuntu.com/ubuntu/pool/main/n/net-snmp/net-snmp_5.9.4+dfsg-1.1ubuntu3.1.dsc
 endif
