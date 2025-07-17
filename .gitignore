@@ -23,6 +23,7 @@ target/
 *dbg.j2
 *.img
 *.pyc
+*.rock
 
 # Slave docker log files
 sonic-slave*/*.log
@@ -34,6 +35,9 @@ sonic-slave*/Dockerfile.cleanup
 dockers/*/Dockerfile
 dockers/*/Dockerfile.cleanup
 dockers/*/Dockerfile-dbg.cleanup
+dockers/*/debs
+dockers/*/files
+dockers/*/python-wheels
 platform/*/docker-*/Dockerfile
 platform/*/docker-*/Dockerfile.cleanup
 platform/*/docker-*/Dockerfile-dbg.cleanup
@@ -136,3 +140,4 @@ src/flashrom/flashrom-0.9.7/
 src/iccpd/config/
 src/ifupdown2/ifupdown2-3.0.0-1/
 src/sonic-yang-models/cvlyang-models/
+*.log
