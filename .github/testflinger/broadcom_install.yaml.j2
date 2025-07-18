@@ -9,7 +9,7 @@ test_data:
     # 1. Install necessary packages
     ssh ubuntu@$DEVICE_IP git clone -q -b {{ branch }} --recurse-submodules https://github.com/canonical/sonic-buildimage.git
     ssh ubuntu@$DEVICE_IP sudo apt update > /dev/null
-    ssh ubuntu@$DEVICE_IP sudo apt install -y python3 python-is-python3 docker.io python3-pip pipx curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx > /dev/null
+    ssh ubuntu@$DEVICE_IP sudo apt install -y python3 python-is-python3 docker.io jq python3-pip pipx curl j2cli make apt-transport-https ca-certificates gnupg-agent software-properties-common docker-buildx > /dev/null
     ssh ubuntu@$DEVICE_IP pipx install gdown > /dev/null
     ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli > /dev/null
     ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator > /dev/null
@@ -24,6 +24,7 @@ test_data:
     # ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && DBGOPT=1 SONIC_BUILD_RETRY_COUNT=15 make SONIC_BUILD_JOBS=4 all"
 
     # 2.5 Download image from Google Drive (for quick debug only)
+    ssh ubuntu@$DEVICE_IP mkdir -p /home/ubuntu/sonic-buildimage/target
     ssh ubuntu@$DEVICE_IP /home/ubuntu/.local/bin/gdown -O /home/ubuntu/sonic-buildimage/target/sonic-broadcom.bin https://drive.google.com/uc?id=1_25BwNT3u34Eojlxg57aDjVFqDZaJvwo > /dev/null
 
     # 3. Prepare HTTP service
