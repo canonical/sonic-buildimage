@@ -40,7 +40,7 @@ test_data:
     ssh ubuntu@$DEVICE_IP 'echo "ubuntu ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers > /dev/null'
 
     # 5. Install image from mgmt container to the DUT
-    ssh ubuntu@$DEVICE_IP docker exec -w /data/sonic-mgmt/ansible mgmt ansible-playbook upgrade_sonic.yml -i inventory \
+    ssh ubuntu@$DEVICE_IP docker exec -w /data/sonic-mgmt/ansible mgmt ansible-playbook upgrade_sonic.yml -vvv -i inventory \
         -e testbed_name=ubuntu-sonic-demo \
         -e testbed_file=testbed.yaml \
         -e upgrade_type=onie \
