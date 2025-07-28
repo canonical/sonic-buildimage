@@ -44,7 +44,7 @@ test_data:
         -e testbed_name=ubuntu-sonic-demo \
         -e testbed_file=testbed.yaml \
         -e upgrade_type=onie \
-        -e image_url=http://172.17.0.1:8080/sonic-broadcom.bin
+        -e image_url=http://$DEVICE_IP:8080/sonic-broadcom.bin
 
     # Check switch status
 
