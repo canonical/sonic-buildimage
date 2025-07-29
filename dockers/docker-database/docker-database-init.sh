@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
 # For linux host namespace, in both single and multi ASIC platform use the loopback interface
 # For other namespaces, use eth0 interface which is connected to the docker0 bridge in the host.
@@ -129,6 +129,7 @@ TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
 
+# TODO: change to _daemon_
 chown -R redis:redis $REDIS_DIR
 chown -R redis:redis /etc/redis/redis.conf
 chown -R redis:redis /var/lib/redis/
