@@ -1,3 +1,4 @@
+
 name: docker-database
 summary: SONiC database container
 description: A Chiselled rock for SONiC database container
@@ -15,14 +16,25 @@ license: Apache-2.0
 platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
-# TODO: use _daemon_ user instead of root
-# run-user: _daemon_
+#run-user: _daemon_
 services:
-   supervisor:
-     command: "/usr/local/bin/docker-database-init.sh"
-     startup: enabled
-     override: replace
-     on-failure: shutdown 
+    init:
+        command: bash -c "/usr/local/bin/docker-database-runtime-init.sh && touch /tmp/init_ok"
+        override: replace
+        startup: enabled
+
+    rsyslogd:
+        command: bash -c "test -f /tmp/init_ok && /usr/sbin/rsyslogd -n -iNONE"
+        override: replace
+        startup: enabled
+
+    redis:
+        command: bash -c "test -f /tmp/init_ok && { [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
+        override: replace
+        startup: enabled
+        after: [ rsyslogd ]
+        on-success: ignore
+        on-failure: restart
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -68,47 +80,51 @@ parts:
     source: ./debs/libdashapi_1.0.0_amd64.deb
 
   install-packages:
-      plugin: nil
-      # stage-packages:
-      #       - base-files_base
-      #       - core-utils_bins
-      #       - base-files_release-info
-      #       - base-files_chisel
-      #       - rsyslog_bins
-      #       - redis-server_bins
-      #       - iproute2_bins
-      #       - libhiredis1.1.0_libs
-      #       - libzmq5_libs
-      #       - libboost-serialization1.83.0_libs
-      #       - libpcre3_libs
-      #       - libnl-cli-3-200_libs
-      source: https://github.com/jy5275/chisel-releases.git
-      source-type: git
-      source-branch: dev/docker-database
-      override-build: |
-        chisel cut --release ./ --root ${CRAFT_PART_INSTALL} \
-            base-files_release-info \
-            coreutils_bins \
-            iproute2_bins \
-            gawk_bins \
-            bash_bins \
-            rsyslog_bins \
-            redis-server_bins \
-            libhiredis1.1.0_libs \
-            libzmq5_libs \
-            libboost-serialization1.83.0_libs \
-            libpcre3_libs \
-            libnl-cli-3-200_libs
-        ln -sf /usr/bin/gawk ${CRAFT_PART_INSTALL}/usr/bin/awk
-  
+    plugin: nil
+    source: https://github.com/jy5275/chisel-releases.git
+    source-type: git
+    source-branch: dev/docker-database
+    override-build: |
+      chisel cut --release ./ --root ${CRAFT_PART_INSTALL} \
+          base-files_release-info \
+          bash_bins \
+          coreutils_bins \
+          gawk_bins \
+          rsyslog_bins \
+          redis-server_bins \
+          iproute2_bins \
+          libhiredis1.1.0_libs \
+          libzmq5_libs \
+          libboost-serialization1.83.0_libs \
+          libpcre3_libs \
+          libnl-cli-3-200_libs
+    override-prime: |
+      craftctl default
+      ln -sf /usr/bin/gawk usr/bin/awk
+
+    # TODO wait for chisel-releases PR
+    # stage-packages:
+    #   - base-files_release-info
+    #   - base-files_chisel
+    #   - coreutils_bins
+    #   - gawk_bins
+    #   - rsyslog_bins
+    #   - redis-server_bins
+    #   - iproute2_bins
+    #   - libhiredis1.1.0_libs
+    #   - libzmq5_libs
+    #   - libboost-serialization1.83.0_libs
+    #   - libpcre3_libs
+    #   - libnl-cli-3-200_libs
+
   install-python:
     plugin: nil
     source: .
     stage-packages:
-      - python3.12-venv_ensurepip
+      - python3.12_standard
+      # - libpython3.12t64_libs
     override-build: |
-      ln -sf /usr/bin/python3.12 ${CRAFT_PART_INSTALL}/usr/bin/python3
-      pip3 install --upgrade -t ${CRAFT_PART_INSTALL} \
+      pip3 install --upgrade -t ${CRAFT_PART_INSTALL}/usr/lib/python3.12/dist-packages/ \
         ./python-wheels/sonic_py_common-1.0-py3-none-any.whl \
         ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl \
         ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl \
@@ -118,9 +134,21 @@ parts:
         click \
         supervisor \
         supervisord-dependent-startup \
-        lxml
+        lxml # TODO: remove supervisord after merged with pebble layer definiton
     organize:
       bin/supervisord: usr/local/bin/supervisord
+    override-prime: |
+      craftctl default
+      ln -sf /usr/bin/python3.12 usr/bin/python3
+      mv usr/lib/python3.12/dist-packages/bin/* usr/bin/
+
+      # Copy tz data from build-base
+      cp /etc/timezone etc
+      cp /etc/localtime etc
+
+      # TODO Remove when chisel-releases is merged. Copy library from build-base
+      cp /usr/lib/x86_64-linux-gnu/libpython3.12.so.1 usr/lib/x86_64-linux-gnu/libpython3.12.so.1
+      cp /usr/lib/x86_64-linux-gnu/libpython3.12.so.1.0 usr/lib/x86_64-linux-gnu/libpython3.12.so.1.0
 
   install-common-files:
     plugin: dump
@@ -145,7 +173,10 @@ parts:
     stage:
       - usr/
       - etc/
+      # - manifest.json # What is this for? Should it be placed in the root?
     override-prime: |
       craftctl default
       cp ${CRAFT_PROJECT_DIR}/redis.conf etc/redis/
       cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
+
+      chmod +x usr/local/bin/update_chassisdb_config
