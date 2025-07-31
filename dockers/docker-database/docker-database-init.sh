@@ -81,9 +81,9 @@ if [[ $DATABASE_TYPE == "chassisdb" ]]; then
     -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
     -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
     rm $db_cfg_file_tmp
-    chown -R redis:redis $VAR_LIB_REDIS_CHASSIS_DIR
-    chown -R redis:redis $REDIS_DIR
-    exec /usr/local/bin/supervisord
+    #chown -R _daemon_:_daemon_ $VAR_LIB_REDIS_CHASSIS_DIR
+    #chown -R _daemon_:_daemon_ $REDIS_DIR
+    #exec /usr/local/bin/supervisord
     exit 0
 fi
 
@@ -98,9 +98,9 @@ then
 fi
 # delete chassisdb config to generate supervisord config
 update_chassisdb_config -j $db_cfg_file_tmp -d
-sonic-cfggen -j $db_cfg_file_tmp \
--t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
--t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
+#sonic-cfggen -j $db_cfg_file_tmp \
+#-t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
+#-t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
 
 if [[ "$start_chassis_db" != "1" ]] && [[ -z "$chassis_db_address" ]]; then
      cp $db_cfg_file_tmp $db_cfg_file
@@ -129,9 +129,12 @@ TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
 
-# TODO: change to _daemon_
-chown -R redis:redis $REDIS_DIR
-chown -R redis:redis /etc/redis/redis.conf
-chown -R redis:redis /var/lib/redis/
+# Set redis permissions
+#chown -R _daemon_:_daemon_ $REDIS_DIR
+#chown -R _daemon_:_daemon_ /etc/redis/redis.conf
+#chown -R _daemon_:_daemon_ /var/lib/redis/
 
-exec /usr/local/bin/supervisord
+# set rsyslog permissions
+#mkdir -p /var/log
+#chown -R _daemon_:_daemon_ /dev
+#chown -R _daemon_:_daemon_ /var/log
