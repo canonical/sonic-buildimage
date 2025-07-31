@@ -31,7 +31,7 @@ services:
     on-failure: restart
 
 parts:
-  install-packages:
+  setup-database:
     plugin: dump
     source: .
     override-build: |
