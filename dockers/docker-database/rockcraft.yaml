@@ -14,7 +14,7 @@ platforms:
 # TODO investigate the use of checks to restart services
 services:
   init:
-    command: bash -c "docker-database-init.sh && touch /tmp/init_ok"
+    command: bash -c "rock-database-init.sh && touch /tmp/init_ok"
     override: replace
     startup: enabled
     on-success: ignore
@@ -86,7 +86,7 @@ parts:
     organize:
       database_config.json.j2: usr/share/sonic/templates/database_config.json.j2
       database_global.json.j2: usr/share/sonic/templates/database_global.json.j2
-      docker-database-init.sh: usr/local/bin/docker-database-init.sh
+      rock-database-init.sh: usr/local/bin/rock-database-init.sh
       files/00-load-omprog.conf: etc/rsyslog.d/00-load-omprog.conf
       files/container_startup.py: usr/share/sonic/scripts/container_startup.py
       files/readiness_probe.sh: usr/bin/readiness_probe.sh
