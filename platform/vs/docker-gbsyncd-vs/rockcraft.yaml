@@ -84,8 +84,8 @@ parts:
     plugin: nil
     stage-packages:
       - rsyslog
-      - python3.10
-      - libpython3.10
+      - python3
+      - libpython3.12
       # docker-syncd-vs specific packages
       - iproute2
       # package dependencies
@@ -121,7 +121,7 @@ parts:
       - supervisor==4.2.5
       - supervisord-dependent-startup==1.4.0
     stage-packages:
-      - python3.10-venv
+      - python3-venv
     organize:
       bin/supervisord: usr/local/bin/supervisord
 

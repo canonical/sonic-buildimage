@@ -81,10 +81,10 @@ parts:
     source-type: deb
     source: ./debs/sensord_3.6.0-7.1_amd64.deb
 
-  install-ipmitool_1.8.19-7_amd64:
+  install-ipmitool_1.8.19-9_amd64:
     plugin: dump
     source-type: deb
-    source: ./debs/ipmitool_1.8.19-7_amd64.deb
+    source: ./debs/ipmitool_1.8.19-9_amd64.deb
 
   install-packages:
     plugin: nil

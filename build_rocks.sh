@@ -24,6 +24,8 @@ rocklist=("dockers/docker-nat" \
 cp files/rsyslog/00-load-omprog.conf target/files/noble/
 cp files/rsyslog/rsyslog.conf target/files/noble/
 cp files/supervisor/supervisord.conf target/files/noble/
+set -x
+set -e
 
 for rockitem in "${rocklist[@]}"
 do
@@ -40,9 +42,9 @@ do
     rockname=$(basename $rockitem)
     rockfullname="${rockname}_1.0.0_amd64.rock"
     rockcraft clean
-    rockcraft pack -v
-    sudo skopeo  --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:latest
-    rm -r $rockitem/debs/ $rockitem/files/ $rockitem/python-wheels/
+    rockcraft pack
+    sudo rockcraft.skopeo  --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:latest
+    rm -r ./debs/ ./files/ ./python-wheels/
 
     popd
 
