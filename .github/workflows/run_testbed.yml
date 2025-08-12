@@ -9,7 +9,7 @@ on:
         default: 'feature_noble_build'
         type: string
   push:
-    branches: [ feature_noble_build, tests/vs-* ]
+    branches: [ feature_noble_build, test/*, tests/* ]
 
 jobs:
   testflinger-vs:
