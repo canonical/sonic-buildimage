@@ -150,4 +150,4 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
 
       # Copy manifest to root
-      # cp ${CRAFT_PROJECT_DIR}/manifest.json .
+      cp ${CRAFT_PROJECT_DIR}/manifest.json .
