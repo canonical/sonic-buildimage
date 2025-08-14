@@ -3,12 +3,12 @@ name: Build vs target on feature_noble_build branch
 on:
   workflow_dispatch:
   schedule:
-    - cron: '10 5 * * *'
+    - cron: '0 22 * * *'  # Every day at 22:00 UTC
 
 jobs:
   testflinger-vs-build-only:
     runs-on: [self-hosted , testflinger]
-    timeout-minutes: 240  # Time limit for this GitHub workflow job (not testflinger job!): 4 hours
+    timeout-minutes: 300  # Time limit for this GitHub workflow job (not testflinger job!): 6 hours
     steps:
       - uses: actions/checkout@v4
 
