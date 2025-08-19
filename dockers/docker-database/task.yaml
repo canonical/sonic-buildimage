@@ -1,0 +1,39 @@
+summary: Check database container
+prepare: |
+    echo "Preparing database suite..."
+    if [ ! -d "/sonic-buildimage/dockers/docker-database/debs/" ] || [ -z "$(ls -A /sonic-buildimage/dockers/docker-database/debs/ 2>/dev/null)" ]; then
+        $HOME/.local/bin/gdown -O /sonic-buildimage/dockers/docker-database/rock_local_built_targets.tar.gz \
+            https://drive.google.com/uc?id=17jKjLavLBWh2P8MWKKWjMnLlfLNZt7wh
+
+        rm -rf files/ debs/ python-wheels/
+        mkdir files/ 
+        mkdir debs/
+        mkdir python-wheels/
+
+        tar -xzvf rock_local_built_targets.tar.gz -C /sonic-buildimage/dockers/docker-database
+        mv /sonic-buildimage/dockers/docker-database/target/files/noble/manifest.json /sonic-buildimage/dockers/docker-database/
+        mv /sonic-buildimage/dockers/docker-database/target/debs/noble/* /sonic-buildimage/dockers/docker-database/debs/
+        mv /sonic-buildimage/dockers/docker-database/target/files/noble/* /sonic-buildimage/dockers/docker-database/files/
+        mv /sonic-buildimage/dockers/docker-database/target/python-wheels/noble/* /sonic-buildimage/dockers/docker-database/python-wheels/
+
+        cp /sonic-buildimage/files/rsyslog/00-load-omprog.conf  files/
+        cp /sonic-buildimage/files/rsyslog/rsyslog.conf         files/
+        cp /sonic-buildimage/files/supervisor/supervisord.conf  files/
+    fi
+
+restore: |
+    docker stop database || true
+    docker rm database || true
+    rockcraft clean || true
+    rm docker-database*.rock
+
+execute: |
+    rockcraft clean && rockcraft pack
+    rockcraft.skopeo --insecure-policy copy oci-archive:docker-database_1.0.0_amd64.rock docker-daemon:docker-database:latest
+    docker run --name database -d docker-database:latest
+
+    sleep 5
+
+    docker exec database pebble services | MATCH "^init[[:space:]]+.+inactive"
+    docker exec database pebble services | MATCH "^redis[[:space:]]+.+active"
+    docker exec database pebble services | MATCH "^rsyslogd[[:space:]]+.+active"
