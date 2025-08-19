@@ -1,0 +1,43 @@
+name: Check all container image correctness
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'branch name'
+        required: true
+        default: 'feature_noble_build'
+        type: string
+  push:
+    branches: [ feature_noble_build, test/*, tests/* ]
+
+jobs:
+  check-rocks:
+    runs-on: [self-hosted, linux, x64, xlarge]
+    timeout-minutes: 30  # in min
+    steps:
+      - name: Install LXD
+        uses: canonical/setup-lxd@main
+        with:
+          channel: 6/stable
+
+      - name: Checkout SONiC
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+
+      - name: Install spread
+        run: |
+          # go install is not supported for forks...
+          git clone https://github.com/dmitry-lyfar/spread
+          pushd spread
+          go install ./...
+          popd
+
+      - name: Run spread
+        run: |
+          spread dockers/
