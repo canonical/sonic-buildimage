@@ -1,4 +1,4 @@
-name: SONiC testbed
+name: Rock target
 
 on:
   workflow_dispatch:
