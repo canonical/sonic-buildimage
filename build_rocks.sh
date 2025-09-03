@@ -1,25 +1,27 @@
 #!/bin/bash
 
 # Finish `make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz` first
-rocklist=("dockers/docker-nat" \
-		"dockers/docker-mux" \
-		"dockers/docker-database" \
-		"dockers/docker-orchagent" \
-		"dockers/docker-sonic-gnmi" \
-		"dockers/docker-platform-monitor" \
-		"dockers/docker-teamd" \
-		"dockers/docker-dhcp-relay" \
-		"dockers/docker-router-advertiser" \
-		"dockers/docker-macsec" \
+rocklist=( \
+        # "dockers/docker-nat" \
+		# "dockers/docker-mux" \
+		# "dockers/docker-database" \
+		# "dockers/docker-orchagent" \
+		# "dockers/docker-sonic-gnmi" \
+		# "dockers/docker-platform-monitor" \
+		# "dockers/docker-teamd" \
+		# "dockers/docker-dhcp-relay" \
+		# "dockers/docker-router-advertiser" \
+		# "dockers/docker-macsec" \
 		"dockers/docker-fpm-frr" \
-		"dockers/docker-sonic-mgmt-framework" \
-		"dockers/docker-lldp" \
-		"dockers/docker-eventd" \
-		"dockers/docker-sflow" \
-		"dockers/docker-snmp" \
-		"platform/vs/docker-syncd-vs" \
-		"platform/vs/docker-gbsyncd-vs"\
-		"platform/broadcom/docker-syncd-brcm")
+		# "dockers/docker-sonic-mgmt-framework" \
+		# "dockers/docker-lldp" \
+		# "dockers/docker-eventd" \
+		# "dockers/docker-sflow" \
+		# "dockers/docker-snmp" \
+		# "platform/vs/docker-syncd-vs" \
+		# "platform/vs/docker-gbsyncd-vs"\
+		# "platform/broadcom/docker-syncd-brcm" \
+        )
 
 cp files/rsyslog/00-load-omprog.conf target/files/noble/
 cp files/rsyslog/rsyslog.conf target/files/noble/
