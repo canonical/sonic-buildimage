@@ -27,7 +27,6 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
-    on-failure: shutdown
   rsyslogd:
     command: bash -c "test -f /tmp/init_ok && /usr/sbin/rsyslogd -n -iNONE"
     override: replace
@@ -284,6 +283,7 @@ parts:
       # docker-orchagent specifc
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/docker_init.sh           usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock_init.sh             usr/bin/
       cp ${CRAFT_PROJECT_DIR}/TSA                      usr/bin/
       cp ${CRAFT_PROJECT_DIR}/TSB                      usr/bin/ 
       cp ${CRAFT_PROJECT_DIR}/TSC                      usr/bin/
