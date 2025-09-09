@@ -16,12 +16,6 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  # supervisor:
-  #   command: "/usr/bin/docker_init.sh"
-  #   startup: enabled
-  #   override: replace
-  #   on-failure: shutdown
-  
   init:
     command: bash -c "/usr/bin/rock_init.sh && touch /tmp/init_ok"
     override: replace

@@ -27,8 +27,11 @@ services:
     override: replace
     startup: enabled
     after: [ rsyslogd ]
-    on-success: ignore
-    on-failure: restart
+  flushdb:
+    command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
+    override: replace
+    startup: enabled
+    after: [ redis ]
 
 parts:
   setup-database:
@@ -64,6 +67,7 @@ parts:
         git checkout ubuntu-24.04
         chisel cut --release ./ --root ${CRAFT_PART_INSTALL} \
           base-files_release-info \
+          procps_bins \
           base-files_home \
           base-files_tmp \
           base-passwd_data \
