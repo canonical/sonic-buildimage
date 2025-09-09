@@ -16,11 +16,36 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker-lldp-init.sh"
-    startup: enabled
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
-    on-failure: shutdown
+    startup: enabled
+  start:
+    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ rsyslogd ]
+  lldpd:
+    command: bash -c "test -f /tmp/start_ok && exec /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0"
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  waitfor_lldp_ready:
+    command: bash -c "/usr/bin/waitfor_lldp_ready.sh && touch /tmp/lldp_ready"
+    override: replace
+    startup: enabled
+    on-success: ignore
+  lldp-syncd:
+    command: bash -c "test -f /tmp/lldp_ready && exec /usr/bin/env python3 -m lldp_syncd"
+    override: replace
+    startup: enabled
+    after: [ lldpd ]
+  lldpmgrd:
+    command: /usr/bin/lldpmgrd
+    override: replace
+    startup: enabled
+    after: [ lldp-syncd ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
