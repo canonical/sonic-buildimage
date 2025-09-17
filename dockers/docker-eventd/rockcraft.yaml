@@ -16,11 +16,21 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/local/bin/supervisord"
-    startup: enabled
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
-    on-failure: shutdown
+    startup: enabled
+  start:
+    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ rsyslogd ]
+  eventd:
+    command: bash -c "test -f /tmp/start_ok && exec /usr/bin/eventd"
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
