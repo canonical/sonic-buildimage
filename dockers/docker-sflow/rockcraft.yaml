@@ -16,11 +16,26 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/local/bin/supervisord"
-    startup: enabled
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
-    on-failure: shutdown
+    startup: enabled
+  start:
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ rsyslogd ]
+  sflowmgrd:
+    command: /usr/bin/sflowmgrd
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  port_index_mapper:
+    command: /usr/bin/port_index_mapper.py
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
 
 # FROM docker-swss-layer-noble 
 
