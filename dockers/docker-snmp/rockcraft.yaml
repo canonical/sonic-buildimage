@@ -16,11 +16,27 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/local/bin/supervisord"
-    startup: enabled
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
-    on-failure: shutdown
+    startup: enabled
+  start:
+    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ rsyslogd ]
+  snmpd:
+    command: bash -c "test -f /tmp/start_ok && exec /usr/sbin/snmpd -f -LS0-2d -u Debian-snmp -g Debian-snmp -I -smux,mteTrigger,mteTriggerConf,ifTable,ifXTable,inetCidrRouteTable,ipCidrRouteTable,ip,disk_hw -p /run/snmpd.pid"
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  snmp-subagent:
+    command: /usr/bin/env python3 -m sonic_ax_impl
+    override: replace
+    startup: enabled
+    after: [ snmpd ]
+
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 

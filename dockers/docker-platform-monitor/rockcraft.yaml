@@ -16,11 +16,50 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker_init.sh"
-    startup: enabled
+  init:
+    command: bash -c "rock_init.sh && touch /tmp/init_ok"
     override: replace
-    on-failure: shutdown
+    startup: enabled
+    on-success: ignore
+  rsyslogd:
+    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
+    override: replace
+    startup: enabled
+  chassis_db_init:
+    command: /usr/local/bin/chassis_db_init
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  xcvrd:
+    command: python3 /usr/local/bin/xcvrd
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  psud:
+    command: python3 /usr/local/bin/psud
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  syseepromd:
+    command: python3 /usr/local/bin/syseepromd
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  thermalctld:
+    command: python3 /usr/local/bin/thermalctld
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  pcied:
+    command: /usr/local/bin/pcied
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  stormond:
+    command: /usr/local/bin/stormond
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -209,6 +248,7 @@ parts:
       mkdir -p usr/bin
 
       cp ${CRAFT_PROJECT_DIR}/docker_init.sh           usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock_init.sh             usr/bin/
       cp ${CRAFT_PROJECT_DIR}/lm-sensors.sh            usr/bin/
       cp ${CRAFT_PROJECT_DIR}/ssd_tools/*              usr/bin/
 
