@@ -16,11 +16,20 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker-init.sh"
-    startup: enabled
+  init:
+    command: bash -c "/usr/bin/rock-init.sh && touch /tmp/init_ok"
     override: replace
-    on-failure: shutdown
+    startup: enabled
+    on-success: ignore
+  rsyslogd:
+    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
+    override: replace
+    startup: enabled
+  linkmgrd:
+    command: nice -n -20 /usr/sbin/linkmgrd -v warning -d -l
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -159,6 +168,7 @@ parts:
       mkdir -p usr/bin
 
       cp ${CRAFT_PROJECT_DIR}/docker-init.sh            usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock-init.sh              usr/bin/
 
   add-user:
     plugin: nil
