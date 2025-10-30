@@ -16,12 +16,123 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker-orchagent-init.sh"
-    startup: enabled
+  init:
+    command: bash -c "/usr/bin/rock-orchagent-init.sh && touch /tmp/init_ok"
     override: replace
-    on-failure: shutdown
-    on-success: shutdown
+    startup: enabled
+    on-success: ignore
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+
+  gearsyncd:
+    command: /usr/bin/gearsyncd -p /usr/share/sonic/hwsku/gearbox_config.json
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+    after: [ rsyslogd ]
+  portsyncd:
+    command: /usr/bin/portsyncd
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+  orchagent:
+    command: /usr/bin/orchagent.sh
+    override: replace
+    startup: enabled
+    after: [ portsyncd ]
+
+  coppmgrd:
+    command: /usr/bin/coppmgrd
+    override: replace
+    startup: enabled
+    after: [ orchagent ]
+  swssconfig:
+    command: bash -c "/usr/bin/swssconfig.sh && touch /tmp/swssconfig_ok"
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ orchagent ]
+  restore_neighbors:
+    # Don't restart .py even if it fails
+    command: bash -c 'test -f /tmp/swssconfig_ok && { /usr/bin/restore_neighbors.py || true; }'
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ orchagent ]
+  enable_counters:
+    # Don't restart .py even if it fails
+    command: bash -c "test -f /tmp/swssconfig_ok && { /usr/bin/enable_counters.py || true; }"
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ orchagent ]
+
+  processes_trigger:
+    # In theory, all downstream services will consider this service "running" after 3s
+    command: bash -c "test -f /tmp/swssconfig_ok && sleep 10"
+    override: replace
+    startup: enabled
+    on-success: ignore
+    after: [ orchagent ]
+
+  neighsyncd:
+    command: /usr/bin/neighsyncd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  vlanmgrd:
+    command: /usr/bin/vlanmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  intfmgrd:
+    command: /usr/bin/intfmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  portmgrd:
+    command: /usr/bin/portmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  fabricmgrd:
+    command: /usr/bin/fabricmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  buffermgrd:
+    command: /usr/bin/buffermgrd.sh
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  vrfmgrd:
+    command: /usr/bin/vrfmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  nbrmgrd:
+    command: /usr/bin/nbrmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  vxlanmgrd:
+    command: /usr/bin/vxlanmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  tunnelmgrd:
+    command: /usr/bin/tunnelmgrd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
+  fdbsyncd:
+    command: /usr/bin/fdbsyncd
+    override: replace
+    startup: enabled
+    after: [ processes_trigger ]
 
 # FROM docker-swss-layer-noble 
 
@@ -137,6 +248,7 @@ parts:
       - libprotobuf32
       - libprotobuf-lite32
       - python3-protobuf
+      - redis-server
 
 
   install-python:
@@ -206,6 +318,7 @@ parts:
       # docker-orchagent specifc
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/docker-orchagent-init.sh usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock-orchagent-init.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/arp_update         usr/bin
       cp ${CRAFT_PROJECT_DIR}/enable_counters.py       usr/bin
       cp ${CRAFT_PROJECT_DIR}/tunnel_packet_handler.py usr/bin
