@@ -16,20 +16,17 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  # supervisor:
-  #   command: "/usr/local/bin/supervisord"
-  #   startup: enabled
-  #   override: replace
-  #   on-failure: shutdown
   rsyslogd:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
+    on-success: ignore
   start:
     command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
     after: [ rsyslogd ]
   teammgrd:
     command: bash -c "test -f /tmp/start_ok && exec /usr/bin/teammgrd"

@@ -19,9 +19,11 @@ services:
     startup: enabled
     on-success: ignore
   rsyslogd:
-    command: bash -c "test -f /tmp/init_ok && /usr/sbin/rsyslogd -n -iNONE"
+    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
     override: replace
     startup: enabled
+    on-success: ignore
+    on-failure: ignore
   redis:
     command: bash -c "test -f /tmp/init_ok && { [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
     override: replace
@@ -31,7 +33,9 @@ services:
     command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
     override: replace
     startup: enabled
-    after: [ redis ]
+    on-success: ignore
+    on-failure: ignore
+    after: [ rsyslogd ]
 
 parts:
   setup-database:

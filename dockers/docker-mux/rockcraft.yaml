@@ -25,6 +25,7 @@ services:
     command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
     override: replace
     startup: enabled
+    on-success: ignore
   linkmgrd:
     command: nice -n -20 /usr/sbin/linkmgrd -v warning -d -l
     override: replace

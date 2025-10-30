@@ -22,16 +22,15 @@ services:
     startup: enabled
     on-success: ignore
   rsyslogd:
-    command: bash -c "test -f /tmp/init_ok && /usr/sbin/rsyslogd -n -iNONE"
+    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
     override: replace
     startup: enabled
+    on-success: ignore
   zebra:
     command: /usr/lib/frr/zebra -A 127.0.0.1 -s 90000000 -M dplane_fpm_nl -M snmp --asic-offload=notify_on_offload
     override: replace
     startup: enabled
     after: [ rsyslogd ]
-    on-success: ignore
-    on-failure: restart
   
   zsocket-check:
     command: bash -c "/usr/bin/zsocket.sh && touch /tmp/zsocket_ok"
@@ -39,15 +38,14 @@ services:
     startup: enabled
     after: [ zebra ]
     on-success: ignore
-    on-failure: shutdown
 
   staticd:
-    command: bash -c "test -f /tmp/zsocket_ok && /usr/lib/frr/staticd -A 127.0.0.1"
+    command: bash -c "test -f /tmp/zsocket_ok && exec /usr/lib/frr/staticd -A 127.0.0.1"
     override: replace
     startup: enabled
     after: [ zebra ]
   bgpd:
-    command: bash -c "test -f /tmp/zsocket_ok && /usr/lib/frr/bgpd -A 127.0.0.1 -M snmp"
+    command: bash -c "test -f /tmp/zsocket_ok && exec /usr/lib/frr/bgpd -A 127.0.0.1 -M snmp"
     override: replace
     startup: enabled
     after: [ zebra ]

@@ -20,11 +20,13 @@ services:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
+    on-success: ignore
   start:
     command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
     after: [ rsyslogd ]
   natmgrd:
     command: bash -c "test -f /tmp/start_ok && exec /usr/bin/natmgrd"
@@ -41,6 +43,7 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
     after: [ natsyncd ]
 
 # FROM docker-swss-layer-noble 
@@ -252,7 +255,6 @@ parts:
       ln -s ebtables-nft           ${CRAFT_PRIME}/usr/sbin/ebtables
       ln -s ebtables-nft-restore   ${CRAFT_PRIME}/usr/sbin/ebtables-restore
       ln -s ebtables-nft-save      ${CRAFT_PRIME}/usr/sbin/ebtables-save
-
 
   add-user:
     plugin: nil

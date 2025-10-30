@@ -25,6 +25,7 @@ services:
     command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
     override: replace
     startup: enabled
+    on-success: ignore
   chassis_db_init:
     command: /usr/local/bin/chassis_db_init
     override: replace
@@ -36,31 +37,37 @@ services:
     override: replace
     startup: enabled
     after: [ rsyslogd ]
+    on-success: ignore
   psud:
     command: python3 /usr/local/bin/psud
     override: replace
     startup: enabled
     after: [ rsyslogd ]
+    on-success: ignore
   syseepromd:
     command: python3 /usr/local/bin/syseepromd
     override: replace
     startup: enabled
     after: [ rsyslogd ]
+    on-success: ignore
   thermalctld:
     command: python3 /usr/local/bin/thermalctld
     override: replace
     startup: enabled
     after: [ rsyslogd ]
+    on-success: ignore
   pcied:
     command: /usr/local/bin/pcied
     override: replace
     startup: enabled
     after: [ rsyslogd ]
+    on-success: ignore
   stormond:
     command: /usr/local/bin/stormond
     override: replace
     startup: enabled
     after: [ rsyslogd ]
+    on-success: ignore
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -106,22 +113,22 @@ parts:
     source-type: deb
     source: ./debs/libsensors5_3.6.0-7.1_amd64.deb
 
-  install-lm-sensors_3.6.0-7.1_amd64: # TODO: postinst script!
+  install-lm-sensors_3.6.0-7.1_amd64:
     plugin: dump
     source-type: deb
     source: ./debs/lm-sensors_3.6.0-7.1_amd64.deb
 
-  install-fancontrol_3.6.0-7.1_all:   # TODO: postinst script!
+  install-fancontrol_3.6.0-7.1_all:
     plugin: dump
     source-type: deb
     source: ./debs/fancontrol_3.6.0-7.1_all.deb
 
-  install-sensord_3.6.0-7.1_amd64:    # TODO: postinst script!
+  install-sensord_3.6.0-7.1_amd64:
     plugin: dump
     source-type: deb
     source: ./debs/sensord_3.6.0-7.1_amd64.deb
 
-  install-ipmitool_1.8.19-9_amd64:    # TODO: postinst script!
+  install-ipmitool_1.8.19-9_amd64:
     plugin: dump
     source-type: deb
     source: ./debs/ipmitool_1.8.19-9_amd64.deb
