@@ -25,6 +25,7 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
     after: [ rsyslogd ]
   gnmi-native:
     command: bash -c "test -f /tmp/start_ok && exec /usr/bin/gnmi-native.sh"
@@ -35,6 +36,8 @@ services:
     command: /usr/bin/dialout.sh
     override: replace
     startup: enabled
+    on-failure: ignore
+    on-success: ignore
     after: [ gnmi-native ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")

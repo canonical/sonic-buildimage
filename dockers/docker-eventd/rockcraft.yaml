@@ -20,11 +20,13 @@ services:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
+    on-success: ignore
   start:
     command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
     after: [ rsyslogd ]
   eventd:
     command: bash -c "test -f /tmp/start_ok && exec /usr/bin/eventd"

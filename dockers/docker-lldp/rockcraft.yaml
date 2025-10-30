@@ -20,11 +20,14 @@ services:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
+    on-success: ignore
+    on-failure: ignore
   start:
     command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
     after: [ rsyslogd ]
   lldpd:
     command: bash -c "test -f /tmp/start_ok && exec /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0"
@@ -36,6 +39,7 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
   lldp-syncd:
     command: bash -c "test -f /tmp/lldp_ready && exec /usr/bin/env python3 -m lldp_syncd"
     override: replace

@@ -20,11 +20,14 @@ services:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
+    on-success: ignore
+    on-failure: ignore
   start:
     command: /usr/bin/start.sh
     override: replace
     startup: enabled
     on-success: ignore
+    on-failure: ignore
     after: [ rsyslogd ]
   sflowmgrd:
     command: /usr/bin/sflowmgrd
@@ -35,6 +38,8 @@ services:
     command: /usr/bin/port_index_mapper.py
     override: replace
     startup: enabled
+    on-failure: ignore
+    on-success: ignore
     after: [ rsyslogd ]
 
 # FROM docker-swss-layer-noble 
