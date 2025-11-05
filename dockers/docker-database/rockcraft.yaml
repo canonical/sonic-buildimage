@@ -85,7 +85,8 @@ parts:
           libzmq5_libs \
           libboost-serialization1.83.0_libs \
           libpcre3_libs \
-          libnl-cli-3-200_libs \
+          libnl-cli-3-200_cls \
+          libnl-cli-3-200_qdisc \
           python3.12_standard \
           libpython3.12t64_libs
     # TODO Remove build-packages when chisel-releases is merged and uncomment stage-packages

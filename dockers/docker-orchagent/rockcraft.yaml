@@ -22,7 +22,7 @@ services:
     startup: enabled
     on-success: ignore
   rsyslogd:
-    command: /usr/sbin/rsyslogd -n -iNONE
+    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
     override: replace
     startup: enabled
 
