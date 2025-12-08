@@ -18,25 +18,18 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
-  rsyslogd:
-    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
-    override: replace
-    startup: enabled
-    on-success: ignore
-    on-failure: ignore
   redis:
     command: bash -c "test -f /tmp/init_ok && { [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
     override: replace
     startup: enabled
-    after: [ rsyslogd ]
   flushdb:
     command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
     override: replace
     startup: enabled
     on-success: ignore
     on-failure: ignore
-    after: [ rsyslogd ]
-
+    after: [ redis ]
+    requires: [ redis ]
 parts:
   setup-database:
     plugin: dump
@@ -65,30 +58,6 @@ parts:
           click \
           lxml
 
-        # Install slices (TODO move to stage-packages when chisel-releases merged)
-        git clone https://github.com/jy5275/chisel-releases.git
-        cd chisel-releases
-        git checkout ubuntu-24.04
-        chisel cut --release ./ --root ${CRAFT_PART_INSTALL} \
-          base-files_release-info \
-          procps_bins \
-          base-files_home \
-          base-files_tmp \
-          base-passwd_data \
-          bash_bins \
-          coreutils_bins \
-          gawk_bins \
-          rsyslog_bins \
-          redis-server_bins \
-          iproute2_bins \
-          libhiredis1.1.0_libs \
-          libzmq5_libs \
-          libboost-serialization1.83.0_libs \
-          libpcre3_libs \
-          libnl-cli-3-200_cls \
-          libnl-cli-3-200_qdisc \
-          python3.12_standard \
-          libpython3.12t64_libs
     # TODO Remove build-packages when chisel-releases is merged and uncomment stage-packages
     build-packages:
       - git
@@ -96,7 +65,6 @@ parts:
       database_config.json.j2: usr/share/sonic/templates/database_config.json.j2
       database_global.json.j2: usr/share/sonic/templates/database_global.json.j2
       rock-database-init.sh: usr/local/bin/rock-database-init.sh
-      files/00-load-omprog.conf: etc/rsyslog.d/00-load-omprog.conf
       files/container_startup.py: usr/share/sonic/scripts/container_startup.py
       files/readiness_probe.sh: usr/bin/readiness_probe.sh
       files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
@@ -116,24 +84,26 @@ parts:
       - usr/
       - -usr/share/doc
       - -usr/share/man
-    # stage-packages:
-    #   - base-files_release-info
-    #   - base-files_home
-    #   - base-files_tmp
-    #   - base-passwd_data
-    #   - bash_bins
-    #   - coreutils_bins
-    #   - gawk_bins
-    #   - rsyslog_bins
-    #   - redis-server_bins
-    #   - iproute2_bins
-    #   - libhiredis1.1.0_libs
-    #   - libzmq5_libs
-    #   - libboost-serialization1.83.0_libs
-    #   - libpcre3_libs
-    #   - libnl-cli-3-200_libs
-    #   - python3.12_standard
-    #   - libpython3.12t64_libs
+    stage-packages:
+      - base-files_release-info
+      - base-files_home
+      - base-files_tmp
+      - base-passwd_data
+      - bash_bins
+      - procps_bins
+      - coreutils_bins
+      - gawk_bins
+      - redis-server_bins
+      - iproute2_bins
+      - libhiredis1.1.0_libs
+      - libzmq5_libs
+      - libboost-serialization1.83.0_libs
+      - libpcre3_libs
+      - libnl-cli-3-200_cls
+      - libnl-cli-3-200_qdisc
+      - libuuid1_libs
+      - python3.12_standard
+      - libpython3.12t64_libs
     override-prime: |
       craftctl default
 
@@ -151,12 +121,14 @@ parts:
       # Make update script executable
       chmod +x usr/local/bin/update_chassisdb_config
 
-      # Set permission for rsyslog
-      sed -i 's/^$FileGroup adm$/$FileGroup root/' etc/rsyslog.conf
-
       # Overwrite redis config files
       cp ${CRAFT_PROJECT_DIR}/redis.conf etc/redis/
-      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
 
       # Copy manifest to root
       cp ${CRAFT_PROJECT_DIR}/manifest.json .
+
+      # TODO: to be removed after pebble syslog version has released
+      rm -f ${CRAFT_PRIME}/bin/pebble
+      rm -f ${CRAFT_PRIME}/usr/bin/pebble
+      curl -o ${CRAFT_PRIME}/usr/bin/pebble 10.239.7.20:8080/pebble
+      chmod +x ${CRAFT_PRIME}/usr/bin/pebble
