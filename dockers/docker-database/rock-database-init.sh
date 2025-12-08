@@ -1,5 +1,22 @@
 #!/usr/bin/bash
 
+LAYER_FILE="/tmp/syslog-layer.yaml"
+
+echo "
+log-targets:
+  host-syslog:
+    override: replace
+    type: syslog
+    location: udp://127.0.0.1:514/
+    services: [all]
+" > $LAYER_FILE
+
+echo "File created: $LAYER_FILE"
+echo "Service Dependency: $DEPENDENCY"
+echo "---"
+pebble add syslog-layer --combine $LAYER_FILE
+pebble replan
+
 # For linux host namespace, in both single and multi ASIC platform use the loopback interface
 # For other namespaces, use eth0 interface which is connected to the docker0 bridge in the host.
 if [[ $NAMESPACE_ID == "" ]]
