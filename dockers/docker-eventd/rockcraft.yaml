@@ -146,6 +146,12 @@ parts:
       # docker-teamd specifc
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/start.sh                 usr/bin/
+      
+      # TODO: to be removed after pebble syslog version has released
+      rm -f ${CRAFT_PRIME}/bin/pebble
+      rm -f ${CRAFT_PRIME}/usr/bin/pebble
+      curl -o ${CRAFT_PRIME}/usr/bin/pebble 10.239.7.20:8080/pebble
+      chmod +x ${CRAFT_PRIME}/usr/bin/pebble
 
   add-user:
     plugin: nil

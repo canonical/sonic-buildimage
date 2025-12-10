@@ -194,8 +194,15 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/lldpdSysDescr.conf.j2   usr/share/sonic/templates/
 
       # docker-lldp  lldp
+      mkdir etc/default
       cp ${CRAFT_PROJECT_DIR}/lldpd                   etc/default/
       cp ${CRAFT_PROJECT_DIR}/lldpmgrd                usr/bin
+      
+      # TODO: to be removed after pebble syslog version has released
+      rm -f ${CRAFT_PRIME}/bin/pebble
+      rm -f ${CRAFT_PRIME}/usr/bin/pebble
+      curl -o ${CRAFT_PRIME}/usr/bin/pebble 10.239.7.20:8080/pebble
+      chmod +x ${CRAFT_PRIME}/usr/bin/pebble
 
   add-user:
     plugin: nil
