@@ -26,24 +26,14 @@ services:
     command: bash -c "test -f /tmp/start_ok && exec /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0"
     override: replace
     startup: enabled
-  waitfor_lldp_ready:
-    command: bash -c "/usr/bin/waitfor_lldp_ready.sh && touch /tmp/lldp_ready"
-    override: replace
-    startup: enabled
-    on-success: ignore
-    on-failure: ignore
   lldp-syncd:
-    command: bash -c "test -f /tmp/lldp_ready && exec /usr/bin/env python3 -m lldp_syncd"
+    command: bash -c "/usr/bin/waitfor_lldp_ready.sh && exec /usr/bin/env python3 -m lldp_syncd"
     override: replace
     startup: enabled
-    after: [ lldpd ]
-    requires: [ lldpd ]
   lldpmgrd:
-    command: /usr/bin/lldpmgrd
+    command: bash -c "/usr/bin/waitfor_lldp_ready.sh && exec /usr/bin/lldpmgrd
     override: replace
     startup: enabled
-    after: [ lldp-syncd ]
-    requires: [ lldp-syncd ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
