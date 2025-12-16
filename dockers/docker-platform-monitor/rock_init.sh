@@ -51,7 +51,7 @@ fi
 python2 -c "import sonic_platform" > /dev/null 2>&1 || pip2 show sonic-platform > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     SONIC_PLATFORM_WHEEL="/usr/share/sonic/platform/sonic_platform-1.0-py2-none-any.whl"
-    echo "sonic-platform package not installed, attempting to install..."
+    echo "sonic-platform package for py2 not installed, attempting to install..."
     if [ -e ${SONIC_PLATFORM_WHEEL} ]; then
        pip2 install ${SONIC_PLATFORM_WHEEL}
        if [ $? -eq 0 ]; then
@@ -68,7 +68,7 @@ fi
 python3 -c "import sonic_platform" > /dev/null 2>&1 || pip3 show sonic-platform > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     SONIC_PLATFORM_WHEEL="/usr/share/sonic/platform/sonic_platform-1.0-py3-none-any.whl"
-    echo "sonic-platform package not installed, attempting to install..."
+    echo "sonic-platform package for py3 not installed, attempting to install..."
     if [ -e ${SONIC_PLATFORM_WHEEL} ]; then
        pip3 install --break-system-packages ${SONIC_PLATFORM_WHEEL}
        if [ $? -eq 0 ]; then
@@ -83,6 +83,8 @@ if [ $? -ne 0 ]; then
 else
     SONIC_PLATFORM_API_PYTHON_VERSION=3
 fi
+
+echo SONIC_PLATFORM_API_PYTHON_VERSION=$SONIC_PLATFORM_API_PYTHON_VERSION
 
 # TODO -- ubuntu
 #{% if CONFIGURED_PLATFORM == "mellanox" %}

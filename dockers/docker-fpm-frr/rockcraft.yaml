@@ -16,61 +16,11 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  init:
-    command: bash -c "/usr/bin/rock_init.sh && touch /tmp/init_ok"
-    override: replace
+  supervisor:
+    command: "/usr/bin/docker_init.sh"
     startup: enabled
-    on-success: ignore
-  rsyslogd:
-    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
     override: replace
-    startup: enabled
-    on-success: ignore
-  zebra:
-    command: /usr/lib/frr/zebra -A 127.0.0.1 -s 90000000 -M dplane_fpm_nl -M snmp --asic-offload=notify_on_offload
-    override: replace
-    startup: enabled
-    after: [ rsyslogd ]
-  
-  zsocket-check:
-    command: bash -c "/usr/bin/zsocket.sh && touch /tmp/zsocket_ok"
-    override: replace
-    startup: enabled
-    after: [ zebra ]
-    on-success: ignore
-
-  staticd:
-    command: bash -c "test -f /tmp/zsocket_ok && exec /usr/lib/frr/staticd -A 127.0.0.1"
-    override: replace
-    startup: enabled
-    after: [ zebra ]
-  bgpd:
-    command: bash -c "test -f /tmp/zsocket_ok && exec /usr/lib/frr/bgpd -A 127.0.0.1 -M snmp"
-    override: replace
-    startup: enabled
-    after: [ zebra ]
-
-  fpmsyncd:
-    command: fpmsyncd
-    override: replace
-    startup: enabled
-    after: [ bgpd ]
-  bgpcfgd:
-    command: /usr/local/bin/bgpcfgd
-    override: replace
-    startup: enabled
-    after: [ bgpd ]
-  staticroutebfd:
-    command: /usr/local/bin/staticroutebfd
-    override: replace
-    startup: enabled
-    after: [ bgpd ]
-  bgpmon:
-    command: /usr/local/bin/bgpmon
-    override: replace
-    startup: enabled
-    after: [ bgpd ]
-
+    on-failure: shutdown
 # FROM docker-swss-layer-noble 
 
 parts:

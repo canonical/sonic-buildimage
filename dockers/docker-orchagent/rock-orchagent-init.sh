@@ -24,6 +24,25 @@ SUBTYPE=$(sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'subtype')
 SWITCH_TYPE=${SWITCH_TYPE:-`sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'switch_type'`}
 chmod +x /usr/bin/wait_for_link.sh
 
+if [[ $SWITCH_TYPE == "fabric" ]]; then
+    pebble start orchagent-fabric
+else
+    pebble start portsyncd
+    pebble start orchagent-non-fabric
+    pebble start coopmgrd
+    pebble start neighsyncd
+    pebble start vlanmgrd
+    pebble start intfmgrd
+    pebble start portmgrd
+    pebble start fabricmgrd
+    pebble start buffermgrd
+    pebble start vrfmgrd
+    pebble start nbrmgrd
+    pebble start vxlanmgrd
+    pebble start tunnelmgrd
+    pebble start fdbsyncd
+fi
+
 # Executed platform specific initialization tasks.
 if [ -x /usr/share/sonic/platform/platform-init ]; then
     /usr/share/sonic/platform/platform-init
