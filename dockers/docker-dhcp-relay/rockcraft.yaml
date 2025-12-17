@@ -16,11 +16,27 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker_init.sh"
-    startup: enabled
+  init:
+    command: bash -c "/usr/bin/rock_init.sh && touch /tmp/init_ok"
     override: replace
-    on-failure: shutdown
+    startup: enabled
+    on-success: ignore
+  rsyslogd:
+    command: bash -c "test -f /tmp/init_ok && exec /usr/sbin/rsyslogd -n -iNONE"
+    override: replace
+    startup: enabled
+  start:
+    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
+    on-success: ignore
+    on-failure: restart
+  dhcprelayd:
+    command: bash -c "test -f /tmp/zsocket_ok && exec /usr/local/bin/dhcprelayd"
+    override: replace
+    startup: enabled
+    after: [ rsyslogd ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -167,6 +183,7 @@ parts:
       # docker-dhcp-relay specifc
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/docker_init.sh          usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock_init.sh            usr/bin/
       cp ${CRAFT_PROJECT_DIR}/start.sh                usr/bin/
 
       cp ${CRAFT_PROJECT_DIR}/port-name-alias-map.txt.j2  usr/share/sonic/templates/

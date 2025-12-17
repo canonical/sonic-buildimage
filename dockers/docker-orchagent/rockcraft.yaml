@@ -22,7 +22,6 @@ services:
     override: replace
     on-failure: shutdown
     on-success: shutdown
-
 # FROM docker-swss-layer-noble 
 
 parts:
@@ -137,6 +136,7 @@ parts:
       - libprotobuf32
       - libprotobuf-lite32
       - python3-protobuf
+      - redis-server
 
 
   install-python:
@@ -206,6 +206,7 @@ parts:
       # docker-orchagent specifc
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/docker-orchagent-init.sh usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock-orchagent-init.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/arp_update         usr/bin
       cp ${CRAFT_PROJECT_DIR}/enable_counters.py       usr/bin
       cp ${CRAFT_PROJECT_DIR}/tunnel_packet_handler.py usr/bin

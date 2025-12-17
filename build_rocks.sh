@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Finish `make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz` first
-rocklist=("dockers/docker-nat" \
+rocklist=( 
+        "dockers/docker-nat" \
 		"dockers/docker-mux" \
 		"dockers/docker-database" \
 		"dockers/docker-orchagent" \
@@ -17,9 +18,10 @@ rocklist=("dockers/docker-nat" \
 		"dockers/docker-eventd" \
 		"dockers/docker-sflow" \
 		"dockers/docker-snmp" \
-		"platform/vs/docker-syncd-vs" \
-		"platform/vs/docker-gbsyncd-vs"\
-		"platform/broadcom/docker-syncd-brcm")
+		# "platform/vs/docker-syncd-vs" \
+		# "platform/vs/docker-gbsyncd-vs"\
+		"platform/broadcom/docker-syncd-brcm" \
+        )
 
 cp files/rsyslog/00-load-omprog.conf target/files/noble/
 cp files/rsyslog/rsyslog.conf target/files/noble/
@@ -55,4 +57,3 @@ do
     docker rmi -f $rockname:latest
 
 done
-

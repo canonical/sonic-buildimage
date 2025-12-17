@@ -25,7 +25,6 @@ test_data:
 
     # 2.5 Replace bgp docker image with rock version, then rebuild
     ssh ubuntu@$DEVICE_IP rm /home/ubuntu/sonic-buildimage/target/sonic-broadcom.bin
-    ssh ubuntu@$DEVICE_IP rm /home/ubuntu/sonic-buildimage/target/docker-fpm-frr.gz
     ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && ./build_rocks.sh"
     ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && DBGOPT=1 SONIC_BUILD_RETRY_COUNT=15 make SONIC_BUILD_JOBS=4 target/sonic-broadcom.bin"
 
@@ -42,6 +41,7 @@ test_data:
     ssh ubuntu@$DEVICE_IP 'echo "ubuntu ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers > /dev/null'
 
     # 5. Install image from mgmt container to the DUT
+    # ansible-playbook upgrade_sonic.yml -vvv -i inventory -e testbed_name=ubuntu-sonic-demo -e testbed_file=testbed.yaml -e upgrade_type=onie -e image_url=http://16.162.34.49:8080/sonic-broadcom.bin
     ssh ubuntu@$DEVICE_IP docker exec -w /data/sonic-mgmt/ansible mgmt ansible-playbook upgrade_sonic.yml -vvv -i inventory \
         -e testbed_name=ubuntu-sonic-demo \
         -e testbed_file=testbed.yaml \

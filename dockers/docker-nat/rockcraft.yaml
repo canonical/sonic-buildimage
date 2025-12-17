@@ -16,15 +16,36 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/local/bin/supervisord"
-    startup: enabled
+  start:
+    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
     override: replace
-    on-failure: shutdown
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+  natmgrd:
+    command: bash -c "test -f /tmp/start_ok && exec /usr/bin/natmgrd"
+    override: replace
+    startup: enabled
+  natsyncd:
+    command: /usr/bin/natsyncd
+    override: replace
+    startup: enabled
+    after: [ natmgrd ]
+    requires: [ natmgrd ]
+  restore_nat_entries:
+    command: /usr/bin/restore_nat_entries.py
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+    after: [ natsyncd ]
+    requires: [ natsyncd ]
 
 # FROM docker-swss-layer-noble 
 
 parts:
+  # TODO: merge all custom deb parts into one part `dpkg -x xxxx.deb ${CRAFT_PART_INSTALL}` like database rock
+  # ${CRAFT_PART_INSTALL} -> /parts/<part_name>/install in LXD container
   install-libyang_1.0.73_amd64:
     plugin: dump
     source-type: deb
@@ -121,7 +142,6 @@ parts:
   install-packages:
     plugin: nil
     stage-packages:
-      - rsyslog
       - python3
       - libpython3.12
       # package dependencies
@@ -192,11 +212,6 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
  
-      # common - rsyslog
-      mkdir -p etc/rsyslog.d/
-      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
-      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
-
       # common - supervisor config files
       mkdir -p etc/supervisor/conf.d
       mkdir -p var/log/supervisor
@@ -217,6 +232,23 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/start.sh                usr/bin/
       cp ${CRAFT_PROJECT_DIR}/restore_nat_entries.py  usr/bin/
 
+      ln -s iptables-nft           ${CRAFT_PRIME}/usr/sbin/iptables
+      ln -s iptables-nft-restore   ${CRAFT_PRIME}/usr/sbin/iptables-restore
+      ln -s iptables-nft-save      ${CRAFT_PRIME}/usr/sbin/iptables-save
+      ln -s ip6tables-nft          ${CRAFT_PRIME}/usr/sbin/ip6tables
+      ln -s ip6tables-nft-restore  ${CRAFT_PRIME}/usr/sbin/ip6tables-restore
+      ln -s ip6tables-nft-save     ${CRAFT_PRIME}/usr/sbin/ip6tables-save
+      ln -s arptables-nft          ${CRAFT_PRIME}/usr/sbin/arptables
+      ln -s arptables-nft-restore  ${CRAFT_PRIME}/usr/sbin/arptables-restore
+      ln -s arptables-nft-save     ${CRAFT_PRIME}/usr/sbin/arptables-save
+      ln -s ebtables-nft           ${CRAFT_PRIME}/usr/sbin/ebtables
+      ln -s ebtables-nft-restore   ${CRAFT_PRIME}/usr/sbin/ebtables-restore
+      ln -s ebtables-nft-save      ${CRAFT_PRIME}/usr/sbin/ebtables-save
+      # TODO: to be removed after pebble syslog version has released
+      rm -f ${CRAFT_PRIME}/bin/pebble
+      rm -f ${CRAFT_PRIME}/usr/bin/pebble
+      curl -o ${CRAFT_PRIME}/usr/bin/pebble 10.239.7.20:8080/pebble
+      chmod +x ${CRAFT_PRIME}/usr/bin/pebble
 
   add-user:
     plugin: nil

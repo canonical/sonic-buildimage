@@ -16,11 +16,46 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker_init.sh"
-    startup: enabled
+  init:
+    command: bash -c "rock_init.sh && touch /tmp/init_ok"
     override: replace
-    on-failure: shutdown
+    startup: enabled
+    on-success: ignore
+  chassis_db_init:
+    command: bash -c "test -f /tmp/init_ok && exec /usr/local/bin/chassis_db_init"
+    override: replace
+    startup: enabled
+    on-success: ignore
+  xcvrd:
+    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/xcvrd"
+    override: replace
+    startup: enabled
+    on-success: ignore
+  psud:
+    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/psud"
+    override: replace
+    startup: enabled
+    on-success: ignore
+  syseepromd:
+    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/syseepromd"
+    override: replace
+    startup: enabled
+    on-success: ignore
+  thermalctld:
+    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/thermalctld"
+    override: replace
+    startup: enabled
+    on-success: ignore
+  pcied:
+    command: bash -c "test -f /tmp/init_ok && exec /usr/local/bin/pcied"
+    override: replace
+    startup: enabled
+    on-success: ignore
+  stormond:
+    command: bash -c "test -f /tmp/init_ok && exec /usr/local/bin/stormond"
+    override: replace
+    startup: enabled
+    on-success: ignore
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -89,7 +124,6 @@ parts:
   install-packages:
     plugin: nil
     stage-packages:
-      - rsyslog
       - python3
       - libpython3.12
       # package dependencies
@@ -140,6 +174,7 @@ parts:
       - ./python-wheels/sonic_xcvrd-1.0-py3-none-any.whl
       - ./python-wheels/sonic_ycabled-1.0-py3-none-any.whl
       - ./python-wheels/sonic_chassisd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_stormond-1.0-py3-none-any.whl
       - ./python-wheels/sonic_platform_pddf_common-1.0-py3-none-any.whl
       - jinjanator
       # docker-platform-monitor specific packages
@@ -183,14 +218,9 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
  
-      # common - rsyslog
-      mkdir -p etc/rsyslog.d/
-      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
-      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
-
       # common - supervisor config files
       mkdir -p etc/supervisor/conf.d
-      mkdir -p var/log/supervisor
+      mkdir -p var/log/supervisors
 
       cp ${CRAFT_PROJECT_DIR}/files/supervisord.conf     etc/supervisor/
 
@@ -209,6 +239,7 @@ parts:
       mkdir -p usr/bin
 
       cp ${CRAFT_PROJECT_DIR}/docker_init.sh           usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock_init.sh             usr/bin/
       cp ${CRAFT_PROJECT_DIR}/lm-sensors.sh            usr/bin/
       cp ${CRAFT_PROJECT_DIR}/ssd_tools/*              usr/bin/
 

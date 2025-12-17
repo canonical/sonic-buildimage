@@ -21,7 +21,6 @@ services:
     startup: enabled
     override: replace
     on-failure: shutdown
-
 # FROM docker-swss-layer-noble 
 
 parts:
@@ -226,6 +225,7 @@ parts:
       # docker-orchagent specifc
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/docker_init.sh           usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock_init.sh             usr/bin/
       cp ${CRAFT_PROJECT_DIR}/TSA                      usr/bin/
       cp ${CRAFT_PROJECT_DIR}/TSB                      usr/bin/ 
       cp ${CRAFT_PROJECT_DIR}/TSC                      usr/bin/
