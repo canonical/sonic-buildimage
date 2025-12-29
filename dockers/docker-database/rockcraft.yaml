@@ -58,7 +58,6 @@ parts:
           click \
           lxml
 
-    # TODO Remove build-packages when chisel-releases is merged and uncomment stage-packages
     build-packages:
       - git
     organize:
@@ -126,9 +125,3 @@ parts:
 
       # Copy manifest to root
       cp ${CRAFT_PROJECT_DIR}/manifest.json .
-
-      # TODO: to be removed after pebble syslog version has released
-      rm -f ${CRAFT_PRIME}/bin/pebble
-      rm -f ${CRAFT_PRIME}/usr/bin/pebble
-      curl -o ${CRAFT_PRIME}/usr/bin/pebble 10.239.7.20:8080/pebble
-      chmod +x ${CRAFT_PRIME}/usr/bin/pebble
