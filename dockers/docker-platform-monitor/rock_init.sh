@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 
+LAYER_FILE="/tmp/syslog-layer.yaml"
+
+echo "
+log-targets:
+  host-syslog:
+    override: replace
+    type: syslog
+    location: udp://127.0.0.1:514/
+    services: [all]
+" > $LAYER_FILE
+
+echo "File created: $LAYER_FILE"
+echo "Service Dependency: $DEPENDENCY"
+echo "---"
+pebble add syslog-layer --combine $LAYER_FILE
+nohup socat -u UNIX-RECV:/dev/log,mode=666,reuseaddr OPEN:/dev/null,append &
+pebble replan
+
 # Generate supervisord config file and the start.sh scripts
 mkdir -p /etc/supervisor/conf.d/
 
@@ -83,8 +101,6 @@ if [ $? -ne 0 ]; then
 else
     SONIC_PLATFORM_API_PYTHON_VERSION=3
 fi
-
-echo SONIC_PLATFORM_API_PYTHON_VERSION=$SONIC_PLATFORM_API_PYTHON_VERSION
 
 # TODO -- ubuntu
 #{% if CONFIGURED_PLATFORM == "mellanox" %}
