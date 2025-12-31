@@ -1,21 +1,7 @@
 #!/usr/bin/env bash
 
-LAYER_FILE="/tmp/syslog-layer.yaml"
-
-echo "
-log-targets:
-  host-syslog:
-    override: replace
-    type: syslog
-    location: udp://127.0.0.1:514/
-    services: [all]
-" > $LAYER_FILE
-
-echo "File created: $LAYER_FILE"
-echo "Service Dependency: $DEPENDENCY"
-echo "---"
+LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
 pebble add syslog-layer --combine $LAYER_FILE
-nohup socat -u UNIX-RECV:/dev/log,mode=666,reuseaddr OPEN:/dev/null,append &
 pebble replan
 
 # Generate supervisord config file and the start.sh scripts
@@ -151,3 +137,11 @@ fi
 TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+
+pebble start chassis_db_init
+pebble start xcvrd
+pebble start psud
+pebble start syseepromd
+pebble start thermalctld
+pebble start pcied
+pebble start stormond
