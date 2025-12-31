@@ -17,23 +17,31 @@ platforms:
 
 services:
   start:
-    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+  fake-syslog-socket:
+    command: socat -u UNIX-RECV:/dev/log,mode=666,reuseaddr OPEN:/dev/null,append
     override: replace
     startup: enabled
     on-success: ignore
     on-failure: ignore
   lldpd:
-    command: bash -c "test -f /tmp/start_ok && exec /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0"
+    command: /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0
     override: replace
-    startup: enabled
+  waitfor_lldp_ready:
+    command: /usr/bin/waitfor_lldp_ready.sh
+    override: replace
+    on-success: ignore
+    on-failure: ignore
   lldp-syncd:
-    command: bash -c "/usr/bin/waitfor_lldp_ready.sh && exec /usr/bin/env python3 -m lldp_syncd"
+    command: /usr/bin/env python3 -m lldp_syncd
     override: replace
-    startup: enabled
   lldpmgrd:
-    command: bash -c "/usr/bin/waitfor_lldp_ready.sh && exec /usr/bin/lldpmgrd
+    command: /usr/bin/lldpmgrd
     override: replace
-    startup: enabled
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -182,23 +190,9 @@ parts:
 
       cp ${CRAFT_PROJECT_DIR}/lldpd.conf.j2           usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/lldpdSysDescr.conf.j2   usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml usr/share/sonic/templates/
 
       # docker-lldp  lldp
       mkdir etc/default
       cp ${CRAFT_PROJECT_DIR}/lldpd                   etc/default/
       cp ${CRAFT_PROJECT_DIR}/lldpmgrd                usr/bin
-  add-user:
-    plugin: nil
-    after: [install-common-files]
-
-    overlay-script: |
-      #syslog user
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-
-      groupadd -R $CRAFT_OVERLAY _lldpd
-      useradd -R $CRAFT_OVERLAY -M -r --system -g _lldpd _lldpd
-
-    prime:
-      - etc/passwd
-      - etc/group
