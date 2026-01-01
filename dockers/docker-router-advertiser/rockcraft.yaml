@@ -154,6 +154,7 @@ parts:
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/start.sh                 usr/bin/
       cp ${CRAFT_PROJECT_DIR}/docker-init.sh           usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock-init.sh           usr/bin/
 
       cp ${CRAFT_PROJECT_DIR}/radvd.conf.j2            usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/wait_for_link.sh.j2      usr/share/sonic/templates/

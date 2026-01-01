@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+pebble add syslog-layer --combine $LAYER_FILE
+pebble replan
 
 mkdir -p /etc/swss/config.d/
 mkdir -p /etc/supervisor/
@@ -23,25 +26,7 @@ VLAN=$(sonic-cfggen $CFGGEN_PARAMS)
 SUBTYPE=$(sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'subtype')
 SWITCH_TYPE=${SWITCH_TYPE:-`sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'switch_type'`}
 chmod +x /usr/bin/wait_for_link.sh
-
-if [[ $SWITCH_TYPE == "fabric" ]]; then
-    pebble start orchagent-fabric
-else
-    pebble start portsyncd
-    pebble start orchagent-non-fabric
-    pebble start coopmgrd
-    pebble start neighsyncd
-    pebble start vlanmgrd
-    pebble start intfmgrd
-    pebble start portmgrd
-    pebble start fabricmgrd
-    pebble start buffermgrd
-    pebble start vrfmgrd
-    pebble start nbrmgrd
-    pebble start vxlanmgrd
-    pebble start tunnelmgrd
-    pebble start fdbsyncd
-fi
+echo switch_type=$SWITCH_TYPE
 
 # Executed platform specific initialization tasks.
 if [ -x /usr/share/sonic/platform/platform-init ]; then
@@ -89,3 +74,11 @@ fi
 TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+
+if [[ $SWITCH_TYPE != "fabric" ]]; then
+    pebble start portsyncd
+fi
+
+pebble start orchagent
+pebble start gearsyncd
+pebble start swssconfig

@@ -16,12 +16,77 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker-orchagent-init.sh"
-    startup: enabled
+  init:
+    command: /usr/bin/rock-orchagent-init.sh
     override: replace
-    on-failure: shutdown
-    on-success: shutdown
+    startup: enabled
+    on-success: ignore
+
+  gearsyncd:
+    command: /usr/bin/gearsyncd -p /usr/share/sonic/hwsku/gearbox_config.json
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+  portsyncd:
+    command: /usr/bin/portsyncd
+    override: replace
+  orchagent:
+    command: /usr/bin/orchagent.sh
+    override: replace
+
+  coppmgrd:
+    command: /usr/bin/coppmgrd
+    override: replace
+  swssconfig:
+    command: /usr/bin/swssconfig.sh
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+  restore_neighbors:
+    # Don't restart .py even if it fails
+    command: /usr/bin/restore_neighbors.py
+    override: replace
+    on-success: ignore
+  enable_counters:
+    # Don't restart .py even if it fails
+    command: /usr/bin/enable_counters.py
+    override: replace
+    on-success: ignore
+
+  neighsyncd:
+    command: /usr/bin/neighsyncd
+    override: replace
+  vlanmgrd:
+    command: /usr/bin/vlanmgrd
+    override: replace
+  intfmgrd:
+    command: /usr/bin/intfmgrd
+    override: replace
+  portmgrd:
+    command: /usr/bin/portmgrd
+    override: replace
+  fabricmgrd:
+    command: /usr/bin/fabricmgrd
+    override: replace
+  buffermgrd:
+    command: /usr/bin/buffermgrd.sh
+    override: replace
+  vrfmgrd:
+    command: /usr/bin/vrfmgrd
+    override: replace
+  nbrmgrd:
+    command: /usr/bin/nbrmgrd
+    override: replace
+  vxlanmgrd:
+    command: /usr/bin/vxlanmgrd
+    override: replace
+  tunnelmgrd:
+    command: /usr/bin/tunnelmgrd
+    override: replace
+  fdbsyncd:
+    command: /usr/bin/fdbsyncd
+    override: replace
+
 # FROM docker-swss-layer-noble 
 
 parts:
@@ -228,6 +293,7 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/watchdog_processes.j2      usr/share/sonic/templates/ 
       cp ${CRAFT_PROJECT_DIR}/supervisord.conf.j2        usr/share/sonic/templates/ 
       cp ${CRAFT_PROJECT_DIR}/wait_for_link.sh.j2        usr/share/sonic/templates/  
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
 
   add-user:
     plugin: nil

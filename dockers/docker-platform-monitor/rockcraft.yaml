@@ -17,44 +17,43 @@ platforms:
 
 services:
   init:
-    command: bash -c "rock_init.sh && touch /tmp/init_ok"
+    command: rock_init.sh
     override: replace
     startup: enabled
     on-success: ignore
-  chassis_db_init:
-    command: bash -c "test -f /tmp/init_ok && exec /usr/local/bin/chassis_db_init"
+  fake-syslog-socket:
+    command: socat -u UNIX-RECV:/dev/log,mode=666,reuseaddr OPEN:/dev/null,append
     override: replace
     startup: enabled
+    on-success: ignore
+    on-failure: ignore
+  chassis_db_init:
+    command: /usr/local/bin/chassis_db_init
+    override: replace
     on-success: ignore
   xcvrd:
-    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/xcvrd"
+    command: python3 /usr/local/bin/xcvrd
     override: replace
-    startup: enabled
     on-success: ignore
   psud:
-    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/psud"
+    command: python3 /usr/local/bin/psud
     override: replace
-    startup: enabled
     on-success: ignore
   syseepromd:
-    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/syseepromd"
+    command: python3 /usr/local/bin/syseepromd
     override: replace
-    startup: enabled
     on-success: ignore
   thermalctld:
-    command: bash -c "test -f /tmp/init_ok && exec python3 /usr/local/bin/thermalctld"
+    command: python3 /usr/local/bin/thermalctld
     override: replace
-    startup: enabled
     on-success: ignore
   pcied:
-    command: bash -c "test -f /tmp/init_ok && exec /usr/local/bin/pcied"
+    command: /usr/local/bin/pcied
     override: replace
-    startup: enabled
     on-success: ignore
   stormond:
-    command: bash -c "test -f /tmp/init_ok && exec /usr/local/bin/stormond"
+    command: /usr/local/bin/stormond
     override: replace
-    startup: enabled
     on-success: ignore
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
@@ -235,6 +234,7 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
 
       #cp ${CRAFT_PROJECT_DIR}/supervisord.conf         etc/supervisor/conf.d/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml             usr/share/sonic/templates/
 
       # docker-snmp specifc
       mkdir -p usr/bin
