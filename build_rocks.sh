@@ -18,14 +18,15 @@ rocklist=(
 		"dockers/docker-eventd" \
 		"dockers/docker-sflow" \
 		"dockers/docker-snmp" \
-		# "platform/vs/docker-syncd-vs" \
-		# "platform/vs/docker-gbsyncd-vs"\
+		"platform/vs/docker-syncd-vs" \
+		"platform/vs/docker-gbsyncd-vs"\
 		"platform/broadcom/docker-syncd-brcm" \
         )
 
 cp files/rsyslog/00-load-omprog.conf target/files/noble/
 cp files/rsyslog/rsyslog.conf target/files/noble/
 cp files/supervisor/supervisord.conf target/files/noble/
+cp files/build_templates/syslog-layer.yaml target/files/noble
 set -x
 set -e
 
