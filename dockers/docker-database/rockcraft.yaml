@@ -11,25 +11,21 @@ license: Apache-2.0
 platforms:
   amd64:
 
-# TODO investigate the use of checks to restart services
 services:
   init:
-    command: bash -c "rock-database-init.sh && touch /tmp/init_ok"
+    command: rock-database-init.sh
     override: replace
     startup: enabled
     on-success: ignore
   redis:
-    command: bash -c "test -f /tmp/init_ok && { [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
+    command: bash -c "{ [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
     override: replace
-    startup: enabled
   flushdb:
     command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
     override: replace
-    startup: enabled
     on-success: ignore
     on-failure: ignore
-    after: [ redis ]
-    requires: [ redis ]
+
 parts:
   setup-database:
     plugin: dump
@@ -63,6 +59,7 @@ parts:
     organize:
       database_config.json.j2: usr/share/sonic/templates/database_config.json.j2
       database_global.json.j2: usr/share/sonic/templates/database_global.json.j2
+      files/syslog-layer.yaml: usr/share/sonic/templates/
       rock-database-init.sh: usr/local/bin/rock-database-init.sh
       files/container_startup.py: usr/share/sonic/scripts/container_startup.py
       files/readiness_probe.sh: usr/bin/readiness_probe.sh

@@ -17,25 +17,20 @@ platforms:
 
 services:
   start:
-    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    command: /usr/bin/start.sh
     override: replace
     startup: enabled
     on-success: ignore
     on-failure: ignore
   teammgrd:
-    command: bash -c "test -f /tmp/start_ok && exec /usr/bin/teammgrd"
+    command: /usr/bin/teammgrd
     override: replace
-    startup: enabled
   tlm_teamd:
-    command: bash -c "test -f /tmp/start_ok && exec /usr/bin/tlm_teamd"
+    command: /usr/bin/tlm_teamd
     override: replace
-    startup: enabled
   teamsyncd:
     command: /usr/bin/teamsyncd
     override: replace
-    startup: enabled
-    after: [ teammgrd ]
-    requires: [ teammgrd ]
 
 # FROM docker-swss-layer-noble 
 
@@ -183,7 +178,8 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
- 
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
+
       # common - supervisor config files
       mkdir -p etc/supervisor/conf.d
       mkdir -p var/log/supervisor
@@ -202,16 +198,3 @@ parts:
       # docker-teamd specifc
       mkdir -p usr/bin
       cp ${CRAFT_PROJECT_DIR}/start.sh usr/bin/
-
-  add-user:
-    plugin: nil
-    after: [install-common-files]
-
-    overlay-script: |
-      #syslog user
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-
-    prime:
-      - etc/passwd
-      - etc/group
