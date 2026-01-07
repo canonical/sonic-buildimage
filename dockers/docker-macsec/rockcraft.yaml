@@ -17,15 +17,14 @@ platforms:
 
 services:
   start:
-    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    command: /usr/bin/start.sh
     override: replace
     startup: enabled
     on-success: ignore
     on-failure: ignore    
   macsecmgrd:
-    command: bash -c "test -f /tmp/start_ok && exec /usr/bin/macsecmgrd"
+    command: /usr/bin/macsecmgrd
     override: replace
-    startup: enabled
 
 # FROM docker-swss-layer-noble 
 
@@ -170,7 +169,8 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
- 
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
+
       # common - supervisor config files
       mkdir -p etc/supervisor/conf.d
       mkdir -p var/log/supervisor
@@ -193,16 +193,3 @@ parts:
 
       mkdir -p cli
       cp -r ${CRAFT_PROJECT_DIR}/cli/*   cli/
-
-  add-user:
-    plugin: nil
-    after: [install-common-files]
-
-    overlay-script: |
-      #syslog user
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-
-    prime:
-      - etc/passwd
-      - etc/group

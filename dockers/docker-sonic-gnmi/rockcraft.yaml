@@ -17,23 +17,19 @@ platforms:
 
 services:
   start:
-    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    command: /usr/bin/start.sh
     override: replace
     startup: enabled
     on-success: ignore
     on-failure: ignore
   gnmi-native:
-    command: bash -c "test -f /tmp/start_ok && exec /usr/bin/gnmi-native.sh"
+    command: /usr/bin/gnmi-native.sh
     override: replace
-    startup: enabled
   dialout:
     command: /usr/bin/dialout.sh
     override: replace
-    startup: enabled
     on-failure: ignore
     on-success: ignore
-    after: [ gnmi-native ]
-    requires: [ gnmi-native ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -105,8 +101,6 @@ parts:
       - libnl-nf-3-200
       - libnl-cli-3-200
 
-
-
   install-python:
     plugin: python
     source: .
@@ -147,6 +141,7 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
 
       # common - supervisor config files
       mkdir -p etc/supervisor/conf.d
@@ -172,16 +167,3 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/dialout.sh                usr/bin/
 
       cp ${CRAFT_PROJECT_DIR}/telemetry_vars.j2         usr/share/sonic/templates/
-
-  add-user:
-    plugin: nil
-    after: [install-common-files]
-
-    overlay-script: |
-      #syslog user
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-
-    prime:
-      - etc/passwd
-      - etc/group

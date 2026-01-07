@@ -17,29 +17,22 @@ platforms:
 
 services:
   start:
-    command: bash -c "/usr/bin/start.sh && touch /tmp/start_ok"
+    command: /usr/bin/start.sh
     override: replace
     startup: enabled
     on-success: ignore
     on-failure: ignore
   natmgrd:
-    command: bash -c "test -f /tmp/start_ok && exec /usr/bin/natmgrd"
+    command: /usr/bin/natmgrd
     override: replace
-    startup: enabled
   natsyncd:
     command: /usr/bin/natsyncd
     override: replace
-    startup: enabled
-    after: [ natmgrd ]
-    requires: [ natmgrd ]
   restore_nat_entries:
     command: /usr/bin/restore_nat_entries.py
     override: replace
-    startup: enabled
     on-success: ignore
     on-failure: ignore
-    after: [ natsyncd ]
-    requires: [ natsyncd ]
 
 # FROM docker-swss-layer-noble 
 
@@ -211,6 +204,7 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
  
       # common - supervisor config files
       mkdir -p etc/supervisor/conf.d
@@ -244,16 +238,3 @@ parts:
       ln -s ebtables-nft           ${CRAFT_PRIME}/usr/sbin/ebtables
       ln -s ebtables-nft-restore   ${CRAFT_PRIME}/usr/sbin/ebtables-restore
       ln -s ebtables-nft-save      ${CRAFT_PRIME}/usr/sbin/ebtables-save
-
-  add-user:
-    plugin: nil
-    after: [install-common-files]
-
-    overlay-script: |
-      #syslog user
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-
-    prime:
-      - etc/passwd
-      - etc/group

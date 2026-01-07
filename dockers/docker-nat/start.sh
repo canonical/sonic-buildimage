@@ -1,19 +1,6 @@
 #!/usr/bin/env bash
 
-LAYER_FILE="/tmp/syslog-layer.yaml"
-
-echo "
-log-targets:
-  host-syslog:
-    override: replace
-    type: syslog
-    location: udp://127.0.0.1:514/
-    services: [all]
-" > $LAYER_FILE
-
-echo "File created: $LAYER_FILE"
-echo "Service Dependency: $DEPENDENCY"
-echo "---"
+LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
 pebble add syslog-layer --combine $LAYER_FILE
 pebble replan
 
@@ -24,3 +11,7 @@ mkdir -p /var/warmboot/nat
 TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+
+pebble start natmgrd
+pebble start natsyncd
+pebble start restore_nat_entries

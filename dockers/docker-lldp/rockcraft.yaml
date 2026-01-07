@@ -123,6 +123,7 @@ parts:
       - libnl-genl-3-200
       - libnl-nf-3-200
       - libnl-cli-3-200
+      - socat
 
   install-python:
     plugin: python
@@ -196,3 +197,14 @@ parts:
       mkdir etc/default
       cp ${CRAFT_PROJECT_DIR}/lldpd                   etc/default/
       cp ${CRAFT_PROJECT_DIR}/lldpmgrd                usr/bin
+
+  add-user:
+    plugin: nil
+    after: [install-common-files]
+    overlay-script: |
+      #syslog user
+      groupadd -R $CRAFT_OVERLAY _lldpd
+      useradd -R $CRAFT_OVERLAY -M -r --system -g _lldpd _lldpd
+    prime:
+      - etc/passwd
+      - etc/group
