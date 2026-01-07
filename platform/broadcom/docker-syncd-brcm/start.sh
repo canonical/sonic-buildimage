@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+
 LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
 pebble add syslog-layer --combine $LAYER_FILE
 pebble replan
@@ -35,4 +35,4 @@ else
 fi
 
 pebble start syncd
-pebble start ledinit || true
+pebble start ledinit
