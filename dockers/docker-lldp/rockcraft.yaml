@@ -202,7 +202,6 @@ parts:
     plugin: nil
     after: [install-common-files]
     overlay-script: |
-      #syslog user
       groupadd -R $CRAFT_OVERLAY _lldpd
       useradd -R $CRAFT_OVERLAY -M -r --system -g _lldpd _lldpd
     prime:
