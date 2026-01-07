@@ -9,9 +9,6 @@ if [ "${RUNTIME_OWNER}" == "" ]; then
 fi
 
 CTR_SCRIPT="/usr/share/sonic/scripts/container_startup.py"
-echo RUNTIME_OWNER=${RUNTIME_OWNER}, IMAGE_VERSION=${IMAGE_VERSION}
-echo CTR_SCRIPT=$(ls ${CTR_SCRIPT})
-
 if test -f ${CTR_SCRIPT}
 then
     ${CTR_SCRIPT} -f gnmi -o ${RUNTIME_OWNER} -v ${IMAGE_VERSION}
