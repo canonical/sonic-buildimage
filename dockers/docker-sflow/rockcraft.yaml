@@ -22,14 +22,26 @@ services:
     startup: enabled
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-sflow"
+      DISTRO: "noble"
   sflowmgrd:
     command: /usr/bin/sflowmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-sflow"
+      DISTRO: "noble"
   port_index_mapper:
     command: /usr/bin/port_index_mapper.py
     override: replace
     on-failure: ignore
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-sflow"
+      DISTRO: "noble"
 
 # FROM docker-swss-layer-noble 
 

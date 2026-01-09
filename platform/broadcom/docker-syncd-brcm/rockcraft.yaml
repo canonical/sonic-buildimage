@@ -21,14 +21,26 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-syncd-brcm"
+      DISTRO: "noble"
   syncd:
     command: /usr/bin/syncd_start.sh
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-syncd-brcm"
+      DISTRO: "noble"
   ledinit:
     command: /usr/bin/start_led.sh
     override: replace
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-syncd-brcm"
+      DISTRO: "noble"
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 

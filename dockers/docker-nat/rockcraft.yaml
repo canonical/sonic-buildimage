@@ -22,17 +22,24 @@ services:
     startup: enabled
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-nat"
+      DISTRO: "noble"
   natmgrd:
     command: /usr/bin/natmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-nat"
+      DISTRO: "noble"
   natsyncd:
     command: /usr/bin/natsyncd
     override: replace
-  restore_nat_entries:
-    command: /usr/bin/restore_nat_entries.py
-    override: replace
-    on-success: ignore
-    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-nat"
+      DISTRO: "noble"
 
 # FROM docker-swss-layer-noble 
 

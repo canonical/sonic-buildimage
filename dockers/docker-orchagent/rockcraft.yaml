@@ -21,71 +21,147 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
 
   gearsyncd:
     command: /usr/bin/gearsyncd -p /usr/share/sonic/hwsku/gearbox_config.json
     override: replace
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   portsyncd:
     command: /usr/bin/portsyncd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   orchagent:
     command: /usr/bin/orchagent.sh
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
 
   coppmgrd:
     command: /usr/bin/coppmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   swssconfig:
     command: /usr/bin/swssconfig.sh
     override: replace
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   restore_neighbors:
     # Don't restart .py even if it fails
     command: /usr/bin/restore_neighbors.py
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   enable_counters:
     # Don't restart .py even if it fails
     command: /usr/bin/enable_counters.py
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
 
   neighsyncd:
     command: /usr/bin/neighsyncd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   vlanmgrd:
     command: /usr/bin/vlanmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   intfmgrd:
     command: /usr/bin/intfmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   portmgrd:
     command: /usr/bin/portmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   fabricmgrd:
     command: /usr/bin/fabricmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   buffermgrd:
     command: /usr/bin/buffermgrd.sh
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   vrfmgrd:
     command: /usr/bin/vrfmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   nbrmgrd:
     command: /usr/bin/nbrmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   vxlanmgrd:
     command: /usr/bin/vxlanmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   tunnelmgrd:
     command: /usr/bin/tunnelmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
   fdbsyncd:
     command: /usr/bin/fdbsyncd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
 
 # FROM docker-swss-layer-noble 
 

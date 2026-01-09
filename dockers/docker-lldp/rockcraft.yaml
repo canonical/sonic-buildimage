@@ -22,6 +22,10 @@ services:
     startup: enabled
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-lldp"
+      DISTRO: "noble"
   fake-syslog-socket:
     command: socat -u UNIX-RECV:/dev/log,mode=666,reuseaddr OPEN:/dev/null,append
     override: replace
@@ -31,17 +35,33 @@ services:
   lldpd:
     command: /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-lldp"
+      DISTRO: "noble"
   waitfor_lldp_ready:
     command: /usr/bin/waitfor_lldp_ready.sh
     override: replace
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-lldp"
+      DISTRO: "noble"
   lldp-syncd:
     command: /usr/bin/env python3 -m lldp_syncd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-lldp"
+      DISTRO: "noble"
   lldpmgrd:
     command: /usr/bin/lldpmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-lldp"
+      DISTRO: "noble"
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -192,6 +212,7 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/lldpd.conf.j2           usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/lldpdSysDescr.conf.j2   usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/envs                    usr/share/sonic/templates/
 
       # docker-lldp  lldp
       mkdir etc/default

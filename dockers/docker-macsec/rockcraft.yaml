@@ -21,10 +21,18 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
-    on-failure: ignore    
+    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-macsec"
+      DISTRO: "noble"
   macsecmgrd:
     command: /usr/bin/macsecmgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-macsec"
+      DISTRO: "noble"
 
 # FROM docker-swss-layer-noble 
 
