@@ -22,15 +22,31 @@ services:
     startup: enabled
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-teamd"
+      DISTRO: "noble"
   teammgrd:
     command: /usr/bin/teammgrd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-teamd"
+      DISTRO: "noble"
   tlm_teamd:
     command: /usr/bin/tlm_teamd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-teamd"
+      DISTRO: "noble"
   teamsyncd:
     command: /usr/bin/teamsyncd
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-teamd"
+      DISTRO: "noble"
 
 # FROM docker-swss-layer-noble 
 

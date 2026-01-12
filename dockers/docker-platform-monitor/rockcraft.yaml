@@ -21,6 +21,10 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
   fake-syslog-socket:
     command: socat -u UNIX-RECV:/dev/log,mode=666,reuseaddr OPEN:/dev/null,append
     override: replace
@@ -31,30 +35,58 @@ services:
     command: /usr/local/bin/chassis_db_init
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
   xcvrd:
     command: python3 /usr/local/bin/xcvrd
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
   psud:
     command: python3 /usr/local/bin/psud
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
   syseepromd:
     command: python3 /usr/local/bin/syseepromd
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
   thermalctld:
     command: python3 /usr/local/bin/thermalctld
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
   pcied:
     command: /usr/local/bin/pcied
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
   stormond:
     command: /usr/local/bin/stormond
     override: replace
     on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -234,7 +266,8 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
 
       #cp ${CRAFT_PROJECT_DIR}/supervisord.conf         etc/supervisor/conf.d/
-      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml             usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml   usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/envs                      usr/share/sonic/templates/
 
       # docker-snmp specifc
       mkdir -p usr/bin

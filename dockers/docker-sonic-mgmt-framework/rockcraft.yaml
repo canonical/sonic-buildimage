@@ -22,9 +22,17 @@ services:
     startup: enabled
     on-success: ignore
     on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-sonic-mgmt-framework"
+      DISTRO: "noble"
   rest-server:
     command: /usr/bin/rest-server.sh
     override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-sonic-mgmt-framework"
+      DISTRO: "noble"
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -141,6 +149,7 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
       cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/envs                       usr/share/sonic/templates/
 
       # common - supervisor config files
       mkdir -p etc/supervisor/conf.d
