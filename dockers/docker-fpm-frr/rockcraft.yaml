@@ -16,11 +16,59 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker_init.sh"
+  init:
+    command: /usr/bin/rock_init.sh
     startup: enabled
     override: replace
-    on-failure: shutdown
+    on-success: ignore
+    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-fpm-frr"
+      DISTRO: "noble"
+  zebra:
+    command: /usr/lib/frr/zebra -A 127.0.0.1 -s 90000000 -M dplane_fpm_nl -M snmp --asic-offload=notify_on_offload
+    override: replace
+
+  staticd:
+    command: /usr/lib/frr/staticd -A 127.0.0.1
+    override: replace
+  bfdd:
+    command: /usr/lib/frr/bfdd -A 127.0.0.1
+    override: replace
+  bgpd:
+    command: /usr/lib/frr/bgpd -A 127.0.0.1 -M snmp
+    override: replace
+
+  ospfd:
+    command: /usr/lib/frr/ospfd -A 127.0.0.1 -M snmp
+    override: replace
+  pimd:
+    command: /usr/lib/frr/pimd -A 127.0.0.1
+    override: replace
+
+  fpmsyncd:
+    command: fpmsyncd
+    override: replace
+  frrcfgd:
+    command: /usr/local/bin/frrcfgd
+    override: replace
+  bgpcfgd:
+    command: /usr/local/bin/bgpcfgd
+    override: replace
+  staticroutebfd:
+    command: /usr/local/bin/staticroutebfd
+    override: replace
+  bgpmon:
+    command: /usr/local/bin/bgpmon
+    override: replace
+  vtysh_b:
+    command: /usr/bin/vtysh -b
+    override: replace
+  bgp_eoiu_marker:
+    command: /usr/bin/bgp_eoiu_marker.py
+    override: replace
+
 # FROM docker-swss-layer-noble 
 
 parts:
@@ -123,7 +171,6 @@ parts:
   install-packages:
     plugin: nil
     stage-packages:
-      - rsyslog
       - python3
       - libpython3.12
       # package dependencies
@@ -217,6 +264,7 @@ parts:
       # common - supervisor related
       mkdir -p usr/share/sonic/templates
       #cp ${CRAFT_PROJECT_DIR}/supervisord.conf.j2     usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
 
       mkdir -p etc/sysctl.d/
       cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
@@ -244,11 +292,7 @@ parts:
     after: [install-common-files]
 
     overlay-script: |
-      #syslog user
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-
-      #frr
+      #frr user
       groupadd -R $CRAFT_OVERLAY frr
       useradd -R $CRAFT_OVERLAY -M -r  -g  frr frr
       groupadd -R $CRAFT_OVERLAY frrvty
