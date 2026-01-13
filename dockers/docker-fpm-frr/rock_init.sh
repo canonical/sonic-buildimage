@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+pebble add syslog-layer --combine $LAYER_FILE
+pebble replan
+
 mkdir -p /etc/frr
 mkdir -p /etc/supervisor/conf.d
 
@@ -112,3 +116,29 @@ rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
 
 # exec /usr/local/bin/supervisord
+
+pebble start zebra
+/usr/bin/zsocket.sh
+pebble start staticd
+pebble start bgpd
+pebble start fpmsyncd
+
+SUPERVISORD_FILE_PATH="/etc/supervisor/conf.d/supervisord.conf"
+if grep -q "\[program:bfdd\]" $SUPERVISORD_FILE_PATH; then
+    pebble start bfdd
+    pebble start ospfd
+    pebble start pimd
+    pebble start frrcfgd
+else
+    pebble start bgpcfgd
+    pebble start staticroutebfd
+    pebble start bgpmon
+fi
+
+if grep -q "\[program:vtysh_b\]" $SUPERVISORD_FILE_PATH; then
+    pebble start vtysh_b
+fi
+
+if grep -q "\[program:bgp_eoiu_marker\]" $SUPERVISORD_FILE_PATH; then
+    pebble start bgp_eoiu_marker
+fi
