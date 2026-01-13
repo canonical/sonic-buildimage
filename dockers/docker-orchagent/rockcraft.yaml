@@ -163,6 +163,16 @@ services:
       IMAGENAME: "docker-orchagent"
       DISTRO: "noble"
 
+  arp_update:
+    command: /usr/bin/arp_update
+    override: replace
+  ndppd:
+    command: /usr/sbin/ndppd
+    override: replace
+  tunnel_packet_handler:
+    command: /usr/bin/tunnel_packet_handler.py
+    override: replace
+
 # FROM docker-swss-layer-noble 
 
 parts:
