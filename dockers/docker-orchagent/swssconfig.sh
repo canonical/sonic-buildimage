@@ -84,3 +84,16 @@ if [[ $SWITCH_TYPE != "fabric" ]]; then
     pebble start tunnelmgrd
     pebble start fdbsyncd
 fi
+
+if [[ -s /tmp/vlan ]] || [[ "$SWITCH_TYPE" == "chassis-packet" ]]; then
+    pebble start arp_update
+fi
+if [ -s /tmp/vlan ]; then
+    /usr/bin/wait_for_link.sh
+    pebble start ndppd
+fi
+
+SUBTYPE=$(sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'subtype')
+if [ "$SUBTYPE" == "DualToR" ]; then
+    pebble start tunnel_packet_handler
+fi

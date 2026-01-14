@@ -115,8 +115,6 @@ TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
 
-# exec /usr/local/bin/supervisord
-
 pebble start zebra
 /usr/bin/zsocket.sh
 pebble start staticd
@@ -124,7 +122,7 @@ pebble start bgpd
 pebble start fpmsyncd
 
 SUPERVISORD_FILE_PATH="/etc/supervisor/conf.d/supervisord.conf"
-if grep -q "\[program:bfdd\]" $SUPERVISORD_FILE_PATH; then
+if $(sonic-cfggen -d -v DEVICE_METADATA.localhost.frr_mgmt_framework_config) == "true"; then
     pebble start bfdd
     pebble start ospfd
     pebble start pimd
@@ -135,7 +133,8 @@ else
     pebble start bgpmon
 fi
 
-if grep -q "\[program:vtysh_b\]" $SUPERVISORD_FILE_PATH; then
+routing_config_mode=$(sonic-cfggen -d -v DEVICE_METADATA.localhost.docker_routing_config_mode)
+if [[ $routing_config_mode == "unified" ]] || [[ $routing_config_mode == "split-unified" ]]; then
     pebble start vtysh_b
 fi
 

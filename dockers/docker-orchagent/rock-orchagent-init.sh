@@ -4,7 +4,6 @@ pebble add syslog-layer --combine $LAYER_FILE
 pebble replan
 
 mkdir -p /etc/swss/config.d/
-mkdir -p /etc/supervisor/
 mkdir -p /etc/supervisor/conf.d/
 
 
@@ -19,7 +18,7 @@ CFGGEN_PARAMS=" \
     -t /usr/share/sonic/templates/ndppd.conf.j2,/etc/ndppd.conf \
     -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes \
     -t /usr/share/sonic/templates/watchdog_processes.j2,/etc/supervisor/watchdog_processes \
-    -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf
+    -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
     -t /usr/share/sonic/templates/wait_for_link.sh.j2,/usr/bin/wait_for_link.sh \
 "
 VLAN=$(sonic-cfggen $CFGGEN_PARAMS)
@@ -79,6 +78,9 @@ if [[ $SWITCH_TYPE != "fabric" ]]; then
     pebble start portsyncd
 fi
 
+if [ "$VLAN" != "" ]; then
+    echo $VLAN > /tmp/vlan
+fi
 pebble start orchagent
 pebble start gearsyncd
 pebble start swssconfig
