@@ -122,7 +122,7 @@ pebble start bgpd
 pebble start fpmsyncd
 
 SUPERVISORD_FILE_PATH="/etc/supervisor/conf.d/supervisord.conf"
-if $(sonic-cfggen -d -v DEVICE_METADATA.localhost.frr_mgmt_framework_config) == "true"; then
+if [[ $(sonic-cfggen -d -v DEVICE_METADATA.localhost.frr_mgmt_framework_config) == "true" ]]; then
     pebble start bfdd
     pebble start ospfd
     pebble start pimd
