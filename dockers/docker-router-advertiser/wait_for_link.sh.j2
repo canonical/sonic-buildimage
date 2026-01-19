@@ -28,3 +28,5 @@ function wait_until_iface_ready
 {% for (name, prefix) in VLAN_INTERFACE|pfx_filter %}
 wait_until_iface_ready ${VLAN_TABLE_PREFIX} {{ name }}
 {% endfor %}
+
+pebble start radvd

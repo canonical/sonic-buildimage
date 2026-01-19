@@ -16,11 +16,19 @@ platforms:
   amd64:  # Make sure this value matches your computer's architecture
 
 services:
-  supervisor:
-    command: "/usr/bin/docker-init.sh"
+  init:
+    command: /usr/bin/rock-init.sh
     startup: enabled
     override: replace
-    on-failure: shutdown
+    on-failure: ignore
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-router-advertiser"
+      DISTRO: "noble"
+  radvd:
+    command: /usr/sbin/radvd -n
+    override: replace
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
@@ -126,7 +134,9 @@ parts:
       cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
       cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
       cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
- 
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/envs                       usr/share/sonic/templates/
+
       # common - rsyslog
       mkdir -p etc/rsyslog.d/
       cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
