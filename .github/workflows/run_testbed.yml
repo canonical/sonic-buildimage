@@ -9,11 +9,11 @@ on:
         default: 'feature_noble_build'
         type: string
   push:
-    branches: [ feature_noble_build, test/*, tests/* ]
+    branches: [ feature_noble_build, test/*, tests/*, ci-workflow ]
 
 jobs:
   testflinger-vs:
-    runs-on: [self-hosted , testflinger]
+    runs-on: [self-hosted, self-hosted-linux-amd64-jammy-private-endpoint-medium]
     timeout-minutes: 1440   # Time limit for this GitHub workflow job (not testflinger job!): 24 hours
     steps:
       - uses: actions/checkout@v4
@@ -66,7 +66,7 @@ jobs:
 
 
   testflinger-broadcom:
-    runs-on: [self-hosted , testflinger]
+    runs-on: [self-hosted, self-hosted-linux-amd64-jammy-private-endpoint-medium]
     steps:
       - uses: actions/checkout@v4
 

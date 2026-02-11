@@ -1,6 +1,6 @@
 job_queue: sonic-ci
 provision_data:
-  distro: jammy
+  distro: noble
 test_data:
   test_cmds: |
     set -e
@@ -20,7 +20,7 @@ test_data:
     ssh ubuntu@$DEVICE_IP pip3 install -q --user j2cli > /dev/null
     ssh ubuntu@$DEVICE_IP pip3 install -q --user jinjanator > /dev/null
 
-    # 2. Build vs image target
+    # 2. Build vs image
     ssh ubuntu@$DEVICE_IP git clone -q -b {{ branch }} --recurse-submodules https://github.com/canonical/sonic-buildimage.git > /dev/null
     ssh ubuntu@$DEVICE_IP sudo modprobe overlay
     ssh ubuntu@$DEVICE_IP "cd /home/ubuntu/sonic-buildimage && make init"
