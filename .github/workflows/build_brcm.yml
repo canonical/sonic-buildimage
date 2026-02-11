@@ -1,4 +1,4 @@
-name: Build vs target on feature_noble_build branch
+name: Build brcm image on feature_noble_build branch
 
 on:
   workflow_dispatch:
@@ -6,8 +6,9 @@ on:
     - cron: '0 22 * * *'  # Every day at 22:00 UTC
 
 jobs:
-  testflinger-vs-build-only:
-    runs-on: [self-hosted , testflinger]
+  testflinger-brcm-build-only:
+    runs-on: [self-hosted, self-hosted-linux-amd64-jammy-private-endpoint-medium]
+
     timeout-minutes: 300  # Time limit for this GitHub workflow job (not testflinger job!): 6 hours
     steps:
       - uses: actions/checkout@v4
@@ -17,7 +18,7 @@ jobs:
         uses: canonical/testflinger/.github/actions/submit@main
         with:
           poll: true
-          job-path: ${{ github.workspace }}/.github/testflinger/vs_build_on_feature_noble_build.yaml
+          job-path: ${{ github.workspace }}/.github/testflinger/brcm_build_on_feature_noble_build.yaml
 
       - name: Display results
         id: get-results
