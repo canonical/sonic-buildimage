@@ -18,7 +18,7 @@ jobs:
         uses: canonical/testflinger/.github/actions/submit@main
         with:
           poll: true
-          job-path: ${{ github.workspace }}/.github/testflinger/brcm_build_on_feature_noble_build.yaml
+          job-path: ${{ github.workspace }}/.github/testflinger/build_brcm_on_feature_noble_build.yaml
 
       - name: Display results
         id: get-results
