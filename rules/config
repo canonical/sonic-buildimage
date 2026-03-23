@@ -313,7 +313,7 @@ INCLUDE_FIPS ?= y
 ENABLE_FIPS ?= n
 
 # SONIC_SLAVE_DOCKER_DRIVER - set the sonic slave docker storage driver
-SONIC_SLAVE_DOCKER_DRIVER ?= vfs
+SONIC_SLAVE_DOCKER_DRIVER ?= overlay2
 
 # SONIC_OS_VERSION - sonic os version
 SONIC_OS_VERSION ?= 12
@@ -327,3 +327,9 @@ BUILD_REDUCE_IMAGE_SIZE = n
 # SONIC_PTF_ENV_PY_VER - SONiC PTF test Python version. Set to 'mixed' to build the 
 # image with both Python 2 and 3. Set to 'py3' to build a Python 3 only image
 SONIC_PTF_ENV_PY_VER = mixed
+
+# Add timeout on some process which may hangs
+BUILD_PROCESS_TIMEOUT ?= 0
+
+# BUILD_SKIP_TEST - skip all tests when building to reduce build time
+BUILD_SKIP_TEST ?= n
