@@ -101,15 +101,15 @@ parts:
     source-type: deb
     source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
 
-  install-libsnmp40t64_5.9.4+dfsg-1.1ubuntu3.1_amd64:
+  install-libsnmp40t64_5.9.4:
     plugin: dump
     source-type: deb
-    source: ./debs/libsnmp40t64_5.9.4+dfsg-1.1ubuntu3.1_amd64.deb
+    source: ./debs/libsnmp40t64_5.9.4+dfsg-1.1ubuntu3.2_amd64.deb
 
-  install-libsnmp-base_5.9.4+dfsg-1.1ubuntu3.1_all:
+  install-libsnmp-base_5.9.4:
     plugin: dump
     source-type: deb
-    source: ./debs/libsnmp-base_5.9.4+dfsg-1.1ubuntu3.1_all.deb
+    source: ./debs/libsnmp-base_5.9.4+dfsg-1.1ubuntu3.2_all.deb
 
   install-lldpd_1.0.16-1+deb12u1_amd64.deb:
     plugin: dump
