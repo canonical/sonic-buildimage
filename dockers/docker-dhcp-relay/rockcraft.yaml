@@ -141,6 +141,7 @@ parts:
       - click
       - psutil
       - lxml
+      - setuptools
     stage-packages:
       - python3-venv
 

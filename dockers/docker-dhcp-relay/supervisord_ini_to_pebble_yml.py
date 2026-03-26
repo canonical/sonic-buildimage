@@ -1,10 +1,16 @@
 import configparser
+import sys
 import tempfile
 import yaml
 
 def main() -> int:
+    if len(sys.argv) < 2:
+        print("Usage: python3 supervisord_ini_to_pebble_yml.py <path_to_supervisord.conf>")
+        return 1
+    
+    config_file = sys.argv[1]
     config = configparser.ConfigParser()
-    with open('supervisord.conf', 'r', encoding='utf-8') as f:
+    with open(config_file, 'r', encoding='utf-8') as f:
         config.read_file(f)
 
     services = {}

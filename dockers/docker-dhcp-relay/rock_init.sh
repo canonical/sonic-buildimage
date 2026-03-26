@@ -54,7 +54,7 @@ fi
 
 pebble start dhcprelayd
 
-layer_path=$(python3 /usr/bin/supervisord_ini_to_pebble_yml.py)
+layer_path=$(python3 /usr/bin/supervisord_ini_to_pebble_yml.py /etc/supervisor/conf.d/docker-dhcp-relay.supervisord.conf)
 
 pebble add dynamic_layer --combine $layer_path
 pebble replan
