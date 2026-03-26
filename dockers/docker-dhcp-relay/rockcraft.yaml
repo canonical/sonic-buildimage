@@ -33,8 +33,6 @@ services:
   dhcprelayd:
     command: dhcprelayd
     override: replace
-    startup: enabled
-    after: [ rsyslogd ]
 
 # For meeting requirement R2, simply don't specify any entrypoint (aka "services")
 
