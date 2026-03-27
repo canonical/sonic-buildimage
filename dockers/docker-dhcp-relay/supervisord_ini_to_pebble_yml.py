@@ -16,7 +16,7 @@ def main() -> int:
     services = {}
     for section in config.sections():
         if section.startswith('program:isc-dhcpv4') or section.startswith('program:dhcpmon-'):
-            svc_name = section[8:]
+            svc_name = section[len('program:'):]
             svc = {'command': config.get(section, 'command'), 'override': 'replace', 'startup': 'enabled'}
             services[svc_name] = svc
 
