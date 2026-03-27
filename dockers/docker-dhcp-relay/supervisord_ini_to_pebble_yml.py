@@ -5,7 +5,7 @@ import yaml
 
 def main() -> int:
     if len(sys.argv) < 2:
-        print("Usage: python3 supervisord_ini_to_pebble_yml.py <path_to_supervisord.conf>")
+        print("Usage: python3 supervisord_ini_to_pebble_yml.py /path/to/supervisord.conf")
         return 1
     
     config_file = sys.argv[1]
