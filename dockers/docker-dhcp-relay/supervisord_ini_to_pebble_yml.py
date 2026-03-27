@@ -22,7 +22,7 @@ def main() -> int:
 
     with tempfile.NamedTemporaryFile(prefix='pebble-layer-', suffix='.yaml', delete=False, mode='w', encoding='utf-8') as f:
         output = {'services': services}
-        yaml.safe_dump(output, f, width=float("inf"))
+        yaml.safe_dump(output, f)
         temp_path = f.name
 
     print(temp_path)
