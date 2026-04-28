@@ -70,15 +70,6 @@ services:
       DEBIAN_FRONTEND: "noninteractive"
       IMAGENAME: "docker-orchagent"
       DISTRO: "noble"
-  restore_neighbors:
-    # Don't restart .py even if it fails
-    command: /usr/bin/restore_neighbors.py
-    override: replace
-    on-success: ignore
-    environment:
-      DEBIAN_FRONTEND: "noninteractive"
-      IMAGENAME: "docker-orchagent"
-      DISTRO: "noble"
   enable_counters:
     # Don't restart .py even if it fails
     command: /usr/bin/enable_counters.py
