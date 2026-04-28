@@ -65,7 +65,8 @@ for file in $SWSSCONFIG_ARGS; do
     sleep 1
 done
 
-pebble start restore_neighbors
+/usr/bin/restore_neighbors.py
+
 pebble start enable_counters
 
 SWITCH_TYPE=${SWITCH_TYPE:-`sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'switch_type'`}
