@@ -22,6 +22,3 @@ do
     lldpcli -u /var/run/lldpd.socket -c /etc/lldpd.conf -c /etc/lldpd.d resume > /dev/null && break
     sleep 1
 done
-
-pebble start lldp-syncd
-pebble start lldpmgrd

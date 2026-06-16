@@ -38,7 +38,6 @@ dockers/*/Dockerfile-dbg.cleanup
 dockers/*/debs
 dockers/*/files
 dockers/*/python-wheels
-dockers/*/*supervisord.conf.real
 platform/*/docker-*/Dockerfile
 platform/*/docker-*/Dockerfile.cleanup
 platform/*/docker-*/Dockerfile-dbg.cleanup

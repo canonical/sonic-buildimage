@@ -1,6 +1,0 @@
-log-targets:
-  host-syslog:
-    override: replace
-    type: syslog
-    location: udp://127.0.0.1:514/
-    services: [all]
