@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-
-LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
-pebble add syslog-layer --combine $LAYER_FILE
-pebble replan
-
 CFGGEN_PARAMS=" \
     -d \
     -a "{\"namespace_id\":\"$NAMESPACE_ID\"}" \
