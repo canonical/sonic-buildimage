@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
-pebble add syslog-layer --combine $LAYER_FILE
-pebble replan
-
 ICCPD_CONF_PATH=/etc/iccpd
 
 rm -rf $ICCPD_CONF_PATH
@@ -18,5 +14,3 @@ echo "# Config files managed by sonic-config-engine" > /var/sonic/config_status
 TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
-
-pebble start iccpd
