@@ -14,5 +14,4 @@ ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
 
 pebble start natmgrd
 pebble start natsyncd
-
-/usr/bin/restore_nat_entries.py
+pebble start restore_nat_entries
