@@ -15,7 +15,7 @@ setup(
         'sonic_platform_pddf_base',
     ],
     install_requires=[
-        'jsonschema==2.6.0'
+        'jsonschema==4.10.3'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
