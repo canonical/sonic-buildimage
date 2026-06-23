@@ -1,0 +1,11 @@
+--- a/debian/rules
++++ b/debian/rules
+@@ -34,7 +34,7 @@ override_dh_autoreconf:
+ 	dh_autoreconf
+ 
+ override_dh_auto_configure:
+-	dh_auto_configure -- --prefix=/usr --with-kerneldir --mandir=/usr/share/man --enable-intf-dummy $(extra_config_opts)
++	dh_auto_configure -- --prefix=/usr --mandir=/usr/share/man --enable-intf-dummy $(extra_config_opts)
+ 
+ override_dh_installinit:
+ 	dh_installinit --no-enable --name ipmievd --error-handler=ipmievd_initd_failed
