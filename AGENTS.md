@@ -11,9 +11,9 @@ This document is scoped to the **feature_noble_build** branch and describes what
 ## Branch and origin
 
 - **Canonical repository:** `canonical/sonic-buildimage`
-- **Active development branch:** `feature_noble_build`
+- **Default branch:** `feature_noble_build` (Ubuntu 24.04-based)
 - **Upstream source:** `sonic-net/sonic-buildimage` (Debian-based)
-- **Goal:** Rebase SONiC from Debian to **Ubuntu 24.04 (“Noble Numbat”)**, while replacing or upgrading the toolchain, container build pipeline, and service manager.
+- **Goal:** Rebase SONiC from Debian to **Ubuntu**, while replacing or upgrading the toolchain, container build pipeline, and service manager.
 
 ### Upstream release model
 
@@ -21,20 +21,17 @@ The upstream `sonic-net` community releases twice a year. Each release is create
 
 ### Fork point
 
-The `feature_noble_build` branch was forked from the upstream `202405` release branch. The last upstream commit before forking is:
-
-```
-926d033226f93ffb7f2a79de812b72926e1560a4
-```
+The `feature_noble_build` branch was forked from the upstream `202405` release branch. The last upstream commit before forking is `926d033226f93ffb7f2a79de812b72926e1560a4`
 
 ## Major divergences from upstream
 
 ### 1. Operating system base: Debian → Ubuntu 24.04
 
-The baseline OS for both the build slave environment and the runtime filesystem has been changed from Debian (Bullseye/Bookworm) to Ubuntu 24.04 (“Noble”). This touches:
+The baseline OS for both the build slave environment, runtime host and all feature containers has been changed from Debian (Bullseye/Bookworm) to Ubuntu (24.04 for `feature_noble_build` branch). This touches:
 
 - **Build slave:** The canonical build uses `sonic-slave-noble/` (a Docker image based on `ubuntu:24.04`). Upstream Debian-based slave directories (`sonic-slave-bullseye`, `sonic-slave-bookworm`, etc.) are present for reference but are not the active target.
 - **Runtime filesystem root:** `fsroot.docker.noble/` is the default root filesystem template.
+- **Feature containers:** `dockers/` and `platform/` have containers that provides networking features for SONiC.
 
 ### 2. Git submodule remapping to Canonical forks
 
@@ -151,10 +148,3 @@ To build the new Rockcraft-based containers (after the main image is built):
 | `dockers/*/rock*.sh` | Pebble-based init scripts for each service container |
 | `.github/workflows/` | Canonical CI pipelines (Testflinger, CodeQL, auto-merge, etc.) |
 | `.github/testflinger/` | Testflinger job templates |
-
-## Contact and contribution
-
-- **Upstream documentation:** [`README.md`](README.md) and [`README.buildsystem.md`](README.buildsystem.md)
-- **Testflinger CI status:** https://testflinger.canonical.com/queues/sonic-ci (requires Canonical VPN)
-- **Branch:** `feature_noble_build`
-- **Maintainers:** See [`MAINTAINERS`](MAINTAINERS)
