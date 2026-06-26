@@ -3,15 +3,11 @@
 > **Target branch:** `202405` ← **Source branch:** `202405_noble`
 > **Changed files:** 192 | **Additions:** +4,342 | **Deletions:** -478 | **Commits:** 197 (squash-merged as one logical change)
 
----
-
 ## Overview
 
 This PR rebases SONiC from Debian Bookworm to **Ubuntu 24.04 LTS (Noble)** across the entire stack — build slave, host root filesystem, and all runtime Docker containers. It is the foundational change for Canonical's `feature_noble_build` branch.
 
 The work touches the build system, the slave Docker image, the root filesystem bootstrap, package build rules, Docker base images, submodule remapping, and fixes for Noble-compatible component builds. A small number of unrelated bug fixes (shared with the upstream community build) are also included.
-
----
 
 ## 1. Build System: Debian → Ubuntu Noble
 
@@ -50,8 +46,6 @@ Build mirror URL updated from Debian to Ubuntu
 ### `scripts/build_kvm_image.sh`
 Add `sudo` before `mount`
 
----
-
 ## 2. Root Filesystem (Host OS) Changes
 
 ### `build_debian.sh` (+30 / -17)
@@ -72,8 +66,6 @@ Add `sudo` before `mount`
 
 ### `install_sonic.py`
 - Base image reference updated
-
----
 
 ## 3. Docker Base Images — Noble Variants
 
@@ -99,14 +91,8 @@ A new Docker base image based on `ubuntu:24.04`, with:
 ### All `Dockerfile.j2` files under `dockers/`
 - Base changed from `docker-base-bookworm` to `docker-base-noble`
 
-### `get_docker-base.sh`
-- Bookworm → Noble base image reference
 
----
-
-## 4. Platform Docker Changes
-
-### New Noble templates
+### New template `.mk` files under `platform/template/`
 | File | Description |
 |---|---|
 | `platform/template/docker-gbsyncd-noble.mk` | Noble-based gbsyncd build rules |
@@ -126,12 +112,9 @@ A new Docker base image based on `ubuntu:24.04`, with:
 - All `platform/*.mk` files updated: `bookworm` → `noble`
 
 ### Package Name Change in Ubuntu 24.04
-- `python-ply` -> `python3-ply`
+- `python-ply` → `python3-ply`
 
-
----
-
-## 5. Build Rules
+## 4. Build Rules
 
 ### New rules files (Noble-specific)
 | File | Description |
@@ -164,9 +147,7 @@ A new Docker base image based on `ubuntu:24.04`, with:
 - `rules/functions`: Removed `--customize scripts/j2cli/json_filter.py` from j2 invocation — `j2cli` is replaced by `jinjanator` on Ubuntu 24.04, which does not support the `--customize` flag
 - `rules/sonic-dash-api.mk`: `BLDENV=bullseye` → `filter bookworm noble`
 
----
-
-## 6. Git Submodule Remapping
+## 5. Git Submodule Remapping
 
 14 submodules repointed from `sonic-net/*` to `canonical/*` in `.gitmodules`:
 
@@ -188,9 +169,7 @@ A new Docker base image based on `ubuntu:24.04`, with:
 
 Additionally, submodule commit hashes are updated across all of these plus `src/sonic-frr/frr` (a nested submodule under frr). These forks include Python 3.12 compatibility, Noble build fixes, and other Canonical-specific changes.
 
----
-
-## 7. Ubuntu-Specific Component Fixes
+## 6. Ubuntu-Specific Component Fixes
 
 These changes are directly caused by the switch to Ubuntu 24.04 (Python 3.12, GCC 13, systemd changes, package naming differences) and are relevant reference for anyone performing a similar migration.
 
@@ -243,8 +222,6 @@ Ubuntu 24.04 uses different package names (e.g., `t64` suffix for the 64-bit tim
 
 | File | Lines | Description |
 |---|---|---|
-| `dockers/docker-orchagent/docker-orchagent-init.sh` | +74 | Generates SWSS configs, handles chassis DB, starts supervisord |
-| `dockers/docker-platform-monitor/docker_init.sh` | +128 | Generates supervisor config for platform monitoring daemons |
 | `dockers/docker-sonic-mgmt-framework/start.sh` | +17 | Mgmt framework startup |
 
 ### New event config files (Ubuntu container logging)
@@ -271,9 +248,7 @@ Ubuntu 24.04 uses different package names (e.g., `t64` suffix for the 64-bit tim
 
 - Removed Python version constraint
 
----
-
-## 8. Shared Bug Fixes
+## 7. Shared Bug Fixes
 
 These changes are **not specific to the Debian→Ubuntu migration**. They fix pre-existing issues in the forked codebase that were already addressed in the upstream `sonic-net/sonic-buildimage` community branches. Customers performing their own migration do **not** need to replicate these items — they are listed here only for completeness.
 
@@ -303,9 +278,7 @@ The fork inherited old Azure blob storage URLs from the snapshot point of upstre
 
 - `tags/0.9.7` → `tags/v0.9.7` — the flashrom upstream repository changed its tag naming convention (added `v` prefix), causing checkout failure for anyone building from the old tag reference.
 
----
-
-## 9. System Config Files (Ubuntu-specific)
+## 8. System Config Files (Ubuntu-specific)
 
 | File | Description |
 |---|---|
@@ -314,8 +287,6 @@ The fork inherited old Azure blob storage URLs from the snapshot point of upstre
 | `files/rsyslog/00-load-omprog.conf` (new) | Rsyslog omprog module config |
 | `files/rsyslog/rsyslog.conf` (new) | Rsyslog configuration |
 | `files/supervisor/supervisord.conf` (new) | Supervisor configuration |
-
----
 
 ## Key Points for Reviewers
 
