@@ -111,9 +111,6 @@ z
 ### Build rules
 - All `platform/*.mk` files updated: `bookworm` → `noble`
 
-### Package Name Change in Ubuntu 24.04
-- `python-ply` → `python3-ply`
-
 ## 4. Build Rules
 
 ### New rules files (Noble-specific)
@@ -230,6 +227,8 @@ Ubuntu 24.04 renamed, split, or removed many packages compared to Debian Bookwor
 - **`src/snmpd/Makefile`**: Ubuntu 24.04 branch added — downloads Ubuntu's patched source from `archive.ubuntu.com` (`5.9.4+dfsg-1.1ubuntu3.2`); Stgit patching skipped on Noble (Ubuntu-native source is pre-patched)
 - **`src/openssh/Makefile`**: Debug package suffixes changed to `.$(DBG_DEB)`
 - **`src/wpasupplicant/Makefile`**: Debug package suffix changed to `.$(DBG_DEB)`
+
+### Build tool workarounds
 
 - **`src/ipmitool/Makefile`**: `dget` → `dget -u` (skip GPG signature check — Ubuntu archive uses different keyring); cleanup pattern extended to include `.ddeb`; new patch `0002-Remove-with-kerneldir-option.patch` for Ubuntu kernel header compatibility
 - **`src/kdump-tools/Makefile`**: `dget` → `dget -u`
