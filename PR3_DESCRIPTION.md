@@ -55,9 +55,9 @@ Add `sudo` before `mount`
 | Kernel version | `6.1.0-11-2` → `6.8.0-1000` (Ubuntu 24.04 kernel) |
 | Initramfs | Added `busybox-initramfs`, `klibc-utils`, `cpio`, `kmod`, `udev` |
 | Kernel modules | Added explicit install of `linux-modules` and `linux-modules-extra` packages |
-| Kernel pinning | Added `apt-mark hold` for kernel packages |
+| Kernel pinning | Added `apt-mark hold` for kernel packages |  # TODO
 | Docker GPG key | Changed from `download.docker.com/linux/debian` → `download.docker.com/linux/ubuntu` |
-| Firmware | Enabled installation of `firmware-linux-nonfree` on amd64 |
+| Firmware | Remove installation of `firmware-linux-nonfree` on amd64 |
 | Base packages | Added `ipmitool`, re-enabled Ethernet controller firmware |
 | Proc mount cleanup | Fixed umount trap to avoid re-entering chroot |
 
@@ -90,7 +90,7 @@ A new Docker base image based on `ubuntu:24.04`, with:
 
 ### All `Dockerfile.j2` files under `dockers/`
 - Base changed from `docker-base-bookworm` to `docker-base-noble`
-
+z
 
 ### New template `.mk` files under `platform/template/`
 | File | Description |
@@ -201,16 +201,35 @@ GCC 13 on Ubuntu 24.04 defaults to C++17 and is stricter about certain construct
 - **`src/system-health/health_checker/sysmonitor.py`**: Added `srv_type == "idle"` to the health check exemption list — Ubuntu 24.04's systemd introduces `dmesg.service` of type `idle`, which would otherwise be reported as unhealthy
 - **`files/image_config/copp/copp-config.service`**: Added `User=root` — systemd on Ubuntu 24.04 requires explicit user specification for certain service types
 
-### Package source & naming changes
+### Package name changes: Debian → Ubuntu
 
-Ubuntu 24.04 uses different package names (e.g., `t64` suffix for the 64-bit time_t transition) and sources packages from `archive.ubuntu.com` instead of `deb.debian.org`:
+Ubuntu 24.04 renamed, split, or removed many packages compared to Debian Bookworm. The table below lists every package name change found across the entire codebase (host rootfs, Docker containers, and build rules), along with the reason.
 
-- **`src/protobuf/Makefile`**: dget source switched from `deb.debian.org` to `archive.ubuntu.com`; package names updated: `libprotobuf32` → `libprotobuf32t64`, `libprotobuf-lite32` → `libprotobuf-lite32t64`, `libprotoc32` → `libprotoc32t64`
-- **`src/snmpd/Makefile`**: Ubuntu 24.04 branch added — downloads Ubuntu's patched source from `archive.ubuntu.com` (`5.9.4+dfsg-1.1ubuntu3.2`); package names updated: `libsnmp40` → `libsnmp40t64`; Stgit patching skipped on Noble (Ubuntu-native source is pre-patched); debug packages use `$(DBG_DEB)` suffix
+| Debian (Bookworm) | Ubuntu 24.04 (Noble) | Files affected | Reason |
+|---|---|---|---|
+| `python3-distutils` | (removed from apt) | `build_debian.sh`, `sonic-slave-noble/Dockerfile.j2` | Python 3.12 removed `distutils` from the standard library. Ubuntu no longer ships this package. Installed via `apt-get download` + `dpkg --force-all -i` in the build slave only (where legacy tooling still imports it). |
+| `libprotobuf32` | `libprotobuf32t64` | `build_debian.sh`, `src/protobuf/Makefile`, `rules/protobuf.mk`, `platform/vs/docker-*.j2` | Ubuntu's 64-bit `time_t` transition for 32-bit arches: all library packages that expose `time_t` in their ABI were renamed with a `t64` suffix. |
+| `libprotobuf-lite32` | `libprotobuf-lite32t64` | `src/protobuf/Makefile`, `rules/protobuf.mk` | Same `t64` transition. |
+| `libprotoc32` | `libprotoc32t64` | `src/protobuf/Makefile`, `rules/protobuf.mk` | Same `t64` transition. |
+| `libsnmp40` | `libsnmp40t64` | `src/snmpd/Makefile`, `rules/snmpd.mk` | Same `t64` transition. |
+| `libgrpc29` | (implicit via apt) | `build_debian.sh`, `platform/vs/docker-*.j2` | Ubuntu ships a newer gRPC version whose library package is named differently. Explicitly listing the Debian name causes `apt-get install` to fail. The correct version is pulled in automatically as a dependency. |
+| `libgrpc++1.51` | (implicit via apt) | `build_debian.sh`, `platform/vs/docker-*.j2` | Same gRPC version mismatch. |
+| `linux-perf` | `linux-tools-common` | `build_debian.sh` | Debian's `linux-perf` package is called `linux-tools-common` on Ubuntu. Functionally identical (provides the `perf` command). |
+| `python-ply` | `python3-ply` | `platform/vs/docker-sonic-vs/Dockerfile.j2`, `sonic-slave-noble/Dockerfile.j2` | Ubuntu 24.04 dropped the Python 2 version of PLY; only the Python 3 variant exists. |
+| `libnl-3-dev`, `libnl-route-3-dev` (pre-built .deb) | `libnl-3-dev`, `libnl-genl-3-dev`, `libnl-route-3-dev`, `libnl-nf-3-dev`, `libnl-cli-3-dev` (from apt) | `platform/vs/docker-gbsyncd-vs/Dockerfile.j2`, `platform/vs/docker-syncd-vs/Dockerfile.j2`, `sonic-slave-noble/Dockerfile.j2`, `dockers/docker-base-noble/Dockerfile.j2` | Previously these were copied as pre-built `.deb` files. On Ubuntu 24.04 the full set of libnl packages (including `-genl`, `-nf`, `-cli`) is available directly from apt, so the manual `.deb` copy is replaced by `apt-get install`. |
+| `docker-ce=${DOCKER_VERSION}` | `docker-ce` (version unpinned) | `build_debian.sh` | The old hard-coded version (`5:24.0.2-1~debian.12~bookworm`) doesn't exist in Ubuntu's Docker repo. The pin is removed and apt picks the latest available for `noble`. |
+| `busybox` | `busybox` + `busybox-initramfs` | `build_debian.sh` | Ubuntu's kernel build process requires `busybox-initramfs` separately. |
+| `linux-base` + kernel | + `klibc-utils`, `cpio`, `kmod`, `udev`, `linux-modules-*`, `linux-modules-extra-*` | `build_debian.sh` | Ubuntu 24.04 splits the kernel into more fine-grained packages; initramfs toolchain requires additional packages. |
+| `j2cli` | `jinjanator` (pip) | `build_debian.sh`, `files/build_templates/sonic_debian_extension.j2`, `dockers/docker-base-noble/Dockerfile.j2` | The `j2cli` Python package depends on the `imp` module (removed in Python 3.12). Ubuntu 24.04 does not ship `j2cli`; its spiritual successor `jinjanator` is installed via pip. |
+| `libboost-thread1.74.0`, `libboost-*-1.74.0` | (implicit from apt) | `platform/vs/docker-gbsyncd-vs/Dockerfile.j2`, `platform/vs/docker-syncd-vs/Dockerfile.j2` | The old Dockerfiles hard-coded boost 1.74 ABI versions from Debian. Ubuntu 24.04 ships boost 1.83 with different soversion; the hard-coded list was replaced with macro-driven dependency resolution. |
+| `supervisor` | `supervisor==4.2.5` (pip) | `dockers/docker-base-noble/Dockerfile.j2` | Docker base image now installs supervisor from pip. |
+
+### Source URL changes
+
+- **`src/protobuf/Makefile`**: Source tarball URL switched from `deb.debian.org` to `archive.ubuntu.com` (Ubuntu's pool layout differs)
+- **`src/snmpd/Makefile`**: Ubuntu 24.04 branch added — downloads Ubuntu's patched source from `archive.ubuntu.com` (`5.9.4+dfsg-1.1ubuntu3.2`); Stgit patching skipped on Noble (Ubuntu-native source is pre-patched)
 - **`src/openssh/Makefile`**: Debug package suffixes changed to `.$(DBG_DEB)`
 - **`src/wpasupplicant/Makefile`**: Debug package suffix changed to `.$(DBG_DEB)`
-
-### Build tool workarounds
 
 - **`src/ipmitool/Makefile`**: `dget` → `dget -u` (skip GPG signature check — Ubuntu archive uses different keyring); cleanup pattern extended to include `.ddeb`; new patch `0002-Remove-with-kerneldir-option.patch` for Ubuntu kernel header compatibility
 - **`src/kdump-tools/Makefile`**: `dget` → `dget -u`
