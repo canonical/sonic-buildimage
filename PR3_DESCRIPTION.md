@@ -146,25 +146,34 @@ z
 
 ## 5. Git Submodule Remapping
 
-14 submodules repointed from `sonic-net/*` to `canonical/*` in `.gitmodules`:
+The `.gitmodules` file remaps 13 submodules from `sonic-net/*` to `canonical/*`. Each fork was created by cloning the upstream `sonic-net` repo and applying Ubuntu Noble compatibility changes. Submodules whose changes are limited to Go version bumps, `go mod tidy`, disabled test cases, or regex raw-string fixes (all of which are already present in `sonic-net` upstream `master`) are **not listed** — they offer no reference value for a migration.
 
-| Submodule | Upstream → Canonical fork |
-|---|---|
-| `src/sonic-swss-common` | `sonic-net/sonic-swss-common` → `canonical/sonic-swss-common` |
-| `src/sonic-linux-kernel` | `sonic-net/sonic-linux-kernel` → `canonical/sonic-linux-kernel` |
-| `src/sonic-sairedis` | `sonic-net/sonic-sairedis` → `canonical/sonic-sairedis` |
-| `src/sonic-swss` | `sonic-net/sonic-swss` → `canonical/sonic-swss` |
-| `src/sonic-snmpagent` | `sonic-net/sonic-snmpagent` → `canonical/sonic-snmpagent` |
-| `src/sonic-utilities` | `sonic-net/sonic-utilities` → `canonical/sonic-utilities` |
-| `src/sonic-platform-common` | `sonic-net/sonic-platform-common` → `canonical/sonic-platform-common` |
-| `src/sonic-mgmt-framework` | `sonic-net/sonic-mgmt-framework` → `canonical/sonic-mgmt-framework` |
-| `src/sonic-mgmt-common` | `sonic-net/sonic-mgmt-common.git` → `canonical/sonic-mgmt-common.git` |
-| `src/sonic-host-services` | `sonic-net/sonic-host-services` → `canonical/sonic-host-services` |
-| `src/sonic-gnmi` | → `canonical/sonic-gnmi.git` |
-| `src/linkmgrd` | `sonic-net/sonic-linkmgrd.git` → `canonical/sonic-linkmgrd.git` |
-| `platform/broadcom/saibcm-modules-dnx` | `sonic-net/saibcm-modules.git` → `canonical/saibcm-modules.git` (branch: `sdk-6.5.29-master_2`) |
+| Submodule | Fork URL | Summary |
+|---|---|---|
+| `src/sonic-linux-kernel` | `canonical/sonic-linux-kernel` | Kernel binary replaced (Debian 6.1 → Ubuntu Noble 6.8.0-1000-sonic), `Makefile` rewritten, new Ubuntu kernel patch series added. |
+| `src/sonic-swss-common` | `canonical/sonic-swss-common` | Added `-Wno-ignored-attributes` to `tests/Makefile.am`. |
+| `src/sonic-sairedis` | `canonical/sonic-sairedis` | Added `-Wno-overloaded-virtual` across multiple `Makefile.am`, added missing `#include <cstdint>`. |
+| `src/sonic-swss` | `canonical/sonic-swss` | Added `-Wno-overloaded-virtual` across many `Makefile.am`; Docker container base changed from `debian:bookworm` to `ubuntu:24.04`; added missing `#include <cstdint>`. |
+| `src/sonic-utilities` | `canonical/sonic-utilities` | Bumped `pyroute2>=0.5.14` (upstream uses `>=0.7.7` — different resolution of the same Python 3.12 compatibility issue); added support for reading package metadata from Docker image tarballs in `sonic_package_manager/metadata.py`. |
+| `src/sonic-host-services` | `canonical/sonic-host-services` | Pinned `PyGObject==3.50.0` in `setup.py` (Ubuntu Noble ships a newer version incompatible with the existing code). |
+| `src/linkmgrd` | `canonical/sonic-linkmgrd` | Bumped `libasan.so.5` → `libasan.so.8` for GCC 13 compatibility. |
 
-Additionally, submodule commit hashes are updated across all of these plus `src/sonic-frr/frr` (a nested submodule under frr). These forks include Python 3.12 compatibility, Noble build fixes, and other Canonical-specific changes.
+### Detailed breakdown for submodules with larger change sets
+
+### `src/sonic-linux-kernel`
+| File | +/− | Description |
+|---|---|---|
+| `Makefile` | +94/−0 | Rewritten for Ubuntu kernel binary download and build |
+| `patch/series.ubuntu` | +222/−0 | Ubuntu kernel patch series |
+| `patch/0000-ubuntu-fix-annotation.patch` | +25/−0 | New kernel patch for Ubuntu annotation compatibility |
+| `.gitattributes` | +5/−0 | Git LFS tracking for Ubuntu kernel binary images |
+
+### `src/sonic-utilities`
+| File | +/− | Description |
+|---|---|---|
+| `setup.py` | +1/−1 | Bumped `pyroute2>=0.5.14` for Python 3.12 compatibility |
+| `sonic_package_manager/metadata.py` | +40/−4 | Added support for reading package metadata from local Docker image tarballs (not present in upstream) |
+
 
 ## 6. Ubuntu-Specific Component Fixes
 
