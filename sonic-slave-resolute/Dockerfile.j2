@@ -567,6 +567,9 @@ RUN sudo augtool --autosave "set /files/etc/dpkg/dpkg.cfg/force-confold"
 {%- if CROSS_BUILD_ENVIRON != "y" %}
 # For linux build
 RUN eatmydata apt-get -y build-dep linux
+# resolute: build-dep linux doesn't satisfy SONiC kernel's Build-Depends-Arch
+# (lz4, gcc-14, kernel-wedge>=2.105). Install explicitly.
+RUN eatmydata apt-get install -y lz4 gcc-14 kernel-wedge
 {%- else %}
 RUN eatmydata apt-get install -y kernel-wedge
 {%- endif %}
