@@ -1,7 +1,7 @@
 # PR #3 — Ubuntu Noble (24.04) based on community 202405 release
 
 > **Target branch:** `202405` ← **Source branch:** `202405_noble`
-> **Changed files:** 192 | **Additions:** +4,342 | **Deletions:** -478 | **Commits:** 197 (squash-merged as one logical change)
+> **Changed files:** 187 | **Additions:** +2,549 | **Deletions:** −477 | **Commits:** 208 (squash-merged as one logical change)
 
 ## Overview
 
@@ -43,12 +43,9 @@ The work touches the build system, the slave Docker image, the root filesystem b
 ### `scripts/build_mirror_config.sh` and `scripts/build_debian_base_system.sh`
 Build mirror URL updated from Debian to Ubuntu
 
-### `scripts/build_kvm_image.sh`
-Add `sudo` before `mount`
-
 ## 2. Root Filesystem (Host OS) Changes
 
-### `build_debian.sh` (+30 / -17)
+### `build_debian.sh`
 
 | Change | Detail |
 |---|---|
@@ -61,7 +58,7 @@ Add `sudo` before `mount`
 | Base packages | Added `ipmitool`, re-enabled Ethernet controller firmware |
 | Proc mount cleanup | Fixed umount trap to avoid re-entering chroot |
 
-### `installer/default_platform.conf` (+10 / -4)
+### `installer/default_platform.conf`
 - Installer platform configuration updated for Noble
 
 ### `install_sonic.py`
@@ -90,7 +87,6 @@ A new Docker base image based on `ubuntu:24.04`, with:
 
 ### All `Dockerfile.j2` files under `dockers/`
 - Base changed from `docker-base-bookworm` to `docker-base-noble`
-z
 
 ### New template `.mk` files under `platform/template/`
 | File | Description |
@@ -143,6 +139,16 @@ z
 - `rules/config`: `DEFAULT_KERNEL_PROCURE_METHOD = build` → `download`, `INCLUDE_ICCPD = n` → `y`
 - `rules/functions`: Removed `--customize scripts/j2cli/json_filter.py` from j2 invocation — `j2cli` is replaced by `jinjanator` on Ubuntu 24.04, which does not support the `--customize` flag
 - `rules/sonic-dash-api.mk`: `BLDENV=bullseye` → `filter bookworm noble`
+
+### DASH engine temporarily disabled
+
+DASH engine support is not available on Ubuntu 24.04 in this PR. The build rules are commented out:
+
+- `platform/vs/rules.mk` — `#include $(PLATFORM_PATH)/docker-dash-engine.mk`
+- `platform/vs/rules.dep` — `#include $(PLATFORM_PATH)/docker-dash-engine.dep`
+
+The `docker-gbsyncd-vs` container's DASH-related deb installations are also commented out.
+Other DASH-related files have trivial `BOOKWORM` → `NOBLE` renames but are not included in the build.
 
 ## 5. Git Submodule Remapping
 
@@ -249,13 +255,13 @@ Ubuntu 24.04 renamed, split, or removed many packages compared to Debian Bookwor
 
 | File | Lines | Description |
 |---|---|---|
-| `dockers/docker-sonic-mgmt-framework/start.sh` | +17 | Mgmt framework startup |
+| `dockers/docker-sonic-mgmt-framework/start.sh` \| 17 lines \| Mgmt framework startup |
 
 ### New event config files (Ubuntu container logging)
 
-- `dockers/docker-orchagent/swss_events.conf` (+18)
-- `dockers/docker-fpm-frr/bgp_events.conf` (+18)
-- `dockers/docker-dhcp-relay/dhcp_relay_events.conf` (+18)
+- `dockers/docker-orchagent/swss_events.conf`
+- `dockers/docker-fpm-frr/bgp_events.conf`
+- `dockers/docker-dhcp-relay/dhcp_relay_events.conf`
 
 ### `dockers/docker-database/`
 
@@ -263,11 +269,11 @@ Ubuntu 24.04 renamed, split, or removed many packages compared to Debian Bookwor
 - `redis.conf`: New 1881-line Redis 7.2 configuration file for Ubuntu
 - `database_config.json.j2`: Default databases changed from 1 to 16
 
-### `dockers/docker-platform-monitor/Dockerfile.j2` (+4 / -4)
+### `dockers/docker-platform-monitor/Dockerfile.j2`
 
 - Fixed `two_lines_to_fill` removal, non-interactive install
 
-### `dockers/docker-sonic-mgmt/Dockerfile.j2` (+7 / -7)
+### `dockers/docker-sonic-mgmt/Dockerfile.j2`
 
 - Non-interactive package installation
 
