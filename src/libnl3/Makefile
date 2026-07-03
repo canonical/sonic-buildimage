@@ -21,7 +21,7 @@ DERIVED_TARGETS = libnl-3-200-dbgsym_$(LIBNL3_VERSION_SONIC)_$(CONFIGURED_ARCH).
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Obtaining the libnl3
 	rm -rf ./libnl3-$(LIBNL3_VERSION_BASE)
-	dget https://deb.debian.org/debian/pool/main/libn/libnl3/libnl3_$(LIBNL3_VERSION).dsc
+	dget -u https://deb.debian.org/debian/pool/main/libn/libnl3/libnl3_$(LIBNL3_VERSION).dsc
 	pushd libnl3-$(LIBNL3_VERSION_BASE)
 
 	# Create a git repository here for stg to apply patches
@@ -41,6 +41,6 @@ endif
 
 	popd
 
-	mv $(DERIVED_TARGETS) $* $(DEST)/
+	-mv $(DERIVED_TARGETS) $(DEST)/ 2>/dev/null; mv $* $(DEST)/
 
 $(addprefix $(DEST)/, $(DERIVED_TARGETS)): $(DEST)/% : $(DEST)/$(MAIN_TARGET)
