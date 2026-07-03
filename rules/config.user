@@ -7,6 +7,12 @@
 INCLUDE_FIPS ?= y
 PLATFORM ?= vs
 
+# Pull base images (ubuntu:resolute, multiarch/qemu, etc.) from Docker Hub
+# directly, NOT from the Microsoft internal mirror (publicmirror.azurecr.io),
+# which mirrors Debian but has no Ubuntu resolute yet. Empty value makes
+# Makefile.work:157 skip the registry-prefix append, so FROM lines use docker.io.
+DEFAULT_CONTAINER_REGISTRY =
+
 # C/C++ compile cache (per-clone, under target/ccache)
 SONIC_CONFIG_USE_CCACHE = y
 
