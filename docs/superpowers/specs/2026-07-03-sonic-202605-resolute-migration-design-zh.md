@@ -51,7 +51,7 @@
 - `git clone --reference ~/sonic-buildimage`（branch `202605`）→ `~/sonic-buildimage-resolute`；init submodules；建 `resolute` 分支。
 - 加 `BLDENV=resolute` 管线：[Makefile](Makefile)、[Makefile.work](Makefile.work) `SLAVE_DIR` 分支、[slave.mk:73](slave.mk#L73)、ENABLE_PY2 过滤。
 - Day-0 spike（并行，不阻塞）：
-  - (a) 确认 Docker 是否发布 resolute 的 `docker-ce 5:28.5.2` + 精确版本字符串；若无 resolute build，确认改用 Ubuntu 官方 `docker.io` 包（仍在 resolute）。
+  - (a) 确认 Docker 是否发布 resolute 的 `docker-ce 5:28.5.2` + 精确版本字符串。**若 Docker 未发 resolute 该版本：用 Docker 公司当前在 resolute suite 上可用的 docker-ce 版本，但钉死精确版本号**（不用 `stable` 元包、不跟 latest）。containerd 同理钉死。
   - (b) 确认 `BUILD_PUBLIC_URL` 是否提供 202605 预编译 SONiC 内核 .deb + 路径。
   - (c) debootstrap resolute 可用性 + Ubuntu keyring。
 - **退出标准：** `make` 可解析，`BLDENV=resolute` 被选中，尚未拉源。
@@ -104,7 +104,7 @@
 
 | # | 风险 | 触发 | 缓解 / fallback（均在 resolute 体系内） |
 |---|------|------|----------------------------------------|
-| R1 | Docker 未发 resolute 的 `docker-ce 5:28.5.2`，版本字符串不存在 | Phase 0 spike a | 确认 resolute 命名钉版；若真无 resolute build，**改用 Ubuntu 官方 `docker.io` 包**（resolute，不退版本） |
+| R1 | Docker 未发 resolute 的 `docker-ce 5:28.5.2`，版本字符串不存在 | Phase 0 spike a | **用 Docker 公司当前在 resolute suite 上可用的 docker-ce 版本，钉死精确版本号**（不退版本、不用元包、不跟 latest）；containerd 同理 |
 | R2 | BUILD_PUBLIC_URL 无预编译 SONiC 内核 .deb | Phase 0 spike b | 在 resolute 上用 resolute 工具链源码构建（`+resolute` ABI） |
 | R3 | debootstrap 无 resolute 脚本 / 缺 keyring | Phase 2 | 手动导入 Ubuntu keyring + `--no-check-gpg`；或用 Ubuntu 云镜像 `ubuntu:resolute` 作 base 替代 debootstrap（仍在 resolute） |
 | R4 | cri-dockerd 无 resolute build，k8s 段失败 | Phase 2 | **既定决策：vs 阶段条件跳过** k8s/cri；backlog |

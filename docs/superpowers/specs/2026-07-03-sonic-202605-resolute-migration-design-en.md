@@ -51,7 +51,7 @@ Rationale: mirrors how SONiC itself added trixie; diffable and reversible; trixi
 - `git clone --reference ~/sonic-buildimage` (branch `202605`) → `~/sonic-buildimage-resolute`; init submodules; branch `resolute`.
 - Add `BLDENV=resolute` plumbing: [Makefile](Makefile), [Makefile.work](Makefile.work) `SLAVE_DIR` branch, [slave.mk:73](slave.mk#L73), ENABLE_PY2 filter.
 - Day-0 spikes (parallel, non-blocking):
-  - (a) Confirm Docker publishes a resolute `docker-ce 5:28.5.2` build + exact version string; if no resolute build, confirm switch to Ubuntu's official `docker.io` package (still resolute).
+  - (a) Confirm Docker publishes a resolute `docker-ce 5:28.5.2` build + exact version string. **If Docker has not published that version for resolute: use the Docker Inc. docker-ce version currently available on the resolute suite, but pin the exact version string** (no `stable` meta-package, no latest). containerd pinned likewise.
   - (b) Confirm `BUILD_PUBLIC_URL` hosts prebuilt SONiC kernel .debs for 202605 + path.
   - (c) debootstrap resolute availability + Ubuntu keyring.
 - **Exit:** `make` parses, `BLDENV=resolute` selected, no source fetched.
@@ -104,7 +104,7 @@ Rationale: mirrors how SONiC itself added trixie; diffable and reversible; trixi
 
 | # | Risk | Trigger | Mitigation / fallback (all within resolute) |
 |---|------|---------|---------------------------------------------|
-| R1 | Docker hasn't published a resolute `docker-ce 5:28.5.2`, version string absent | Phase 0 spike a | Confirm resolute naming & pin; if truly no resolute build, **switch to Ubuntu's official `docker.io` package** (resolute, no version revert) |
+| R1 | Docker hasn't published a resolute `docker-ce 5:28.5.2`, version string absent | Phase 0 spike a | **Use the Docker Inc. docker-ce version currently available on the resolute suite, pinned to the exact version string** (no version revert, no meta-package, no latest); containerd likewise |
 | R2 | BUILD_PUBLIC_URL has no prebuilt SONiC kernel .deb | Phase 0 spike b | Source-build on resolute with resolute toolchain (`+resolute` ABI) |
 | R3 | debootstrap has no resolute script / missing keyring | Phase 2 | Manually import Ubuntu keyring + `--no-check-gpg`; or use Ubuntu cloud image `ubuntu:resolute` as base instead of debootstrap (still resolute) |
 | R4 | cri-dockerd has no resolute build, k8s section fails | Phase 2 | **Decision: conditionally skip k8s/cri for vs stage**; backlog |
