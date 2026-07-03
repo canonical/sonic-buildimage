@@ -936,7 +936,10 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS)) : $(DEBS_PATH)/% : .platform $$(a
 		# Clean up
 		if [ -f $($*_SRC_PATH).patch/series ]; then pushd $($*_SRC_PATH) && quilt pop -a -f; [ -d .pc ] && rm -rf .pc; popd; fi
 		# Take built package(s)
-		mv -f $(addprefix $($*_SRC_PATH)/../, $* $($*_DERIVED_DEBS) $($*_EXTRA_DEBS)) $(DEBS_PATH) $(LOG)
+		mv -f $(addprefix $($*_SRC_PATH)/../, $* $($*_EXTRA_DEBS)) $(DEBS_PATH) $(LOG)
+		# resolute: dbgsym derived debs are not always generated (auto-dbgsym off);
+		# move them individually, tolerating absence.
+		for deb in $(addprefix $($*_SRC_PATH)/../, $($*_DERIVED_DEBS)); do [ -f "$$deb" ] && mv -f "$$deb" $(DEBS_PATH) $(LOG); done
 
 		# Save the target deb into DPKG cache
 		$(call SAVE_CACHE,$*,$@)
