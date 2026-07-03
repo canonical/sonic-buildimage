@@ -310,6 +310,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
 {%- if CROSS_BUILD_ENVIRON != "y" %}
         python3-dev \
         dh-python \
+        python3-dacite \
 {%- endif %}
 {%- if CONFIGURED_ARCH == "armhf" or CONFIGURED_ARCH == "arm64" %}
         libxslt-dev \
