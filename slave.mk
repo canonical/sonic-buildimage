@@ -427,7 +427,7 @@ export ENABLE_FIPS
 ###############################################################################
 ## Build Options
 ###############################################################################
-export DEB_BUILD_OPTIONS = hardening=+all
+export DEB_BUILD_OPTIONS = hardening=+all dbgsym
 
 ###############################################################################
 ## Dumping key config attributes associated to current building exercise
