@@ -113,13 +113,13 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
         python3-setuptools \
         python3-wheel \
         python3-build \
-        libncurses5-dev \
+        libncurses-dev \
         texinfo \
         dh-autoreconf \
         doxygen \
         devscripts \
         git-buildpackage \
-        perl-modules \
+        perl-modules-5.40 \
         libclass-accessor-perl \
         libcap2-bin \
         libswitch-perl \
@@ -141,7 +141,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
         texlive-plain-generic \
         texlive-fonts-recommended \
         libpam0g-dev \
-        libpam-dev \
+        libpam0g-dev \
         libcap-dev \
         imagemagick \
         ghostscript \
@@ -221,7 +221,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
 # For BFN sdk build
         libusb-1.0-0-dev \
         libcurl4-openssl-dev \
-        libunwind8-dev \
+        libunwind-dev \
         telnet \
         libc-ares2 \
         libgoogle-perftools4t64 \
@@ -240,10 +240,10 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
         libjansson-dev \
 # For cavium sdk build
         libpcap-dev \
-        dnsutils \
+        bind9-dnsutils \
         libusb-dev \
 # For cisco sdk build
-        libgrpc++1 \
+        libgrpc++ \
         libabsl-dev \
 # For debian image reconfiguration
         augeas-tools \
@@ -329,7 +329,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
         libelf-dev \
         libmnl-dev \
         libnsl-dev \
-        libselinux1-dev \
+        libselinux-dev \
         linuxdoc-tools \
         lynx \
         texlive-latex-extra \
@@ -352,7 +352,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
 {%- if CONFIGURED_ARCH == "amd64" %}
 # For sonic vs image build
         dosfstools \
-        qemu-kvm \
+        qemu-system-x86 \
         libvirt-clients \
         python3-pexpect \
 # For rasdaemon build
@@ -411,7 +411,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
         libdbus-glib-1-2     \
         libdbus-glib-1-dev   \
         libreadline-dev      \
-        libncurses5-dev      \
+        libncurses-dev      \
         libpcsclite-dev      \
         docbook-to-man       \
         docbook-utils        \
@@ -420,7 +420,6 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
 # For linkmgrd
         libboost-dev \
         libboost-program-options-dev \
-        libboost-system-dev \
         libboost-serialization-dev \
         libboost-thread-dev \
         libboost-atomic-dev \
@@ -754,7 +753,6 @@ RUN eatmydata apt-get install -y \
         libcjson-dev:$arch \
         libcurl4-openssl-dev:$arch \
         libboost-thread-dev:$arch \
-        libboost-system-dev:$arch \
         libgtest-dev:$arch \
         libgmock-dev:$arch \
         libfido2-dev:$arch \
