@@ -27,8 +27,8 @@ set -x -e
 CONFIGURED_ARCH=$([ -f .arch ] && cat .arch || echo amd64)
 
 ## docker engine version (with platform)
-DOCKER_VERSION=5:28.5.2-1~debian.13~$IMAGE_DISTRO
-CONTAINERD_IO_VERSION=1.7.28-2~debian.13~$IMAGE_DISTRO
+DOCKER_VERSION=5:29.6.1-1~ubuntu.26.04~$IMAGE_DISTRO
+CONTAINERD_IO_VERSION=2.2.5-1~ubuntu.26.04~$IMAGE_DISTRO
 LINUX_KERNEL_VERSION=6.12.41+deb13
 
 ## Working directory to prepare the file system
@@ -227,10 +227,10 @@ if [[ $CONFIGURED_ARCH == armhf ]]; then
     # update ssl ca certificates for secure pem
     sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT c_rehash
 fi
-sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -o /tmp/docker.asc -fsSL https://download.docker.com/linux/debian/gpg
+sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -o /tmp/docker.asc -fsSL https://download.docker.com/linux/ubuntu/gpg
 sudo LANG=C chroot $FILESYSTEM_ROOT mv /tmp/docker.asc /etc/apt/trusted.gpg.d/
 sudo tee $FILESYSTEM_ROOT/etc/apt/sources.list.d/docker.list >/dev/null <<EOF
-deb [arch=$CONFIGURED_ARCH] https://download.docker.com/linux/debian $IMAGE_DISTRO stable
+deb [arch=$CONFIGURED_ARCH] https://download.docker.com/linux/ubuntu $IMAGE_DISTRO stable
 EOF
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get update
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install docker-ce=${DOCKER_VERSION} docker-ce-cli=${DOCKER_VERSION} containerd.io=${CONTAINERD_IO_VERSION}
