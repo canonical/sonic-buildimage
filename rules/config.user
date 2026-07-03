@@ -1,0 +1,28 @@
+# resolute migration local config (host: Ubuntu 26.04 ext4, docker 29.6.1)
+# Host-verified knobs from memory/sonic-build-restore.md. Host-side fixes
+# (AppArmor gs override, ip_tables module load) are persisted on the host, not here.
+# FIPS fallback: if Phase 1's FIPS Go binary install fails (glibc/ABI), flip
+# INCLUDE_FIPS to n (use Ubuntu official resolute golang-go + openssl).
+
+INCLUDE_FIPS ?= y
+PLATFORM ?= vs
+
+# C/C++ compile cache (per-clone, under target/ccache)
+SONIC_CONFIG_USE_CCACHE = y
+
+# Skip package tests (p4lang-pi TestGNMIDummy.SubscribeStaysOpen fails in this env)
+BUILD_SKIP_TEST = y
+
+# Docker layer cache (reuse unchanged slave-image layers)
+SONIC_CONFIG_USE_DOCKER_CACHE = y
+
+# Kernel: download prebuilt instead of building from source (procure, ABI +deb13-sonic)
+KERNEL_PROCURE_METHOD = download
+
+# deb package cache (submodule build artifacts by commit hash)
+SONIC_DPKG_CACHE_METHOD = rwcache
+SONIC_DPKG_CACHE_SOURCE = /var/cache/sonic/artifacts
+
+# version cache: keep none during slave build (enabling breaks slave build — see memory)
+SONIC_VERSION_CACHE_METHOD = none
+SONIC_VERSION_CACHE_SOURCE = /var/cache/sonic/artifacts/vcache
