@@ -20,7 +20,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf lldpd-$(LLDPD_VERSION)
 
 	# download debian LLDPDD
-	dget $(DSC_FILE_URL)
+	dget -u $(DSC_FILE_URL)
 
 	pushd lldpd-$(LLDPD_VERSION)
 	git init
@@ -40,6 +40,6 @@ endif
 	popd
 
 	# Move the newly-built .deb packages to the destination directory
-	mv $* $(DERIVED_TARGETS) $(DEST)/
+	-mv $(DERIVED_TARGETS) $(DEST)/ 2>/dev/null; mv $* $(DEST)/
 
 $(addprefix $(DEST)/, $(DERIVED_TARGETS)): $(DEST)/% : $(DEST)/$(MAIN_TARGET)
