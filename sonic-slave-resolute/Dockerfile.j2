@@ -680,7 +680,10 @@ RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
 RUN eatmydata apt-get install python3-m2crypto
 
 # Install libthrift package needed by saithrift
-RUN eatmydata apt-get install -y libthrift-0.19.0t64\
+# resolute: distro apt thrift is 0.22.0 (trixie's was 0.19.0). SONiC's source-built
+# thrift 0.11.0 is built later in the actual image build; this installs the slave's
+# thrift-compiler/dev/runtime for saithrift to build against.
+RUN eatmydata apt-get install -y libthrift-0.22.0 \
         libthrift-dev \
         thrift-compiler\
         python3-thrift
