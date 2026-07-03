@@ -309,6 +309,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
 # For sonic config engine testing
 {%- if CROSS_BUILD_ENVIRON != "y" %}
         python3-dev \
+        dh-python \
 {%- endif %}
 {%- if CONFIGURED_ARCH == "armhf" or CONFIGURED_ARCH == "arm64" %}
         libxslt-dev \
@@ -420,22 +421,22 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
 # For kdump-tools
         libbz2-dev \
 # For linkmgrd
-        libboost-dev \
-        libboost-program-options-dev \
-        libboost-serialization-dev \
-        libboost-thread-dev \
-        libboost-atomic-dev \
-        libboost-chrono-dev \
-        libboost-container-dev \
-        libboost-context-dev \
-        libboost-contract-dev \
-        libboost-coroutine-dev \
-        libboost-date-time-dev \
-        libboost-fiber-dev \
-        libboost-filesystem-dev \
-        libboost-graph-parallel-dev \
-        libboost-log-dev \
-        libboost-regex-dev \
+        libboost1.88-dev \
+        libboost-program-options1.88-dev \
+        libboost-serialization1.88-dev \
+        libboost-thread1.88-dev \
+        libboost-atomic1.88-dev \
+        libboost-chrono1.88-dev \
+        libboost-container1.88-dev \
+        libboost-context1.88-dev \
+        libboost-contract1.88-dev \
+        libboost-coroutine1.88-dev \
+        libboost-date-time1.88-dev \
+        libboost-fiber1.88-dev \
+        libboost-filesystem1.88-dev \
+        libboost-graph-parallel1.88-dev \
+        libboost-log1.88-dev \
+        libboost-regex1.88-dev \
         googletest \
         libgtest-dev \
         libgmock-dev \
@@ -527,9 +528,8 @@ RUN eatmydata apt-get install -y \
         libopenmpi-dev \
         libthrift-dev \
         libthrift-dev \
-        libboost-all-dev \
-        libboost-graph-dev \
-        libboost-iostreams-dev \
+        libboost-graph1.88-dev \
+        libboost-iostreams1.88-dev \
         libgc-dev \
         tcpdump \
         llvm \
