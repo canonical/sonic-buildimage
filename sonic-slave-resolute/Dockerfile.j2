@@ -859,6 +859,15 @@ RUN grep -q "DBGSYM_PACKAGE_TYPE' => 'ddeb'" /usr/share/perl5/Debian/Debhelper/D
     sed -i "s/DBGSYM_PACKAGE_TYPE' => 'ddeb'/DBGSYM_PACKAGE_TYPE' => 'deb'/" /usr/share/perl5/Debian/Debhelper/Dh_Lib.pm && \
     grep -q "DBGSYM_PACKAGE_TYPE' => 'deb'" /usr/share/perl5/Debian/Debhelper/Dh_Lib.pm
 
+# resolute dpkg 1.23.7 rejects comma-separated multiple Maintainers in
+# debian/control ('cannot parse Maintainer field value "A <a@>, B <b@>"');
+# trixie was lenient. Upstream policy says multiple maintainers go in Uploaders,
+# but several SONiC upstream control files put them in Maintainer. Patch
+# Dpkg::Control::FieldsCore.pm field_parse_maintainer to take the first address
+# and warn, instead of erroring. Single source of truth covers all packages.
+COPY files/patch-dpkg-maintainer-multi.sh /tmp/patch-dpkg-maintainer-multi.sh
+RUN bash /tmp/patch-dpkg-maintainer-multi.sh && rm /tmp/patch-dpkg-maintainer-multi.sh
+
 # resolute ships GCC 15, whose DEFAULT standard is C23 (__STDC_VERSION__=202311L).
 # C23 redefines empty parameter lists `()` as `(void)` (zero args), so legacy
 # K&R-style typedefs like bash's `typedef void VFunction();` become "takes 0 args"
