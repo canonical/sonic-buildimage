@@ -20,10 +20,9 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Enable large file support for 32-bit arch
 	echo 'add_definitions(-D_FILE_OFFSET_BITS=64)' >> CMakeLists.txt
 
-	# Apply patch series
-	# resolute base swap: 0001-pr2362 patch not yet ported to 3.13.6; skipped
-	# to verify main path. TODO: port pr2362 to 3.13.6 if not already merged upstream.
-	# patch -p1 < ../patch/0001-pr2362-lyd_validate_noextdeps.patch
+	# Apply patch series (pr2362 adds LYD_VALIDATE_NOEXTDEPS used by sonic-mgmt-common;
+	# verified applies clean on 3.13.6, all hunks succeeded with offset)
+	patch -p1 < ../patch/0001-pr2362-lyd_validate_noextdeps.patch
 
 	# Debian buster and below do not have new enough versions of xxhash and
 	# build fails.  xxhash is an optimization, not a real dependency.
