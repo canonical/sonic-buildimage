@@ -31,6 +31,8 @@ endif
 # single src:grub2 producing all; Ubuntu resolute split them, so we build both.
 GRUB2_UNSIGNED_VERSION = 2.14-2ubuntu1
 
+export GRUB2_UNSIGNED_VERSION
+
 ifeq ($(CONFIGURED_ARCH),amd64)
 GRUB_EFI_AMD64 = grub-efi-amd64_$(GRUB2_UNSIGNED_VERSION)_$(CONFIGURED_ARCH).deb
 $(GRUB_EFI_AMD64)_SRC_PATH = $(SRC_PATH)/grub2-unsigned
