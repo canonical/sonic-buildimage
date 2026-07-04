@@ -20,6 +20,11 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 
 	# Patch
 	git apply ../0001-Check-CPUs-online-not-configured.patch
+	# resolute: dpkg 1.23.7 rejects comma-separated multiple Maintainers
+	# ('Russell Coker <...>, Taihsiang Ho <...>'). Keep only the first (Debian
+	# policy: multiple maintainers go in Uploaders, not Maintainer). trixie was
+	# lenient. Keep just the part before the first ', '.
+	sed -i '/^Maintainer:.*,.*/s/,.*//' debian/control
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	dpkg-buildpackage -rfakeroot -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
 else

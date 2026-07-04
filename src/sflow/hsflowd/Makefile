@@ -20,6 +20,9 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	cp -r DEBIAN_build/* debian
 	chmod u+x debian/rules
 	sed -i -e s/_VERSION_/$(HSFLOWD_VERSION)-$(HSFLOWD_SUBVERSION)/g debian/changelog
+	# resolute: dpkg-source rejects Maintainer 'Name [email]' (square brackets).
+	# Upstream host-sflow DEBIAN_build/control uses brackets; fix to <email>.
+	sed -i 's|Neil McKee \[neil.mckee@inmon.com\]|Neil McKee <neil.mckee@inmon.com>|' debian/control
 
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	dpkg-buildpackage -rfakeroot -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
