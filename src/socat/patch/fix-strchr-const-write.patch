@@ -1,0 +1,11 @@
+--- a/filan.c	2021-01-03 18:23:22.000000000 +0000
++++ b/filan.c	2026-07-04 02:39:44.255078236 +0000
+@@ -991,7 +991,7 @@
+    } else {
+       fputc('\t', outfile);
+       s = asctime(localtime(&time));
+-      if (strchr(s, '\n'))  *strchr(s, '\n') = '\0';
++      { char *nl = strchr(s, '\n'); if (nl)  *nl = '\0'; }
+       fputs(s, outfile);
+    }
+    return 0;
