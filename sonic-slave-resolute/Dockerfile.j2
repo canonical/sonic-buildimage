@@ -853,3 +853,17 @@ RUN chmod 0755 /usr/local/bin/cargo
 RUN grep -q "DBGSYM_PACKAGE_TYPE' => 'ddeb'" /usr/share/perl5/Debian/Debhelper/Dh_Lib.pm && \
     sed -i "s/DBGSYM_PACKAGE_TYPE' => 'ddeb'/DBGSYM_PACKAGE_TYPE' => 'deb'/" /usr/share/perl5/Debian/Debhelper/Dh_Lib.pm && \
     grep -q "DBGSYM_PACKAGE_TYPE' => 'deb'" /usr/share/perl5/Debian/Debhelper/Dh_Lib.pm
+
+# resolute ships GCC 15, whose DEFAULT standard is C23 (__STDC_VERSION__=202311L).
+# C23 redefines empty parameter lists `()` as `(void)` (zero args), so legacy
+# K&R-style typedefs like bash's `typedef void VFunction();` become "takes 0 args"
+# and calls `(*fn)(a,b)` fail with "too many arguments; expected 0, have 2"
+# (a hard error, NOT a -Werror upgrade — -Wno-strict-prototypes does not help).
+# trixie's GCC 14 defaulted to gnu17 where `()` is K&R (any args). Pin the slave's
+# dpkg-buildflags to -std=gnu17 globally so every debhelper/dpkg-buildpackage
+# build uses the gnu17 baseline SONiC was written for. Also relax the GCC15
+# -Werror= promotions (incompatible-pointer-types, int-conversion, discarded-
+# qualifiers) back to warnings — these are legitimate code smells in old SONiC
+# packages but were warnings on trixie. NOTE: kernel/libbpf builds use their own
+# Makefile CFLAGS (not dpkg-buildflags) and are unaffected here.
+RUN printf 'APPEND CFLAGS -std=gnu17 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=discarded-qualifiers\n' > /etc/dpkg/buildflags.conf
