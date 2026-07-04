@@ -75,6 +75,17 @@ LIBNL_CLI_DEV = libnl-cli-3-dev_$(LIBNL3_VERSION_SONIC)_$(CONFIGURED_ARCH).deb
 $(LIBNL_CLI_DEV)_DEPENDS += $(LIBNL_CLI) $(LIBNL_GENL3_DEV) $(LIBNL_NF3_DEV) $(LIBNL_ROUTE3_DEV)
 $(eval $(call add_derived_package,$(LIBNL3),$(LIBNL_CLI_DEV)))
 
+# resolute ships libnl3 3.12.0; SONiC builds 3.7.0. Downgrading libnl-3-200
+# mid-install breaks the still-installed 3.12.0 genl/route/nf/cli debs'
+# depends (>= 3.11.0). --force-depends lets the 3.7.0 set replace 3.12.0 in
+# sequence; final state (all 3.7.0) is self-consistent. trixie shipped 3.7.0
+# natively so no downgrade happened there.
+$(LIBNL3)_DEB_INSTALL_OPTS := --force-depends
+$(LIBNL_GENL3)_DEB_INSTALL_OPTS := --force-depends
+$(LIBNL_ROUTE3)_DEB_INSTALL_OPTS := --force-depends
+$(LIBNL_NF3)_DEB_INSTALL_OPTS := --force-depends
+$(LIBNL_CLI)_DEB_INSTALL_OPTS := --force-depends
+
 # The .c, .cpp, .h & .hpp files under src/{$DBG_SRC_ARCHIVE list}
 # are archived into debug one image to facilitate debugging.
 #
