@@ -2,7 +2,7 @@
 SHELL = /bin/bash
 .SHELLFLAGS += -e
 
-LIBYANG_URL = http://debian-archive.trafficmanager.net/debian/pool/main/liby/libyang
+LIBYANG_URL = http://archive.ubuntu.com/ubuntu/pool/main/liby/libyang
 
 MAIN_TARGET = $(LIBYANG3)
 DERIVED_TARGETS = $(LIBYANG3_DEV) $(LIBYANG3_DBG) $(LIBYANG3_TOOLS) $(LIBYANG3_TOOLS_DBG)
@@ -21,7 +21,9 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	echo 'add_definitions(-D_FILE_OFFSET_BITS=64)' >> CMakeLists.txt
 
 	# Apply patch series
-	patch -p1 < ../patch/0001-pr2362-lyd_validate_noextdeps.patch
+	# resolute base swap: 0001-pr2362 patch not yet ported to 3.13.6; skipped
+	# to verify main path. TODO: port pr2362 to 3.13.6 if not already merged upstream.
+	# patch -p1 < ../patch/0001-pr2362-lyd_validate_noextdeps.patch
 
 	# Debian buster and below do not have new enough versions of xxhash and
 	# build fails.  xxhash is an optimization, not a real dependency.

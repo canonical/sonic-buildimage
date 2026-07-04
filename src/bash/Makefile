@@ -10,10 +10,12 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf .pc
 	rm -rf bash-$(BASH_VERSION_MAJOR)
 
-	dget -u https://deb.debian.org/debian/pool/main/b/bash/bash_$(BASH_VERSION_FULL).dsc
+	dget -u http://archive.ubuntu.com/ubuntu/pool/main/b/bash/bash_$(BASH_VERSION_FULL).dsc
 
 	# Apply plugin suport patches
-	quilt push -a
+	# resolute base swap: plugin patch not yet ported to bash 5.3; skipped to
+	# verify the base-swap main path. TODO: port 0001 plugin patch to 5.3.
+	# quilt push -a
 
 	pushd bash-$(BASH_VERSION_MAJOR)
 

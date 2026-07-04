@@ -21,7 +21,7 @@ DERIVED_TARGETS = libnl-3-200-dbgsym_$(LIBNL3_VERSION_SONIC)_$(CONFIGURED_ARCH).
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Obtaining the libnl3
 	rm -rf ./libnl3-$(LIBNL3_VERSION_BASE)
-	dget -u https://deb.debian.org/debian/pool/main/libn/libnl3/libnl3_$(LIBNL3_VERSION).dsc
+	dget -u http://archive.ubuntu.com/ubuntu/pool/main/libn/libnl3/libnl3_$(LIBNL3_VERSION).dsc
 	pushd libnl3-$(LIBNL3_VERSION_BASE)
 
 	# Create a git repository here for stg to apply patches
@@ -30,8 +30,12 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	git commit -qm "initial commit"
 
 	# Apply patch series
-	stg init
-	stg import -s ../patch/series
+	# resolute base swap: SONiC libnl3 patches (RTA_NH_ID, switch-to-debhelper,
+	# keep-symbol-versions, update-changelog, skip-tests) not yet ported to
+	# 3.12.0. Skipped to verify main path. TODO: port RTA_NH_ID (routing) +
+	# packaging patches to 3.12.0.
+	# stg init
+	# stg import -s ../patch/series
 
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	DPKG_GENSYMBOLS_CHECK_LEVEL=0 dpkg-buildpackage -rfakeroot -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
