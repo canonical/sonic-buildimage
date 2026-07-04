@@ -16,8 +16,10 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# resolute: stdeb-generated changelog has maintainer trailer 'None <None>'
 	# (CESNET upstream didn't set DEBFULLNAME/DEBEMAIL when generating). resolute
 	# dpkg rejects it ('cannot parse maintainer email address "None <None>" from
-	# changelog entry'); trixie was lenient. Fix to a valid address.
-	sed -i 's/ -- None <None> / -- SONiC Build <sonic-build@local> /' debian/changelog
+	# changelog entry' and 'cannot parse Maintainer field value "None <None>"');
+	# trixie was lenient. Fix both the changelog trailer and the control
+	# Maintainer field to a valid address.
+	sed -i 's/None <None>/SONiC Build <sonic-build@local>/g' debian/changelog debian/control
 
 	# Build package
 ifeq ($(CROSS_BUILD_ENVIRON), y)
