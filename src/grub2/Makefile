@@ -19,20 +19,16 @@ SUFFIX := $(shell date +%Y%m%d\.%H%M%S)
 STG_BRANCH := stg_temp.$(SUFFIX)
 
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
-	# Get grub2 debian packaging (resolute base swap: Ubuntu pool via dget,
-	# replaces salsa.debian.org git clone which had no resolute 2.14 tag)
+	# Get grub2 debian packaging
 	export
-	rm -rf ./grub2 ./grub2-$(GRUB2_UPSTREAM_VERSION)
-	dget -u http://archive.ubuntu.com/ubuntu/pool/main/g/grub2/grub2_$(GRUB2_VERSION).dsc
+	rm -rf ./grub2
+	git clone https://salsa.debian.org/grub-team/grub.git ./grub2
 
-	pushd ./grub2-$(GRUB2_UPSTREAM_VERSION)
-
-	# resolute base swap: SONiC grub2 patches (adjust-build-rules-for-debian,
-	# large-uid-skip-cpio-ustar) not yet ported to 2.14. Skipped to verify main
-	# path. TODO: port these patches to 2.14 (were applied via stg on the old
-	# salsa git checkout; need dget/dpkg-source-compatible apply on 2.14).
-	# stg init
-	# stg import -s ../patch/series
+	pushd ./grub2
+	git checkout debian/$(GRUB2_VERSION)
+	git checkout -b $(STG_BRANCH)
+	stg init
+	stg import -s ../patch/series
 
 	# Build packages
 	# Unset the MAKEFLAGS and MFLAGS variables to remove the jobserver information
