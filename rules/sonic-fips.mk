@@ -26,6 +26,9 @@ FIPS_PYTHON_VERSION = 3.13.5-2+fips
 FIPS_GOLANG_MAIN_VERSION = 1.24
 FIPS_GOLANG_VERSION = 1.24.4-1+fips
 FIPS_KRB5_VERSION = 1.21.3-5+fips
+# resolute reuses trixie FIPS binaries, so the download URL must point at the
+# fips/trixie/ path (fips/resolute/ does not exist on the mirror -> 404).
+FIPS_DOWNLOAD_BLDENV = trixie
 endif
 
 ifeq ($(BLDENV), bookworm)
@@ -50,7 +53,9 @@ FIPS_GOLANG_VERSION = 1.15.15-1~deb11u4+fips
 FIPS_KRB5_VERSION = 1.18.3-6+deb11u5+fips
 endif
 
-FIPS_URL_PREFIX = $(BUILD_PUBLIC_URL)/fips/$(BLDENV)/$(FIPS_VERSION)/$(CONFIGURED_ARCH)
+# resolute reuses trixie FIPS binaries -> download from fips/trixie/ path.
+FIPS_DOWNLOAD_BLDENV ?= $(BLDENV)
+FIPS_URL_PREFIX = $(BUILD_PUBLIC_URL)/fips/$(FIPS_DOWNLOAD_BLDENV)/$(FIPS_VERSION)/$(CONFIGURED_ARCH)
 
 SYMCRYPT_OPENSSL_NAME = symcrypt-openssl
 SYMCRYPT_OPENSSL = $(SYMCRYPT_OPENSSL_NAME)_$(FIPS_VERSION)_$(CONFIGURED_ARCH).deb
