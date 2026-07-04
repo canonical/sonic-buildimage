@@ -552,6 +552,10 @@ RUN apt-get remove -y libnl-3-200
 {%- endif %}
 
 RUN eatmydata apt-get -y build-dep openssh
+# resolute: SONiC uses Debian openssh 10.0p1-7 (dget deb.debian.org), whose
+# Build-Depends include libwtmpdb-dev; Ubuntu resolute openssh (used by
+# 'build-dep openssh' above) doesn't need it -> unmet build deps. Install.
+RUN eatmydata apt-get install -y libwtmpdb-dev
 
 # Let pip own these (avoid apt vs pip no-RECORD uninstall conflicts)
 RUN eatmydata apt-get remove -y python3-regex || true
