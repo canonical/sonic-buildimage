@@ -8,11 +8,10 @@ DERIVED_TARGETS += grub-common_$(GRUB2_VERSION)_$(CONFIGURED_ARCH).deb
 
 ifeq ($(CONFIGURED_ARCH),amd64)
 DERIVED_TARGETS += grub-pc-bin_$(GRUB2_VERSION)_$(CONFIGURED_ARCH).deb
-DERIVED_TARGETS += grub-efi-amd64_$(GRUB2_VERSION)_$(CONFIGURED_ARCH).deb
-DERIVED_TARGETS += grub-efi-amd64-bin_$(GRUB2_VERSION)_$(CONFIGURED_ARCH).deb
+# resolute: grub-efi-amd64 / grub-efi-amd64-bin come from src:grub2-unsigned
+# (Ubuntu split; built separately in src/grub2-unsigned/Makefile).
 else ifeq ($(CONFIGURED_ARCH),arm64)
-DERIVED_TARGETS += grub-efi-arm64_$(GRUB2_VERSION)_$(CONFIGURED_ARCH).deb
-DERIVED_TARGETS += grub-efi-arm64-bin_$(GRUB2_VERSION)_$(CONFIGURED_ARCH).deb
+# resolute: grub-efi-arm64 / grub-efi-arm64-bin come from src:grub2-unsigned.
 endif
 
 SUFFIX := $(shell date +%Y%m%d\.%H%M%S)
