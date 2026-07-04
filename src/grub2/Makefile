@@ -41,7 +41,8 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# grub2 2.06 gnulib/base64.h uses them as enum constants -> compile error.
 	# Pin target build to gnu17 (HOST_CFLAGS already gets -std=gnu17 via
 	# dpkg-buildflags; TARGET_CFLAGS defaults to -Os with no -std=).
-	export TARGET_CFLAGS := -std=gnu17
+	# .ONESHELL: use shell export syntax, not make ':='.
+	export TARGET_CFLAGS=-std=gnu17
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	dpkg-buildpackage -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
 else
