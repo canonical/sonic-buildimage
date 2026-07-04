@@ -427,7 +427,7 @@ export ENABLE_FIPS
 ###############################################################################
 ## Build Options
 ###############################################################################
-export DEB_BUILD_OPTIONS = hardening=+all noautodbgsym
+export DEB_BUILD_OPTIONS = hardening=+all
 
 ###############################################################################
 ## Dumping key config attributes associated to current building exercise
@@ -935,9 +935,8 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS)) : $(DEBS_PATH)/% : .platform $$(a
 		popd $(LOG_SIMPLE)
 		# Clean up
 		if [ -f $($*_SRC_PATH).patch/series ]; then pushd $($*_SRC_PATH) && quilt pop -a -f; [ -d .pc ] && rm -rf .pc; popd; fi
-		# Take built package(s). resolute: derived (dbgsym) debs may be absent
-		# (auto-dbgsym off); expand them as a shell glob so missing ones vanish silently.
-		mv -f $(addprefix $($*_SRC_PATH)/../, $*) $(addprefix $($*_SRC_PATH)/../, $($*_EXTRA_DEBS)) $(addprefix $($*_SRC_PATH)/../, $($*_DERIVED_DEBS)) $(DEBS_PATH) 2>/dev/null || true
+		# Take built package(s)
+		mv -f $(addprefix $($*_SRC_PATH)/../, $* $($*_DERIVED_DEBS) $($*_EXTRA_DEBS)) $(DEBS_PATH) $(LOG)
 
 		# Save the target deb into DPKG cache
 		$(call SAVE_CACHE,$*,$@)
