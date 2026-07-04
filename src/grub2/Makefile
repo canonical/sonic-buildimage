@@ -34,6 +34,13 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# stg init
 	# stg import -s ../patch/series
 
+	# resolute: 2.14 debian/rules uses 'ln obj/monolithic/* <version>/' to
+	# hardlink files into a staging dir for tar; overlayfs disallows directory
+	# hard links ('ln: hard link not allowed for directory'), which leaves
+	# grub-efi-amd64-bin etc. unproduced. Patch ln -> cp -al (archive copy)
+	# which works on overlayfs.
+	chmod +x ../patch-overlayfs-ln.sh && ../patch-overlayfs-ln.sh
+
 	# Build packages
 	# Unset the MAKEFLAGS and MFLAGS variables to remove the jobserver information
 	# from the environment variable. Without this, the GRUB targets that Debian
