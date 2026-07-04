@@ -515,6 +515,11 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
         python3-pyelftools \
         hwdata \
         libzip-dev
+# resolute: grub2 2.14 adds Build-Depends not satisfied above (qemu-system,
+# libfuse3-dev, libsdl2-dev, autoconf-archive, python3-pytest, patchutils,
+# fonts-dejavu-core, liblzo2-dev, lzop, squashfs-tools, etc.). Satisfy via
+# build-dep so the set tracks the resolute grub2 source package automatically.
+RUN eatmydata apt-get -y build-dep grub2
 
 {%- if CONFIGURED_ARCH != "arm64" and CONFIGURED_ARCH != "armhf" %}
 RUN eatmydata apt-get install -y \
