@@ -19,16 +19,20 @@ SUFFIX := $(shell date +%Y%m%d\.%H%M%S)
 STG_BRANCH := stg_temp.$(SUFFIX)
 
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
-	# Get grub2 debian packaging
+	# Get grub2 debian packaging (resolute base swap: Ubuntu pool via dget,
+	# replaces salsa.debian.org git clone which had no resolute 2.14 tag)
 	export
-	rm -rf ./grub2
-	git clone https://salsa.debian.org/grub-team/grub.git ./grub2
+	rm -rf ./grub2 ./grub2-$(GRUB2_UPSTREAM_VERSION)
+	dget -u http://archive.ubuntu.com/ubuntu/pool/main/g/grub2/grub2_$(GRUB2_VERSION).dsc
 
-	pushd ./grub2
-	git checkout debian/$(GRUB2_VERSION)
-	git checkout -b $(STG_BRANCH)
-	stg init
-	stg import -s ../patch/series
+	pushd ./grub2-$(GRUB2_UPSTREAM_VERSION)
+
+	# resolute base swap: SONiC grub2 patches (adjust-build-rules-for-debian,
+	# large-uid-skip-cpio-ustar) not yet ported to 2.14. Skipped for now.
+	# TODO: port these patches to 2.14 (were applied via stg on the old
+	# salsa git checkout).
+	# stg init
+	# stg import -s ../patch/series
 
 	# Build packages
 	# Unset the MAKEFLAGS and MFLAGS variables to remove the jobserver information
@@ -37,12 +41,6 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# (Parallelism is limited to compilation within a target, but not multiple
 	# targets being built at the same time.)
 	unset MAKEFLAGS MFLAGS
-	# resolute GCC 15 defaults to C23, where 'false'/'bool' are keywords.
-	# grub2 2.06 gnulib/base64.h uses them as enum constants -> compile error.
-	# Pin target build to gnu17 (HOST_CFLAGS already gets -std=gnu17 via
-	# dpkg-buildflags; TARGET_CFLAGS defaults to -Os with no -std=).
-	# .ONESHELL: use shell export syntax, not make ':='.
-	export TARGET_CFLAGS=-std=gnu17
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	dpkg-buildpackage -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
 else
