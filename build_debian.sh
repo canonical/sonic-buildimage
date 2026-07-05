@@ -555,7 +555,10 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
 ## Note: keep pip installed for maintenance purpose
 
 # Install GCC, needed for building/installing some Python packages
-sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install gcc
+# resolute: grpcio's setup.py invokes `c++` to probe for libatomic; the `c++`
+# binary lives in the g++ package (not gcc). Install g++ (pulls gcc too).
+# Also install libxml2-dev + libxslt1-dev for lxml (sonic-config-engine dep).
+sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install g++ libxml2-dev libxslt1-dev swig libssl-dev
 
 ## Create /var/run/redis folder for docker-database to mount
 sudo mkdir -p $FILESYSTEM_ROOT/var/run/redis
@@ -901,7 +904,8 @@ sudo du -hsx $FILESYSTEM_ROOT
 sudo mkdir -p $FILESYSTEM_ROOT/var/lib/docker
 
 ## Clear DNS configuration inherited from the build server
-sudo rm -f $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d/original
+sudo rm -f $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d/original || true
+sudo mkdir -p $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d
 sudo cp files/image_config/resolv-config/resolv.conf.head $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d/head
 
 ## Optimize filesystem size
