@@ -29,13 +29,8 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	git add -f *
 	git commit -qm "initial commit"
 
-	# Apply patch series
-	# resolute base swap: SONiC libnl3 patches (RTA_NH_ID, switch-to-debhelper,
-	# keep-symbol-versions, update-changelog, skip-tests) not yet ported to
-	# 3.12.0. Skipped to verify main path. TODO: port RTA_NH_ID (routing) +
-	# packaging patches to 3.12.0.
-	# stg init
-	# stg import -s ../patch/series
+	# Add rtnl_route_get_nh_id aliases (swss expects the underscore name).
+	bash ../patch/add-nh_id-aliases.sh
 
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	DPKG_GENSYMBOLS_CHECK_LEVEL=0 dpkg-buildpackage -rfakeroot -d -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
