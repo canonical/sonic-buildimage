@@ -48,6 +48,9 @@ BOOKWORM_PHONY_PATH = $(TARGET_PATH)/phony/bookworm
 TRIXIE_DEBS_PATH = $(TARGET_PATH)/debs/trixie
 TRIXIE_FILES_PATH = $(TARGET_PATH)/files/trixie
 TRIXIE_PHONY_PATH = $(TARGET_PATH)/phony/trixie
+RESOLUTE_DEBS_PATH = $(TARGET_PATH)/debs/resolute
+RESOLUTE_FILES_PATH = $(TARGET_PATH)/files/resolute
+RESOLUTE_PHONY_PATH = $(TARGET_PATH)/phony/resolute
 
 DBG_IMAGE_MARK = dbg
 DBG_SRC_ARCHIVE_FILE = $(TARGET_PATH)/sonic_src.tar.gz
@@ -137,6 +140,9 @@ configure :
 	$(Q)mkdir -p $(BOOKWORM_PHONY_PATH)
 	$(Q)mkdir -p $(TRIXIE_FILES_PATH)
 	$(Q)mkdir -p $(TRIXIE_PHONY_PATH)
+	$(Q)mkdir -p $(RESOLUTE_DEBS_PATH)
+	$(Q)mkdir -p $(RESOLUTE_FILES_PATH)
+	$(Q)mkdir -p $(RESOLUTE_PHONY_PATH)
 	$(Q)mkdir -p $(PYTHON_DEBS_PATH)
 	$(Q)mkdir -p $(PYTHON_WHEELS_PATH)
 	$(Q)mkdir -p $(DPKG_ADMINDIR_PATH)
