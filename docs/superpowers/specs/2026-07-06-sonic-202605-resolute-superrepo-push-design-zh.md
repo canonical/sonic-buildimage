@@ -68,7 +68,7 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 
 ### 推送机制（已验证）
 - **向分叉的 canonical repo 推新分支（`202605_resolute`）不需要 `--force`**——git 接受无共同祖先的新分支 ref，只要推送的 commit 完整可达。在 sonic-mgmt-common 上 dry-run 确认：`* [new branch] 47995eb -> 202605_resolute`。
-- `gh repo fork --org canonical` 需要 org 级权限；`xdqi` 是 `role=member`（非 owner），scopes `repo`+`read:org`（无 `admin:org`）。**fork 到 canonical 可能被拒**——必须先试一个再依赖（§8 风险 R5）。
+- `gh repo fork --org canonical` —— xdqi 有 org 级建 repo 权限（用户已确认），所以 7 个缺失 repo fork 到 canonical 预期能成。
 
 ## 3. 决策
 
@@ -82,7 +82,7 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 | D6 | 分支命名 | `202605_resolute`（构建，全部 repo）/ `202605_resolute_doc`（仅超仓库文档） | 用户规则：`sonic-*` repo 用 `202605_resolute{,_doc}`；子模块仅构建。 |
 | D7 | 子模块 repo | 7 个已存在 canonical（直推）+ 7 个从 sonic-net fork | 用户："fork 不是 create"。fork 带上 sonic-net 历史，gitlink 祖先链完整。 |
 | D8 | 子模块推送 | 新分支 `202605_resolute`，无 `--force` | 已验证：分叉 repo 上接受无共同祖先的新分支 ref。 |
-| D9 | 子模块 base | 不 rebase——直接推 resolute 提交（在其 sonic-net master parent 上） | 子模块 resolute 提交直接坐在 sonic-net `master` 上；canonical repo 分叉/空，rebase 无意义。同事需要的是 build 提交 + 其 sonic-net 祖先。 |
+| D9 | 子模块 base | 把每个 `build:` 提交 rebase 到 sonic-net `202605`（`9c84048a4`）gitlink 锁定的 commit 上 | 超仓库 `202605` 的 tree 锁定了每个子模块期望的 base commit。14 个里有 12 个已坐在 lock 上（build parent == lock）；2 个（`sonic-dash-ha`、`sonic-sairedis`）base 被上游 bump 了 → 必须把 `build:` 提交 rebase 到新 lock。这也干净地解决了超仓库 rebase 的 gitlink 冲突（新 build commit，非陈旧指针）。 |
 
 ## 4. 超仓库构建分支 —— `202605_resolute`
 
@@ -111,7 +111,8 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
    ```
    - 把过滤后的 resolute 提交重放到 `9c84048a4` 上。
    - **预期冲突：** `sonic-dash-ha` 和 `sonic-sairedis` 的 gitlink 指针（本地和上游都 bump 了）。`dhcpmon` 干净。无 build 文件冲突。
-   - **解决：** 保留 resolute 的指针。⚠️ rebase "theirs" = 被重放的提交（resolute）：`git checkout --theirs <子模块>` 然后 `git add <子模块>`。
+   - **解决——前置条件：** `sonic-dash-ha`（`b336da3`）和 `sonic-sairedis`（`68da16e5`）的 `build:` 提交必须**先在各自子模块 repo 里 rebase 到其 202605 gitlink lock**（分别 `dec02a5d` / `cec72ecc`）（§6）。rebase 后，超仓库 gitlink 应指向**新**（rebase 后的）build commit，而非陈旧指针。
+   - **超仓库 rebase 冲突中：** 把 gitlink 设为 §6 rebase 后的新 build commit sha：`git update-index --cacheinfo 160000 <新build-sha> <子模块路径>` 然后 `git add <子模块路径>` 继续。（**不要**用 `checkout --theirs`——那保留 rebase 前的陈旧指针。）对 `dhcpmon`（无 resolute build 提交），取 202605 的指针：`git checkout --theirs src/dhcpmon`。
 6. **重命名分支：** `git branch -m resolute 202605_resolute`
 7. **推送：** `git push canonical 202605_resolute`
 
@@ -138,6 +139,30 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 
 ## 6. 子模块分支 —— `202605_resolute`（×14）
 
+**顺序：** 子模块 rebase（§6.1）发生在超仓库 rebase（§4 步骤 5）**之前**，因为超仓库 gitlink 冲突解决需要 rebase 后的 build-commit sha。
+
+### 6.1 rebase 2 个 base 被上游 bump 的子模块
+
+仅 `sonic-dash-ha` 和 `sonic-sairedis`——其 `build:` 提交的 parent **不是** 202605 gitlink lock（上游 bump 越过了它）：
+
+| 子模块 | 202605 lock | build 提交 | build parent |
+|---|---|---|---|
+| src/sonic-dash-ha | `dec02a5d` | `b336da3` | `07201f08` |
+| src/sonic-sairedis | `cec72ecc` | `68da16e5` | `9fc3fb4d` |
+
+在每个子模块工作目录下：
+```
+git fetch origin
+git checkout resolute            # 或 build commit
+git rebase --onto <202605-lock> <build-parent> resolute
+# 例 dash-ha:  git rebase --onto dec02a5d 07201f08 resolute
+```
+- 在新 base 上解决 `build:` 提交里的冲突（dash-ha 的 Cargo.lock；sairedis 的 SAI/Doxyfile）。
+- 记录**新 rebase 后的 build-commit sha**——超仓库 gitlink（§4 步骤 5）和下面的推送用这个新 sha。
+- 其余 12 个子模块已坐在 202605 lock 上（build parent == lock）——不 rebase，直接推现有 build 提交。
+
+### 6.2 推送每个子模块的 `202605_resolute` 分支
+
 对 14 个子模块的每一个，在其工作目录 `~/sonic-buildimage-resolute/<子模块>` 下：
 
 1. **添加 canonical 远端**（SSH）：
@@ -145,30 +170,30 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
    git remote add canonical git@github.com:canonical/<repo>.git
    ```
    - 7 个已存在 repo：远端立即可用（push=True）。
-   - 7 个缺失 repo：**先 fork**——`gh repo fork sonic-net/<repo> --org canonical --remote=false`（然后手动加 canonical 远端）。⚠️ R5：批量前先验证 `xdqi` 能 fork 到 org。
-2. **推送构建分支**（不 rebase，不 force）：
+   - 7 个缺失 repo：**先 fork**——`gh repo fork sonic-net/<repo> --org canonical --remote=false`（然后手动加 canonical 远端）。xdqi 有 org 级建 repo 权限（已确认），fork 到 org 预期能成；仍先试一个。
+2. **推送构建分支**（不 `--force`；新分支）：
    ```
    git push canonical <build-commit-sha>:refs/heads/202605_resolute
    ```
-   把 resolute build 提交（在其 sonic-net master parent 上）作为新分支推上去。git 接受无共同祖先的新分支 ref（§2 已验证）。
+   2 个 rebase 过的子模块，`<build-commit-sha>` = §6.1 的新 sha。其余 12 个用现有 build 提交 sha。git 接受无共同祖先的新分支 ref（§2 已验证）。
 
 ### 子模块 repo → build 提交映射
-| canonical repo | build 提交（短） |
-|---|---|
-| canonical/sonic-swss | `6d3a46bb` |
-| canonical/sonic-sairedis | `68da16e5` |
-| canonical/sonic-swss-common | `baf0b19` |
-| canonical/sonic-gnmi | `c8f96ff` |
-| canonical/sonic-mgmt-framework | `fda49ff` |
-| canonical/sonic-linux-kernel | `c54d5e3` |
-| canonical/sonic-mgmt-common | `47995eb` |
-| canonical/sonic-platform-vpp（fork） | `fe8c727` |
-| canonical/sonic-dhcp-relay（fork） | `d620ecc` |
-| canonical/sonic-bmp（fork） | `c11289b` |
-| canonical/sonic-dash-ha（fork） | `b336da3` |
-| canonical/sonic-dash-api（fork） | `43c676b` |
-| canonical/sonic-stp（fork） | `416491c` |
-| canonical/sonic-wpa-supplicant（fork） | `7f39eb03f` |
+| canonical repo | build 提交 | rebase? |
+|---|---|---|
+| canonical/sonic-swss | `6d3a46bb` | 否 |
+| canonical/sonic-sairedis | （§6.1 rebase 到 `cec72ecc` 后的新 sha） | **是** |
+| canonical/sonic-swss-common | `baf0b19` | 否 |
+| canonical/sonic-gnmi | `c8f96ff` | 否 |
+| canonical/sonic-mgmt-framework | `fda49ff` | 否 |
+| canonical/sonic-linux-kernel | `c54d5e3` | 否 |
+| canonical/sonic-mgmt-common | `47995eb` | 否 |
+| canonical/sonic-platform-vpp（fork） | `fe8c727` | 否 |
+| canonical/sonic-dhcp-relay（fork） | `d620ecc` | 否 |
+| canonical/sonic-bmp（fork） | `c11289b` | 否 |
+| canonical/sonic-dash-ha（fork） | （§6.1 rebase 到 `dec02a5d` 后的新 sha） | **是** |
+| canonical/sonic-dash-api（fork） | `43c676b` | 否 |
+| canonical/sonic-stp（fork） | `416491c` | 否 |
+| canonical/sonic-wpa-supplicant（fork） | `7f39eb03f` | 否 |
 
 ## 7. `.gitmodules` URL 改写
 
@@ -184,11 +209,12 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 ## 8. 风险与缓解
 
 - **R1 filter-repo 重写构建分支所有哈希** → 原始提交安全保存在 `~/sonic-buildimage-resolute`；全新 clone 用完即弃。
-- **R2 gitlink 冲突（`sonic-dash-ha`、`sonic-sairedis`）** → 机械性；取 resolute 指针（§4 步骤 5 提醒）。
+- **R2 gitlink 冲突（`sonic-dash-ha`、`sonic-sairedis`）** → 通过在超仓库 rebase **之前**把各子模块 `build:` 提交 rebase 到其 202605 gitlink lock（§6.1）来解决；超仓库 gitlink 随后指向新 rebase 后的 build commit（§4 步骤 5）。`dhcpmon`（无 resolute build 提交）取 202605 的指针。
 - **R3 canonical `admin=False`** → 不能改设置/保护，但能推新分支。新分支名默认无保护规则。
 - **R4 `.gitmodules` 改写改写超仓库 tip** → 重新推送用 `--force-with-lease`；只影响超仓库构建分支，且只一次。
-- **R5 ⚠️ fork 到 org 可能被拒**——`xdqi` 是 canonical `member`（非 owner），token 无 `admin:org`。`gh repo fork --org canonical` 可能失败。**缓解：** 先试一个 fork；若被拒，请 canonical owner 执行这 7 个 fork，或退而求其次用 `gh repo create canonical/<repo> --source sonic-net/<repo> --fork`（同样需要 org 权限）或暂时推到 `xdqi/`。这是最大的未验证执行风险。
+- **R5 fork 到 org** —— xdqi 有 org 级建 repo 权限（用户已确认），所以 7 个缺失 repo 的 `gh repo fork --org canonical` 预期能成。仍先试一个 fork 作 sanity check。
 - **R6 已存在的 7 个 canonical repo 是分叉的** → 它们陈旧的 `master`/`202012` 等分支不受影响。只新增 `202605_resolute` 分支。同事 fetch 子模块时拿到 resolute 提交 + 其完整 sonic-net 祖先（在新分支上完整可达）。
+- **R7 子模块 rebase 冲突** —— 把 `b336da3`（dash-ha，Cargo.lock）和 `68da16e5`（sairedis，SAI/Doxyfile）rebase 到新 202605 lock 可能遇冲突；两者都小（1 和 3 文件）。按 build 提交意图解决；rebase 后的结果即推送内容。
 
 ## 9. 范围外
 

@@ -68,7 +68,7 @@ Boost 1.88→1.83 revert commit `2d1fc1b4f` dropped the linkmgrd `io_service→i
 
 ### Push mechanics (verified)
 - **Pushing a NEW branch (`202605_resolute`) to a divergent canonical repo does NOT require `--force`** — git accepts a new branch ref even without shared ancestry, as long as the pushed commits are complete/reachable. Dry-run confirmed on sonic-mgmt-common: `* [new branch] 47995eb -> 202605_resolute`.
-- `gh repo fork --org canonical` requires org-level permission; `xdqi` is `role=member` (not owner) with `repo`+`read:org` scopes (no `admin:org`). **Forking to canonical may be blocked** — must test one before relying on it (§6 risk R5).
+- `gh repo fork --org canonical` — xdqi has org-level repo-creation permission (user-confirmed), so forking the 7 missing repos into canonical is expected to work.
 
 ## 3. Decisions
 
@@ -82,7 +82,7 @@ Boost 1.88→1.83 revert commit `2d1fc1b4f` dropped the linkmgrd `io_service→i
 | D6 | Branch naming | `202605_resolute` (build, all repos) / `202605_resolute_doc` (super docs only) | User rule: `sonic-*` repos use `202605_resolute{,_doc}`; submodules get build-only. |
 | D7 | Submodule repos | 7 existing canonical (push direct) + 7 forked-from-sonic-net | User: "fork, not create". Forks carry sonic-net history so gitlink ancestry is complete. |
 | D8 | Submodule push | new `202605_resolute` branch, no `--force` | Verified: new branch ref accepted on divergent repo without shared ancestry. |
-| D9 | Submodule base | no rebase — push resolute commit directly on its sonic-net master parent | Submodule resolute commits sit directly on sonic-net `master`; canonical repos are divergent/empty so rebase adds nothing. The build commit + its sonic-net ancestry is what colleagues need. |
+| D9 | Submodule base | rebase each `build:` commit onto the gitlink commit locked by sonic-net `202605` (`9c84048a4`) | The super-repo `202605` tree locks each submodule's expected base commit. 12 of 14 submodules already sit on their lock (build parent == lock); 2 (`sonic-dash-ha`, `sonic-sairedis`) had their base bumped upstream → must rebase their `build:` commit onto the new lock. This also resolves the super-repo rebase gitlink conflict cleanly (new build commit, not the stale pointer). |
 
 ## 4. Super build branch — `202605_resolute`
 
@@ -111,7 +111,8 @@ All steps in a **fresh clone**; original `~/sonic-buildimage-resolute` never mod
    ```
    - Replays filtered resolute commits onto `9c84048a4`.
    - **Expected conflicts:** `sonic-dash-ha` and `sonic-sairedis` gitlink pointers (bumped locally AND upstream). `dhcpmon` clean. No build-file conflicts.
-   - **Resolution:** keep resolute's pointer. ⚠️ Rebase "theirs" = the replayed commit (resolute): `git checkout --theirs <submodule>` then `git add <submodule>`.
+   - **Resolution — prerequisite:** the `build:` commits for `sonic-dash-ha` (`b336da3`) and `sonic-sairedis` (`68da16e5`) must first be **rebased onto their 202605 gitlink lock** (`dec02a5d` / `cec72ecc` respectively) in their submodule repos (§6). After that rebase, the super-repo gitlink should point at the **new** (rebased) build commit, not the stale pointer.
+   - **In the super-repo rebase conflict:** set the gitlink to the rebased build commit sha from §6: `git update-index --cacheinfo 160000 <new-build-sha> <submodule-path>` then `git add <submodule-path>` and continue. (Do NOT use `checkout --theirs` — that keeps the stale pre-rebase pointer.) For `dhcpmon` (no resolute build commit), take 202605's pointer: `git checkout --theirs src/dhcpmon`.
 6. **Rename branch:** `git branch -m resolute 202605_resolute`
 7. **Push:** `git push canonical 202605_resolute`
 
@@ -138,6 +139,30 @@ Steps in `~/sonic-buildimage` (branch `202605-wip`). No filter-repo.
 
 ## 6. Submodule branches — `202605_resolute` (×14)
 
+**Order:** submodule rebase (§6.1) happens **before** the super-repo rebase (§4 step 5), because the super-repo gitlink conflict resolution needs the rebased build-commit shas.
+
+### 6.1 Rebase the 2 submodules whose base was bumped upstream
+
+For `sonic-dash-ha` and `sonic-sairedis` only — their `build:` commit's parent is **not** the 202605 gitlink lock (upstream bumped past it):
+
+| Submodule | 202605 lock | build commit | build parent |
+|---|---|---|---|
+| src/sonic-dash-ha | `dec02a5d` | `b336da3` | `07201f08` |
+| src/sonic-sairedis | `cec72ecc` | `68da16e5` | `9fc3fb4d` |
+
+In each submodule's working dir:
+```
+git fetch origin
+git checkout resolute            # or the build commit
+git rebase --onto <202605-lock> <build-parent> resolute
+# e.g. dash-ha:  git rebase --onto dec02a5d 07201f08 resolute
+```
+- Resolves any conflicts in the `build:` commit (Cargo.lock for dash-ha; SAI/Doxyfile for sairedis) onto the new base.
+- Record the **new rebased build-commit sha** — the super-repo gitlink (§4 step 5) and the push below use this new sha.
+- The other 12 submodules already sit on their 202605 lock (build parent == lock) — no rebase, push the existing build commit directly.
+
+### 6.2 Push each submodule's `202605_resolute` branch
+
 For **each** of the 14 submodules, in its working dir under `~/sonic-buildimage-resolute/<submodule>`:
 
 1. **Add canonical remote** (SSH):
@@ -145,30 +170,30 @@ For **each** of the 14 submodules, in its working dir under `~/sonic-buildimage-
    git remote add canonical git@github.com:canonical/<repo>.git
    ```
    - 7 existing repos: remote works immediately (push=True).
-   - 7 missing repos: **fork first** — `gh repo fork sonic-net/<repo> --org canonical --remote=false` (then add the canonical remote manually). ⚠️ R5: verify `xdqi` can fork-to-org before batch.
-2. **Push the build branch** (no rebase, no force):
+   - 7 missing repos: **fork first** — `gh repo fork sonic-net/<repo> --org canonical --remote=false` (then add the canonical remote manually). xdqi has org-level repo-creation permission (confirmed), so fork-to-org is expected to succeed; still test one first.
+2. **Push the build branch** (no `--force`; new branch):
    ```
    git push canonical <build-commit-sha>:refs/heads/202605_resolute
    ```
-   Pushes the resolute build commit (on its sonic-net master parent) as a new branch. Git accepts new branch refs without shared ancestry (verified §2).
+   For the 2 rebased submodules, `<build-commit-sha>` = the **new** sha from §6.1. For the other 12, the existing build commit sha. Git accepts new branch refs without shared ancestry (verified §2).
 
 ### Submodule repo → build commit map
-| canonical repo | build commit (short) |
-|---|---|
-| canonical/sonic-swss | `6d3a46bb` |
-| canonical/sonic-sairedis | `68da16e5` |
-| canonical/sonic-swss-common | `baf0b19` |
-| canonical/sonic-gnmi | `c8f96ff` |
-| canonical/sonic-mgmt-framework | `fda49ff` |
-| canonical/sonic-linux-kernel | `c54d5e3` |
-| canonical/sonic-mgmt-common | `47995eb` |
-| canonical/sonic-platform-vpp (fork) | `fe8c727` |
-| canonical/sonic-dhcp-relay (fork) | `d620ecc` |
-| canonical/sonic-bmp (fork) | `c11289b` |
-| canonical/sonic-dash-ha (fork) | `b336da3` |
-| canonical/sonic-dash-api (fork) | `43c676b` |
-| canonical/sonic-stp (fork) | `416491c` |
-| canonical/sonic-wpa-supplicant (fork) | `7f39eb03f` |
+| canonical repo | build commit | rebased? |
+|---|---|---|
+| canonical/sonic-swss | `6d3a46bb` | no |
+| canonical/sonic-sairedis | (new sha after §6.1 rebase onto `cec72ecc`) | **yes** |
+| canonical/sonic-swss-common | `baf0b19` | no |
+| canonical/sonic-gnmi | `c8f96ff` | no |
+| canonical/sonic-mgmt-framework | `fda49ff` | no |
+| canonical/sonic-linux-kernel | `c54d5e3` | no |
+| canonical/sonic-mgmt-common | `47995eb` | no |
+| canonical/sonic-platform-vpp (fork) | `fe8c727` | no |
+| canonical/sonic-dhcp-relay (fork) | `d620ecc` | no |
+| canonical/sonic-bmp (fork) | `c11289b` | no |
+| canonical/sonic-dash-ha (fork) | (new sha after §6.1 rebase onto `dec02a5d`) | **yes** |
+| canonical/sonic-dash-api (fork) | `43c676b` | no |
+| canonical/sonic-stp (fork) | `416491c` | no |
+| canonical/sonic-wpa-supplicant (fork) | `7f39eb03f` | no |
 
 ## 7. `.gitmodules` URL rewrite
 
@@ -184,11 +209,12 @@ After submodule branches are pushed, the super build branch `202605_resolute` mu
 ## 8. Risks & mitigations
 
 - **R1 filter-repo rewrites all build-branch hashes** → originals safe in `~/sonic-buildimage-resolute`; fresh clone disposable.
-- **R2 gitlink conflicts (`sonic-dash-ha`, `sonic-sairedis`)** → mechanical; take resolute's pointer (§4 step 5 caveat).
+- **R2 gitlink conflicts (`sonic-dash-ha`, `sonic-sairedis`)** → resolved by rebasing each submodule's `build:` commit onto its 202605 gitlink lock (§6.1) **before** the super-repo rebase; the super-repo gitlink then points at the new rebased build commit (§4 step 5). `dhcpmon` (no resolute build commit) takes 202605's pointer.
 - **R3 canonical `admin=False`** → can't change settings/protection, but can push new branches. New branch names have no protection by default.
 - **R4 `.gitmodules` rewrite amends super tip** → use `--force-with-lease` on re-push; only the super build branch is affected, and only once.
-- **R5 ⚠️ Fork-to-org may be blocked** — `xdqi` is canonical `member` (not owner), token lacks `admin:org`. `gh repo fork --org canonical` may fail. **Mitigation:** test ONE fork first; if blocked, request a canonical owner perform the 7 forks, or fall back to `gh repo create canonical/<repo> --source sonic-net/<repo> --fork` (same org-permission requirement) or push the 7 to `xdqi/` temporarily. This is the single biggest unverified execution risk.
+- **R5 Fork-to-org** — xdqi has org-level repo-creation permission (confirmed by user), so `gh repo fork --org canonical` for the 7 missing repos is expected to succeed. Still test one fork first as a sanity check.
 - **R6 Existing 7 canonical repos are divergent** → their stale `master`/`202012`/etc. branches remain untouched. Only a new `202605_resolute` branch is added. Colleagues fetching the submodule get the resolute commit + its full sonic-net ancestry (complete on the new branch).
+- **R7 Submodule rebase conflicts** — rebasing `b336da3` (dash-ha, Cargo.lock) and `68da16e5` (sairedis, SAI/Doxyfile) onto the new 202605 lock may hit conflicts; both are small (1 and 3 files). Resolve per the build commit's intent; the rebased result is what gets pushed.
 
 ## 9. Out of scope
 
