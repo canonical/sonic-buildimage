@@ -76,7 +76,8 @@ Boost 1.88→1.83 revert commit `2d1fc1b4f` dropped the linkmgrd `io_service→i
 |---|---|---|---|
 | D1 | Rebase base (super) | sonic-net latest `202605` (`9c84048a4`) | User said "latest 202605"; this tree's gitlinks define the submodule base locks (D9). 3 upstream bumps harmless; the 2 gitlink conflicts (`sonic-dash-ha`, `sonic-sairedis`) are resolved by rebasing those submodules onto their locks (§6.1) before the super rebase — not by accepting the stale pointer. |
 | D2 | Docs scrubbing tool | `git filter-repo --path docs/superpowers --invert-paths` | 5 docs commits interleaved with 66 build commits; path scrub is the only clean option; removes path from every commit's tree. |
-| D3 | Super workspace model | fresh non-recursive clone | `filter-repo` refuses non-fresh clones without `--force` and removes `origin`; original `~/sonic-buildimage-resolute` (16 submodules + boost work) must not be touched. |
+| D3 | Super workspace model | in-place on original repos (`--force`) | User wants original repos aligned with canonical and filter done once. `filter-repo --force` on `~/sonic-buildimage-resolute` and `~/sonic-buildimage` directly rewrites + renames branches to `202605_resolute` / `202605_resolute_doc`. Irreversible; safety tags added first. No fresh clone, no "old history retained" split. |
+| D10 | Original repo final state | aligned with canonical | After execution, both original repos sit on the same branch name as canonical (`202605_resolute` / `202605_resolute_doc`); submodule working dirs checked out to gitlinks (§7 step 3). Future commits push directly, no re-filter. |
 | D4 | `.pptx`/`.pptx.md` | gitignore, not committed | Generated artifacts; user decision 2026-07-06. Only bilingual `.md` committed. |
 | D5 | `sonic.code-workspace` | gitignore, not committed | VSCode personal workspace file. |
 | D6 | Branch naming | `202605_resolute` (build, all repos) / `202605_resolute_doc` (super docs only) | User rule: `sonic-*` repos use `202605_resolute{,_doc}`; submodules get build-only. |
@@ -84,68 +85,65 @@ Boost 1.88→1.83 revert commit `2d1fc1b4f` dropped the linkmgrd `io_service→i
 | D8 | Submodule push | new `202605_resolute` branch, no `--force` | Verified: new branch ref accepted on divergent repo without shared ancestry. |
 | D9 | Submodule base | rebase each `build:` commit onto the gitlink commit locked by sonic-net `202605` (`9c84048a4`) | The super-repo `202605` tree locks each submodule's expected base commit. 12 of 14 submodules already sit on their lock (build parent == lock); 2 (`sonic-dash-ha`, `sonic-sairedis`) had their base bumped upstream → must rebase their `build:` commit onto the new lock. This also resolves the super-repo rebase gitlink conflict cleanly (new build commit, not the stale pointer). |
 
-## 4. Super build branch — `202605_resolute`
+## 4. Super build branch — `202605_resolute` (in-place on original repo)
 
-All steps in a **fresh clone**; original `~/sonic-buildimage-resolute` never modified.
+Operates **directly on `~/sonic-buildimage-resolute`** (no fresh clone). The original `resolute` branch is transformed into `202605_resolute` so the repo aligns with canonical after push. filter-repo is run **once** here; future build commits land on `202605_resolute` directly, no re-filter.
+
+⚠️ **Irreversible history rewrite.** All 71 resolute commit hashes change. The old `resolute` branch name disappears (renamed). `filter-repo --force` removes `origin`; remotes re-added in step 4. Backups: tag the pre-rewrite tip first (`git tag pre-filter-resolute resolute`); canonical's pushed branch is the durable copy thereafter.
 
 1. **Install filter-repo:** `sudo apt install git-filter-repo` (Debian `2.47.0-3`; passwordless sudo available).
-2. **Fresh non-recursive clone:**
+2. **Optional safety tag:** `git tag pre-filter-resolute resolute`
+3. **Scrub superpowers docs from all history (in-place, `--force`):**
    ```
-   git clone --branch resolute --no-recursive /home/sheldon-qi/sonic-buildimage-resolute /work/resolute-super
-   cd /work/resolute-super
+   cd ~/sonic-buildimage-resolute
+   git filter-repo --force --path docs/superpowers --invert-paths
    ```
-3. **Scrub superpowers docs from all history:**
-   ```
-   git filter-repo --path docs/superpowers --invert-paths
-   ```
-   Removes `docs/superpowers/` from every commit's tree; prunes the ~5 commits that become empty. Base commits unchanged (upstream has no such path). `filter-repo` removes `origin` — expected.
-4. **Add remotes** (sonic-net = latest 202605; canonical = push target):
+   Removes `docs/superpowers/` from every commit's tree; prunes the ~5 commits that become empty. filter-repo does **not** recurse into submodule working dirs and does **not** remap gitlink shas — the 14 submodule pointers are preserved as-is. Base commits unchanged (upstream 202605 has no such path). `origin` remote removed by filter-repo.
+4. **Re-add remotes** (sonic-net = latest 202605; canonical = push target) and fetch:
    ```
    git remote add sonic-net https://github.com/sonic-net/sonic-buildimage.git
    git remote add canonical  git@github.com:canonical/sonic-buildimage.git
    git fetch sonic-net
    ```
-5. **Rebase onto latest 202605:**
+5. **Rebase submodule `build:` commits first (§6.1 prerequisite), then rebase super onto latest 202605:**
+   - §6.1 must run before this step — the super-repo rebase gitlink conflicts are resolved by pointing at the rebased build commits.
    ```
    git rebase --onto sonic-net/202605 77cfa809d resolute
    ```
    - Replays filtered resolute commits onto `9c84048a4`.
    - **Expected conflicts:** `sonic-dash-ha` and `sonic-sairedis` gitlink pointers (bumped locally AND upstream). `dhcpmon` clean. No build-file conflicts.
-   - **Resolution — prerequisite:** the `build:` commits for `sonic-dash-ha` (`b336da3`) and `sonic-sairedis` (`68da16e5`) must first be **rebased onto their 202605 gitlink lock** (`dec02a5d` / `cec72ecc` respectively) in their submodule repos (§6). After that rebase, the super-repo gitlink should point at the **new** (rebased) build commit, not the stale pointer.
-   - **In the super-repo rebase conflict:** set the gitlink to the rebased build commit sha from §6: `git update-index --cacheinfo 160000 <new-build-sha> <submodule-path>` then `git add <submodule-path>` and continue. (Do NOT use `checkout --theirs` — that keeps the stale pre-rebase pointer.) For `dhcpmon` (no resolute build commit), take 202605's pointer: `git checkout --theirs src/dhcpmon`.
+   - **Resolution:** set the gitlink to the rebased build commit sha from §6.1: `git update-index --cacheinfo 160000 <new-build-sha> <submodule-path>` then `git add <submodule-path>` and continue. (Do NOT use `checkout --theirs` — that keeps the stale pre-rebase pointer.) For `dhcpmon` (no resolute build commit), take 202605's pointer: `git checkout --theirs src/dhcpmon`.
 6. **Rename branch:** `git branch -m resolute 202605_resolute`
-7. **Push:** `git push canonical 202605_resolute`
+7. **Align submodule working dirs to new gitlinks** (see §7) — makes `git status` clean.
+8. **Push:** `git push canonical 202605_resolute`
 
-## 5. Super docs branch — `202605_resolute_doc`
+## 5. Super docs branch — `202605_resolute_doc` (in-place on original repo)
 
-Uses `filter-repo` (like the build branch) to scrub the 2 old single-language docs from history, leaving only the 6 new bilingual `.md` files — no "reorg delete" commit.
+Operates **directly on `~/sonic-buildimage`** (branch `202605-wip`). filter-repo scrubs the 2 old single-language docs from history; the branch is renamed to `202605_resolute_doc`. filter-repo run once.
 
-1. **Commit the 6 new bilingual docs in `~/sonic-buildimage` (`202605-wip`):** add `sonic.code-workspace`, `*.pptx`, `*.pptx.md` to `.gitignore`; stage the 6 new `-en.md`/`-zh.md` files (3 topics × en/zh) only; commit `docs: add resolute migration docs bilingual`. Do **not** stage the 2 deletions, `.pptx`/`.pptx.md`, or `sonic.code-workspace`. (`202605-wip` advances by 1 commit; it remains the local backup.)
-2. **Fresh non-recursive clone** (filter-repo requires fresh clone):
+⚠️ **Irreversible history rewrite** on `~/sonic-buildimage`. Same caveats as §4. Optional safety tag: `git tag pre-filter-docs 202605-wip`.
+
+1. **Commit the 6 new bilingual docs (on `202605-wip`):** add `sonic.code-workspace`, `*.pptx`, `*.pptx.md` to `.gitignore`; stage the 6 new `-en.md`/`-zh.md` files (3 topics × en/zh) only; commit `docs: add resolute migration docs bilingual`. Do **not** stage the 2 deletions, `.pptx`/`.pptx.md`, or `sonic.code-workspace`.
+2. **Optional safety tag:** `git tag pre-filter-docs 202605-wip`
+3. **Scrub the 2 old single-language docs from all history (in-place, `--force`):**
    ```
-   git clone --branch 202605-wip /home/sheldon-qi/sonic-buildimage /work/resolute-docs
-   cd /work/resolute-docs
+   cd ~/sonic-buildimage
+   git filter-repo --force \
+     --path docs/superpowers/resolute-migration-code-review.md \
+     --path docs/superpowers/resolute-vs-migration-report.md \
+     --invert-paths
    ```
-3. **Scrub the 2 old single-language docs from all history:**
+   Removes these 2 paths from every commit's tree; prunes commits that become empty. The 6 new bilingual docs (different paths) are untouched. `origin` removed by filter-repo.
+4. **Re-add remotes + rename branch + rebase onto latest 202605:**
    ```
-   git filter-repo --path docs/superpowers/resolute-migration-code-review.md \
-                   --path docs/superpowers/resolute-vs-migration-report.md \
-                   --invert-paths
-   ```
-   Removes these 2 paths from every commit's tree; prunes commits that become empty (the original `e38553fc2`/`145b8d9f4` "add ... (zh+en)" commits that introduced the single-language files, if they touched only those). The 6 new bilingual docs (added in step 1, different paths) are untouched.
-4. **Create target branch + rebase onto latest 202605:**
-   ```
-   git checkout -b 202605_resolute_doc
    git remote add sonic-net https://github.com/sonic-net/sonic-buildimage.git
+   git remote add canonical  git@github.com:canonical/sonic-buildimage.git
    git fetch sonic-net
+   git branch -m 202605-wip 202605_resolute_doc
    git rebase --onto sonic-net/202605 77cfa809d 202605_resolute_doc
    ```
    Expected ~0 conflicts (docs don't touch submodule pointers or build files).
-5. **Add canonical remote and push:**
-   ```
-   git remote add canonical git@github.com:canonical/sonic-buildimage.git
-   git push canonical 202605_resolute_doc
-   ```
+5. **Push:** `git push canonical 202605_resolute_doc`
 
 ## 6. Submodule branches — `202605_resolute` (×14)
 
@@ -205,26 +203,44 @@ For **each** of the 14 submodules, in its working dir under `~/sonic-buildimage-
 | canonical/sonic-stp (fork) | `416491c` | no |
 | canonical/sonic-wpa-supplicant (fork) | `7f39eb03f` | no |
 
-## 7. `.gitmodules` URL rewrite
+## 7. `.gitmodules` URL rewrite + submodule working-dir alignment
 
-After submodule branches are pushed, the super build branch `202605_resolute` must point its gitlinks at canonical, not sonic-net. In the fresh super clone (§4), **after step 5 rebase**:
+After submodule branches are pushed (§6.2), the super build branch `202605_resolute` must point its gitlinks at canonical, not sonic-net. Done **in-place** on `~/sonic-buildimage-resolute` (now on `202605_resolute` after §4 step 6), after the §4 step 5 rebase:
 
 1. **Rewrite `.gitmodules`** — for each of the 14 submodules, change `url = https://github.com/sonic-net/<repo>.git` → `git@github.com:canonical/<repo>.git`. Use `git config -f .gitmodules submodule.<path>.url <new>` (or sed).
 2. **Sync config:** `git submodule sync` (propagates `.gitmodules` URLs to `.git/config`).
-3. **Commit:** `git commit -am "build: point submodules at canonical resolute branches"`.
-4. **Re-push super build branch:** `git push canonical 202605_resolute --force-with-lease` (force-with-lease because this amends the just-pushed tip).
+3. **Align submodule working dirs to the new gitlinks** — after the §4 rebase, gitlinks may point at commits the working dirs don't have checked out (esp. the 2 rebased submodules). Check out each submodule to its recorded gitlink:
+   ```
+   git submodule update --recursive --no-fetch   # uses local submodule commits
+   ```
+   For the 2 rebased submodules (dash-ha, sairedis), this checks out the new rebased build commit. For the other 12, it's a no-op if already at the build commit. This makes `git status` clean — **answering "can the original repo return to the correct branch"**: yes, `~/sonic-buildimage-resolute` ends on `202605_resolute` with all submodules aligned to their gitlinks.
+4. **Commit the `.gitmodules` change:**
+   ```
+   git commit -am "build: point submodules at canonical resolute branches"
+   ```
+5. **Re-push super build branch:** `git push canonical 202605_resolute --force-with-lease` (force-with-lease because this amends the just-pushed tip).
 
 ⚠️ The other submodules (no resolute commit) keep pointing at sonic-net — only the 14 with build commits move to canonical.
 
+### Final state of original repos
+| Repo | Branch after execution | HEAD aligns with |
+|---|---|---|
+| `~/sonic-buildimage-resolute` | `202605_resolute` (renamed from `resolute`) | canonical `202605_resolute`, submodules checked out to gitlinks |
+| `~/sonic-buildimage` | `202605_resolute_doc` (renamed from `202605-wip`) | canonical `202605_resolute_doc` |
+| 14 submodule working dirs | on their build commit (2 rebased, 12 as-is) | canonical `<repo>` `202605_resolute` |
+
+Both original repos are now on the same branch name as canonical — future commits push directly, no re-filter.
+
 ## 8. Risks & mitigations
 
-- **R1 filter-repo rewrites all build-branch hashes** → originals safe in `~/sonic-buildimage-resolute`; fresh clone disposable.
+- **R1 ⚠️ Irreversible in-place history rewrite** — `filter-repo --force` on `~/sonic-buildimage-resolute` and `~/sonic-buildimage` permanently changes all commit hashes and removes `origin`. Mitigation: optional safety tags (`pre-filter-resolute`, `pre-filter-docs`) before rewrite; canonical's pushed branches become the durable copies. **filter-repo run exactly once per repo** — future commits land on the renamed branch and push directly, no re-filter.
 - **R2 gitlink conflicts (`sonic-dash-ha`, `sonic-sairedis`)** → resolved by rebasing each submodule's `build:` commit onto its 202605 gitlink lock (§6.1) **before** the super-repo rebase; the super-repo gitlink then points at the new rebased build commit (§4 step 5). `dhcpmon` (no resolute build commit) takes 202605's pointer.
 - **R3 canonical `admin=False`** → can't change settings/protection, but can push new branches. New branch names have no protection by default.
 - **R4 `.gitmodules` rewrite amends super tip** → use `--force-with-lease` on re-push; only the super build branch is affected, and only once.
 - **R5 Fork-to-org** — xdqi has org-level repo-creation permission (confirmed by user), so `gh repo fork --org canonical` for the 7 missing repos is expected to succeed. Still test one fork first as a sanity check.
 - **R6 Existing 7 canonical repos are divergent** → their stale `master`/`202012`/etc. branches remain untouched. Only a new `202605_resolute` branch is added. Colleagues fetching the submodule get the resolute commit + its full sonic-net ancestry (complete on the new branch).
 - **R7 Submodule rebase conflicts** — rebasing `b336da3` (dash-ha, Cargo.lock) and `68da16e5` (sairedis, SAI/Doxyfile) onto the new 202605 lock may hit conflicts; both are small (1 and 3 files). Resolve per the build commit's intent; the rebased result is what gets pushed.
+- **R8 Submodule working-dir misalignment after rebase** — super gitlinks point at new commits but working dirs lag. Mitigated by §7 step 3 `git submodule update --recursive --no-fetch`; verify `git status` is clean before pushing.
 
 ## 9. Out of scope
 
@@ -240,4 +256,5 @@ After submodule branches are pushed, the super build branch `202605_resolute` mu
 - Super docs: `git ls-tree -r 202605_resolute_doc --name-only | grep superpowers` → bilingual `.md` present; **no** `.pptx`/`.pptx.md`.
 - Super `.gitmodules`: all 14 resolute submodules point at `canonical/`; others still `sonic-net/`.
 - Each of 14 submodules: `git ls-remote canonical refs/heads/202605_resolute` → non-empty, sha matches build commit.
+- **Original repo alignment:** `~/sonic-buildimage-resolute` HEAD on `202605_resolute`, `~/sonic-buildimage` HEAD on `202605_resolute_doc`; `git -C ~/sonic-buildimage-resolute status` clean (no dirty submodules after §7 step 3).
 - Branches visible at `github.com/canonical/sonic-buildimage/tree/202605_resolute`, `/tree/202605_resolute_doc`, and each `canonical/<submodule>/tree/202605_resolute`.

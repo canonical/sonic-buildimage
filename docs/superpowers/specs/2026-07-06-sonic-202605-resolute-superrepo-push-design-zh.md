@@ -76,7 +76,8 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 |---|---|---|---|
 | D1 | rebase base（超仓库） | sonic-net 最新 `202605`（`9c84048a4`） | 用户说"最新 202605"；该 tree 的 gitlink 定义了子模块 base lock（D9）。3 个上游 bump 无害；2 个 gitlink 冲突（`sonic-dash-ha`、`sonic-sairedis`）通过在超仓库 rebase **之前**把这些子模块 rebase 到各自 lock（§6.1）解决——而非接受陈旧指针。 |
 | D2 | docs 清理工具 | `git filter-repo --path docs/superpowers --invert-paths` | 5 个 docs 提交与 66 个 build 提交交错；按路径清理是唯一干净做法；从每个提交的树里抹掉该路径。 |
-| D3 | 超仓库工作区模型 | 全新非递归 clone | `filter-repo` 拒绝非全新 clone（不加 `--force`），且删 `origin`；原仓库 `~/sonic-buildimage-resolute`（16 子模块 + boost 工作）不能动。 |
+| D3 | 超仓库工作区模型 | 原仓库就地改造（`--force`） | 用户要原仓库对齐 canonical 且 filter 只做一次。直接在 `~/sonic-buildimage-resolute` 和 `~/sonic-buildimage` 上 `filter-repo --force` 改写 + 重命名分支为 `202605_resolute` / `202605_resolute_doc`。不可逆；先打安全 tag。无 fresh clone，无"旧历史保留"分裂。 |
+| D10 | 原仓库终态 | 对齐 canonical | 执行后两原仓库停在和 canonical 同名的分支（`202605_resolute` / `202605_resolute_doc`）；子模块工作目录检出至 gitlink（§7 步骤 3）。以后提交直接推，不再 re-filter。 |
 | D4 | `.pptx`/`.pptx.md` | gitignore，不提交 | 生成产物；用户 2026-07-06 决定。仅提交双语 `.md`。 |
 | D5 | `sonic.code-workspace` | gitignore，不提交 | VSCode 个人工作区文件。 |
 | D6 | 分支命名 | `202605_resolute`（构建，全部 repo）/ `202605_resolute_doc`（仅超仓库文档） | 用户规则：`sonic-*` repo 用 `202605_resolute{,_doc}`；子模块仅构建。 |
@@ -84,68 +85,65 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 | D8 | 子模块推送 | 新分支 `202605_resolute`，无 `--force` | 已验证：分叉 repo 上接受无共同祖先的新分支 ref。 |
 | D9 | 子模块 base | 把每个 `build:` 提交 rebase 到 sonic-net `202605`（`9c84048a4`）gitlink 锁定的 commit 上 | 超仓库 `202605` 的 tree 锁定了每个子模块期望的 base commit。14 个里有 12 个已坐在 lock 上（build parent == lock）；2 个（`sonic-dash-ha`、`sonic-sairedis`）base 被上游 bump 了 → 必须把 `build:` 提交 rebase 到新 lock。这也干净地解决了超仓库 rebase 的 gitlink 冲突（新 build commit，非陈旧指针）。 |
 
-## 4. 超仓库构建分支 —— `202605_resolute`
+## 4. 超仓库构建分支 —— `202605_resolute`（原仓库就地改造）
 
-所有步骤在**全新 clone** 中执行；原仓库 `~/sonic-buildimage-resolute` 全程不动。
+直接在 `~/sonic-buildimage-resolute` 上操作（无 fresh clone）。原 `resolute` 分支被改造成 `202605_resolute`，使仓库推送后对齐 canonical。filter-repo 此处只跑**一次**；以后 build 提交直接落在 `202605_resolute` 上，不再 re-filter。
+
+⚠️ **不可逆历史改写。** 全部 71 个 resolute 提交哈希改变。旧 `resolute` 分支名消失（重命名）。`filter-repo --force` 删除 `origin`；远端在步骤 4 重加。备份：改写前先打 tag（`git tag pre-filter-resolute resolute`）；canonical 推上去的分支是此后持久副本。
 
 1. **安装 filter-repo：** `sudo apt install git-filter-repo`（Debian `2.47.0-3`；有免密 sudo）。
-2. **全新非递归 clone：**
+2. **可选安全 tag：** `git tag pre-filter-resolute resolute`
+3. **从所有历史清除 superpowers 文档（就地，`--force`）：**
    ```
-   git clone --branch resolute --no-recursive /home/sheldon-qi/sonic-buildimage-resolute /work/resolute-super
-   cd /work/resolute-super
+   cd ~/sonic-buildimage-resolute
+   git filter-repo --force --path docs/superpowers --invert-paths
    ```
-3. **从所有历史清除 superpowers 文档：**
-   ```
-   git filter-repo --path docs/superpowers --invert-paths
-   ```
-   从每个提交的树里移除 `docs/superpowers/`；剪枝变空的约 5 个提交。base 提交不变（上游无此路径）。`filter-repo` 默认删 `origin`——符合预期。
-4. **添加远端**（sonic-net = 拉最新 202605；canonical = 推送目标）：
+   从每个提交的树里移除 `docs/superpowers/`；剪枝变空的约 5 个提交。filter-repo **不**递归子模块工作目录，**不**重映射 gitlink sha——14 个子模块指针原样保留。base 提交不变（上游 202605 无此路径）。`origin` 远端被 filter-repo 删除。
+4. **重加远端**（sonic-net = 拉最新 202605；canonical = 推送目标）并 fetch：
    ```
    git remote add sonic-net https://github.com/sonic-net/sonic-buildimage.git
    git remote add canonical  git@github.com:canonical/sonic-buildimage.git
    git fetch sonic-net
    ```
-5. **rebase 到最新 202605：**
+5. **先 rebase 子模块 `build:` 提交（§6.1 前置），再 rebase 超仓库到最新 202605：**
+   - §6.1 必须先于本步骤——超仓库 rebase 的 gitlink 冲突靠指向 rebase 后的 build commit 解决。
    ```
    git rebase --onto sonic-net/202605 77cfa809d resolute
    ```
    - 把过滤后的 resolute 提交重放到 `9c84048a4` 上。
    - **预期冲突：** `sonic-dash-ha` 和 `sonic-sairedis` 的 gitlink 指针（本地和上游都 bump 了）。`dhcpmon` 干净。无 build 文件冲突。
-   - **解决——前置条件：** `sonic-dash-ha`（`b336da3`）和 `sonic-sairedis`（`68da16e5`）的 `build:` 提交必须**先在各自子模块 repo 里 rebase 到其 202605 gitlink lock**（分别 `dec02a5d` / `cec72ecc`）（§6）。rebase 后，超仓库 gitlink 应指向**新**（rebase 后的）build commit，而非陈旧指针。
-   - **超仓库 rebase 冲突中：** 把 gitlink 设为 §6 rebase 后的新 build commit sha：`git update-index --cacheinfo 160000 <新build-sha> <子模块路径>` 然后 `git add <子模块路径>` 继续。（**不要**用 `checkout --theirs`——那保留 rebase 前的陈旧指针。）对 `dhcpmon`（无 resolute build 提交），取 202605 的指针：`git checkout --theirs src/dhcpmon`。
+   - **解决：** 把 gitlink 设为 §6.1 rebase 后的新 build commit sha：`git update-index --cacheinfo 160000 <新build-sha> <子模块路径>` 然后 `git add <子模块路径>` 继续。（**不要**用 `checkout --theirs`——那保留 rebase 前的陈旧指针。）对 `dhcpmon`（无 resolute build 提交），取 202605 的指针：`git checkout --theirs src/dhcpmon`。
 6. **重命名分支：** `git branch -m resolute 202605_resolute`
-7. **推送：** `git push canonical 202605_resolute`
+7. **对齐子模块工作目录到新 gitlink**（见 §7）——使 `git status` 干净。
+8. **推送：** `git push canonical 202605_resolute`
 
-## 5. 超仓库文档分支 —— `202605_resolute_doc`
+## 5. 超仓库文档分支 —— `202605_resolute_doc`（原仓库就地改造）
 
-用 `filter-repo`（和构建分支一致）把 2 个旧的单语文档从历史里抹掉，只留 6 个新增双语 `.md`——无需"reorg 删除" commit。
+直接在 `~/sonic-buildimage` 上操作（分支 `202605-wip`）。filter-repo 把 2 个旧单语文档从历史抹掉；分支重命名为 `202605_resolute_doc`。filter-repo 跑一次。
 
-1. **在 `~/sonic-buildimage`（`202605-wip`）提交 6 个新增双语文档：** 在 `.gitignore` 中加入 `sonic.code-workspace`、`*.pptx`、`*.pptx.md`；只 stage 6 个新 `-en.md`/`-zh.md`（3 主题 × en/zh）；提交 `docs: add resolute migration docs bilingual`。**不要** stage 2 个删除、`.pptx`/`.pptx.md`、`sonic.code-workspace`。（`202605-wip` 前进 1 个提交；仍作本地备份。）
-2. **全新非递归 clone**（filter-repo 要求全新 clone）：
+⚠️ **不可逆历史改写** `~/sonic-buildimage`。同 §4 注意事项。可选安全 tag：`git tag pre-filter-docs 202605-wip`。
+
+1. **提交 6 个新双语文档（在 `202605-wip`）：** 在 `.gitignore` 中加入 `sonic.code-workspace`、`*.pptx`、`*.pptx.md`；只 stage 6 个新 `-en.md`/`-zh.md`（3 主题 × en/zh）；提交 `docs: add resolute migration docs bilingual`。**不要** stage 2 个删除、`.pptx`/`.pptx.md`、`sonic.code-workspace`。
+2. **可选安全 tag：** `git tag pre-filter-docs 202605-wip`
+3. **从所有历史清除 2 个旧单语文档（就地，`--force`）：**
    ```
-   git clone --branch 202605-wip /home/sheldon-qi/sonic-buildimage /work/resolute-docs
-   cd /work/resolute-docs
+   cd ~/sonic-buildimage
+   git filter-repo --force \
+     --path docs/superpowers/resolute-migration-code-review.md \
+     --path docs/superpowers/resolute-vs-migration-report.md \
+     --invert-paths
    ```
-3. **从所有历史清除 2 个旧单语文档：**
+   从每个提交的树里移除这 2 个路径；剪枝变空的提交。步骤 1 新增的 6 个双语文档（不同路径）不受影响。`origin` 被 filter-repo 删除。
+4. **重加远端 + 重命名分支 + rebase 到最新 202605：**
    ```
-   git filter-repo --path docs/superpowers/resolute-migration-code-review.md \
-                   --path docs/superpowers/resolute-vs-migration-report.md \
-                   --invert-paths
-   ```
-   从每个提交的树里移除这 2 个路径；剪枝变空的提交（当初引入单语文档的 `e38553fc2`/`145b8d9f4` "add ... (zh+en)" 提交，若只动了这些文件则被剪枝）。步骤 1 新增的 6 个双语文档（不同路径）不受影响。
-4. **创建目标分支 + rebase 到最新 202605：**
-   ```
-   git checkout -b 202605_resolute_doc
    git remote add sonic-net https://github.com/sonic-net/sonic-buildimage.git
+   git remote add canonical  git@github.com:canonical/sonic-buildimage.git
    git fetch sonic-net
+   git branch -m 202605-wip 202605_resolute_doc
    git rebase --onto sonic-net/202605 77cfa809d 202605_resolute_doc
    ```
    预期 ~0 冲突（文档不碰 submodule 指针或 build 文件）。
-5. **添加 canonical 远端并推送：**
-   ```
-   git remote add canonical git@github.com:canonical/sonic-buildimage.git
-   git push canonical 202605_resolute_doc
-   ```
+5. **推送：** `git push canonical 202605_resolute_doc`
 
 ## 6. 子模块分支 —— `202605_resolute`（×14）
 
@@ -205,26 +203,44 @@ git rebase --onto <202605-lock> <build-parent> resolute
 | canonical/sonic-stp（fork） | `416491c` | 否 |
 | canonical/sonic-wpa-supplicant（fork） | `7f39eb03f` | 否 |
 
-## 7. `.gitmodules` URL 改写
+## 7. `.gitmodules` URL 改写 + 子模块工作目录对齐
 
-子模块分支推上去后，超仓库构建分支 `202605_resolute` 必须把 gitlink 指向 canonical，而非 sonic-net。在全新超仓库 clone（§4）里，**步骤 5 rebase 之后**：
+子模块分支推上去后（§6.2），超仓库构建分支 `202605_resolute` 必须把 gitlink 指向 canonical，而非 sonic-net。**就地**在 `~/sonic-buildimage-resolute`（§4 步骤 6 后已在 `202605_resolute`）上做，§4 步骤 5 rebase 之后：
 
 1. **改写 `.gitmodules`**——对 14 个子模块，把 `url = https://github.com/sonic-net/<repo>.git` 改为 `git@github.com:canonical/<repo>.git`。用 `git config -f .gitmodules submodule.<path>.url <new>`（或 sed）。
 2. **同步 config：** `git submodule sync`（把 `.gitmodules` URL 传播到 `.git/config`）。
-3. **提交：** `git commit -am "build: point submodules at canonical resolute branches"`。
-4. **重新推送超仓库构建分支：** `git push canonical 202605_resolute --force-with-lease`（force-with-lease 因为这改写了刚推上去的 tip）。
+3. **对齐子模块工作目录到新 gitlink**——§4 rebase 后，gitlink 可能指向工作目录未检出的 commit（尤其 2 个 rebase 过的子模块）。把每个子模块 checkout 到其记录的 gitlink：
+   ```
+   git submodule update --recursive --no-fetch   # 用本地子模块 commit
+   ```
+   对 2 个 rebase 过的子模块（dash-ha、sairedis），这会检出 rebase 后的新 build commit。其余 12 个若已在 build commit 上则 no-op。这使 `git status` 干净——**回答"原仓库能回到正确分支吗"**：能，`~/sonic-buildimage-resolute` 最终停在 `202605_resolute`，所有子模块对齐其 gitlink。
+4. **提交 `.gitmodules` 改动：**
+   ```
+   git commit -am "build: point submodules at canonical resolute branches"
+   ```
+5. **重新推送超仓库构建分支：** `git push canonical 202605_resolute --force-with-lease`（force-with-lease 因为这改写了刚推上去的 tip）。
 
 ⚠️ 其他子模块（无 resolute 提交）仍指向 sonic-net——只有 14 个有 build 提交的迁到 canonical。
 
+### 原仓库最终状态
+| 仓库 | 执行后分支 | HEAD 对齐 |
+|---|---|---|
+| `~/sonic-buildimage-resolute` | `202605_resolute`（从 `resolute` 重命名） | canonical `202605_resolute`，子模块检出至 gitlink |
+| `~/sonic-buildimage` | `202605_resolute_doc`（从 `202605-wip` 重命名） | canonical `202605_resolute_doc` |
+| 14 个子模块工作目录 | 在各自 build commit 上（2 个 rebase 过，12 个原样） | canonical `<repo>` `202605_resolute` |
+
+两个原仓库现在和 canonical 同分支名——以后提交直接推，不再 re-filter。
+
 ## 8. 风险与缓解
 
-- **R1 filter-repo 重写构建分支所有哈希** → 原始提交安全保存在 `~/sonic-buildimage-resolute`；全新 clone 用完即弃。
+- **R1 ⚠️ 不可逆就地历史改写** —— `filter-repo --force` 直接改写 `~/sonic-buildimage-resolute` 和 `~/sonic-buildimage`，永久改变所有提交哈希并删除 `origin`。缓解：改写前可选安全 tag（`pre-filter-resolute`、`pre-filter-docs`）；canonical 推上去的分支成为持久副本。**filter-repo 每个 repo 只跑一次**——以后提交落在重命名后的分支上，直接推，不再 re-filter。
 - **R2 gitlink 冲突（`sonic-dash-ha`、`sonic-sairedis`）** → 通过在超仓库 rebase **之前**把各子模块 `build:` 提交 rebase 到其 202605 gitlink lock（§6.1）来解决；超仓库 gitlink 随后指向新 rebase 后的 build commit（§4 步骤 5）。`dhcpmon`（无 resolute build 提交）取 202605 的指针。
 - **R3 canonical `admin=False`** → 不能改设置/保护，但能推新分支。新分支名默认无保护规则。
 - **R4 `.gitmodules` 改写改写超仓库 tip** → 重新推送用 `--force-with-lease`；只影响超仓库构建分支，且只一次。
 - **R5 fork 到 org** —— xdqi 有 org 级建 repo 权限（用户已确认），所以 7 个缺失 repo 的 `gh repo fork --org canonical` 预期能成。仍先试一个 fork 作 sanity check。
 - **R6 已存在的 7 个 canonical repo 是分叉的** → 它们陈旧的 `master`/`202012` 等分支不受影响。只新增 `202605_resolute` 分支。同事 fetch 子模块时拿到 resolute 提交 + 其完整 sonic-net 祖先（在新分支上完整可达）。
 - **R7 子模块 rebase 冲突** —— 把 `b336da3`（dash-ha，Cargo.lock）和 `68da16e5`（sairedis，SAI/Doxyfile）rebase 到新 202605 lock 可能遇冲突；两者都小（1 和 3 文件）。按 build 提交意图解决；rebase 后的结果即推送内容。
+- **R8 rebase 后子模块工作目录错位** —— 超仓库 gitlink 指向新 commit，但工作目录滞后。由 §7 步骤 3 `git submodule update --recursive --no-fetch` 缓解；推送前验证 `git status` 干净。
 
 ## 9. 范围外
 
@@ -240,4 +256,5 @@ git rebase --onto <202605-lock> <build-parent> resolute
 - 超仓库文档：`git ls-tree -r 202605_resolute_doc --name-only | grep superpowers` → 双语 `.md` 存在；**无** `.pptx`/`.pptx.md`。
 - 超仓库 `.gitmodules`：14 个 resolute 子模块指向 `canonical/`；其余仍 `sonic-net/`。
 - 14 个子模块各：`git ls-remote canonical refs/heads/202605_resolute` → 非空，sha 与 build 提交一致。
+- **原仓库对齐：** `~/sonic-buildimage-resolute` HEAD 在 `202605_resolute`，`~/sonic-buildimage` HEAD 在 `202605_resolute_doc`；`git -C ~/sonic-buildimage-resolute status` 干净（§7 步骤 3 后无 dirty 子模块）。
 - 分支可见于 `github.com/canonical/sonic-buildimage/tree/202605_resolute`、`/tree/202605_resolute_doc`，及各 `canonical/<子模块>/tree/202605_resolute`。
