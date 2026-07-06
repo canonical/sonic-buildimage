@@ -134,3 +134,6 @@ apt-retries-count
 sonic.code-workspace
 *.pptx
 *.pptx.md
+
+# Superpowers SDD working artifacts (task briefs/reviews/ledger) — local only
+.superpowers/
