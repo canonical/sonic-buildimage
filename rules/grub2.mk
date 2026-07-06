@@ -51,6 +51,16 @@ GRUB_EFI_ARM64_BIN = grub-efi-arm64-bin_$(GRUB2_UNSIGNED_VERSION)_$(CONFIGURED_A
 $(eval $(call add_derived_package,$(GRUB_EFI_ARM64),$(GRUB_EFI_ARM64_BIN)))
 endif
 
+# Arch-neutral main EFI deb from src:grub2-unsigned. Its derived -bin package is
+# consumed by build_debian.sh (GRUB_PKGS cp into fsroot). Trixie got grub-efi-amd64-bin
+# free as a derived package of grub2-common; Ubuntu resolute split it into
+# src:grub2-unsigned, so rfs/installer prereqs in slave.mk must list it explicitly.
+ifeq ($(CONFIGURED_ARCH),amd64)
+GRUB_EFI_MAIN = $(GRUB_EFI_AMD64)
+else ifeq ($(CONFIGURED_ARCH),arm64)
+GRUB_EFI_MAIN = $(GRUB_EFI_ARM64)
+endif
+
 # The .c, .cpp, .h & .hpp files under src/{$DBG_SRC_ARCHIVE list}
 # are archived into debug one image to facilitate debugging.
 #
