@@ -29,7 +29,7 @@
 | 仓库 | 分支 | 领先 merge-base | 备注 |
 |---|---|---|---|
 | `~/sonic-buildimage-resolute` | `resolute` | **71 个提交** | 5 个碰 `docs/superpowers/`；66 个纯 build。最新提交 `2d1fc1b4f` drop boost 1.88 适配 → boost 1.83 baseline。Dockerfile.j2 改动**已提交**。 |
-| `~/sonic-buildimage` | `202605-wip` | 7 个提交（+1 spec） | 全是 docs。待重组：删 2 个旧的单语文档，新增 6 个双语 `.md`（3 主题 × en/zh）。`.pptx`、`.pptx.md`、`sonic.code-workspace` 走 gitignore，不提交。 |
+| `~/sonic-buildimage` | `202605-wip` | 7 个提交（+1 spec） | 全是 docs。2 个旧单语文档待 filter-repo 清除（§5）；6 个新双语 `.md`（3 主题 × en/zh）待提交。`.pptx`、`.pptx.md`、`sonic.code-workspace` 走 gitignore，不提交。 |
 
 `resolute` 分支里已提交的 superpowers 路径（5 个文件，全在 `docs/superpowers/` 下）：
 - `plans/done-bar-status.txt`、`plans/fips-status.txt`
@@ -74,7 +74,7 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 
 | # | 决策点 | 选择 | 理由 |
 |---|---|---|---|
-| D1 | rebase base（超仓库） | sonic-net 最新 `202605`（`9c84048a4`） | 用户说"最新 202605"；3 个上游 bump 无害；2 个机械性 gitlink 冲突。 |
+| D1 | rebase base（超仓库） | sonic-net 最新 `202605`（`9c84048a4`） | 用户说"最新 202605"；该 tree 的 gitlink 定义了子模块 base lock（D9）。3 个上游 bump 无害；2 个 gitlink 冲突（`sonic-dash-ha`、`sonic-sairedis`）通过在超仓库 rebase **之前**把这些子模块 rebase 到各自 lock（§6.1）解决——而非接受陈旧指针。 |
 | D2 | docs 清理工具 | `git filter-repo --path docs/superpowers --invert-paths` | 5 个 docs 提交与 66 个 build 提交交错；按路径清理是唯一干净做法；从每个提交的树里抹掉该路径。 |
 | D3 | 超仓库工作区模型 | 全新非递归 clone | `filter-repo` 拒绝非全新 clone（不加 `--force`），且删 `origin`；原仓库 `~/sonic-buildimage-resolute`（16 子模块 + boost 工作）不能动。 |
 | D4 | `.pptx`/`.pptx.md` | gitignore，不提交 | 生成产物；用户 2026-07-06 决定。仅提交双语 `.md`。 |
@@ -118,19 +118,29 @@ boost 1.88→1.83 的 revert 提交 `2d1fc1b4f` drop 了 linkmgrd 的 `io_servic
 
 ## 5. 超仓库文档分支 —— `202605_resolute_doc`
 
-步骤在 `~/sonic-buildimage`（分支 `202605-wip`）执行。无需 filter-repo。
+用 `filter-repo`（和构建分支一致）把 2 个旧的单语文档从历史里抹掉，只留 6 个新增双语 `.md`——无需"reorg 删除" commit。
 
-1. **gitignore：** 在 `.gitignore` 中加入 `sonic.code-workspace`、`*.pptx`、`*.pptx.md`。
-2. **提交 docs 重组：** 只 stage 2 个删除 + 6 个新双语 `.md`；提交 `docs: reorganize resolute migration docs to bilingual`。**不要** stage `.pptx`/`.pptx.md`/`sonic.code-workspace`。
-3. **创建目标分支**（`202605-wip` 保持不动，作为 rebase 前备份）：
+1. **在 `~/sonic-buildimage`（`202605-wip`）提交 6 个新增双语文档：** 在 `.gitignore` 中加入 `sonic.code-workspace`、`*.pptx`、`*.pptx.md`；只 stage 6 个新 `-en.md`/`-zh.md`（3 主题 × en/zh）；提交 `docs: add resolute migration docs bilingual`。**不要** stage 2 个删除、`.pptx`/`.pptx.md`、`sonic.code-workspace`。（`202605-wip` 前进 1 个提交；仍作本地备份。）
+2. **全新非递归 clone**（filter-repo 要求全新 clone）：
+   ```
+   git clone --branch 202605-wip /home/sheldon-qi/sonic-buildimage /work/resolute-docs
+   cd /work/resolute-docs
+   ```
+3. **从所有历史清除 2 个旧单语文档：**
+   ```
+   git filter-repo --path docs/superpowers/resolute-migration-code-review.md \
+                   --path docs/superpowers/resolute-vs-migration-report.md \
+                   --invert-paths
+   ```
+   从每个提交的树里移除这 2 个路径；剪枝变空的提交（当初引入单语文档的 `e38553fc2`/`145b8d9f4` "add ... (zh+en)" 提交，若只动了这些文件则被剪枝）。步骤 1 新增的 6 个双语文档（不同路径）不受影响。
+4. **创建目标分支 + rebase 到最新 202605：**
    ```
    git checkout -b 202605_resolute_doc
+   git remote add sonic-net https://github.com/sonic-net/sonic-buildimage.git
+   git fetch sonic-net
+   git rebase --onto sonic-net/202605 77cfa809d 202605_resolute_doc
    ```
-4. **rebase 到最新 202605：**
-   ```
-   git rebase --onto origin/202605 77cfa809d 202605_resolute_doc
-   ```
-   主仓库 `origin` = sonic-net（SSH），已在 `9c84048a4`。预期 ~0 冲突。
+   预期 ~0 冲突（文档不碰 submodule 指针或 build 文件）。
 5. **添加 canonical 远端并推送：**
    ```
    git remote add canonical git@github.com:canonical/sonic-buildimage.git

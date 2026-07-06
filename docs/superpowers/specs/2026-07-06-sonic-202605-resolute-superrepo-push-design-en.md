@@ -29,7 +29,7 @@ Both super branches rebased onto **latest upstream `202605`** (`sonic-net/sonic-
 | Repo | Branch | Ahead of merge-base | Notes |
 |---|---|---|---|
 | `~/sonic-buildimage-resolute` | `resolute` | **71 commits** | 5 touch `docs/superpowers/`; 66 pure build. Latest commit `2d1fc1b4f` drops boost 1.88 adaptation → boost 1.83 baseline. Dockerfile.j2 change **already committed**. |
-| `~/sonic-buildimage` | `202605-wip` | 7 commits (+1 spec) | All docs-only. Pending reorg: delete 2 old single-language docs, add 6 bilingual `.md` (3 topics × en/zh). `.pptx`, `.pptx.md`, `sonic.code-workspace` gitignored, not committed. |
+| `~/sonic-buildimage` | `202605-wip` | 7 commits (+1 spec) | All docs-only. 2 old single-language docs to be scrubbed via filter-repo (§5); 6 new bilingual `.md` (3 topics × en/zh) to commit. `.pptx`, `.pptx.md`, `sonic.code-workspace` gitignored, not committed. |
 
 Superpowers paths committed in the `resolute` branch (5 files, all under `docs/superpowers/`):
 - `plans/done-bar-status.txt`, `plans/fips-status.txt`
@@ -74,7 +74,7 @@ Boost 1.88→1.83 revert commit `2d1fc1b4f` dropped the linkmgrd `io_service→i
 
 | # | Decision | Choice | Rationale |
 |---|---|---|---|
-| D1 | Rebase base (super) | sonic-net latest `202605` (`9c84048a4`) | User said "latest 202605"; 3 upstream bumps harmless; 2 mechanical gitlink conflicts. |
+| D1 | Rebase base (super) | sonic-net latest `202605` (`9c84048a4`) | User said "latest 202605"; this tree's gitlinks define the submodule base locks (D9). 3 upstream bumps harmless; the 2 gitlink conflicts (`sonic-dash-ha`, `sonic-sairedis`) are resolved by rebasing those submodules onto their locks (§6.1) before the super rebase — not by accepting the stale pointer. |
 | D2 | Docs scrubbing tool | `git filter-repo --path docs/superpowers --invert-paths` | 5 docs commits interleaved with 66 build commits; path scrub is the only clean option; removes path from every commit's tree. |
 | D3 | Super workspace model | fresh non-recursive clone | `filter-repo` refuses non-fresh clones without `--force` and removes `origin`; original `~/sonic-buildimage-resolute` (16 submodules + boost work) must not be touched. |
 | D4 | `.pptx`/`.pptx.md` | gitignore, not committed | Generated artifacts; user decision 2026-07-06. Only bilingual `.md` committed. |
@@ -118,19 +118,29 @@ All steps in a **fresh clone**; original `~/sonic-buildimage-resolute` never mod
 
 ## 5. Super docs branch — `202605_resolute_doc`
 
-Steps in `~/sonic-buildimage` (branch `202605-wip`). No filter-repo.
+Uses `filter-repo` (like the build branch) to scrub the 2 old single-language docs from history, leaving only the 6 new bilingual `.md` files — no "reorg delete" commit.
 
-1. **Gitignore:** add `sonic.code-workspace`, `*.pptx`, `*.pptx.md` to `.gitignore`.
-2. **Commit docs reorg:** stage 2 deletions + 6 new bilingual `.md` only; commit `docs: reorganize resolute migration docs to bilingual`. Do **not** stage `.pptx`/`.pptx.md`/`sonic.code-workspace`.
-3. **Create target branch** (leaves `202605-wip` as pre-rebase backup):
+1. **Commit the 6 new bilingual docs in `~/sonic-buildimage` (`202605-wip`):** add `sonic.code-workspace`, `*.pptx`, `*.pptx.md` to `.gitignore`; stage the 6 new `-en.md`/`-zh.md` files (3 topics × en/zh) only; commit `docs: add resolute migration docs bilingual`. Do **not** stage the 2 deletions, `.pptx`/`.pptx.md`, or `sonic.code-workspace`. (`202605-wip` advances by 1 commit; it remains the local backup.)
+2. **Fresh non-recursive clone** (filter-repo requires fresh clone):
+   ```
+   git clone --branch 202605-wip /home/sheldon-qi/sonic-buildimage /work/resolute-docs
+   cd /work/resolute-docs
+   ```
+3. **Scrub the 2 old single-language docs from all history:**
+   ```
+   git filter-repo --path docs/superpowers/resolute-migration-code-review.md \
+                   --path docs/superpowers/resolute-vs-migration-report.md \
+                   --invert-paths
+   ```
+   Removes these 2 paths from every commit's tree; prunes commits that become empty (the original `e38553fc2`/`145b8d9f4` "add ... (zh+en)" commits that introduced the single-language files, if they touched only those). The 6 new bilingual docs (added in step 1, different paths) are untouched.
+4. **Create target branch + rebase onto latest 202605:**
    ```
    git checkout -b 202605_resolute_doc
+   git remote add sonic-net https://github.com/sonic-net/sonic-buildimage.git
+   git fetch sonic-net
+   git rebase --onto sonic-net/202605 77cfa809d 202605_resolute_doc
    ```
-4. **Rebase onto latest 202605:**
-   ```
-   git rebase --onto origin/202605 77cfa809d 202605_resolute_doc
-   ```
-   Primary `origin` = sonic-net (SSH), already at `9c84048a4`. Expected ~0 conflicts.
+   Expected ~0 conflicts (docs don't touch submodule pointers or build files).
 5. **Add canonical remote and push:**
    ```
    git remote add canonical git@github.com:canonical/sonic-buildimage.git
