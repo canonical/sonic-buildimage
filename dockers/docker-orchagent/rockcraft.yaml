@@ -1,0 +1,394 @@
+name: docker-orchagent
+summary: SONiC orchagent container
+description: A Chiselled rock for SONiC orchagent container
+version: "1.0.0"
+
+# Use a "bare" base for an even smaller rock
+base: ubuntu@24.04 
+
+# Meeting requirement R1 by making sure the rock builds on Jammy
+build-base: ubuntu@24.04
+
+license: Apache-2.0
+
+# Target architecture is amd64
+platforms:
+  amd64:  # Make sure this value matches your computer's architecture
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  init:
+    command: /usr/bin/rock-orchagent-init.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+
+  gearsyncd:
+    command: /usr/bin/gearsyncd -p /usr/share/sonic/hwsku/gearbox_config.json
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  portsyncd:
+    command: /usr/bin/portsyncd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  orchagent:
+    command: /usr/bin/orchagent.sh
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+
+  coppmgrd:
+    command: /usr/bin/coppmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  swssconfig:
+    command: /usr/bin/swssconfig.sh
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  enable_counters:
+    # Don't restart .py even if it fails
+    command: /usr/bin/enable_counters.py
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+
+  neighsyncd:
+    command: /usr/bin/neighsyncd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  vlanmgrd:
+    command: /usr/bin/vlanmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  intfmgrd:
+    command: /usr/bin/intfmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  portmgrd:
+    command: /usr/bin/portmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  fabricmgrd:
+    command: /usr/bin/fabricmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  buffermgrd:
+    command: /usr/bin/buffermgrd.sh
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  vrfmgrd:
+    command: /usr/bin/vrfmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  nbrmgrd:
+    command: /usr/bin/nbrmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  vxlanmgrd:
+    command: /usr/bin/vxlanmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  tunnelmgrd:
+    command: /usr/bin/tunnelmgrd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+  fdbsyncd:
+    command: /usr/bin/fdbsyncd
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-orchagent"
+      DISTRO: "noble"
+
+  arp_update:
+    command: /usr/bin/arp_update
+    override: replace
+  ndppd:
+    command: /usr/sbin/ndppd
+    override: replace
+  tunnel_packet_handler:
+    command: /usr/bin/tunnel_packet_handler.py
+    override: replace
+
+# FROM docker-swss-layer-noble 
+
+parts:
+  install-libyang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang_1.0.73_amd64.deb
+
+  install-libswsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libswsscommon_1.0.0_amd64.deb
+
+  install-libyang-cpp_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang-cpp_1.0.73_amd64.deb
+
+  install-python3-yang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-yang_1.0.73_amd64.deb 
+
+  install-python3-swsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-swsscommon_1.0.0_amd64.deb
+
+  install-sonic-db-cli_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-db-cli_1.0.0_amd64.deb
+
+  install-sonic-eventd_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
+
+  # docker-swss-layer-noble packages
+  install-swss_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/swss_1.0.0_amd64.deb
+
+  install-libsairedis_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsairedis_1.0.0_amd64.deb
+
+  install-libsaimetadata_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsaimetadata_1.0.0_amd64.deb
+
+  install-libteam5_1.31-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libteam5_1.31-1_amd64.deb
+
+  install-libteamdctl0_1.31-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libteamdctl0_1.31-1_amd64.deb
+
+  install-libdashapi_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libdashapi_1.0.0_amd64.deb
+
+  install-sonic-rsyslog-plugin_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-rsyslog-plugin_1.0.0-0_amd64.deb
+
+  install-socat:
+    plugin: dump
+    source-type: deb
+    source: ./debs/socat_1.7.4.1-3_amd64.deb
+
+  install-packages:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - python3
+      - libpython3.12
+      # package dependencies
+      - libhiredis1.1.0
+      - libzmq5
+      - libboost-serialization1.83.0
+      - libuuid1
+      # from docker-swss-layer-noble
+      - iputils-ping
+      # swss dependencies
+      - ifupdown
+      - arping
+      - iproute2
+      - ndisc6
+      - tcpdump
+      - libelf1
+      - libmnl0
+      - bridge-utils
+      - conntrack
+      - ndppd
+      - pciutils
+      - python3-netifaces
+      - jq
+      - libpcre3
+      - liblua5.1-0
+      - libjansson4
+      # libnl-3-200
+      - libnl-3-200
+      - libnl-route-3-200
+      - libnl-genl-3-200
+      - libnl-nf-3-200
+      - libnl-cli-3-200
+      # protobuf
+      - libprotobuf32
+      - libprotobuf-lite32
+      - python3-protobuf
+      - redis-server
+
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # inherited from docker-config-engine-noble
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # supervisor
+      - supervisor==4.2.5
+      - supervisord-dependent-startup==1.4.0
+      # from docker-orchagent
+      - jinjanator
+      - pyroute2==0.5.14
+      - lxml
+      #- netifaces==0.10.9
+      - scapy==2.5.0
+
+    stage-packages:
+      - python3-venv
+    organize:
+      bin/supervisord: usr/local/bin/supervisord
+
+  install-common-files:
+    plugin: nil
+    source: .
+    source-type: local
+    after: [install-packages, install-python]
+    override-prime: |
+      # common - manifest.json
+      cp ${CRAFT_PROJECT_DIR}/manifest.json              ./ 
+
+      # common - templates&scripts (from docker-config-engine-noble
+      mkdir -p usr/share/sonic/templates/
+      mkdir -p usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+ 
+      # common - rsyslog
+      mkdir -p etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
+      # orchagent specific rsyslog
+      cp ${CRAFT_PROJECT_DIR}/swss_events.conf           etc/rsyslog.d/
+
+      # common - supervisor config files
+      mkdir -p etc/supervisor/conf.d
+      mkdir -p var/log/supervisor
+
+      cp ${CRAFT_PROJECT_DIR}/files/supervisord.conf     etc/supervisor/
+
+      # common - supervisor related
+      mkdir -p usr/share/sonic/templates
+      cp ${CRAFT_PROJECT_DIR}/supervisord.conf.j2        usr/share/sonic/templates/
+      # orchagent uses critical_processes.j2
+      #cp ${CRAFT_PROJECT_DIR}/critical_processes      etc/supervisor/
+
+      mkdir -p etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
+
+      # docker-orchagent specifc
+      mkdir -p usr/bin
+      cp ${CRAFT_PROJECT_DIR}/docker-orchagent-init.sh usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock-orchagent-init.sh   usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/arp_update         usr/bin
+      cp ${CRAFT_PROJECT_DIR}/enable_counters.py       usr/bin
+      cp ${CRAFT_PROJECT_DIR}/tunnel_packet_handler.py usr/bin
+      cp ${CRAFT_PROJECT_DIR}/orchagent.sh             usr/bin
+      cp ${CRAFT_PROJECT_DIR}/swssconfig.sh            usr/bin
+      cp ${CRAFT_PROJECT_DIR}/buffermgrd.sh            usr/bin
+
+      cp ${CRAFT_PROJECT_DIR}/arp_update.conf            usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/arp_update_vars.j2   usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/ndppd.conf                 usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/tunnel_packet_handler.conf usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/switch.json.j2             usr/share/sonic/templates/ 
+      cp ${CRAFT_PROJECT_DIR}/vxlan.json.j2              usr/share/sonic/templates/  
+      cp ${CRAFT_PROJECT_DIR}/ipinip.json.j2             usr/share/sonic/templates/  
+      cp ${CRAFT_PROJECT_DIR}/ports.json.j2              usr/share/sonic/templates/  
+      cp ${CRAFT_PROJECT_DIR}/vlan_vars.j2               usr/share/sonic/templates/  
+      cp ${CRAFT_PROJECT_DIR}/ndppd.conf.j2              usr/share/sonic/templates/ 
+      cp ${CRAFT_PROJECT_DIR}/critical_processes.j2      usr/share/sonic/templates/ 
+      cp ${CRAFT_PROJECT_DIR}/watchdog_processes.j2      usr/share/sonic/templates/ 
+      cp ${CRAFT_PROJECT_DIR}/supervisord.conf.j2        usr/share/sonic/templates/ 
+      cp ${CRAFT_PROJECT_DIR}/wait_for_link.sh.j2        usr/share/sonic/templates/  
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
+
+  add-user:
+    plugin: nil
+    after: [install-common-files]
+
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+
+    prime:
+      - etc/passwd
+      - etc/group
