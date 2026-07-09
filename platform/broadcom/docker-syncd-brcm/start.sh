@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+pebble add syslog-layer --combine $LAYER_FILE
+pebble replan
+
 HWSKU_DIR=/usr/share/sonic/hwsku
 
 SYNCD_SOCKET_FILE=/var/run/sswsyncd/sswsyncd.socket
@@ -29,3 +33,6 @@ else
         cp $HWSKU_DIR/sai.profile /etc/sai.d/sai.profile
     fi
 fi
+
+pebble start syncd
+pebble start ledinit
