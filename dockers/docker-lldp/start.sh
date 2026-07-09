@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+source /usr/share/sonic/templates/envs
+
+LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+pebble add syslog-layer --combine $LAYER_FILE
+pebble replan
+
 CFGGEN_PARAMS=" \
     -d \
     -a "{\"namespace_id\":\"$NAMESPACE_ID\"}" \
@@ -27,3 +34,6 @@ rm -f /var/run/lldpd.socket
 TZ=$(cat /etc/timezone)
 rm -rf /etc/localtime
 ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+
+pebble start lldpd
+pebble start waitfor_lldp_ready

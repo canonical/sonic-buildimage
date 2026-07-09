@@ -1,0 +1,148 @@
+name: docker-database
+summary: SONiC database container
+description: A Chiselled rock for SONiC database container
+version: "1.0.0"
+
+base: bare
+build-base: ubuntu@24.04
+license: Apache-2.0
+
+# Target architecture is amd64
+platforms:
+  amd64:
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  init:
+    command: rock-database-init.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-database"
+      DISTRO: "noble"
+  redis:
+    command: bash -c "{ [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-database"
+      DISTRO: "noble"
+  flushdb:
+    command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-database"
+      DISTRO: "noble"
+
+parts:
+  install-socat:
+    plugin: dump
+    source-type: deb
+    source: ./debs/socat_1.7.4.1-3_amd64.deb
+  setup-database:
+    plugin: dump
+    source: .
+    override-build: |
+        craftctl default
+
+        # Install Debs
+        dpkg -x debs/libyang_1.0.73_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libswsscommon_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libyang-cpp_1.0.73_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/python3-yang_1.0.73_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/python3-swsscommon_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/sonic-db-cli_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/sonic-eventd_1.0.0-0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libdashapi_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+
+        # Install python packages
+        pip3 install --upgrade -t ${CRAFT_PART_INSTALL}/usr/lib/python3.12/dist-packages/ \
+          ./python-wheels/sonic_py_common-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl \
+          jinjanator \
+          click \
+          lxml
+
+    build-packages:
+      - git
+    organize:
+      database_config.json.j2: usr/share/sonic/templates/database_config.json.j2
+      database_global.json.j2: usr/share/sonic/templates/database_global.json.j2
+      files/syslog-layer.yaml: usr/share/sonic/templates/
+      rock-database-init.sh: usr/local/bin/rock-database-init.sh
+      files/00-load-omprog.conf: etc/rsyslog.d/00-load-omprog.conf
+      files/container_startup.py: usr/share/sonic/scripts/container_startup.py
+      files/readiness_probe.sh: usr/bin/readiness_probe.sh
+      files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
+      files/sysctl-net.conf: etc/sysctl.d/sysctl-net.conf
+      files/update_chassisdb_config: usr/local/bin/update_chassisdb_config
+      flush_unused_database: usr/local/bin/flush_unused_database
+    stage:
+      - bin/
+      - etc/
+      - home/
+      - lib
+      - lib64
+      - root/
+      - sbin/
+      - tmp/
+      - var/
+      - usr/
+      - -usr/share/doc
+      - -usr/share/man
+    stage-packages:
+      - base-files_release-info
+      - base-files_home
+      - base-files_tmp
+      - base-passwd_data
+      - bash_bins
+      - procps_bins
+      - coreutils_bins
+      - gawk_bins
+      - rsyslog_bins
+      - redis-server_bins
+      - iproute2_bins
+      - libhiredis1.1.0_libs
+      - libzmq5_libs
+      - libboost-serialization1.83.0_libs
+      - libpcre3_libs
+      - libnl-cli-3-200_cls
+      - libnl-cli-3-200_qdisc
+      - libuuid1_libs
+      - python3.12_standard
+      - libpython3.12t64_libs
+    override-prime: |
+      craftctl default
+
+      # Create symlinks
+      ln -sf /usr/bin/gawk usr/bin/awk
+      ln -sf /usr/bin/python3.12 usr/bin/python3
+
+      # Move python bins
+      mv usr/lib/python3.12/dist-packages/bin/* usr/bin/
+
+      # Copy tz data from build-base
+      cp /etc/timezone etc
+      cp /etc/localtime etc
+
+      # Make update script executable
+      chmod +x usr/local/bin/update_chassisdb_config
+      
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
+
+      # Overwrite redis config files
+      cp ${CRAFT_PROJECT_DIR}/redis.conf etc/redis/
+
+      # Copy manifest to root
+      cp ${CRAFT_PROJECT_DIR}/manifest.json .

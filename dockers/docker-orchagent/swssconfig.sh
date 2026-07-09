@@ -64,3 +64,37 @@ for file in $SWSSCONFIG_ARGS; do
     swssconfig /etc/swss/config.d/$file
     sleep 1
 done
+
+/usr/bin/restore_neighbors.py
+
+pebble start enable_counters
+
+SWITCH_TYPE=${SWITCH_TYPE:-`sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'switch_type'`}
+echo switch_type=$SWITCH_TYPE
+if [[ $SWITCH_TYPE != "fabric" ]]; then
+    pebble start coppmgrd
+    pebble start neighsyncd
+    pebble start vlanmgrd
+    pebble start intfmgrd
+    pebble start portmgrd
+    pebble start fabricmgrd
+    pebble start buffermgrd
+    pebble start vrfmgrd
+    pebble start nbrmgrd
+    pebble start vxlanmgrd
+    pebble start tunnelmgrd
+    pebble start fdbsyncd
+fi
+
+if [[ -s /tmp/vlan ]] || [[ "$SWITCH_TYPE" == "chassis-packet" ]]; then
+    pebble start arp_update
+fi
+if [ -s /tmp/vlan ]; then
+    /usr/bin/wait_for_link.sh
+    pebble start ndppd
+fi
+
+SUBTYPE=$(sonic-db-cli -s CONFIG_DB HGET 'DEVICE_METADATA|localhost' 'subtype')
+if [ "$SUBTYPE" == "DualToR" ]; then
+    pebble start tunnel_packet_handler
+fi

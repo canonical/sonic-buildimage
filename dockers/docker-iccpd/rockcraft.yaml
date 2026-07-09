@@ -1,0 +1,199 @@
+name: docker-iccpd
+summary: SONiC iccpd container
+description: A Chiselled rock for SONiC iccpd container
+version: "1.0.0"
+
+# Use a "bare" base for an even smaller rock
+base: ubuntu@24.04 
+
+# Meeting requirement R1 by making sure the rock builds on Jammy
+build-base: ubuntu@24.04
+
+license: Apache-2.0
+
+# Target architecture is amd64
+platforms:
+  amd64:  # Make sure this value matches your computer's architecture
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  start:
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-iccpd"
+      DISTRO: "noble"
+  iccpd:
+    command: /usr/bin/iccpd.sh
+    override: replace
+
+
+parts:
+  # FROM docker-swss-layer-noble 
+  install-libyang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang_1.0.73_amd64.deb
+
+  install-libswsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libswsscommon_1.0.0_amd64.deb
+
+  install-libyang-cpp_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang-cpp_1.0.73_amd64.deb
+
+  install-python3-yang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-yang_1.0.73_amd64.deb 
+
+  install-python3-swsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-swsscommon_1.0.0_amd64.deb
+
+  install-sonic-db-cli_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-db-cli_1.0.0_amd64.deb
+
+  install-sonic-eventd_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
+
+  install-libdashapi_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libdashapi_1.0.0_amd64.deb
+
+  install-swss_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/swss_1.0.0_amd64.deb
+
+  install-socat:
+    plugin: dump
+    source-type: deb
+    source: ./debs/socat_1.7.4.1-3_amd64.deb
+
+  install-libsairedis_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsairedis_1.0.0_amd64.deb
+
+  install-libsaimetadata_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsaimetadata_1.0.0_amd64.deb
+
+  install-libteam5_1.31-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libteam5_1.31-1_amd64.deb
+
+  install-libteamdctl0_1.31-1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libteamdctl0_1.31-1_amd64.deb
+
+  # iccpd packages
+  install-iccpd_0.0.5_amd64:
+    plugin: dump
+    source-type: deb
+    source: debs/iccpd_0.0.5_amd64.deb
+
+  install-packages:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - python3
+      - libpython3.12
+      # package dependencies
+      - libhiredis1.1.0
+      - libzmq5
+      - libboost-serialization1.83.0
+      - libuuid1
+      - libpcre3
+      - liblua5.1-0
+      - libjansson4
+      # from docker-swss-layer-noble
+      - iputils-ping
+      # libnl-3-200
+      - libnl-3-200
+      - libnl-route-3-200
+      - libnl-genl-3-200
+      - libnl-nf-3-200
+      - libnl-cli-3-200
+      - ebtables
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # inherited from docker-config-engine-noble
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      - lxml
+      - setuptools
+    stage-packages:
+      - python3-venv
+
+  install-common-files:
+    plugin: nil
+    source: .
+    source-type: local
+    after: [install-packages, install-python]
+    override-prime: |
+      # common - manifest.json
+      cp ${CRAFT_PROJECT_DIR}/manifest.json              ./
+
+      # common - templates&scripts
+      mkdir -p usr/share/sonic/templates/
+      mkdir -p usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml    usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+
+      # common - rsyslog
+      mkdir -p etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
+
+      # common - supervisor related
+      mkdir -p usr/share/sonic/templates
+      mkdir -p etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
+
+      # docker-iccpd specifc
+      mkdir -p usr/bin
+      cp ${CRAFT_PROJECT_DIR}/start.sh                 usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/iccpd.sh                 usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/iccpd.j2                 usr/share/sonic/templates/
+      chmod +x usr/bin/start.sh usr/bin/iccpd.sh
+
+  add-user:
+    plugin: nil
+    after: [install-common-files]
+
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+
+    prime:
+      - etc/passwd
+      - etc/group

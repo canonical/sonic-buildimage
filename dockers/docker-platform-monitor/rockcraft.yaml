@@ -1,0 +1,298 @@
+name: docker-platform-monitor
+summary: SONiC platform-monitor container
+description: A Chiselled rock for SONiC platform-monitor container
+version: "1.0.0"
+
+# Use a "bare" base for an even smaller rock
+base: ubuntu@24.04 
+
+# Meeting requirement R1 by making sure the rock builds on Jammy
+build-base: ubuntu@24.04
+
+license: Apache-2.0
+
+# Target architecture is amd64
+platforms:
+  amd64:  # Make sure this value matches your computer's architecture
+
+services:
+  init:
+    command: rock_init.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  chassis_db_init:
+    command: /usr/local/bin/chassis_db_init
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+  xcvrd:
+    command: python3 /usr/local/bin/xcvrd
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+  psud:
+    command: python3 /usr/local/bin/psud
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+  syseepromd:
+    command: python3 /usr/local/bin/syseepromd
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+  thermalctld:
+    command: python3 /usr/local/bin/thermalctld
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+  pcied:
+    command: /usr/local/bin/pcied
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+  stormond:
+    command: /usr/local/bin/stormond
+    override: replace
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-platform-monitor"
+      DISTRO: "noble"
+
+# For meeting requirement R2, simply don't specify any entrypoint (aka "services")
+
+parts:
+  install-libyang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang_1.0.73_amd64.deb
+
+  install-libswsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libswsscommon_1.0.0_amd64.deb
+
+  install-libyang-cpp_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libyang-cpp_1.0.73_amd64.deb
+
+  install-python3-yang_1.0.73_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-yang_1.0.73_amd64.deb 
+
+  install-python3-swsscommon_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/python3-swsscommon_1.0.0_amd64.deb
+
+  install-sonic-db-cli_1.0.0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-db-cli_1.0.0_amd64.deb
+
+  install-sonic-eventd_1.0.0-0_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sonic-eventd_1.0.0-0_amd64.deb
+
+  # docker-snmp specific packages
+  install-libsensors5_3.6.0-7.1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/libsensors5_3.6.0-7.1_amd64.deb
+
+  install-lm-sensors_3.6.0-7.1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/lm-sensors_3.6.0-7.1_amd64.deb
+
+  install-fancontrol_3.6.0-7.1_all:
+    plugin: dump
+    source-type: deb
+    source: ./debs/fancontrol_3.6.0-7.1_all.deb
+
+  install-sensord_3.6.0-7.1_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/sensord_3.6.0-7.1_amd64.deb
+
+  install-ipmitool_1.8.19-9_amd64:
+    plugin: dump
+    source-type: deb
+    source: ./debs/ipmitool_1.8.19-9_amd64.deb
+
+  install-socat:
+    plugin: dump
+    source-type: deb
+    source: ./debs/socat_1.7.4.1-3_amd64.deb
+
+  install-packages:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - python3
+      - libpython3.12
+      # package dependencies
+      - libhiredis1.1.0
+      - libzmq5
+      - libboost-serialization1.83.0
+      - libuuid1
+      - libxml2
+      - libevent-2.1-7
+      # platform-monitor
+      - librrd8
+      - dmidecode
+      - i2c-tools
+      - psmisc
+        #- python3-jsonschema
+      - libpci3
+      - iputils-ping
+      - pciutils
+      - nvme-cli
+      - ethtool
+      - smartmontools
+      - python3-netifaces
+      - libpcre3
+      # libnl-3-200
+      - libnl-3-200
+      - libnl-route-3-200
+      - libnl-genl-3-200
+      - libnl-nf-3-200
+      - libnl-cli-3-200
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # inherited from docker-config-engine-noble
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # from docker-platform-monitor
+      - ./python-wheels/sonic_platform_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_ledd-1.1-py3-none-any.whl
+      - ./python-wheels/sonic_pcied-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_psud-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_syseepromd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_thermalctld-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_xcvrd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_ycabled-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_chassisd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_stormond-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_platform_pddf_common-1.0-py3-none-any.whl
+      - jinjanator
+      # docker-platform-monitor specific packages
+      - click
+      - supervisor==4.2.5
+      - supervisord-dependent-startup==1.4.0
+      - hiredis
+      - pyyaml
+      - grpcio==1.65.1
+      - grpcio-tools==1.65.1
+      - thrift==0.13.0
+      - requests
+      - libpci
+      - psutil
+      - lxml
+    stage-packages:
+      - python3-venv
+    organize:
+      bin/supervisord: usr/local/bin/supervisord
+      bin/chassis_db_init: usr/local/bin/chassis_db_init
+      bin/psud: usr/local/bin/psud
+      bin/syseepromd: usr/local/bin/syseepromd
+      bin/stormond: usr/local/bin/stormond
+      bin/thermalctld: usr/local/bin/thermalctld
+      bin/pcied: usr/local/bin/pcied
+      bin/xcvrd: usr/local/bin/xcvrd
+
+  install-common-files:
+    plugin: nil
+    source: .
+    source-type: local
+    after: [install-packages, install-python]
+    override-prime: |
+      # common - manifest.json
+      cp ${CRAFT_PROJECT_DIR}/manifest.json              ./ 
+ 
+      # common - templates&scripts
+      mkdir -p usr/share/sonic/templates/
+      mkdir -p usr/share/sonic/scripts/
+      cp ${CRAFT_PROJECT_DIR}/files/swss_vars.j2         usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/files/readiness_probe.sh   usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/files/container_startup.py usr/share/sonic/scripts/
+
+      # common - rsyslog
+      mkdir -p etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/00-load-omprog.conf  etc/rsyslog.d/
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf         etc/
+
+      # common - supervisor config files
+      mkdir -p etc/supervisor/conf.d
+      mkdir -p var/log/supervisors
+
+      cp ${CRAFT_PROJECT_DIR}/files/supervisord.conf     etc/supervisor/
+
+      # common - supervisor related
+      mkdir -p usr/share/sonic/templates
+      cp ${CRAFT_PROJECT_DIR}/docker-pmon.supervisord.conf.j2    usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/critical_processes                 etc/supervisor/
+
+      mkdir -p etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/sysctl-net.conf               etc/sysctl.d/
+      cp ${CRAFT_PROJECT_DIR}/files/supervisor-proc-exit-listener usr/bin/
+
+      #cp ${CRAFT_PROJECT_DIR}/supervisord.conf         etc/supervisor/conf.d/
+      cp ${CRAFT_PROJECT_DIR}/files/syslog-layer.yaml   usr/share/sonic/templates/
+      cp ${CRAFT_PROJECT_DIR}/envs                      usr/share/sonic/templates/
+
+      # docker-snmp specifc
+      mkdir -p usr/bin
+
+      cp ${CRAFT_PROJECT_DIR}/docker_init.sh           usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/rock_init.sh             usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/lm-sensors.sh            usr/bin/
+      cp ${CRAFT_PROJECT_DIR}/ssd_tools/*              usr/bin/
+
+  add-user:
+    plugin: nil
+    after: [install-common-files]
+
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+
+    prime:
+      - etc/passwd
+      - etc/group
