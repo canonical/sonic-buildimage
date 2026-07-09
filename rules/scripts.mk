@@ -35,6 +35,15 @@ $(COPP_CONFIG_TEMPLATE)_PATH = files/image_config/copp
 RSYSLOG_PLUGIN_CONF_J2 = rsyslog_plugin.conf.j2
 $(RSYSLOG_PLUGIN_CONF_J2)_PATH = files/build_templates
 
+RSYSLOG_CONF = rsyslog.conf
+$(RSYSLOG_CONF)_PATH = files/rsyslog
+
+RSYSLOG_PLUGIN_OMPROG = 00-load-omprog.conf
+$(RSYSLOG_PLUGIN_OMPROG)_PATH = files/rsyslog
+
+SUPERVISOR_CONF = supervisor.conf
+$(SUPERVISOR_CONF)_PATH = files/supervisor
+
 SONIC_COPY_FILES += $(CONFIGDB_LOAD_SCRIPT) \
                     $(ARP_UPDATE_SCRIPT) \
                     $(ARP_UPDATE_VARS_TEMPLATE) \
@@ -46,4 +55,7 @@ SONIC_COPY_FILES += $(CONFIGDB_LOAD_SCRIPT) \
                     $(UPDATE_CHASSISDB_CONFIG_SCRIPT) \
                     $(SWSS_VARS_TEMPLATE) \
                     $(RSYSLOG_PLUGIN_CONF_J2) \
+		    $(RSYSLOG_CONF) \
+		    $(RSYSLOG_PLUGIN_OMPROG) \
+		    $(SUPERVISOR_CONF) \
                     $(COPP_CONFIG_TEMPLATE)
