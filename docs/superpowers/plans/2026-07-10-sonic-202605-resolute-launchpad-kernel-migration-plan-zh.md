@@ -139,8 +139,9 @@ endif
 
 export KVERSION_SHORT KVERSION KERNEL_VERSION KERNEL_ABISUFFIX KERNEL_FEATURESET KERNEL_PKGVERSION
 
-# Launchpad PPA binary pool (+files URL → 303 → launchpadlibrarian.net; curl -L follows).
-KERNEL_PPA_URL = https://launchpad.net/~canonical-kernel-team/+archive/ubuntu/bootstrap/+files
+# Launchpad PPA binary pool (ppa.launchpadcontent.net direct 200; +files 的 303 目标
+# launchpadlibrarian.net 在 build 环境不可达 —— 见 Task 0)。
+KERNEL_PPA_URL = https://ppa.launchpadcontent.net/canonical-kernel-team/bootstrap/ubuntu/pool/main/l/linux-sonic
 
 # common headers (architecture-independent, all) — MAIN_TARGET
 LINUX_HEADERS_COMMON = linux-sonic-headers-$(KERNEL_VERSION)$(KERNEL_ABISUFFIX)_$(KERNEL_PKGVERSION)_all.deb
