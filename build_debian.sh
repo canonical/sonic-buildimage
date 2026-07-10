@@ -29,7 +29,7 @@ CONFIGURED_ARCH=$([ -f .arch ] && cat .arch || echo amd64)
 ## docker engine version (with platform)
 DOCKER_VERSION=5:29.6.1-1~ubuntu.26.04~$IMAGE_DISTRO
 CONTAINERD_IO_VERSION=2.2.5-1~ubuntu.26.04~$IMAGE_DISTRO
-LINUX_KERNEL_VERSION=6.12.41+deb13
+LINUX_KERNEL_VERSION=7.0.0-1002-sonic
 
 ## Working directory to prepare the file system
 FILESYSTEM_ROOT=./fsroot
@@ -148,8 +148,8 @@ sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install pigz
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install busybox linux-base
 echo '[INFO] Install SONiC linux kernel image'
 ## Note: duplicate apt-get command to ensure every line return zero
-sudo cp $debs_path/initramfs-tools-core_*.deb $debs_path/initramfs-tools_*.deb $debs_path/linux-image-${LINUX_KERNEL_VERSION}-*_${CONFIGURED_ARCH}.deb $FILESYSTEM_ROOT
-basename_deb_packages=$(basename -a $debs_path/initramfs-tools-core_*.deb $debs_path/initramfs-tools_*.deb $debs_path/linux-image-${LINUX_KERNEL_VERSION}-*_${CONFIGURED_ARCH}.deb | sed 's,^,./,')
+sudo cp $debs_path/initramfs-tools-core_*.deb $debs_path/initramfs-tools_*.deb $debs_path/linux-image-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb $debs_path/linux-modules-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb $FILESYSTEM_ROOT
+basename_deb_packages=$(basename -a $debs_path/initramfs-tools-core_*.deb $debs_path/initramfs-tools_*.deb $debs_path/linux-image-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb $debs_path/linux-modules-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb | sed 's,^,./,')
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt -y install $basename_deb_packages
 ( cd $FILESYSTEM_ROOT; sudo rm -f $basename_deb_packages )
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install acl
@@ -770,7 +770,7 @@ if [[ $SECURE_UPGRADE_MODE == 'dev' || $SECURE_UPGRADE_MODE == "prod" ]]; then
                                                              -k ${FILESYSTEM_ROOT}/usr/lib/modules
 
         # verifying vmlinuz file.
-        sudo ./scripts/secure_boot_signature_verification.sh -e $FILESYSTEM_ROOT/boot/vmlinuz-${LINUX_KERNEL_VERSION}-sonic-${CONFIGURED_ARCH} \
+        sudo ./scripts/secure_boot_signature_verification.sh -e $FILESYSTEM_ROOT/boot/vmlinuz-${LINUX_KERNEL_VERSION} \
                                                              -c $SECURE_UPGRADE_SIGNING_CERT
     fi
     echo "Secure Boot support build stage: END."
@@ -780,19 +780,19 @@ fi
 sudo chroot $FILESYSTEM_ROOT update-initramfs -u
 ## Convert initrd image to u-boot format
 if [[ $TARGET_BOOTLOADER == uboot ]]; then
-    INITRD_FILE=initrd.img-${LINUX_KERNEL_VERSION}-sonic-${CONFIGURED_ARCH}
-    KERNEL_FILE=vmlinuz-${LINUX_KERNEL_VERSION}-sonic-${CONFIGURED_ARCH}
+    INITRD_FILE=initrd.img-${LINUX_KERNEL_VERSION}
+    KERNEL_FILE=vmlinuz-${LINUX_KERNEL_VERSION}
     if [[ $CONFIGURED_ARCH == armhf ]]; then
-        INITRD_FILE=initrd.img-${LINUX_KERNEL_VERSION}-sonic-armmp
+        INITRD_FILE=initrd.img-${LINUX_KERNEL_VERSION}-armmp
         sudo LANG=C chroot $FILESYSTEM_ROOT mkimage -A arm -O linux -T ramdisk -C gzip -d /boot/$INITRD_FILE /boot/u${INITRD_FILE}
         ## Overwriting the initrd image with uInitrd
         sudo LANG=C chroot $FILESYSTEM_ROOT mv /boot/u${INITRD_FILE} /boot/$INITRD_FILE
     elif [[ $CONFIGURED_ARCH == arm64 && $CONFIGURED_PLATFORM != nokia-vs ]]; then
         if [[ $CONFIGURED_PLATFORM == pensando ]]; then
             ## copy device tree file into boot (XXX: need to compile dtb from dts)
-            sudo cp -v $FILESYSTEM_ROOT/usr/lib/linux-image-${LINUX_KERNEL_VERSION}-sonic-${CONFIGURED_ARCH}/pensando/elba-asic-psci.dtb $FILESYSTEM_ROOT/boot/
-            sudo cp -v $FILESYSTEM_ROOT/usr/lib/linux-image-${LINUX_KERNEL_VERSION}-sonic-${CONFIGURED_ARCH}/pensando/elba-asic-psci-lipari.dtb $FILESYSTEM_ROOT/boot/
-            sudo cp -v $FILESYSTEM_ROOT/usr/lib/linux-image-${LINUX_KERNEL_VERSION}-sonic-${CONFIGURED_ARCH}/pensando/elba-asic-psci-mtfuji.dtb $FILESYSTEM_ROOT/boot/
+            sudo cp -v $FILESYSTEM_ROOT/usr/lib/linux-image-${LINUX_KERNEL_VERSION}/pensando/elba-asic-psci.dtb $FILESYSTEM_ROOT/boot/
+            sudo cp -v $FILESYSTEM_ROOT/usr/lib/linux-image-${LINUX_KERNEL_VERSION}/pensando/elba-asic-psci-lipari.dtb $FILESYSTEM_ROOT/boot/
+            sudo cp -v $FILESYSTEM_ROOT/usr/lib/linux-image-${LINUX_KERNEL_VERSION}/pensando/elba-asic-psci-mtfuji.dtb $FILESYSTEM_ROOT/boot/
             sudo cp -v $PLATFORM_DIR/pensando/install_file $FILESYSTEM_ROOT/boot/
             ## make kernel as gzip file
             sudo LANG=C chroot $FILESYSTEM_ROOT gzip /boot/${KERNEL_FILE}
