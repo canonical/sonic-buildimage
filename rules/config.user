@@ -22,8 +22,9 @@ BUILD_SKIP_TEST = y
 # Docker layer cache (reuse unchanged slave-image layers)
 SONIC_CONFIG_USE_DOCKER_CACHE = y
 
-# Kernel: download prebuilt instead of building from source (procure, ABI +deb13-sonic)
-KERNEL_PROCURE_METHOD = download
+# Kernel: prebuilt linux-sonic 7.0.0-1002.2 from Launchpad PPA, fetched via
+# SONIC_ONLINE_DEBS in rules/linux-kernel.mk (curl +files URL, no source build).
+# KERNEL_PROCURE_METHOD is now inert (no consumer; kernel is an ONLINE_DEB).
 
 # deb package cache (submodule build artifacts by commit hash)
 SONIC_DPKG_CACHE_METHOD = rwcache
