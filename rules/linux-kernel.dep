@@ -4,5 +4,17 @@ DEP_FILES   := rules/linux-kernel.mk rules/linux-kernel.dep
 # Kernel is now an ONLINE_DEB (curl +files URL), no source build ->
 # no SMDEP_FILES (sonic-linux-kernel git content) and no build flags
 # (KERNEL_PROCURE_METHOD/KERNEL_CACHE_PATH/SECURE_UPGRADE).
-$(LINUX_HEADERS_COMMON)_DEP_FILES   := $(DEP_FILES)
+# _CACHE_MODE required for ONLINE_DEB download to trigger (matches other
+# ONLINE_DEB .dep files, e.g. clounix/sai.dep, docker-gbsyncd-*.dep).
+$(LINUX_HEADERS_COMMON)_CACHE_MODE   := GIT_CONTENT_SHA
+$(LINUX_HEADERS_COMMON)_DEP_FILES    := $(DEP_FILES)
 $(LINUX_HEADERS_COMMON)_CACHE_OVERRIDE := $(SONIC_DPKG_CACHE_METHOD_OVERRIDE)
+
+$(LINUX_IMAGE)_CACHE_MODE   := GIT_CONTENT_SHA
+$(LINUX_IMAGE)_DEP_FILES    := $(DEP_FILES)
+
+$(LINUX_MODULES)_CACHE_MODE := GIT_CONTENT_SHA
+$(LINUX_MODULES)_DEP_FILES  := $(DEP_FILES)
+
+$(LINUX_HEADERS)_CACHE_MODE := GIT_CONTENT_SHA
+$(LINUX_HEADERS)_DEP_FILES  := $(DEP_FILES)
