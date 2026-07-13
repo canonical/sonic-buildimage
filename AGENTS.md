@@ -2,8 +2,8 @@
 
 ## Scope and Purpose
 
-This file contains repository-wide instructions for human contributors and
-automation. Keep it limited to durable build, editing, and review practices.
+This file contains repository-wide instructions for AI models. 
+Keep it limited to durable build, editing, and review practices.
 Project plans, progress tracking, design rationale, and migration reports must
 not be duplicated here.
 
@@ -27,13 +27,14 @@ build prerequisites.
 - **Upstream source:** `sonic-net/sonic-buildimage`
 - **Upstream release model:** Date-named release branches such as `202405` are
   maintained after their branch point; they are not immutable release tags.
-- **Current branch:** Verify its base, active build environment, and divergence
-  from upstream using its Git history and build configuration before making a
-  change.
 
 The `feature_noble_build` branch is the reliable Ubuntu Noble (24.04) SONiC
 reference implementation. It was migrated from the upstream Debian Bookworm
 based `202405` branch.
+
+The `202605_resolute` branch is the Ubuntu Resolute (26.04) SONiC implementation 
+(still WIP on July 13, 2026). It was migrated from the upstream Debian Trixie
+based `202605` branch.
 
 ## Build System
 
@@ -42,15 +43,6 @@ based `202405` branch.
 - `slave.mk` defines the common build graph, package paths, and Docker targets.
   Make package or image changes in the relevant `rules/*.mk` file rather than
   bypassing that graph with ad hoc build commands.
-- `rules/config.user` is a local, ignored configuration file. Do not add it to
-  commits or rely on its local values as repository defaults.
-- Use the repository's declared targets for builds. For example:
-
-  ```bash
-  make sonic-slave-build BLDENV=<environment>
-  make PLATFORM=<platform> BLDENV=<environment> target/sonic-<platform>.bin
-  make docker-<image> BLDENV=<environment>
-  ```
 
 Run the smallest relevant target first. Do not run destructive cleanup targets
 unless the task requires them.
@@ -68,7 +60,7 @@ unless the task requires them.
 - Preserve source builds declared in `rules/*.mk` unless the change is explicitly
   approved and includes the corresponding build-graph update.
 - Do not directly modify source code downloaded from external projects during a
-  build. If a change is necessary, add a maintained patch file and apply it
+  build. If a change is necessary, add a patch file and apply it
   explicitly from the relevant build rule or script.
 - Prefer build flags or local compatibility patches for generated code and
   third-party headers. Do not directly edit generated output.
@@ -121,8 +113,6 @@ source of truth.
 - [VS migration report](https://github.com/canonical/sonic-buildimage/blob/202605_resolute_doc/docs/superpowers/resolute-vs-migration-report-en.md)
 - [Modification catalog](https://github.com/canonical/sonic-buildimage/blob/202605_resolute_doc/docs/superpowers/resolute-modification-catalog-en.md)
 - [Migration code review](https://github.com/canonical/sonic-buildimage/blob/202605_resolute_doc/docs/superpowers/resolute-migration-code-review-en.md)
-- [Superrepo push design](https://github.com/canonical/sonic-buildimage/blob/202605_resolute_doc/docs/superpowers/specs/2026-07-06-sonic-202605-resolute-superrepo-push-design-en.md)
-- [Superrepo push plan](https://github.com/canonical/sonic-buildimage/blob/202605_resolute_doc/docs/superpowers/plans/2026-07-06-sonic-202605-resolute-superrepo-push-plan-en.md)
 
 ## Change Verification
 
@@ -137,6 +127,5 @@ source of truth.
 
 - Use a concise commit prefix appropriate to the change, such as `build:`,
   `fix:`, `docs:`, or `test:`.
-- Follow the repository's signing policy when creating commits.
 - Do not commit local configuration, build output, generated artifacts, editor
   settings, or presentation files covered by `.gitignore`.
