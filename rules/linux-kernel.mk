@@ -33,6 +33,12 @@ LINUX_IMAGE   = linux-image-$(KVERSION)_$(KERNEL_PKGVERSION)_$(CONFIGURED_ARCH).
 LINUX_MODULES = linux-modules-$(KVERSION)_$(KERNEL_PKGVERSION)_$(CONFIGURED_ARCH).deb
 LINUX_HEADERS = linux-headers-$(KVERSION)_$(KERNEL_PKGVERSION)_$(CONFIGURED_ARCH).deb
 
+# Prerequisite deb list for slave.mk RFS/installer targets (prefixed with
+# IMAGE_DISTRO_DEBS_PATH there). Ubuntu packaging splits linux-modules out of
+# the image deb, so both must be fetched before build_debian.sh cp's them;
+# headers/common are not consumed by that cp path.
+LINUX_KERNEL = $(LINUX_IMAGE) $(LINUX_MODULES)
+
 $(LINUX_IMAGE)_URL   = $(KERNEL_PPA_URL)/$(LINUX_IMAGE)
 $(LINUX_MODULES)_URL = $(KERNEL_PPA_URL)/$(LINUX_MODULES)
 $(LINUX_HEADERS)_URL = $(KERNEL_PPA_URL)/$(LINUX_HEADERS)
