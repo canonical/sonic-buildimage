@@ -24,13 +24,13 @@
 	url = https://github.com/sonic-net/sonic-py-swsssdk.git
 [submodule "src/sonic-snmpagent"]
 	path = src/sonic-snmpagent
-	url = https://github.com/sonic-net/sonic-snmpagent
+	url = https://github.com/canonical/sonic-snmpagent.git
 [submodule "src/ptf"]
 	path = src/ptf
 	url = https://github.com/p4lang/ptf.git
 [submodule "src/sonic-utilities"]
 	path = src/sonic-utilities
-	url = https://github.com/sonic-net/sonic-utilities
+	url = https://github.com/canonical/sonic-utilities.git
 [submodule "platform/broadcom/sonic-platform-modules-arista"]
 	path = platform/broadcom/sonic-platform-modules-arista
 	url = https://github.com/aristanetworks/sonic
