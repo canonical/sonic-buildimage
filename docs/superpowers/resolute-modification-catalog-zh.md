@@ -365,7 +365,7 @@ vs 镜像已构建并启动验证，但先前实现是"换内容不换名"：`do
 
 **状态 / Status** ✅ 已解决（`target/sonic-vs.bin` 产出，三个 resolute base 被 build，`docker-base-trixie` 未 build（filter-out 生效），KVM 启动 os-release=Ubuntu 26.04）
 
-**遗留 / Caveats** (1) `platform/vpp` 子模块内部 variant-naming 改动需单独子模块提交 + 指针 bump（vs 不用 vpp 故不影响）。(2) `docker-sonic-vs`（bookworm 体系，findstring 守卫，默认不 build）未迁移。(3) 共享 template `docker-*-trixie.mk` 被直接改成 resolute 引用，意味着 `BLDENV=trixie` 下若 build 非 vs 平台 syncd 会指向 resolute base 而 trixie base 仍 pristine——潜在不一致；vs 构建（`BLDENV=resolute`）不受影响。
+**遗留 / Caveats** (1) `platform/vpp` 子模块内部 variant-naming 改动需单独子模块提交 + 指针 bump（vs 不用 vpp 故不影响）。(2) `docker-sonic-vs`（bookworm 体系，findstring 守卫，默认不 build）未迁移。(3) 共享 template `docker-*-trixie.mk` 被直接改成 resolute 引用，意味着 `BLDENV=trixie` 下若 build 非 vs 平台 syncd 会指向 resolute base 而 trixie base 仍 pristine——潜在不一致；vs 构建（`BLDENV=resolute`）不受影响。(4) **迁移后修复 — `docker-base-resolute` 缺失 iproute2。** `docker-base-resolute/Dockerfile.j2` 从 trixie 复制，apt 安装列表中无 `iproute2`（trixie 通过 `rules/iproute2.mk` 本地构建打过补丁的 deb 安装）。但 `rules/iproute2.mk` 用 `ifeq ($(BLDENV),trixie)` 守卫 `IPROUTE2` 变量——`BLDENV=resolute` 下该变量为空，`rules/docker-base-resolute.mk` 中的 `$(IPROUTE2)` 依赖静默展开为空。结果：所有 resolute 容器中 `ip` 命令完全缺失。修复：在 `docker-base-resolute/Dockerfile.j2` 的 apt 列表中加回 `iproute2`（与 `docker-base-bookworm` 一致）；从 `rules/docker-base-resolute.mk` 移除空的 `$(IPROUTE2)` 依赖。此举放弃 EVPN Multihoming protocol 字段补丁（当前 resolute 范围不需要）。同样的 trixie-only `BLDENV` 守卫模式还影响 `sonic-redfish`（`BMCWEB`/`SONIC_DBUS_BRIDGE` 在 resolute 下为空，bmcweb/sonic-dbus-bridge 静默缺失）和 `platform/vpp`（`VPPINFRA` 未构建，仅影响 VPP 平台构建）；已知但尚未修复。
 
 ---
 
