@@ -13,20 +13,20 @@ The resolute (Ubuntu 26.04) sonic-vs image was validated on a standard sonic-mgm
 
 **resolute migration is sound**: the real resolute-specific bugs are 4 build/packaging issues, all located and fixable.
 
-## 2. Resolute Build Bugs Found + Fixed (temporary runtime fixes on DUT)
+## 2. Resolute Build Bugs Found + Fixed (build-side, committed, not pushed)
 
-All fixes are temporary (applied on the running DUT, not committed, not pushed). Proper fixes belong in the build side.
+All 5 root causes located and fixed at the build/source level (committed, not pushed per constraint). Temporary runtime fixes on the DUT were used to validate before committing the build-side fix.
 
-| # | Bug | Symptom | Root Cause | Fix |
+| # | Bug | Symptom | Root Cause | Build-side Fix (committed) |
 |---|---|---|---|---|
-| 1 | teamd container missing iproute2 | PortChannel DOWN, BGP Idle(NoIf) | teammgrd runs `ip link set <port> master <team>` but `ip` binary absent from docker-teamd image on resolute | Install iproute2 + libbpf1 + libmnl0 + libelf1t64 (scp debs, docker cp, dpkg -i); restart teamd |
-| 2a | show plugin hyphen import | "failed to import plugin" warnings on stdout | 7 plugins have hyphen names (dhcp-relay, cisco-8000, sonic-*); `importlib.import_module` rejects hyphens | Patch `util_base.py` load_plugins: hyphen names loaded via `spec_from_file_location` |
-| 2b | show plugin install-path corruption | dhcp-relay.py / macsec.py are nested empty dirs | build install bug: absolute path treated as relative, file installed as `target/abs/path` nested dir | Move real file from bottom of nested dir to correct path |
-| 3 | snmpd cannot bind IPv6 | snmpd exit 1, FATAL | mgmt IPv6 `fec0::ffff:afa:1` not assigned to eth0 (deploy-mg didn't apply) | Manually `ip -6 addr add fec0::ffff:afa:1/64 dev eth0` |
-| 4 | sonic_ax_impl py3.14 incompatible | snmp-subagent exit 1 | `asyncio.get_event_loop()` raises RuntimeError on py3.14 (no current event loop) | Patch main.py:20 `get_event_loop` → `new_event_loop` |
-| 5 (bonus) | deploy-mg sshd restart fails | deploy-mg exits 2 at end | resolute uses `ssh.service`, playbook calls `systemctl restart sshd` | Changed playbook line 1382 `sshd` → `ssh` |
+| 1 | teamd container missing iproute2 | PortChannel DOWN, BGP Idle(NoIf) | teammgrd runs `ip link set <port> master <team>` but `ip` binary absent from docker-teamd image on resolute | `dockers/docker-teamd/Dockerfile.j2`: `apt-get install iproute2` — commit `04d2228ffb` |
+| 2a | show plugin hyphen import | "failed to import plugin" warnings on stdout | 7 plugins have hyphen names (dhcp-relay, cisco-8000, sonic-*); `importlib.import_module` rejects hyphens | `src/sonic-utilities/utilities_common/util_base.py` load_plugins: hyphen names via `spec_from_file_location` — `a39b9248` + gitlink `09cc41f0b0` |
+| 2b | show plugin install-path corruption | dhcp-relay.py / macsec.py are nested empty dirs | py3.14 `tarfile.extract` default filter changed `'fully_trusted'`→`'data'`; dockerapi.py sets absolute `member.name` → nested dir | `src/sonic-utilities/sonic_package_manager/dockerapi.py`: `tar.extract(..., filter='fully_trusted')` — `751b5976` + gitlink `b4dd442685` |
+| 3 | snmpd cannot bind IPv6 | snmpd exit 1, FATAL | `systemd-sonic-generator` SIGABRT (FORTIFY=3): `calloc(target.length()+1)` vs `snprintf(..., PATH_MAX, ...)` size mismatch → interfaces-config.service never generated → mgmt IPv6 not applied | `src/systemd-sonic-generator/systemd-sonic-generator.cpp:337`: `snprintf` size `PATH_MAX`→`target.length()+1` — `496f90f930` |
+| 4 | sonic_ax_impl py3.14 incompatible | snmp-subagent exit 1 | `asyncio.get_event_loop()` raises RuntimeError on py3.14 (no current event loop) | `src/sonic-snmpagent/src/sonic_ax_impl/main.py:20` `get_event_loop`→`new_event_loop` — `529cd5d` + gitlink `b78e697aef` |
+| 5 | deploy-mg sshd restart fails | deploy-mg exits 2 at end | resolute uses `ssh.service`, playbook calls `systemctl restart sshd` | `ansible/config_sonic_basedon_testbed.yml:1382` `sshd`→`ssh` (sonic-mgmt repo) — `ea7e076` |
 
-**Reusable fix script:** `/tmp/apply-resolute-fixes.sh` (re-applies fixes 1-4; scp to DUT + `sudo bash`). Re-run after every testbed rebuild (add-topo recreates DUT, losing runtime fixes).
+**Reusable runtime fix script:** `/tmp/apply-resolute-fixes.sh` (re-applies fixes 1-4 on a running DUT; scp + `sudo bash`). Used to validate before committing the build-side fixes; re-run after every testbed rebuild (add-topo recreates DUT, losing runtime fixes).
 
 ## 3. T0 Full-Run Results (junit-xml, machine-read)
 
