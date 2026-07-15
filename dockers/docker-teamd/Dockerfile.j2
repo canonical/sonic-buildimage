@@ -8,7 +8,11 @@ ARG docker_container_name
 ## Make apt-get non-interactive
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update
+# iproute2: teammgrd runs `ip link set <port> master <team>` to add LAG member
+# ports; the `ip` binary is not in the swss-layer base image, so PortChannel
+# aggregation would start with zero members (LACP never exchanges, BGP Idle).
+RUN apt-get update && apt-get install -y --no-install-recommends iproute2 && \
+    rm -rf /var/lib/apt/lists/*
 
 {% if docker_teamd_debs.strip() -%}
 # Copy locally-built Debian package dependencies
