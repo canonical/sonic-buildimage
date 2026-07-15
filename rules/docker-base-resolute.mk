@@ -4,7 +4,6 @@ DOCKER_BASE_RESOLUTE = docker-base-resolute.gz
 $(DOCKER_BASE_RESOLUTE)_PATH = $(DOCKERS_PATH)/docker-base-resolute
 
 $(DOCKER_BASE_RESOLUTE)_DEPENDS += $(SOCAT)
-$(DOCKER_BASE_RESOLUTE)_DEPENDS += $(IPROUTE2)
 
 GDB = gdb
 GDBSERVER = gdbserver
