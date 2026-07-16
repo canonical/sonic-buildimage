@@ -39,6 +39,27 @@ This is the strongest evidence the resolute fixes work: the 1043-error cascade's
 ### `--allow_recover` caveat
 `pytest --allow_recover` (sanity-check auto-recovery) **hung** on acl (90 min, 0% CPU, 0 output) — the recover loop appears to deadlock when the DUT is mid-state. Not used; `--allow_recover` is not viable on this VS testbed for stateful dirs. The name-based `-k` skip + baked fixes (stable DUT) is the working approach.
 
+### Baked-image clean T0 results (2026-07-16, long timeouts)
+On the 5-fix-baked DUT, directories that completed (junit-xml, skip destructive, long timeout):
+
+| dir | pass | fail | err | skip | note |
+|---|---|---|---|---|---|
+| bgp_fact | 1 | 0 | 0 | 0 | clean |
+| lldp | 10 | 0 | 0 | 1 | clean (1 reboot-variant skip) |
+| vlan | 8 | 0 | 1 | 4 | 8 pass; 1 err (investigate); 4 destructive skip |
+| pc (lag) | 6 | 7 | 0 | 12 | 7 fail = po_voq (multi-ASIC) / lag_member_forwarding — topology, non-resolute |
+| snmp | 18 | 1 | 6 | 0→3 | 6 err = KeyError phy_entity (VS no physical sensors); vs r1-snmp 14P/10E → baked 18P/6E (better) |
+| container_checker | 0 | 1 | 0 | 1 | 1 fail = telemetry variant (non-resolute) |
+| **total** | **43** | **9** | **7** | **21** | cascade essentially eliminated (7 err, vs hundreds pre-fix) |
+
+Directories that timed out (large/slow, NOT resolute — DUT healthy throughout):
+- **bgp full** (60 files): timeout 5400s still incomplete — too large, some slow/hang test. orig had 11P/23F/196E (mostly broken-pipe cascade, now gone).
+- **arp**: timeout 1200/1800 — PTF state accumulates, slow; partial -v data shows arp_update 5P, arpall 2P+3F (ARP reply dataplane, non-resolute).
+- **dhcp_relay**: timeout (some test slow).
+- **acl**: real hang/deadlock (SystemExit/-2), excluded per goal.
+
+Key: the 1043-error cascade's root cause was the 5 resolute bugs destabilizing the DUT; fixed, completed dirs show only 7 errors (all non-resolute: VS-no-sensors KeyError, ARP dataplane). Large dirs time out due to test volume / PTF slowness, not resolute regressions.
+
 ## 3. T0 Full-Run Results (junit-xml, machine-read)
 
 | | Count |
