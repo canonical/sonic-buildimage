@@ -74,6 +74,35 @@ unless the task requires them.
 - Do not treat an uncommitted submodule worktree as a parent-repository source
   patch.
 - Before changing a gitlink, verify its remote, branch, and intended commit.
+- A submodule gitlink must be reachable on whatever remote its `.gitmodules`
+  URL points to, or a clone of this repository cannot initialize that
+  submodule. On `202605_resolute` a gitlink commit can be in one of three
+  states:
+  - **Upstream commit, upstream URL.** Canonical has not modified the
+    submodule; the gitlink points at an upstream commit and the URL stays
+    upstream (e.g. `sonic-net/`). No canonical fork or branch is involved.
+  - **Canonical commit already pushed to `canonical/<submodule>`.** Canonical
+    has modified the submodule; the gitlink commit lives on the `202605_resolute`
+    branch of `canonical/<submodule>` and does not exist on `sonic-net/`. The
+    URL must point at canonical for the clone to resolve.
+  - **Canonical commit not yet pushed.** The gitlink names a local commit that
+    exists only in the contributor's submodule worktree — on no remote at all,
+    so any clone of this repository will fail to initialize the submodule until
+    it is pushed.
+  The state is not determined by the URL alone — a submodule can carry
+  Canonical commits while its URL still names an upstream remote, or carry a
+  commit that has not been pushed at all. When the gitlink commit is not an
+  upstream commit, push it to `canonical/<submodule>:202605_resolute` — never to
+  `sonic-net/`, which is upstream and not ours to write. Before committing a
+  gitlink bump, confirm the commit actually exists on the remote the URL names;
+  if the commit is still local-only, push it to
+  `canonical/<submodule>:202605_resolute` first, and point the URL at
+  `canonical/<submodule>` if it does not already, before the parent-repository
+  commit lands.
+- To pick up upstream changes in a submodule Canonical has modified, fetch the
+  upstream remote and rebase the submodule's `202605_resolute` branch onto the
+  upstream branch, then bump this repository's gitlink to the rebased commit.
+  Do not fast-forward over the resolute-specific commits.
 
 ## Resolute Migration Work
 
@@ -129,3 +158,12 @@ source of truth.
   `fix:`, `docs:`, or `test:`.
 - Do not commit local configuration, build output, generated artifacts, editor
   settings, or presentation files covered by `.gitignore`.
+- In `.gitmodules`, submodule URLs must be `https`, not `ssh`, so anonymous
+  and CI clones work without credentials. When changing a URL, edit the
+  existing `[submodule "<short-name>"]` section in place; never append a
+  duplicate `[submodule "<path>"]` section or omit `path =`, since git silently
+  ignores sections without `path =` and the old URL stays effective.
+- Upstream date-named branches can be force-rewritten with replayed history
+  but an identical tree. A compare showing thousands of changes and an
+  implausibly old merge-base usually means a force-rewrite, not a local
+  mistake; confirm with `git merge-base` and `git diff` before rebasing.
