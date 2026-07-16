@@ -28,6 +28,17 @@ All 5 root causes located and fixed at the build/source level (committed, not pu
 
 **Reusable runtime fix script:** `/tmp/apply-resolute-fixes.sh` (re-applies fixes 1-4 on a running DUT; scp + `sudo bash`). Used to validate before committing the build-side fixes; re-run after every testbed rebuild (add-topo recreates DUT, losing runtime fixes).
 
+### End-to-end verification (2026-07-16)
+Rebuilt `sonic-vs.bin` with all 5 fixes → `build_kvm_image.sh` installs it into a bootable qcow2 → `add-topo` + `deploy-mg` → **BGP 4 neighbors up on try 1, with NO `apply-resolute-fixes.sh` runtime patching needed**. This confirms the build-side fixes resolve the issues at the source (ssg no longer crashes → interfaces-config.service runs → mgmt IPv6 applied; teamd has iproute2 → LACP/PortChannel up; sonic_ax_impl runs).
+
+### Baked-image T0 batch — cascade essentially eliminated (2026-07-16)
+On the 5-fix-baked DUT, running `bgp_fact + vlan + lldp + pc` (skip destructive tests, no `--allow_recover`):
+**25 pass / 7 fail / 1 err / 17 skip** — only **1 error** (vs hundreds of broken-pipe/Thread errors on the pre-fix image). The 7 failures are pc/lag advanced tests (test_po_voq multi-ASIC, lag_member_forwarding) — topology/data-plane specifics, not resolute regressions.
+This is the strongest evidence the resolute fixes work: the 1043-error cascade's root cause was the missing iproute2/mgmt-IPv6/ssg/asyncio destabilizing the DUT; fixed, the cascade is gone.
+
+### `--allow_recover` caveat
+`pytest --allow_recover` (sanity-check auto-recovery) **hung** on acl (90 min, 0% CPU, 0 output) — the recover loop appears to deadlock when the DUT is mid-state. Not used; `--allow_recover` is not viable on this VS testbed for stateful dirs. The name-based `-k` skip + baked fixes (stable DUT) is the working approach.
+
 ## 3. T0 Full-Run Results (junit-xml, machine-read)
 
 | | Count |
