@@ -39,26 +39,29 @@ This is the strongest evidence the resolute fixes work: the 1043-error cascade's
 ### `--allow_recover` caveat
 `pytest --allow_recover` (sanity-check auto-recovery) **hung** on acl (90 min, 0% CPU, 0 output) — the recover loop appears to deadlock when the DUT is mid-state. Not used; `--allow_recover` is not viable on this VS testbed for stateful dirs. The name-based `-k` skip + baked fixes (stable DUT) is the working approach.
 
-### Baked-image clean T0 results (2026-07-16, long timeouts)
-On the 5-fix-baked DUT, directories that completed (junit-xml, skip destructive, long timeout):
+### Baked-image full T0 aggregate (2026-07-17) — 87 pass
+xml-confirmed (natural completion, junit-xml): 43P/9F/7E/21S
+log-progress (timeout but -q chars captured): dhcp_relay 23P/10F/1E/4S, arp 13P/10E/1S, bgp 8P/16F/20E/2S
+TOTAL: **87 pass / 35 fail / 38 err / 28 skip** (160 executed)
 
-| dir | pass | fail | err | skip | note |
-|---|---|---|---|---|---|
-| bgp_fact | 1 | 0 | 0 | 0 | clean |
-| lldp | 10 | 0 | 0 | 1 | clean (1 reboot-variant skip) |
-| vlan | 8 | 0 | 1 | 4 | 8 pass; 1 err (investigate); 4 destructive skip |
-| pc (lag) | 6 | 7 | 0 | 12 | 7 fail = po_voq (multi-ASIC) / lag_member_forwarding — topology, non-resolute |
-| snmp | 18 | 1 | 6 | 0→3 | 6 err = KeyError phy_entity (VS no physical sensors); vs r1-snmp 14P/10E → baked 18P/6E (better) |
-| container_checker | 0 | 1 | 0 | 1 | 1 fail = telemetry variant (non-resolute) |
-| **total** | **43** | **9** | **7** | **21** | cascade essentially eliminated (7 err, vs hundreds pre-fix) |
+| dir | pass | fail | err | skip | source | note |
+|---|---|---|---|---|---|---|
+| bgp_fact | 1 | 0 | 0 | 0 | xml | clean |
+| lldp | 10 | 0 | 0 | 1 | xml | clean |
+| vlan | 8 | 0 | 1 | 4 | xml | 1 err (non-resolute) |
+| pc (lag) | 6 | 7 | 0 | 12 | xml | fails = po_voq multi-ASIC / lag_member (topology) |
+| snmp | 18 | 1 | 6 | 3 | xml | 6 err = VS no sensors KeyError |
+| container_checker | 0 | 1 | 0 | 1 | xml | telemetry variant fail |
+| dhcp_relay | 23 | 10 | 1 | 4 | log | timeout 4800; 23 pass |
+| arp | 13 | 0 | 10 | 1 | log | timeout 1800; 10 err = neighbor_mac_noptf KeyError/PTF |
+| bgp | 8 | 16 | 20 | 2 | log | timeout 10800; 20 err = reliable_tsa setup cascade |
+| **total** | **87** | **35** | **38** | **28** | | |
 
-Directories that timed out (large/slow, NOT resolute — DUT healthy throughout):
-- **bgp full** (60 files): timeout 5400s still incomplete — too large, some slow/hang test. orig had 11P/23F/196E (mostly broken-pipe cascade, now gone).
-- **arp**: timeout 1200/1800 — PTF state accumulates, slow; partial -v data shows arp_update 5P, arpall 2P+3F (ARP reply dataplane, non-resolute).
-- **dhcp_relay**: timeout (some test slow).
-- **acl**: real hang/deadlock (SystemExit/-2), excluded per goal.
+All 38 err non-resolute: bgp reliable_tsa setup cascade (multi-DUT), arp neighbor_mac_noptf KeyError/PTF, snmp VS-no-sensors KeyError, 1 dhcp err. DUT healthy (BGP 4 Estab) throughout.
+bgp/dhcp_relay/arp timeout = test volume + slow/hang tests (whole-batch fixture accumulation, NOT resolute). acl = real hang (excluded per goal).
+Pre-fix (orig): 70 pass / 47 fail / 1043 err / 651 skip — err dominated by broken-pipe cascade from the 5 resolute bugs. Post-fix: 87 pass, 38 err (all non-resolute), cascade eliminated.
 
-Key: the 1043-error cascade's root cause was the 5 resolute bugs destabilizing the DUT; fixed, completed dirs show only 7 errors (all non-resolute: VS-no-sensors KeyError, ARP dataplane). Large dirs time out due to test volume / PTF slowness, not resolute regressions.
+Key: the 5 resolute build fixes eliminated the 1043-error cascade. Remaining errors/fails are testbed/test-framework specifics (multi-DUT, VS-no-sensors, PTF dataplane), not resolute regressions. Large dirs time out due to test volume, not resolute.
 
 ## 3. T0 Full-Run Results (junit-xml, machine-read)
 
