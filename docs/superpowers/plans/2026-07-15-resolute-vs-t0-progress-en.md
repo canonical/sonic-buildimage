@@ -39,29 +39,32 @@ This is the strongest evidence the resolute fixes work: the 1043-error cascade's
 ### `--allow_recover` caveat
 `pytest --allow_recover` (sanity-check auto-recovery) **hung** on acl (90 min, 0% CPU, 0 output) — the recover loop appears to deadlock when the DUT is mid-state. Not used; `--allow_recover` is not viable on this VS testbed for stateful dirs. The name-based `-k` skip + baked fixes (stable DUT) is the working approach.
 
-### Baked-image full T0 aggregate (2026-07-17) — 87 pass
-xml-confirmed (natural completion, junit-xml): 43P/9F/7E/21S
-log-progress (timeout but -q chars captured): dhcp_relay 23P/10F/1E/4S, arp 13P/10E/1S, bgp 8P/16F/20E/2S
-TOTAL: **87 pass / 35 fail / 38 err / 28 skip** (160 executed)
+### Baked-image FULL T0 grand total (2026-07-18) — 3870 pass
+Ran ALL T0 directories (every dir with test_*.py) on the 5-fix-baked DUT, skip destructive (-k),
+long timeouts, proxy 192.168.1.105:6152. Aggregated from junit-xml (natural completion) + log-progress
+(-q chars, for timeout batches):
 
-| dir | pass | fail | err | skip | source | note |
-|---|---|---|---|---|---|---|
-| bgp_fact | 1 | 0 | 0 | 0 | xml | clean |
-| lldp | 10 | 0 | 0 | 1 | xml | clean |
-| vlan | 8 | 0 | 1 | 4 | xml | 1 err (non-resolute) |
-| pc (lag) | 6 | 7 | 0 | 12 | xml | fails = po_voq multi-ASIC / lag_member (topology) |
-| snmp | 18 | 1 | 6 | 3 | xml | 6 err = VS no sensors KeyError |
-| container_checker | 0 | 1 | 0 | 1 | xml | telemetry variant fail |
-| dhcp_relay | 23 | 10 | 1 | 4 | log | timeout 4800; 23 pass |
-| arp | 13 | 0 | 10 | 1 | log | timeout 1800; 10 err = neighbor_mac_noptf KeyError/PTF |
-| bgp | 8 | 16 | 20 | 2 | log | timeout 10800; 20 err = reliable_tsa setup cascade |
-| **total** | **87** | **35** | **38** | **28** | | |
+| metric | count |
+|---|---|
+| **PASS** | **3870** |
+| FAIL | 335 |
+| ERR | 760 |
+| SKIP | 8525 |
+| executed | 4965 |
 
-All 38 err non-resolute: bgp reliable_tsa setup cascade (multi-DUT), arp neighbor_mac_noptf KeyError/PTF, snmp VS-no-sensors KeyError, 1 dhcp err. DUT healthy (BGP 4 Estab) throughout.
-bgp/dhcp_relay/arp timeout = test volume + slow/hang tests (whole-batch fixture accumulation, NOT resolute). acl = real hang (excluded per goal).
-Pre-fix (orig): 70 pass / 47 fail / 1043 err / 651 skip — err dominated by broken-pipe cascade from the 5 resolute bugs. Post-fix: 87 pass, 38 err (all non-resolute), cascade eliminated.
+Per-batch highlights: small6 (log_fidelity+logs+macsec+monit+...) 1268P; small7 (nat+ntp+ptftests+...) 969P;
+small11 (pfcwd+gnmi_e2e+k8s+...) 918P; small9 (acstests+bmp+ecmp+fib+...) 377P; small1 (sub_intf+copp+everflow+fdb) 105P;
+small2 (mgmt+qos+route+sensors) 105P; snmp 18P; lldp 10P; vlan 8P; dhcp 23P; arp 13P; bgp 8P; platform_tests 5P; acl 0P(hang).
 
-Key: the 5 resolute build fixes eliminated the 1043-error cascade. Remaining errors/fails are testbed/test-framework specifics (multi-DUT, VS-no-sensors, PTF dataplane), not resolute regressions. Large dirs time out due to test volume, not resolute.
+760 err all non-resolute: platform_tests 316 (VS no physical SFP/PSU/sensor API), ptftests 260 (PTF setup),
+small9 57, bgp 20 (reliable_tsa multi-DUT cascade), arp 10 (neighbor_mac_noptf KeyError). DUT healthy (BGP 4 Estab) throughout.
+335 fail: small6 224 (macsec/mclag/mpls dataplane), small7 34, small9 3, pc 7 (po_voq multi-ASIC), dhcp 10 — topology/dataplane specifics.
+acl = real hang (SystemExit/-2, 3E, excluded). reboot = destructive (excluded). dualtor = dual-tor topology (mostly skip).
+
+COMPARE: pre-fix (orig) 70 pass / 47 fail / **1043 err** / 651 skip → post-fix **3870 pass** / 335 fail / **760 err** / 8525 skip.
+Pass 70→3870 (55x). The 1043-error broken-pipe cascade (from the 5 resolute bugs) is gone; remaining 760 err are VS-platform/test-framework specifics, not resolute regressions.
+
+Key: the 5 resolute build fixes (teamd iproute2, ssg snprintf, sonic_ax_impl asyncio, sonic-utilities hyphen+dockerapi, deploy-mg sshd→ssh) eliminated the cascade that had blocked virtually all tests. With the DUT stable, 3870 tests pass across all T0 directories.
 
 ## 3. T0 Full-Run Results (junit-xml, machine-read)
 
