@@ -1,0 +1,26 @@
+Index: sonic-platform-modules-ragile/common/modules/wb_spi_gpio.c
+===================================================================
+--- sonic-platform-modules-ragile.orig/common/modules/wb_spi_gpio.c
++++ sonic-platform-modules-ragile/common/modules/wb_spi_gpio.c
+@@ -380,7 +380,7 @@
+ 		return -ENODEV;
+ #endif
+ 
+-	master = spi_alloc_master(&pdev->dev, sizeof(*spi_gpio));
++	master = spi_alloc_target(&pdev->dev, sizeof(*spi_gpio));
+ 	if (!master)
+ 		return -ENOMEM;
+ 
+Index: sonic-platform-modules-ragile/common/modules/wb_spi_ocores.c
+===================================================================
+--- sonic-platform-modules-ragile.orig/common/modules/wb_spi_ocores.c
++++ sonic-platform-modules-ragile/common/modules/wb_spi_ocores.c
+@@ -889,7 +889,7 @@
+     bool be;
+ 
+     ret = -1;
+-    master = spi_alloc_master(&pdev->dev, sizeof(struct spioc));
++    master = spi_alloc_target(&pdev->dev, sizeof(struct spioc));
+     if (!master) {
+         dev_err(&pdev->dev, "Failed to alloc spi master.\n");
+         goto out;
