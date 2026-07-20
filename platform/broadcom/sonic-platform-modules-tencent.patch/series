@@ -1,2 +1,3 @@
 0001-linux-7.0-spi-master-to-target.patch
 0002-linux-7.0-kmod-compat.patch
+0003-linux-7.0-bin-attr-const.patch
