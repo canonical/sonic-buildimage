@@ -48,8 +48,16 @@ platform/*/docker-*/Dockerfile-dbg.cleanup
 dockers/*/*manifest*
 platform/*/docker-*/*manifest*
 
+# Copied files for rockcraft build
+dockers/*/debs/
+dockers/*/files/
+dockers/*/python-wheels/
+dockers/*/envs
+dockers/*/*.rock
+
 # Installer-related files and directories
 installer/x86_64/platforms/
+installer/platforms/
 
 # Misc. files
 asic_config_checksum
@@ -129,3 +137,6 @@ sources.list.*
 
 # Generated mirror configs
 apt-retries-count
+
+*service
+justfile

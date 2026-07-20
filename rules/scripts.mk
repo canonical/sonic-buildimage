@@ -50,6 +50,14 @@ $(COPP_CONFIG_TEMPLATE)_PATH = files/image_config/copp
 RSYSLOG_PLUGIN_CONF_J2 = rsyslog_plugin.conf.j2
 $(RSYSLOG_PLUGIN_CONF_J2)_PATH = files/build_templates
 
+ifeq ($(BLDENV), resolute)
+    RSYSLOG_CONF = rsyslog.conf
+    $(RSYSLOG_CONF)_PATH = dockers/docker-base-resolute/etc/
+
+    RSYSLOG_PEBBLE_LAYER = syslog-layer.yaml
+    $(RSYSLOG_PEBBLE_LAYER)_PATH = files/rsyslog/
+endif
+
 GITHUB_GET = github_get.py
 $(GITHUB_GET)_PATH = scripts
 
@@ -70,4 +78,6 @@ SONIC_COPY_FILES += $(CONFIGDB_LOAD_SCRIPT) \
                     $(SWSS_VARS_TEMPLATE) \
                     $(RSYSLOG_PLUGIN_CONF_J2) \
                     $(GITHUB_GET) \
+                    $(RSYSLOG_CONF) \
+                    $(RSYSLOG_PEBBLE_LAYER) \
                     $(COPP_CONFIG_TEMPLATE)
