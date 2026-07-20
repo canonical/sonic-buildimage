@@ -1,0 +1,4 @@
+0001-resolute-kernel-abi.patch
+0002-linux-7.0-api-compat.patch
+0003-linux-7.0-kbuild-shipped-obj.patch
+0004-linux-7.0-objtool-noop.patch
