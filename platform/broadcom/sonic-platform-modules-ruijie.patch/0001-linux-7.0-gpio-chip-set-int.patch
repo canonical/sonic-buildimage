@@ -1,0 +1,22 @@
+Index: sonic-platform-modules-ruijie/common/modules/rg-gpio-xeon.c
+===================================================================
+--- sonic-platform-modules-ruijie.orig/common/modules/rg-gpio-xeon.c
++++ sonic-platform-modules-ruijie/common/modules/rg-gpio-xeon.c
+@@ -155,7 +155,7 @@ static int xeon_gpio_direction_in(struct
+     return 0;
+ }
+ 
+-static void xeon_gpio_set(struct gpio_chip *gc,
++static int xeon_gpio_set(struct gpio_chip *gc,
+                 unsigned gpio_num, int val)
+ {
+     unsigned int data;
+@@ -192,6 +192,8 @@ static void xeon_gpio_set(struct gpio_ch
+         outl(data, GP_LVL3);
+     }
+     GPIO_XEON_SPIN_UNLOCK(sio_lock, flags);
++
++    return 0;
+ }
+ 
+ static int xeon_gpio_direction_out(struct gpio_chip *gc,
