@@ -1,0 +1,18 @@
+Index: saibcm-modules-dnx/debian/rules
+===================================================================
+--- saibcm-modules-dnx.orig/debian/rules
++++ saibcm-modules-dnx/debian/rules
+@@ -91,8 +91,11 @@ build-arch-stamp:
+ 
+ 	# create links
+ 	cd /; sudo mkdir -p /lib/modules/$(KVER_ARCH)
+-	cd /; sudo rm /lib/modules/$(KVER_ARCH)/build
+-	cd /; sudo rm /lib/modules/$(KVER_ARCH)/source
++	# Resolute: build/source symlinks may not exist on a fresh
++	# container (only created by a prior opennsl build or the kernel
++	# package); rm -f so their absence does not abort the build.
++	cd /; sudo rm -f /lib/modules/$(KVER_ARCH)/build
++	cd /; sudo rm -f /lib/modules/$(KVER_ARCH)/source
+ 	cd /; sudo ln -s /usr/src/linux-sonic-headers-$(KVER_COMMON)/ /lib/modules/$(KVER_ARCH)/source
+ 	cd /; sudo ln -s /usr/src/linux-headers-$(KVER_ARCH)/ /lib/modules/$(KVER_ARCH)/build
+ 	if [ ! -e /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/generated ]; then \

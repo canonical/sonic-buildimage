@@ -1,0 +1,17 @@
+Index: saibcm-modules-legacy-th/make/Makefile.linux-x86-smp_generic_64-2_6
+===================================================================
+--- saibcm-modules-legacy-th.orig/make/Makefile.linux-x86-smp_generic_64-2_6
++++ saibcm-modules-legacy-th/make/Makefile.linux-x86-smp_generic_64-2_6
+@@ -44,6 +44,12 @@ KFLAGS := -nostdinc -isystem $(SYSINC) -
+ # mirror it here so out-of-tree SDK objects (built via KFLAGS, not kbuild M=) see
+ # the same layout the kernel build does.
+ KFLAGS += -fms-extensions
++# Linux 7.0 + GCC 15: GCC 15 defaults to -std=gnu23 (C23), where bool/true/false
++# are keywords, conflicting with kernel headers' enum/typedef (linux/stddef.h,
++# linux/types.h): "cannot use keyword 'false' as enumeration constant". The
++# kernel build uses -std=gnu11; mirror it for out-of-tree SDK objects.
++KFLAGS += -std=gnu11 -Wno-error=attributes -Wno-error=declaration-after-statement
++KFLAGS += -Wno-attributes -Wno-declaration-after-statement
+ 
+ ifneq (1,$(USE_CLANG))
+ KFLAGS += -funit-at-a-time -maccumulate-outgoing-args
