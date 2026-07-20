@@ -1,0 +1,23 @@
+Index: saibcm-modules-dnx/debian/opennsl-modules.dirs
+===================================================================
+--- saibcm-modules-dnx.orig/debian/opennsl-modules.dirs
++++ saibcm-modules-dnx/debian/opennsl-modules.dirs
+@@ -1 +1 @@
+-lib/modules/6.12.41-sonic-amd64/extra
++lib/modules/7.0.0-1002-sonic/extra
+Index: saibcm-modules-dnx/debian/opennsl-modules.install
+===================================================================
+--- saibcm-modules-dnx.orig/debian/opennsl-modules.install
++++ saibcm-modules-dnx/debian/opennsl-modules.install
+@@ -1,6 +1,6 @@
+-systems/linux/user/x86-smp_generic_64-2_6/linux-bcm-knet.ko lib/modules/6.12.41+deb13-sonic-amd64/extra
+-systems/linux/user/x86-smp_generic_64-2_6/linux-kernel-bde.ko lib/modules/6.12.41+deb13-sonic-amd64/extra
+-systems/linux/user/x86-smp_generic_64-2_6/linux-user-bde.ko lib/modules/6.12.41+deb13-sonic-amd64/extra
+-systems/linux/user/x86-smp_generic_64-2_6/linux-knet-cb.ko lib/modules/6.12.41+deb13-sonic-amd64/extra
++systems/linux/user/x86-smp_generic_64-2_6/linux-bcm-knet.ko lib/modules/7.0.0-1002-sonic/extra
++systems/linux/user/x86-smp_generic_64-2_6/linux-kernel-bde.ko lib/modules/7.0.0-1002-sonic/extra
++systems/linux/user/x86-smp_generic_64-2_6/linux-user-bde.ko lib/modules/7.0.0-1002-sonic/extra
++systems/linux/user/x86-smp_generic_64-2_6/linux-knet-cb.ko lib/modules/7.0.0-1002-sonic/extra
+ systemd/opennsl-modules.service lib/systemd/system
+-sdklt/linux/bde/linux_ngbde.ko lib/modules/6.12.41+deb13-sonic-amd64/extra
++sdklt/linux/bde/linux_ngbde.ko lib/modules/7.0.0-1002-sonic/extra
