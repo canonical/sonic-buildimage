@@ -1,0 +1,96 @@
+Index: sonic-platform-modules-ingrasys/s8810-32q/modules/eeprom_mb.c
+===================================================================
+--- sonic-platform-modules-ingrasys.orig/s8810-32q/modules/eeprom_mb.c
++++ sonic-platform-modules-ingrasys/s8810-32q/modules/eeprom_mb.c
+@@ -92,7 +92,7 @@ exit:
+ }
+ 
+ static ssize_t mb_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ingrasys/s8900-54xc/modules/eeprom_mb.c
+===================================================================
+--- sonic-platform-modules-ingrasys.orig/s8900-54xc/modules/eeprom_mb.c
++++ sonic-platform-modules-ingrasys/s8900-54xc/modules/eeprom_mb.c
+@@ -92,7 +92,7 @@ exit:
+ }
+ 
+ static ssize_t mb_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ingrasys/s8900-64xc/modules/eeprom_mb.c
+===================================================================
+--- sonic-platform-modules-ingrasys.orig/s8900-64xc/modules/eeprom_mb.c
++++ sonic-platform-modules-ingrasys/s8900-64xc/modules/eeprom_mb.c
+@@ -92,7 +92,7 @@ exit:
+ }
+ 
+ static ssize_t mb_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ingrasys/s8900-64xc/modules/qsfp_cpld.c
+===================================================================
+--- sonic-platform-modules-ingrasys.orig/s8900-64xc/modules/qsfp_cpld.c
++++ sonic-platform-modules-ingrasys/s8900-64xc/modules/qsfp_cpld.c
+@@ -1289,7 +1289,7 @@ sfp_port_read(struct sfp_port_data *data
+ 
+ static ssize_t
+ sfp_bin_read(struct file *filp, struct kobject *kobj,
+-             struct bin_attribute *attr,
++             const struct bin_attribute *attr,
+              char *buf, loff_t off, size_t count)
+ {
+     struct sfp_port_data *data;
+@@ -1356,7 +1356,7 @@ sfp_port_write(struct sfp_port_data *dat
+ 
+ static ssize_t
+ sfp_bin_write(struct file *filp, struct kobject *kobj,
+-          struct bin_attribute *attr,
++          const struct bin_attribute *attr,
+           char *buf, loff_t off, size_t count)
+ {
+     struct sfp_port_data *data;
+Index: sonic-platform-modules-ingrasys/s9100/modules/eeprom_mb.c
+===================================================================
+--- sonic-platform-modules-ingrasys.orig/s9100/modules/eeprom_mb.c
++++ sonic-platform-modules-ingrasys/s9100/modules/eeprom_mb.c
+@@ -92,7 +92,7 @@ exit:
+ }
+ 
+ static ssize_t mb_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ingrasys/s9200-64x/modules/eeprom_mb.c
+===================================================================
+--- sonic-platform-modules-ingrasys.orig/s9200-64x/modules/eeprom_mb.c
++++ sonic-platform-modules-ingrasys/s9200-64x/modules/eeprom_mb.c
+@@ -94,7 +94,7 @@ exit:
+ }
+ 
+ static ssize_t mb_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -122,7 +122,7 @@ static ssize_t mb_eeprom_read(struct fil
+ }
+ 
+ static ssize_t mb_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));

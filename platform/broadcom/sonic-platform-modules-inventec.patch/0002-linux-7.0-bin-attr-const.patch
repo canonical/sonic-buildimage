@@ -1,0 +1,91 @@
+Index: sonic-platform-modules-inventec/d6254qs/modules/inv_eeprom.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6254qs/modules/inv_eeprom.c
++++ sonic-platform-modules-inventec/d6254qs/modules/inv_eeprom.c
+@@ -84,7 +84,7 @@ exit:
+ }
+ 
+ static ssize_t inv_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-inventec/d6332/modules/inv_eeprom.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6332/modules/inv_eeprom.c
++++ sonic-platform-modules-inventec/d6332/modules/inv_eeprom.c
+@@ -84,7 +84,7 @@ exit:
+ }
+ 
+ static ssize_t inv_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-inventec/d6356/modules/inv_eeprom.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6356/modules/inv_eeprom.c
++++ sonic-platform-modules-inventec/d6356/modules/inv_eeprom.c
+@@ -84,7 +84,7 @@ exit:
+ }
+ 
+ static ssize_t inv_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-inventec/d6556/modules/inv_eeprom.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6556/modules/inv_eeprom.c
++++ sonic-platform-modules-inventec/d6556/modules/inv_eeprom.c
+@@ -84,7 +84,7 @@ exit:
+ }
+ 
+ static ssize_t inv_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-inventec/d7032q28b/modules/inv_eeprom.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7032q28b/modules/inv_eeprom.c
++++ sonic-platform-modules-inventec/d7032q28b/modules/inv_eeprom.c
+@@ -84,7 +84,7 @@ exit:
+ }
+ 
+ static ssize_t inv_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-inventec/d7054q28b/modules/inv_eeprom.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7054q28b/modules/inv_eeprom.c
++++ sonic-platform-modules-inventec/d7054q28b/modules/inv_eeprom.c
+@@ -84,7 +84,7 @@ exit:
+ }
+ 
+ static ssize_t inv_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-inventec/d7264q28b/modules/inv_eeprom.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7264q28b/modules/inv_eeprom.c
++++ sonic-platform-modules-inventec/d7264q28b/modules/inv_eeprom.c
+@@ -84,7 +84,7 @@ exit:
+ }
+ 
+ static ssize_t inv_eeprom_read(struct file *filp, struct kobject *kobj,
+-			   struct bin_attribute *bin_attr,
++			   const struct bin_attribute *bin_attr,
+ 			   char *buf, loff_t off, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
