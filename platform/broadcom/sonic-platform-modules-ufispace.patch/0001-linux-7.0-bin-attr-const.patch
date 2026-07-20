@@ -1,0 +1,220 @@
+Index: sonic-platform-modules-ufispace/s6301-56st/modules/x86-64-ufispace-s6301-56st-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s6301-56st/modules/x86-64-ufispace-s6301-56st-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s6301-56st/modules/x86-64-ufispace-s6301-56st-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s7801-54xs/modules/x86-64-ufispace-s7801-54xs-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s7801-54xs/modules/x86-64-ufispace-s7801-54xs-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s7801-54xs/modules/x86-64-ufispace-s7801-54xs-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s8901-54xc/modules/x86-64-ufispace-s8901-54xc-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s8901-54xc/modules/x86-64-ufispace-s8901-54xc-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s8901-54xc/modules/x86-64-ufispace-s8901-54xc-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s9110-32x/modules/x86-64-ufispace-s9110-32x-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s9110-32x/modules/x86-64-ufispace-s9110-32x-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s9110-32x/modules/x86-64-ufispace-s9110-32x-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s9300-32d/modules/x86-64-ufispace-s9300-32d-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s9300-32d/modules/x86-64-ufispace-s9300-32d-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s9300-32d/modules/x86-64-ufispace-s9300-32d-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s9301-32d/modules/x86-64-ufispace-s9301-32d-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s9301-32d/modules/x86-64-ufispace-s9301-32d-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s9301-32d/modules/x86-64-ufispace-s9301-32d-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s9301-32db/modules/x86-64-ufispace-s9301-32db-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s9301-32db/modules/x86-64-ufispace-s9301-32db-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s9301-32db/modules/x86-64-ufispace-s9301-32db-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s9311-64d/modules/x86-64-ufispace-s9311-64d-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s9311-64d/modules/x86-64-ufispace-s9311-64d-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s9311-64d/modules/x86-64-ufispace-s9311-64d-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s9321-64e/modules/x86-64-ufispace-s9321-64e-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s9321-64e/modules/x86-64-ufispace-s9321-64e-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s9321-64e/modules/x86-64-ufispace-s9321-64e-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+Index: sonic-platform-modules-ufispace/s9321-64eo/modules/x86-64-ufispace-s9321-64eo-sys-eeprom.c
+===================================================================
+--- sonic-platform-modules-ufispace.orig/s9321-64eo/modules/x86-64-ufispace-s9321-64eo-sys-eeprom.c
++++ sonic-platform-modules-ufispace/s9321-64eo/modules/x86-64-ufispace-s9321-64eo-sys-eeprom.c
+@@ -98,7 +98,7 @@ exit:
+ }
+ 
+ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
+-               struct bin_attribute *bin_attr,
++               const struct bin_attribute *bin_attr,
+                char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));
+@@ -126,7 +126,7 @@ static ssize_t sys_eeprom_read(struct fi
+ }
+ 
+ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
+-                       struct bin_attribute *bin_attr,
++                       const struct bin_attribute *bin_attr,
+                        char *buf, loff_t off, size_t count)
+ {
+     struct i2c_client *client = to_i2c_client(container_of(kobj, struct device, kobj));

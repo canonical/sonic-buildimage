@@ -1,0 +1,22 @@
+Index: sonic-platform-modules-delta/ag9064/modules/delta_ag9064_platform.c
+===================================================================
+--- sonic-platform-modules-delta.orig/ag9064/modules/delta_ag9064_platform.c
++++ sonic-platform-modules-delta/ag9064/modules/delta_ag9064_platform.c
+@@ -955,7 +955,7 @@ static ssize_t access_user_space(const c
+     return vfs_ret;
+ }
+ 
+-static ssize_t delta_bin_attr_read(struct file *filp, struct kobject *kobj, struct bin_attribute *attr,
++static ssize_t delta_bin_attr_read(struct file *filp, struct kobject *kobj, const struct bin_attribute *attr,
+                                    char *buf, loff_t off, size_t count)
+ {
+     struct delta_bin_attribute *delta_attr = to_delta_attr(attr);
+@@ -1047,7 +1047,7 @@ ACCESS_ERROR:
+     return -ETIMEDOUT;
+ }
+ 
+-static ssize_t delta_bin_attr_write(struct file *filp, struct kobject *kobj, struct bin_attribute *attr,
++static ssize_t delta_bin_attr_write(struct file *filp, struct kobject *kobj, const struct bin_attribute *attr,
+                                     char *buf, loff_t off, size_t count)
+ {
+     struct delta_bin_attribute *delta_attr = to_delta_attr(attr);
