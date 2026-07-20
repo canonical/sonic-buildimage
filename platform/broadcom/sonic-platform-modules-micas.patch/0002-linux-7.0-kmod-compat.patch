@@ -1,0 +1,97 @@
+Index: sonic-platform-modules-micas/common/modules/wb_gpio_d1500.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_gpio_d1500.c
++++ sonic-platform-modules-micas/common/modules/wb_gpio_d1500.c
+@@ -139,7 +139,7 @@ static int wb_gpio_direction_in(struct g
+     return 0;
+ }
+ 
+-static void wb_gpio_set(struct gpio_chip *gc,
++static int wb_gpio_set(struct gpio_chip *gc,
+                 unsigned gpio_num, int val)
+ {
+     u32 data;
+@@ -177,7 +177,7 @@ static void wb_gpio_set(struct gpio_chip
+     }
+     spin_unlock_irqrestore(&sio_lock, flags);
+ 
+-    return;
++    return 0;
+ }
+ 
+ static int wb_gpio_direction_out(struct gpio_chip *gc,
+Index: sonic-platform-modules-micas/common/modules/wb_ucd9000.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_ucd9000.c
++++ sonic-platform-modules-micas/common/modules/wb_ucd9000.c
+@@ -425,7 +425,7 @@ static int ucd9000_gpio_get(struct gpio_
+     return !!(ret & UCD9000_GPIO_CONFIG_STATUS);
+ }
+ 
+-static void ucd9000_gpio_set(struct gpio_chip *gc, unsigned int offset,
++static int ucd9000_gpio_set(struct gpio_chip *gc, unsigned int offset,
+                  int value)
+ {
+     struct i2c_client *client = gpiochip_get_data(gc);
+@@ -435,17 +435,17 @@ static void ucd9000_gpio_set(struct gpio
+     if (ret < 0) {
+         dev_dbg(&client->dev, "failed to read GPIO %d config: %d\n",
+             offset, ret);
+-        return;
++        return 0;
+     }
+ 
+     if (value) {
+         if (ret & UCD9000_GPIO_CONFIG_STATUS)
+-            return;
++            return 0;
+ 
+         ret |= UCD9000_GPIO_CONFIG_STATUS;
+     } else {
+         if (!(ret & UCD9000_GPIO_CONFIG_STATUS))
+-            return;
++            return 0;
+ 
+         ret &= ~UCD9000_GPIO_CONFIG_STATUS;
+     }
+@@ -457,7 +457,7 @@ static void ucd9000_gpio_set(struct gpio
+     if (ret < 0) {
+         dev_dbg(&client->dev, "Failed to write GPIO %d config: %d\n",
+             offset, ret);
+-        return;
++        return 0;
+     }
+ 
+     ret &= ~UCD9000_GPIO_CONFIG_ENABLE;
+@@ -466,6 +466,8 @@ static void ucd9000_gpio_set(struct gpio
+     if (ret < 0)
+         dev_dbg(&client->dev, "Failed to write GPIO %d config: %d\n",
+             offset, ret);
++
++    return 0;
+ }
+ 
+ static int ucd9000_gpio_get_direction(struct gpio_chip *gc,
+Index: sonic-platform-modules-micas/common/modules/wb_wdt.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_wdt.c
++++ sonic-platform-modules-micas/common/modules/wb_wdt.c
+@@ -373,7 +373,7 @@ static enum hrtimer_restart hrtimer_hwpi
+     wb_wdt_priv_t *priv = container_of(timer, wb_wdt_priv_t, hrtimer);
+ 
+     wdt_hwping(priv);
+-    hrtimer_forward(timer, timer->base->get_time(), priv->m_kt);
++    hrtimer_forward(timer, hrtimer_cb_get_time(timer), priv->m_kt);
+     return HRTIMER_RESTART;
+ }
+ 
+@@ -556,8 +556,7 @@ static int hrtimer_cfg(wb_wdt_priv_t *pr
+     }
+ 
+     priv->m_kt = ktime_set(hrtimer_s, hrtimer_ns);
+-    hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-    hrtimer->function = hrtimer_hwping;
++    hrtimer_setup(hrtimer, hrtimer_hwping, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+     hrtimer_start(hrtimer, priv->m_kt, HRTIMER_MODE_REL);
+ 
+     ret = wb_wdt_enable_ctrl(priv, WDT_ON);
