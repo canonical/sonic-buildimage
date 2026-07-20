@@ -1,0 +1,154 @@
+name: docker-database
+summary: SONiC database container
+description: A Chiselled rock for SONiC database container
+version: "1.0.0"
+
+base: bare
+build-base: ubuntu@26.04
+license: Apache-2.0
+
+platforms:
+  amd64:
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  init:
+    command: rock-database-init.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-database"
+      DISTRO: "resolute"
+  redis:
+    command: bash -c "{ [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
+    override: replace
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-database"
+      DISTRO: "resolute"
+  flushdb:
+    command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+    environment:
+      DEBIAN_FRONTEND: "noninteractive"
+      IMAGENAME: "docker-database"
+      DISTRO: "resolute"
+
+parts:
+  install-rsyslog:
+    plugin: nil
+    stage-packages:
+      - rsyslog
+      - rsyslog-relp
+      - libpython3.14-stdlib
+      - libpython3.14-minimal
+      - libpython3.14
+      - libboost-serialization1.83.0
+      - libxxhash0
+  setup-database:
+    plugin: dump
+    source: .
+    override-build: |
+        craftctl default
+
+        # Install SONiC debs
+        dpkg -x debs/socat_1.8.1.1-1_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libswsscommon_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libyang3_3.13.6-1ubuntu0.1_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/python3-libyang_3.1.0-1_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/python3-swsscommon_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/sonic-db-cli_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/sonic-eventd_1.0.0-0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libdashapi_1.0.0_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libnl-3-200_3.12.0-2_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libnl-route-3-200_3.12.0-2_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libnl-genl-3-200_3.12.0-2_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libnl-nf-3-200_3.12.0-2_amd64.deb ${CRAFT_PART_INSTALL}
+        dpkg -x debs/libnl-cli-3-200_3.12.0-2_amd64.deb ${CRAFT_PART_INSTALL}
+
+        # Install python packages
+        pip3 install --upgrade -t ${CRAFT_PART_INSTALL}/usr/lib/python3.14/dist-packages/ \
+          ./python-wheels/sonic_py_common-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl \
+          ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl \
+          jinjanator \
+          click \
+          pyangbind==0.8.7 \
+          lxml
+
+        # Clean up deb/wheel source files from install tree
+        rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels ${CRAFT_PART_INSTALL}/python-debs
+
+    organize:
+      database_config.json.j2: usr/share/sonic/templates/database_config.json.j2
+      database_global.json.j2: usr/share/sonic/templates/database_global.json.j2
+      envs: usr/share/sonic/scripts/envs
+      multi_database_config.json.j2: usr/share/sonic/templates/multi_database_config.json.j2
+      files/syslog-layer.yaml: usr/share/sonic/templates/
+      rock-database-init.sh: usr/local/bin/rock-database-init.sh
+      files/container_startup.py: usr/share/sonic/scripts/container_startup.py
+      files/readiness_probe.sh: usr/bin/readiness_probe.sh
+      files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
+      files/90-sonic.conf: usr/lib/sysctl.d/90-sonic.conf
+      files/update_chassisdb_config: usr/local/bin/update_chassisdb_config
+      flush_unused_database: usr/local/bin/flush_unused_database
+    stage:
+      - etc/
+      - home/
+      - lib
+      - lib64
+      - root/
+      - var/
+      - usr/
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/man
+    stage-packages:
+      - base-files_release-info
+      - base-files_home
+      - base-files_tmp
+      - base-passwd_data
+      - bash_bins
+      - procps_bins
+      - coreutils_bins
+      - gawk_bins
+      - redis-server_bins
+      - iproute2_bins
+      - python3.14_standard
+      - libuuid1_libs
+      - libhiredis1.1.0_libs
+      - libzmq5_libs
+    override-prime: |
+      craftctl default
+
+      # Create symlinks
+      ln -sf /usr/bin/gawk usr/bin/awk
+      ln -sf /usr/bin/python3.14 usr/bin/python3
+
+      # Move python bins
+      mv usr/lib/python3.14/dist-packages/bin/* usr/bin/
+
+      # Copy tz data from build-base
+      cp /etc/timezone etc 2>/dev/null || echo "Etc/UTC" > etc/timezone
+      cp /etc/localtime etc 2>/dev/null || true
+
+      # Make update script executable
+      chmod +x usr/local/bin/update_chassisdb_config
+
+      # Copy rsyslog config: this must not be done in the organize step. Otherwise our rsyslog.conf will be overwritten by stage-package rsyslog's default config.
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
+
+      # Configure redis settings (same sed as Dockerfile.j2)
+      sed -ri 's/^# save ""$/save ""/g; s/^daemonize yes$/daemonize no/; s/^logfile .*$/logfile ""/; s/^# syslog-enabled no$/syslog-enabled no/; s/^# unixsocket/unixsocket/; s/redis-server.sock/redis.sock/g; s/^client-output-buffer-limit pubsub [0-9]+mb [0-9]+mb [0-9]+/client-output-buffer-limit pubsub 0 0 0/; s/^notify-keyspace-events ""$/notify-keyspace-events AKE/; s/^databases [0-9]+$/databases 100/' etc/redis/redis.conf
+
+      # Copy manifest to root
+      cp ${CRAFT_PROJECT_DIR}/manifest.json .
