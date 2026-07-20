@@ -1,0 +1,26 @@
+Index: sonic-platform-modules-micas/common/modules/wb_spi_ocores.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_spi_ocores.c
++++ sonic-platform-modules-micas/common/modules/wb_spi_ocores.c
+@@ -926,7 +926,7 @@
+     bool be;
+ 
+     ret = -1;
+-    ctlr = spi_alloc_master(&pdev->dev, sizeof(struct spioc));
++    ctlr = spi_alloc_target(&pdev->dev, sizeof(struct spioc));
+     if (!ctlr) {
+         dev_err(&pdev->dev, "Failed to alloc spi controller.\n");
+         goto out;
+Index: sonic-platform-modules-micas/m2-w6930-64qc/modules/driver/wb_spi_master.c
+===================================================================
+--- sonic-platform-modules-micas.orig/m2-w6930-64qc/modules/driver/wb_spi_master.c
++++ sonic-platform-modules-micas/m2-w6930-64qc/modules/driver/wb_spi_master.c
+@@ -93,7 +93,7 @@
+ 
+     device_initialize(&g_wb_spi_device);
+ 
+-    g_wb_spi_controller = spi_alloc_master(&g_wb_spi_device, sizeof(struct spi_board_info));
++    g_wb_spi_controller = spi_alloc_target(&g_wb_spi_device, sizeof(struct spi_board_info));
+     if (g_wb_spi_controller == NULL) {
+         WB_SPI_MASTER_ERROR("spi_alloc_master failed.\n");
+         return -ENOMEM;
