@@ -1,0 +1,24 @@
+Index: sonic-platform-modules-cel/ds1000/modules/pddf_custom_wdt.c
+===================================================================
+--- sonic-platform-modules-cel.orig/ds1000/modules/pddf_custom_wdt.c
++++ sonic-platform-modules-cel/ds1000/modules/pddf_custom_wdt.c
+@@ -19,6 +19,7 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#include <linux/cdev.h>
+ #include <linux/err.h>
+ #include <linux/fs.h>
+ #include <linux/init.h>
+Index: sonic-platform-modules-cel/silverstone-v2/modules/pddf_custom_wdt.c
+===================================================================
+--- sonic-platform-modules-cel.orig/silverstone-v2/modules/pddf_custom_wdt.c
++++ sonic-platform-modules-cel/silverstone-v2/modules/pddf_custom_wdt.c
+@@ -19,6 +19,7 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#include <linux/cdev.h>
+ #include <linux/err.h>
+ #include <linux/fs.h>
+ #include <linux/init.h>

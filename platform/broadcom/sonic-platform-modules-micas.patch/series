@@ -7,3 +7,4 @@
 0010-linux-7.0-ccflags-y.patch
 0011-linux-7.0-gpiof-active-low.patch
 0012-linux-7.0-i2c-register-spd-guard.patch
+0013-linux-7.0-bin2hex-include.patch
