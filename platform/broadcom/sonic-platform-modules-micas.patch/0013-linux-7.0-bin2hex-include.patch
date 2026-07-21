@@ -1,0 +1,12 @@
+Index: sonic-platform-modules-micas/common/modules/wb_ucd9000.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_ucd9000.c
++++ sonic-platform-modules-micas/common/modules/wb_ucd9000.c
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/debugfs.h>
+ #include <linux/kernel.h>
++#include <linux/hex.h>
+ #include <linux/module.h>
+ #include <linux/of_device.h>
+ #include <linux/init.h>
