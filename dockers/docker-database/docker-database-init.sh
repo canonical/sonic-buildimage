@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+# Detect whether pebble is the process manager (rock/rockcraft path) or
+# supervisord is (docker path). Branch only at the divergence points below.
+USE_PEBBLE=false
+if pgrep -x pebble > /dev/null 2>&1; then
+    USE_PEBBLE=true
+    source /usr/share/sonic/scripts/envs
+    LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+    pebble add syslog-layer --combine $LAYER_FILE
+    pebble replan
+fi
+
 # For linux host namespace, in both single and multi ASIC platform use the loopback interface
 # For other namespaces, use eth0 interface which is connected to the docker0 bridge in the host.
 if [[ $NAMESPACE_ID == "" ]]
@@ -83,16 +94,19 @@ if [[ $DATABASE_TYPE == "chassisdb" ]]; then
     VAR_LIB_REDIS_CHASSIS_DIR="/var/lib/redis_chassis"
     mkdir -p $VAR_LIB_REDIS_CHASSIS_DIR   
     update_chassisdb_config -j $db_cfg_file_tmp -k -p $chassis_db_port
-    # Set protected mode based on the hostname
-    additional_data_json=$(jq -c '{INSTANCES: .INSTANCES | map_values({is_protected_mode: (.hostname == "127.0.0.1")})}' "$db_cfg_file_tmp")
-    # generate all redis server supervisord configuration file
-    sonic-cfggen -j $db_cfg_file_tmp -a "$additional_data_json" \
-    -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
-    -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
+    if [[ "$USE_PEBBLE" != "true" ]]; then
+        # Set protected mode based on the hostname
+        additional_data_json=$(jq -c '{INSTANCES: .INSTANCES | map_values({is_protected_mode: (.hostname == "127.0.0.1")})}' "$db_cfg_file_tmp")
+        # generate all redis server supervisord configuration file
+        sonic-cfggen -j $db_cfg_file_tmp -a "$additional_data_json" \
+        -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
+        -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
+        rm $db_cfg_file_tmp
+        chown -R redis:redis $VAR_LIB_REDIS_CHASSIS_DIR
+        chown -R redis:redis $REDIS_DIR
+        exec /usr/local/bin/supervisord
+    fi
     rm $db_cfg_file_tmp
-    chown -R redis:redis $VAR_LIB_REDIS_CHASSIS_DIR
-    chown -R redis:redis $REDIS_DIR
-    exec /usr/local/bin/supervisord
     exit 0
 fi
 
@@ -107,15 +121,18 @@ then
 fi
 # delete chassisdb config to generate supervisord config
 update_chassisdb_config -j $db_cfg_file_tmp -d
-# Set protected mode based on the hostname
-additional_data_json=$(jq -c '{INSTANCES: .INSTANCES | map_values({is_protected_mode: (.hostname == "127.0.0.1")})}' "$db_cfg_file_tmp")
-# For Linecard databases, disable Redis protected mode to expose them to the midplane.
-if [ -f "$chassisdb_config" ] && [[ "$start_chassis_db" != "1" ]]; then
-    additional_data_json=$(jq -c '{INSTANCES: .INSTANCES | map_values({is_protected_mode: false})}' "$db_cfg_file_tmp")
+
+if [[ "$USE_PEBBLE" != "true" ]]; then
+    # Set protected mode based on the hostname
+    additional_data_json=$(jq -c '{INSTANCES: .INSTANCES | map_values({is_protected_mode: (.hostname == "127.0.0.1")})}' "$db_cfg_file_tmp")
+    # For Linecard databases, disable Redis protected mode to expose them to the midplane.
+    if [ -f "$chassisdb_config" ] && [[ "$start_chassis_db" != "1" ]]; then
+        additional_data_json=$(jq -c '{INSTANCES: .INSTANCES | map_values({is_protected_mode: false})}' "$db_cfg_file_tmp")
+    fi
+    sonic-cfggen -j "$db_cfg_file_tmp" -a "$additional_data_json" \
+    -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
+    -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
 fi
-sonic-cfggen -j "$db_cfg_file_tmp" -a "$additional_data_json" \
--t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
--t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
 
 if [[ "$start_chassis_db" != "1" ]] && [[ -z "$chassis_db_address" ]]; then
      cp $db_cfg_file_tmp $db_cfg_file
@@ -138,14 +155,20 @@ do
     else
         echo -n > /var/lib/$inst/dump.rdb
     fi
-    # the Redis process is operating under the 'redis' user in supervisord and make redis user own /var/lib/$inst inside db container.
-    chown -R redis:redis /var/lib/$inst
+    if [[ "$USE_PEBBLE" != "true" ]]; then
+        chown -R redis:redis /var/lib/$inst
+    fi
 done
 
-chown -R redis:redis $REDIS_DIR
-REDIS_BMP_DIR="/var/lib/redis_bmp"
-if [[ -d $REDIS_BMP_DIR ]]; then
-    chown -R redis:redis $REDIS_BMP_DIR
-fi
+if [[ "$USE_PEBBLE" == "true" ]]; then
+    pebble start redis
+    pebble start flushdb
+else
+    chown -R redis:redis $REDIS_DIR
+    REDIS_BMP_DIR="/var/lib/redis_bmp"
+    if [[ -d $REDIS_BMP_DIR ]]; then
+        chown -R redis:redis $REDIS_BMP_DIR
+    fi
 
-exec /usr/local/bin/supervisord
+    exec /usr/local/bin/supervisord
+fi
