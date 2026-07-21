@@ -1,0 +1,366 @@
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_cb_i2c.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_cb_i2c.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_cb_i2c.c
+@@ -51,7 +51,7 @@ static __init struct i2c_client *bms_cb_
+         I2C_BOARD_INFO("spd", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ 
+@@ -62,7 +62,7 @@ static __init struct i2c_client *bms_cb_
+         I2C_BOARD_INFO("24c02", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ static __init struct i2c_client *bms_cb_setup_tmp75(
+@@ -72,7 +72,7 @@ static __init struct i2c_client *bms_cb_
+         I2C_BOARD_INFO("tmp75", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ static __init struct i2c_client *bms_cb_setup_system_cpld(struct i2c_adapter *adap)
+@@ -81,7 +81,7 @@ static __init struct i2c_client *bms_cb_
+         I2C_BOARD_INFO("system_cpld", 0x31),
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static int __init bms_cb_setup_devices_i801(void)
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_fb_i2c.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_fb_i2c.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_fb_i2c.c
+@@ -70,7 +70,7 @@ static __init struct i2c_client *bms_fb_
+         I2C_BOARD_INFO("tmp75", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ static __init struct i2c_client *bms_fb_setup_max31790(
+@@ -80,7 +80,7 @@ static __init struct i2c_client *bms_fb_
+         I2C_BOARD_INFO("max31790", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ static int __init bms_fb_setup_devices(void)
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_fb_module_i2c.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_fb_module_i2c.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_fb_module_i2c.c
+@@ -70,7 +70,7 @@ static __init struct i2c_client *bms_fb_
+         I2C_BOARD_INFO("24c02", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ static int __init bms_fb_module_setup_devices(void)
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_fse000.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_fse000.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_fse000.c
+@@ -1539,7 +1539,7 @@ static int pmbus_init_common(struct i2c_
+ 	return 0;
+ }
+ 
+-int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
++int pmbus_do_probe(struct i2c_client *client,
+ 		   struct pmbus_driver_info *info)
+ {
+ 	struct device *dev = &client->dev;
+@@ -1600,12 +1600,11 @@ out_kfree:
+ 	return ret;
+ }
+ 
+-int pmbus_do_remove(struct i2c_client *client)
++void pmbus_do_remove(struct i2c_client *client)
+ {
+ 	struct pmbus_data *data = i2c_get_clientdata(client);
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	kfree(data->group.attrs);
+-	return 0;
+ }
+ 
+ 
+@@ -1744,8 +1743,7 @@ abort:
+ 	return ret;
+ }
+ 
+-static int pmbus_probe(struct i2c_client *client,
+-		       const struct i2c_device_id *id)
++static int pmbus_probe(struct i2c_client *client)
+ {
+ 	struct pmbus_driver_info *info;
+ 
+@@ -1754,10 +1752,10 @@ static int pmbus_probe(struct i2c_client
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+-	info->pages = id->driver_data;
++	info->pages = (uintptr_t)i2c_get_match_data(client);
+ 	info->identify = pmbus_identify;
+ 
+-	return pmbus_do_probe(client, id, info);
++	return pmbus_do_probe(client, info);
+ }
+ 
+ /*
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_gpe.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_gpe.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_gpe.c
+@@ -50,13 +50,12 @@ static int bms_gpe_add(struct acpi_devic
+     return 0;
+ }
+ 
+-static int bms_gpe_remove(struct acpi_device *device)
++static void bms_gpe_remove(struct acpi_device *device)
+ {
+     int i = 0;
+     for (i = 0; i < bms_gpe_num; i++) {
+         acpi_remove_gpe_handler(NULL, bms_gpe[i], &bms_gpe_handler);
+     }
+-    return 0;
+ }
+ 
+ static const struct acpi_device_id bms_acpi_device_ids[] = {
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_master_cpld.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_master_cpld.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_master_cpld.c
+@@ -425,7 +425,7 @@ static const struct attribute_group mast
+     .attrs = misc_attributes,
+ };
+ 
+-static int master_cpld_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int master_cpld_probe(struct i2c_client *client)
+ {
+     struct master_cpld_data *master_cpld;
+     int err, i;
+@@ -459,7 +459,7 @@ static int master_cpld_probe(struct i2c_
+ 
+ }
+ 
+-static int master_cpld_remove(struct i2c_client *client)
++static void master_cpld_remove(struct i2c_client *client)
+ {
+     int i;
+     int grp_number = (int)( sizeof(master_cpld_port_group) / sizeof(master_cpld_port_group[0]));
+@@ -470,7 +470,6 @@ static int master_cpld_remove(struct i2c
+     sysfs_remove_group(&client->dev.kobj, &master_cpld_group_misc);
+ 
+     printk(KERN_INFO "%s: Master CPLD removed.\n", __FUNCTION__);
+-    return 0;
+ }
+ 
+ static struct i2c_driver master_cpld_driver = {
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_pb_i2c.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_pb_i2c.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_pb_i2c.c
+@@ -70,7 +70,7 @@ static __init struct i2c_client *bms_pb_
+         I2C_BOARD_INFO("24c01", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ 
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_sb_i2c.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_sb_i2c.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_sb_i2c.c
+@@ -201,7 +201,7 @@ static __init struct i2c_client *bms_sb_
+         I2C_BOARD_INFO("24c04", 0x50),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_tmp75(
+@@ -211,7 +211,7 @@ static __init struct i2c_client *bms_sb_
+         I2C_BOARD_INFO("tmp75", addr),
+     };
+ 
+-    return i2c_new_device(adap, &info_spd);
++    return i2c_new_client_device(adap, &info_spd);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_switch(struct i2c_adapter *adap)
+@@ -221,7 +221,7 @@ static __init struct i2c_client *bms_sb_
+         .platform_data = &platdata_pca9548_mux,
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_stage1_mux0(struct i2c_adapter *adap)
+@@ -231,7 +231,7 @@ static __init struct i2c_client *bms_sb_
+         .platform_data = &platdata_stage1_pca9548_mux0,
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_stage1_mux1(struct i2c_adapter *adap)
+@@ -241,7 +241,7 @@ static __init struct i2c_client *bms_sb_
+         .platform_data = &platdata_stage1_pca9548_mux1,
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_stage1_mux2(struct i2c_adapter *adap)
+@@ -251,7 +251,7 @@ static __init struct i2c_client *bms_sb_
+         .platform_data = &platdata_stage1_pca9548_mux2,
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_stage1_mux3(struct i2c_adapter *adap)
+@@ -261,7 +261,7 @@ static __init struct i2c_client *bms_sb_
+         .platform_data = &platdata_stage1_pca9548_mux3,
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_slave_cpld(struct i2c_adapter *adap)
+@@ -270,7 +270,7 @@ static __init struct i2c_client *bms_sb_
+         I2C_BOARD_INFO("slave_cpld", 0x33),
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_master_cpld(struct i2c_adapter *adap)
+@@ -279,7 +279,7 @@ static __init struct i2c_client *bms_sb_
+         I2C_BOARD_INFO("master_cpld", 0x32),
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static __init struct i2c_client *bms_sb_setup_sff8436(struct i2c_adapter *adap)
+@@ -288,7 +288,7 @@ static __init struct i2c_client *bms_sb_
+         I2C_BOARD_INFO("sff8436", 0x50),
+     };
+ 
+-    return i2c_new_device(adap, &info);
++    return i2c_new_client_device(adap, &info);
+ }
+ 
+ static int __init bms_sb_setup_devices_ismt(void)
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_slave_cpld.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_slave_cpld.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_slave_cpld.c
+@@ -349,7 +349,7 @@ static const struct attribute_group slav
+     .attrs = misc_attributes,
+ };
+ 
+-static int slave_cpld_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int slave_cpld_probe(struct i2c_client *client)
+ {
+     struct slave_cpld_data *slave_cpld;
+     int err, i;
+@@ -383,7 +383,7 @@ static int slave_cpld_probe(struct i2c_c
+ 
+ }
+ 
+-static int slave_cpld_remove(struct i2c_client *client)
++static void slave_cpld_remove(struct i2c_client *client)
+ {
+     int i;
+     int grp_number = (int)( sizeof(slave_cpld_port_group) / sizeof(slave_cpld_port_group[0]));
+@@ -394,7 +394,6 @@ static int slave_cpld_remove(struct i2c_
+     sysfs_remove_group(&client->dev.kobj, &slave_cpld_group_misc);
+ 
+     printk(KERN_INFO "%s: Slave CPLD removed.\n", __FUNCTION__);
+-    return 0;
+ }
+ 
+ static struct i2c_driver slave_cpld_driver = {
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_system_cpld.c
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/mitac_ly1200_32x_system_cpld.c
++++ sonic-platform-modules-mitac/ly1200-32x/modules/mitac_ly1200_32x_system_cpld.c
+@@ -11,7 +11,7 @@
+ #include <linux/miscdevice.h>
+ #include <linux/reboot.h>
+ #include <linux/watchdog.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #endif
+ 
+ static int debug_flag = 0;
+@@ -461,7 +461,7 @@ static struct notifier_block wdt_notifie
+ };
+ #endif /* CONFIG_DRV_SYSCPLD_WDT */
+ 
+-static int system_cpld_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int system_cpld_probe(struct i2c_client *client)
+ {
+     int err;
+ 
+@@ -499,7 +499,7 @@ static int system_cpld_probe(struct i2c_
+ 
+ }
+ 
+-static int system_cpld_remove(struct i2c_client *client)
++static void system_cpld_remove(struct i2c_client *client)
+ {
+ #ifdef CONFIG_DRV_SYSCPLD_WDT
+     misc_deregister(&wdt_dev);
+@@ -508,7 +508,6 @@ static int system_cpld_remove(struct i2c
+     sysfs_remove_group(&client->dev.kobj, &system_cpld_group_misc);
+ 
+     printk(KERN_INFO "%s: System CPLD removed.\n", __FUNCTION__);
+-    return 0;
+ }
+ 
+ static struct i2c_driver system_cpld_driver = {
+Index: sonic-platform-modules-mitac/ly1200-32x/modules/pmbus.h
+===================================================================
+--- sonic-platform-modules-mitac.orig/ly1200-32x/modules/pmbus.h
++++ sonic-platform-modules-mitac/ly1200-32x/modules/pmbus.h
+@@ -357,9 +357,9 @@ int pmbus_write_byte(struct i2c_client *
+ void pmbus_clear_faults(struct i2c_client *client);
+ bool pmbus_check_byte_register(struct i2c_client *client, int page, int reg);
+ bool pmbus_check_word_register(struct i2c_client *client, int page, int reg);
+-int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
++int pmbus_do_probe(struct i2c_client *client,
+ 		   struct pmbus_driver_info *info);
+-int pmbus_do_remove(struct i2c_client *client);
++void pmbus_do_remove(struct i2c_client *client);
+ const struct pmbus_driver_info *pmbus_get_driver_info(struct i2c_client
+ 						      *client);
+ 

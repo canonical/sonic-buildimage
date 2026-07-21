@@ -1,0 +1,711 @@
+Index: sonic-platform-modules-tencent/common/modules/rg_csu550.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_csu550.c
++++ sonic-platform-modules-tencent/common/modules/rg_csu550.c
+@@ -148,8 +148,7 @@ abort:
+ 	return ret;
+ }
+ 
+-static int pmbus_probe(struct i2c_client *client,
+-		       const struct i2c_device_id *id)
++static int pmbus_probe(struct i2c_client *client)
+ {
+ 	struct pmbus_driver_info *info;
+ 	struct pmbus_platform_data *pdata = NULL;
+@@ -160,8 +159,8 @@ static int pmbus_probe(struct i2c_client
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+-    if (!strncmp(id->name, "dps460", sizeof("dps460")) ||
+-		!strncmp(id->name, "rg_fsp1200", sizeof("rg_fsp1200")) || !strncmp(id->name, "rg_dps550", sizeof("rg_dps550"))) {
++    if (!strncmp(client->name, "dps460", sizeof("dps460")) ||
++		!strncmp(client->name, "rg_fsp1200", sizeof("rg_fsp1200")) || !strncmp(client->name, "rg_dps550", sizeof("rg_dps550"))) {
+         pdata = kzalloc(sizeof(struct pmbus_platform_data), GFP_KERNEL);
+         if (!pdata) {
+                 kfree(info);
+@@ -170,11 +169,11 @@ static int pmbus_probe(struct i2c_client
+             pdata->flags = PMBUS_SKIP_STATUS_CHECK;
+     }
+ 
+-	info->pages = id->driver_data;
++	info->pages = (unsigned long)i2c_get_match_data(client);
+ 	info->identify = pmbus_identify;
+ 	dev->platform_data = pdata;
+ 
+-	return rg_pmbus_do_probe(client, id, info);
++	return rg_pmbus_do_probe(client, info);
+ }
+ 
+ static const struct i2c_device_id pmbus_id[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_eeprom_93xx46.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_eeprom_93xx46.c
++++ sonic-platform-modules-tencent/common/modules/rg_eeprom_93xx46.c
+@@ -393,8 +393,6 @@ static int eeprom_93xx46_probe_dt(struct
+ 	struct device_node *np = spi->dev.of_node;
+ 	struct eeprom_93xx46_platform_data *pd;
+ 	u32 tmp;
+-	int gpio;
+-	enum of_gpio_flags of_flags;
+ 	int ret;
+ 
+ 	pd = devm_kzalloc(&spi->dev, sizeof(*pd), GFP_KERNEL);
+@@ -419,21 +417,18 @@ static int eeprom_93xx46_probe_dt(struct
+ 	if (of_property_read_bool(np, "read-only"))
+ 		pd->flags |= EE_READONLY;
+ 
+-	gpio = of_get_named_gpio_flags(np, "select-gpios", 0, &of_flags);
+-	if (gpio_is_valid(gpio)) {
+-		unsigned long flags =
+-			of_flags == OF_GPIO_ACTIVE_LOW ? GPIOF_ACTIVE_LOW : 0;
+-
+-		ret = devm_gpio_request_one(&spi->dev, gpio, flags,
+-					    "eeprom_93xx46_select");
+-		if (ret)
++	pd->select = devm_gpiod_get_index(&spi->dev, "select", 0, GPIOD_OUT_LOW);
++	if (IS_ERR(pd->select)) {
++		ret = PTR_ERR(pd->select);
++		if (ret == -ENOENT)
++			pd->select = NULL;
++		else
+ 			return ret;
++	}
+ 
+-		pd->select = gpio_to_desc(gpio);
++	if (pd->select) {
+ 		pd->prepare = select_assert;
+ 		pd->finish = select_deassert;
+-
+-		gpiod_direction_output(pd->select, 0);
+ 	}
+ 
+     if (of_id) {
+@@ -525,7 +520,7 @@ fail:
+ 	return err;
+ }
+ 
+-static int eeprom_93xx46_remove(struct spi_device *spi)
++static void eeprom_93xx46_remove(struct spi_device *spi)
+ {
+ 	struct eeprom_93xx46_dev *edev = spi_get_drvdata(spi);
+ 
+@@ -535,7 +530,6 @@ static int eeprom_93xx46_remove(struct s
+ 		device_remove_file(&spi->dev, &dev_attr_erase);
+ 
+ 	kfree(edev);
+-	return 0;
+ }
+ 
+ static struct spi_driver rg_eeprom_93xx46_driver = {
+Index: sonic-platform-modules-tencent/common/modules/rg_fpga_i2c_bus_drv.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_fpga_i2c_bus_drv.c
++++ sonic-platform-modules-tencent/common/modules/rg_fpga_i2c_bus_drv.c
+@@ -1061,14 +1061,13 @@ out:
+     return ret;
+ };
+ 
+-static int fpga_i2c_remove(struct platform_device *pdev)
++static void fpga_i2c_remove(struct platform_device *pdev)
+ {
+     fpga_i2c_dev_t *fpga_i2c;
+ 
+     fpga_i2c = platform_get_drvdata(pdev);
+     i2c_del_adapter(&fpga_i2c->adap);
+     platform_set_drvdata(pdev, NULL);
+-    return 0;
+ };
+ 
+ static struct of_device_id fpga_i2c_match[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_fpga_pca954x_drv.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_fpga_pca954x_drv.c
++++ sonic-platform-modules-tencent/common/modules/rg_fpga_pca954x_drv.c
+@@ -336,7 +336,7 @@ static int pca954x_deselect_mux(struct i
+ /*
+  * I2C init/probing/exit functions
+  */
+-static int fpga_i2c_pca954x_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int fpga_i2c_pca954x_probe(struct i2c_client *client)
+ {
+     struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
+     int num, force, class;
+@@ -402,7 +402,7 @@ static int fpga_i2c_pca954x_probe(struct
+             FPGA_PCA954X_VERBOSE("pca9548_base_nr:%u.\n", data->pca9548_base_nr);
+         }
+     } else {
+-        data->type = id->driver_data;
++        data->type = (unsigned long)i2c_get_match_data(client);
+         /* BUS ID */
+         ret = of_property_read_u32(dev->of_node, "fpga_9548_flag", &data->fpga_9548_flag);
+         ret += of_property_read_u32(dev->of_node, "fpga_9548_reset_flag", &data->fpga_9548_reset_flag);
+@@ -427,7 +427,7 @@ static int fpga_i2c_pca954x_probe(struct
+         goto exit_free;
+     }
+ 
+-    data->type = id->driver_data;
++    data->type = (unsigned long)i2c_get_match_data(client);
+     data->last_chan = 0;   /* force the first selection */
+ 
+     /* Now create an adapter for each channel */
+@@ -478,7 +478,7 @@ err:
+     return ret;
+ }
+ 
+-static int fpga_i2c_pca954x_remove(struct i2c_client *client)
++static void fpga_i2c_pca954x_remove(struct i2c_client *client)
+ {
+ #if LINUX_VERSION_CODE <= KERNEL_VERSION(4,6,7)
+     struct pca954x *data = i2c_get_clientdata(client);
+@@ -497,8 +497,6 @@ static int fpga_i2c_pca954x_remove(struc
+ 
+     i2c_mux_del_adapters(muxc);
+ #endif
+-
+-    return 0;
+ }
+ 
+ static struct i2c_driver fpga_i2c_pca954x_driver = {
+Index: sonic-platform-modules-tencent/common/modules/rg_gpio_d1500.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_gpio_d1500.c
++++ sonic-platform-modules-tencent/common/modules/rg_gpio_d1500.c
+@@ -337,10 +337,9 @@ static int rg_gpio_probe(struct platform
+     return 0;
+ }
+ 
+-static int rg_gpio_remove(struct platform_device *pdev)
++static void rg_gpio_remove(struct platform_device *pdev)
+ {
+     dev_info(&pdev->dev, "unregister d1500 gpio success\n");
+-    return 0;
+ }
+ 
+ static const struct of_device_id gpio_d1500_match[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_i2c_dev.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_i2c_dev.c
++++ sonic-platform-modules-tencent/common/modules/rg_i2c_dev.c
+@@ -659,7 +659,7 @@ int i2c_device_func_write(const char *pa
+ }
+ EXPORT_SYMBOL(i2c_device_func_write);
+ 
+-static int i2c_dev_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int i2c_dev_probe(struct i2c_client *client)
+ {
+     int ret = 0;
+     struct i2c_dev_info *i2c_dev;
+@@ -737,7 +737,7 @@ static int i2c_dev_probe(struct i2c_clie
+     return 0;
+ }
+ 
+-static int i2c_dev_remove(struct i2c_client *client)
++static void i2c_dev_remove(struct i2c_client *client)
+ {
+     int i;
+     for (i = 0; i < MAX_I2C_DEV_NUM; i++) {
+@@ -746,7 +746,6 @@ static int i2c_dev_remove(struct i2c_cli
+             i2c_dev_arry[i] = NULL;
+         }
+     }
+-    return 0;
+ }
+ 
+ static const struct i2c_device_id i2c_dev_id[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_ina3221.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_ina3221.c
++++ sonic-platform-modules-tencent/common/modules/rg_ina3221.c
+@@ -370,8 +370,7 @@ static const struct regmap_config ina322
+ 	.volatile_table = &ina3221_volatile_table,
+ };
+ 
+-static int ina3221_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int ina3221_probe(struct i2c_client *client)
+ {
+ 	struct device *dev = &client->dev;
+ 	struct ina3221_data *ina;
+Index: sonic-platform-modules-tencent/common/modules/rg_io_dev.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_io_dev.c
++++ sonic-platform-modules-tencent/common/modules/rg_io_dev.c
+@@ -525,7 +525,7 @@ static int io_dev_probe(struct platform_
+     return 0;
+ }
+ 
+-static int io_dev_remove(struct platform_device *pdev)
++static void io_dev_remove(struct platform_device *pdev)
+ {
+     int i;
+ 
+@@ -535,8 +535,6 @@ static int io_dev_remove(struct platform
+             io_dev_arry[i] = NULL;
+         }
+     }
+-
+-    return 0;
+ }
+ 
+ static struct of_device_id io_dev_match[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_lpc_drv.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_lpc_drv.c
++++ sonic-platform-modules-tencent/common/modules/rg_lpc_drv.c
+@@ -120,7 +120,7 @@ static int rg_lpc_probe(struct platform_
+     return 0;
+ }
+ 
+-static int rg_lpc_remove(struct platform_device *pdev)
++static void rg_lpc_remove(struct platform_device *pdev)
+ {
+     rg_lpc_dev_t *rg_lpc_dev;
+ 
+@@ -130,8 +130,6 @@ static int rg_lpc_remove(struct platform
+         LPC_DEV_DEBUG_VERBOSE("lpc base:0x%x, len:0x%x.\n", rg_lpc_dev->lpc_io_base, rg_lpc_dev->lpc_io_size);
+     }
+     LPC_DEV_DEBUG_VERBOSE("lpc remove.\n");
+-
+-    return 0;
+ }
+ 
+ static struct of_device_id lpc_dev_match[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_mac_bsc.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_mac_bsc.c
++++ sonic-platform-modules-tencent/common/modules/rg_mac_bsc.c
+@@ -584,13 +584,13 @@ static int init_bcs_command(int mac_type
+     return ret;
+ }
+ 
+-static int mac_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int mac_probe(struct i2c_client *client)
+ {
+     struct mac_data *data;
+     int mac_type;
+     int ret;
+ 
+-    mac_type = id->driver_data;
++    mac_type = (unsigned long)i2c_get_match_data(client);
+     mac_pcie_id = mac_type;
+     if (init_bcs_command(mac_type) < 0) {
+         DBG_ERROR("mactype[%x] not support \n", mac_type);
+@@ -626,11 +626,10 @@ static int mac_probe(struct i2c_client *
+     return 0;
+ }
+ 
+-static int mac_remove(struct i2c_client *client)
++static void mac_remove(struct i2c_client *client)
+ {
+     struct mac_data *data = i2c_get_clientdata(client);
+     hwmon_device_unregister(data->hwmon_dev);
+-    return 0;
+ }
+ 
+ static const struct i2c_device_id mac_id[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_optoe.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_optoe.c
++++ sonic-platform-modules-tencent/common/modules/rg_optoe.c
+@@ -790,7 +790,7 @@ static ssize_t optoe_bin_write(struct fi
+ 	return optoe_read_write(optoe, buf, off, count, OPTOE_WRITE_OP);
+ }
+ 
+-static int optoe_remove(struct i2c_client *client)
++static void optoe_remove(struct i2c_client *client)
+ {
+ 	struct optoe_data *optoe;
+ 	int i;
+@@ -808,7 +808,6 @@ static int optoe_remove(struct i2c_clien
+ 
+ 	kfree(optoe->writebuf);
+ 	kfree(optoe);
+-	return 0;
+ }
+ 
+ static ssize_t show_dev_class(struct device *dev,
+@@ -933,8 +932,7 @@ static struct attribute_group optoe_attr
+ 	.attrs = optoe_attrs,
+ };
+ 
+-static int optoe_probe(struct i2c_client *client,
+-			const struct i2c_device_id *id)
++static int optoe_probe(struct i2c_client *client)
+ {
+ 	int err;
+ 	int use_smbus = 0;
+@@ -962,7 +960,7 @@ static int optoe_probe(struct i2c_client
+ 			"probe, chip provided, flags:0x%x; name: %s\n",
+ 			chip.flags, client->name);
+ 	} else {
+-		if (!id->driver_data) {
++		if (!(unsigned long)i2c_get_match_data(client)) {
+ 			err = -ENODEV;
+ 			goto exit;
+ 		}
+Index: sonic-platform-modules-tencent/common/modules/rg_pcie_dev.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_pcie_dev.c
++++ sonic-platform-modules-tencent/common/modules/rg_pcie_dev.c
+@@ -721,7 +721,7 @@ io_unmap:
+     return ret;
+ }
+ 
+-static int pci_dev_remove(struct platform_device *pdev)
++static void pci_dev_remove(struct platform_device *pdev)
+ {
+     int i;
+ 
+@@ -734,8 +734,6 @@ static int pci_dev_remove(struct platfor
+             pcie_dev_arry[i] = NULL;
+         }
+     }
+-
+-    return 0;
+ }
+ 
+ static struct of_device_id pci_dev_match[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_pmbus.h
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_pmbus.h
++++ sonic-platform-modules-tencent/common/modules/rg_pmbus.h
+@@ -450,9 +450,9 @@ int rg_pmbus_update_byte_data(struct i2c
+ void rg_pmbus_clear_faults(struct i2c_client *client);
+ bool rg_pmbus_check_byte_register(struct i2c_client *client, int page, int reg);
+ bool rg_pmbus_check_word_register(struct i2c_client *client, int page, int reg);
+-int rg_pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
++int rg_pmbus_do_probe(struct i2c_client *client,
+ 		   struct pmbus_driver_info *info);
+-int rg_pmbus_do_remove(struct i2c_client *client);
++void rg_pmbus_do_remove(struct i2c_client *client);
+ const struct pmbus_driver_info *rg_pmbus_get_driver_info(struct i2c_client
+ 						      *client);
+ int rg_pmbus_get_fan_rate_device(struct i2c_client *client, int page, int id,
+Index: sonic-platform-modules-tencent/common/modules/rg_pmbus_core.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_pmbus_core.c
++++ sonic-platform-modules-tencent/common/modules/rg_pmbus_core.c
+@@ -2455,7 +2455,7 @@ static int pmbus_init_debugfs(struct i2c
+ }
+ #endif	/* IS_ENABLED(CONFIG_DEBUG_FS) */
+ 
+-int rg_pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
++int rg_pmbus_do_probe(struct i2c_client *client,
+ 		   struct pmbus_driver_info *info)
+ {
+ 	struct device *dev = &client->dev;
+@@ -2528,7 +2528,7 @@ out_kfree:
+ }
+ EXPORT_SYMBOL_GPL(rg_pmbus_do_probe);
+ 
+-int rg_pmbus_do_remove(struct i2c_client *client)
++void rg_pmbus_do_remove(struct i2c_client *client)
+ {
+ 	struct pmbus_data *data = i2c_get_clientdata(client);
+ 
+@@ -2536,7 +2536,6 @@ int rg_pmbus_do_remove(struct i2c_client
+ 
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	kfree(data->group.attrs);
+-	return 0;
+ }
+ EXPORT_SYMBOL_GPL(rg_pmbus_do_remove);
+ 
+Index: sonic-platform-modules-tencent/common/modules/rg_spi_93xx46.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_spi_93xx46.c
++++ sonic-platform-modules-tencent/common/modules/rg_spi_93xx46.c
+@@ -64,7 +64,7 @@ static struct spi_device *g_spi_device;
+ 
+ static int __init rg_spi_93xx46_init(void)
+ {
+-    struct spi_master *master;
++    struct spi_controller *master;
+ 
+     SPI_93xx46_DEBUG_VERBOSE("Enter.\n");
+ 
+Index: sonic-platform-modules-tencent/common/modules/rg_spi_gpio.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_spi_gpio.c
++++ sonic-platform-modules-tencent/common/modules/rg_spi_gpio.c
+@@ -36,7 +36,7 @@
+  * spi->controller_state ... reserved for bitbang framework code
+  * spi->controller_data ... holds chipselect GPIO
+  *
+- * spi->master->dev.driver_data ... points to spi_gpio->bitbang
++ * spi->controller->dev.driver_data ... points to spi_gpio->bitbang
+  */
+ 
+ struct spi_gpio {
+@@ -90,7 +90,7 @@ spi_to_spi_gpio(const struct spi_device
+ 	const struct spi_bitbang	*bang;
+ 	struct spi_gpio			*spi_gpio;
+ 
+-	bang = spi_master_get_devdata(spi->master);
++	bang = spi_controller_get_devdata(spi->controller);
+ 	spi_gpio = container_of(bang, struct spi_gpio, bitbang);
+ 	return spi_gpio;
+ }
+@@ -176,7 +176,7 @@ static u32 spi_gpio_txrx_word_mode3(stru
+ 
+ /*
+  * These functions do not call setmosi or getmiso if respective flag
+- * (SPI_MASTER_NO_RX or SPI_MASTER_NO_TX) is set, so they are safe to
++ * (SPI_CONTROLLER_NO_RX or SPI_CONTROLLER_NO_TX) is set, so they are safe to
+  * call when such pin is not present or defined in the controller.
+  * A separate set of callbacks is defined to get highest possible
+  * speed in the generic case (when both MISO and MOSI lines are
+@@ -187,28 +187,28 @@ static u32 spi_gpio_txrx_word_mode3(stru
+ static u32 spi_gpio_spec_txrx_word_mode0(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha0(spi, nsecs, 0, flags, word, bits);
+ }
+ 
+ static u32 spi_gpio_spec_txrx_word_mode1(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha1(spi, nsecs, 0, flags, word, bits);
+ }
+ 
+ static u32 spi_gpio_spec_txrx_word_mode2(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha0(spi, nsecs, 1, flags, word, bits);
+ }
+ 
+ static u32 spi_gpio_spec_txrx_word_mode3(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha1(spi, nsecs, 1, flags, word, bits);
+ }
+ 
+@@ -289,13 +289,13 @@ static int spi_gpio_request(struct devic
+ 		return PTR_ERR(spi_gpio->mosi);
+ 	if (!spi_gpio->mosi)
+ 		/* HW configuration without MOSI pin */
+-		*mflags |= SPI_MASTER_NO_TX;
++		*mflags |= SPI_CONTROLLER_NO_TX;
+ 
+ 	spi_gpio->miso = devm_gpiod_get_optional(dev, "miso", GPIOD_IN);
+ 	if (IS_ERR(spi_gpio->miso))
+ 		return PTR_ERR(spi_gpio->miso);
+ 	/*
+-	 * No setting SPI_MASTER_NO_RX here - if there is only a MOSI
++	 * No setting SPI_CONTROLLER_NO_RX here - if there is only a MOSI
+ 	 * pin connected the host can still do RX by changing the
+ 	 * direction of the line.
+ 	 */
+@@ -362,7 +362,7 @@ static inline int spi_gpio_probe_dt(stru
+ static int spi_gpio_probe(struct platform_device *pdev)
+ {
+ 	int				status;
+-	struct spi_master		*master;
++	struct spi_controller		*master;
+ 	struct spi_gpio			*spi_gpio;
+ 	struct spi_gpio_platform_data	*pdata;
+ 	u16 master_flags = 0;
+@@ -384,7 +384,7 @@ static int spi_gpio_probe(struct platfor
+ 	if (!master)
+ 		return -ENOMEM;
+ 
+-	spi_gpio = spi_master_get_devdata(master);
++	spi_gpio = spi_controller_get_devdata(master);
+ 
+ 	spi_gpio->cs_gpios = devm_kcalloc(&pdev->dev,
+ 				pdata->num_chipselect,
+@@ -420,11 +420,11 @@ static int spi_gpio_probe(struct platfor
+ 		master->dev.of_node = pdev->dev.of_node;
+ 	}
+ 
+-	spi_gpio->bitbang.master = master;
++	spi_gpio->bitbang.ctlr = master;
+ 	spi_gpio->bitbang.chipselect = spi_gpio_chipselect;
+ 	spi_gpio->bitbang.set_line_direction = spi_gpio_set_direction;
+ 
+-	if ((master_flags & SPI_MASTER_NO_TX) == 0) {
++	if ((master_flags & SPI_CONTROLLER_NO_TX) == 0) {
+ 		spi_gpio->bitbang.txrx_word[SPI_MODE_0] = spi_gpio_txrx_word_mode0;
+ 		spi_gpio->bitbang.txrx_word[SPI_MODE_1] = spi_gpio_txrx_word_mode1;
+ 		spi_gpio->bitbang.txrx_word[SPI_MODE_2] = spi_gpio_txrx_word_mode2;
+@@ -439,12 +439,12 @@ static int spi_gpio_probe(struct platfor
+ 
+ 	status = spi_bitbang_start(&spi_gpio->bitbang);
+ 	if (status)
+-		spi_master_put(master);
++		spi_controller_put(master);
+ 
+ 	return status;
+ }
+ 
+-static int spi_gpio_remove(struct platform_device *pdev)
++static void spi_gpio_remove(struct platform_device *pdev)
+ {
+ 	struct spi_gpio			*spi_gpio;
+ 	struct spi_gpio_platform_data	*pdata;
+@@ -455,9 +455,7 @@ static int spi_gpio_remove(struct platfo
+ 	/* stop() unregisters child devices too */
+ 	spi_bitbang_stop(&spi_gpio->bitbang);
+ 
+-	spi_master_put(spi_gpio->bitbang.master);
+-
+-	return 0;
++	spi_controller_put(spi_gpio->bitbang.ctlr);
+ }
+ 
+ MODULE_ALIAS("platform:" DRIVER_NAME);
+Index: sonic-platform-modules-tencent/common/modules/rg_tps53622.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_tps53622.c
++++ sonic-platform-modules-tencent/common/modules/rg_tps53622.c
+@@ -79,15 +79,14 @@ static struct pmbus_driver_info tps53622
+ 	.identify = tps53622_identify,
+ };
+ 
+-static int tps53622_probe(struct i2c_client *client,
+-			  const struct i2c_device_id *id)
++static int tps53622_probe(struct i2c_client *client)
+ {
+ 	struct pmbus_driver_info *info;
+ 
+ 	info = devm_kmemdup(&client->dev, &tps53622_info, sizeof(*info), GFP_KERNEL);
+ 	if (!info)
+ 		return -ENOMEM;
+-	return rg_pmbus_do_probe(client, id, info);
++	return rg_pmbus_do_probe(client, info);
+ }
+ 
+ static const struct i2c_device_id tps53622_id[] = {
+Index: sonic-platform-modules-tencent/common/modules/rg_ucd9000.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_ucd9000.c
++++ sonic-platform-modules-tencent/common/modules/rg_ucd9000.c
+@@ -161,8 +161,7 @@ static const struct i2c_device_id ucd900
+ };
+ MODULE_DEVICE_TABLE(i2c, ucd9000_id);
+ 
+-static int ucd9000_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int ucd9000_probe(struct i2c_client *client)
+ {
+ 	u8 block_buffer[I2C_SMBUS_BLOCK_MAX + 1];
+     u8 rg_device_name[RG_DEV_NAME_MAX_LEN];
+@@ -197,10 +196,10 @@ static int ucd9000_probe(struct i2c_clie
+ 		return -ENODEV;
+ 	}
+ 
+-	if (id->driver_data != ucd9000 && id->driver_data != mid->driver_data)
++	if ((unsigned long)i2c_get_match_data(client) != ucd9000 && (unsigned long)i2c_get_match_data(client) != mid->driver_data)
+ 		dev_notice(&client->dev,
+ 			   "Device mismatch: Configured %s, detected %s\n",
+-			   id->name, mid->name);
++			   client->name, mid->name);
+ 
+ 	data = devm_kzalloc(&client->dev, sizeof(struct ucd9000_data),
+ 			    GFP_KERNEL);
+@@ -274,7 +273,7 @@ static int ucd9000_probe(struct i2c_clie
+ 		  | PMBUS_HAVE_FAN34 | PMBUS_HAVE_STATUS_FAN34;
+ 	}
+ 
+-	return rg_pmbus_do_probe(client, mid, info);
++	return rg_pmbus_do_probe(client, info);
+ }
+ 
+ /* This is the driver that will be inserted */
+Index: sonic-platform-modules-tencent/common/modules/rg_wdt.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_wdt.c
++++ sonic-platform-modules-tencent/common/modules/rg_wdt.c
+@@ -991,13 +991,11 @@ static void unregister_action(struct pla
+     return;
+ }
+ 
+-static int rg_wdt_remove(struct platform_device *pdev)
++static void rg_wdt_remove(struct platform_device *pdev)
+ {
+     WDT_VERBOSE("enter remove wdt.\n");
+     unregister_action(pdev);
+     dev_info(&pdev->dev, "remove wdt finish.\n");
+-
+-    return 0;
+ }
+ 
+ static void rg_wdt_shutdown(struct platform_device *pdev)
+Index: sonic-platform-modules-tencent/common/modules/rg_xdpe132g5c.c
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/rg_xdpe132g5c.c
++++ sonic-platform-modules-tencent/common/modules/rg_xdpe132g5c.c
+@@ -499,7 +499,7 @@ static const struct attribute_group xdpe
+     .attrs = xdpe132g5c_sysfs_attrs,
+ };
+ 
+-static int xdpe132g5c_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int xdpe132g5c_probe(struct i2c_client *client)
+ {
+     struct xdpe_data *data;
+     int ret;
+@@ -534,7 +534,7 @@ static int xdpe132g5c_probe(struct i2c_c
+     return 0;
+ }
+ 
+-static int xdpe132g5c_remove(struct i2c_client *client)
++static void xdpe132g5c_remove(struct i2c_client *client)
+ {
+     struct xdpe_data *data;
+ 
+@@ -542,7 +542,6 @@ static int xdpe132g5c_remove(struct i2c_
+     data = i2c_get_clientdata(client);
+     hwmon_device_unregister(data->hwmon_dev);
+     sysfs_remove_group(&client->dev.kobj, &xdpe132g5c_sysfs_attrs_group);
+-    return 0;
+ }
+ 
+ static const struct i2c_device_id xdpe132g5c_id[] = {
+Index: sonic-platform-modules-tencent/common/modules/spi-bitbang-txrx.h
+===================================================================
+--- sonic-platform-modules-tencent.orig/common/modules/spi-bitbang-txrx.h
++++ sonic-platform-modules-tencent/common/modules/spi-bitbang-txrx.h
+@@ -54,7 +54,7 @@ bitbang_txrx_be_cpha0(struct spi_device
+ 	for (word <<= (32 - bits); likely(bits); bits--) {
+ 
+ 		/* setup MSB (to slave) on trailing edge */
+-		if ((flags & SPI_MASTER_NO_TX) == 0) {
++		if ((flags & SPI_CONTROLLER_NO_TX) == 0) {
+ 			if ((word & (1 << 31)) != oldbit) {
+ 				setmosi(spi, word & (1 << 31));
+ 				oldbit = word & (1 << 31);
+@@ -67,7 +67,7 @@ bitbang_txrx_be_cpha0(struct spi_device
+ 
+ 		/* sample MSB (from slave) on leading edge */
+ 		word <<= 1;
+-		if ((flags & SPI_MASTER_NO_RX) == 0)
++		if ((flags & SPI_CONTROLLER_NO_RX) == 0)
+ 			word |= getmiso(spi);
+ 		setsck(spi, cpol);
+ 	}
+@@ -87,7 +87,7 @@ bitbang_txrx_be_cpha1(struct spi_device
+ 
+ 		/* setup MSB (to slave) on leading edge */
+ 		setsck(spi, !cpol);
+-		if ((flags & SPI_MASTER_NO_TX) == 0) {
++		if ((flags & SPI_CONTROLLER_NO_TX) == 0) {
+ 			if ((word & (1 << 31)) != oldbit) {
+ 				setmosi(spi, word & (1 << 31));
+ 				oldbit = word & (1 << 31);
+@@ -100,7 +100,7 @@ bitbang_txrx_be_cpha1(struct spi_device
+ 
+ 		/* sample MSB (from slave) on trailing edge */
+ 		word <<= 1;
+-		if ((flags & SPI_MASTER_NO_RX) == 0)
++		if ((flags & SPI_CONTROLLER_NO_RX) == 0)
+ 			word |= getmiso(spi);
+ 	}
+ 	return word;

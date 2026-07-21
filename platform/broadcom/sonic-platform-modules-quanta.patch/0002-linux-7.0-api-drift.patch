@@ -1,0 +1,1071 @@
+Index: sonic-platform-modules-quanta/ix1b-32x/modules/qci_cpld_qsfp28.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix1b-32x/modules/qci_cpld_qsfp28.c
++++ sonic-platform-modules-quanta/ix1b-32x/modules/qci_cpld_qsfp28.c
+@@ -59,9 +59,8 @@ struct cpld_data {
+ 	struct sfp_data *port_data[16];
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_remove(struct i2c_client *client);
++static int cpld_probe(struct i2c_client *client);
++static void cpld_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_id[] = {
+ 	{ "CPLD-QSFP28", QSFP28 },
+@@ -303,8 +302,7 @@ static const struct attribute_group sfp_
+ 	.attrs = (struct attribute **) sfp_attrs,
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_probe(struct i2c_client *client)
+ {
+ 	struct cpld_data *data;
+ 	struct sfp_data *port_data;
+@@ -313,7 +311,7 @@ static int cpld_probe(struct i2c_client
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-qsfp28");
++		cpld_class = class_create("cpld-qsfp28");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -328,7 +326,7 @@ static int cpld_probe(struct i2c_client
+ 	/* register sfp port data to sysfs */
+ 	for (i = 0; i < 16; i++)
+ 	{
+-		port_nr = ida_simple_get(&cpld_ida, 1, 99, GFP_KERNEL);
++		port_nr = ida_alloc_range(&cpld_ida, 1, 99, GFP_KERNEL);
+ 		if (port_nr < 0)
+ 			return ERR_PTR(port_nr);
+ 
+@@ -383,7 +381,7 @@ static bool cpld_idr_is_empty(struct idr
+ 	return !idr_for_each(idp, idr_has_entry, NULL);
+ }
+ 
+-static int cpld_remove(struct i2c_client *client)
++static void cpld_remove(struct i2c_client *client)
+ {
+ 	struct cpld_data *data = i2c_get_clientdata(client);
+ 	int i, id;
+@@ -392,7 +390,7 @@ static int cpld_remove(struct i2c_client
+ 	{
+ 		dev_info(data->port_dev[i], "Remove qsfp28 port-%d\n", data->port_data[i]->port_id);
+ 		device_unregister(data->port_dev[i]);
+-		ida_simple_remove(&cpld_ida, data->port_data[i]->port_id);
++		ida_free(&cpld_ida, data->port_data[i]->port_id);
+ 		kfree(data->port_data[i]);
+ 	}
+ 
+@@ -402,7 +400,7 @@ static int cpld_remove(struct i2c_client
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_driver);
+Index: sonic-platform-modules-quanta/ix1b-32x/modules/qci_hwmon_ix1b.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix1b-32x/modules/qci_hwmon_ix1b.c
++++ sonic-platform-modules-quanta/ix1b-32x/modules/qci_hwmon_ix1b.c
+@@ -385,7 +385,7 @@ exit_unregister:
+ 	return err;
+ }
+ 
+-static int qci_hwmon_remove(struct platform_device *pdev)
++static void qci_hwmon_remove(struct platform_device *pdev)
+ {
+ 	struct qci_hwmon_data *data = platform_get_drvdata(pdev);
+ 
+@@ -393,7 +393,7 @@ static int qci_hwmon_remove(struct platf
+ 	wait_for_completion(&data->auto_update_stop);
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	sysfs_remove_group(&pdev->dev.kobj, &data->attrs);
+-	return 0;
++	return;
+ }
+ 
+ static struct platform_driver qci_hwmon_driver = {
+Index: sonic-platform-modules-quanta/ix1b-32x/modules/qci_platform_ix1b.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix1b-32x/modules/qci_platform_ix1b.c
++++ sonic-platform-modules-quanta/ix1b-32x/modules/qci_platform_ix1b.c
+@@ -397,68 +397,68 @@ static int __init ix1b_platform_init(voi
+ 		goto fail_platform_device;
+ 
+ 	adapter = i2c_get_adapter(0);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[0]);		// pca9546_1 - Address: 0x77
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[0]);		// pca9546_1 - Address: 0x77
+ 	printk("[CC] NEW device pca9546_1\n");
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[1]);		// pca9546_2 - Address: 0x72
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[1]);		// pca9546_2 - Address: 0x72
+ 	printk("[CC] NEW device pca9546_2\n");
+ #if defined(QUANTA_CPU_RGL)
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[14]);		// cpu pca9546_1 - Address: 0x71
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[14]);		// cpu pca9546_1 - Address: 0x71
+ 	printk("[CC] NEW device cpu pca9546_1\n");
+ #endif
+ 	i2c_put_adapter(adapter);
+ 
+ 	adapter = i2c_get_adapter(0x14);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[12]);		// pmbus_psu1 - Address: 0x5f
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[12]);		// pmbus_psu1 - Address: 0x5f
+ 	printk("[CC] NEW device pmbus_psu1\n");
+ 	i2c_put_adapter(adapter);
+ 
+ 	adapter = i2c_get_adapter(0x15);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[13]);		// pmbus_psu2 - Address: 0x59
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[13]);		// pmbus_psu2 - Address: 0x59
+ 	printk("[CC] NEW device pmbus_psu2\n");
+ 	i2c_put_adapter(adapter);
+ 
+ 	adapter = i2c_get_adapter(0x16);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[2]);		// pca9555-PSU1 - Address: 0x26
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[2]);		// pca9555-PSU1 - Address: 0x26
+ 	printk("[CC] NEW device pca9555-PSU1\n");
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[3]);		// MB_BOARDINFO_EEPROM - Address: 0x54
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[3]);		// MB_BOARDINFO_EEPROM - Address: 0x54
+ 	printk("[CC] NEW device MB_BOARDINFO_EEPROM\n");
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[10]);		// pca9555-ID - Address: 0x23
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[10]);		// pca9555-ID - Address: 0x23
+ 	printk("[CC] NEW device pca9555-ID\n");
+ 	i2c_put_adapter(adapter);
+ 
+ 	adapter = i2c_get_adapter(0x17);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[11]);		// pca9555-fan - Address: 0x25
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[11]);		// pca9555-fan - Address: 0x25
+ 	printk("[CC] NEW device pca9555-fan\n");
+ 	i2c_put_adapter(adapter);
+ 
+ 	adapter = i2c_get_adapter(0x10);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[4]);		// pca9548_1 SFP - Address: 0x73
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[4]);		// pca9548_1 SFP - Address: 0x73
+ 	printk("[CC] NEW device pca9548_1 SFP\n");
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[5]);		// pca9548_2 SFP - Address: 0x74
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[5]);		// pca9548_2 SFP - Address: 0x74
+ 	printk("[CC] NEW device pca9548_2 SFP\n");
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[6]);		// pca9548_3 SFP - Address: 0x75
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[6]);		// pca9548_3 SFP - Address: 0x75
+ 	printk("[CC] NEW device pca9548_3 SFP\n");
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[8]);		// CPLD2 - Address: 0x38
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[8]);		// CPLD2 - Address: 0x38
+ 	printk("[CC] NEW device CPLD2\n");
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[9]);		// CPLD3 - Address: 0x39
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[9]);		// CPLD3 - Address: 0x39
+ 	printk("[CC] NEW device CPLD3\n");
+ 	i2c_put_adapter(adapter);
+ 
+ 	adapter = i2c_get_adapter(0x11);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[7]);		// pca9548_4 SFP - Address: 0x76
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[7]);		// pca9548_4 SFP - Address: 0x76
+ 	printk("[CC] NEW device pca9548_4 SFP\n");
+ 	i2c_put_adapter(adapter);
+ 
+ #if defined(QUANTA_CPU_RGL)
+ 	adapter = i2c_get_adapter(0x18);
+-	client = i2c_new_device(adapter, &ix1b_i2c_devices[15]);		// cpu pca9555_1 - Address: 0x20
++	client = i2c_new_client_device(adapter, &ix1b_i2c_devices[15]);		// cpu pca9555_1 - Address: 0x20
+ 	printk("[CC] NEW device cpu pca9555_1\n");
+ 	i2c_put_adapter(adapter);
+ 
+ 	for(i = 0x20; i < 0x40; i++)
+ 	{
+ 		adapter = i2c_get_adapter(i);
+-		client = i2c_new_device(adapter, &ix1b_i2c_devices[16]);		// eeprom for loopback module - Address: 0x50
++		client = i2c_new_client_device(adapter, &ix1b_i2c_devices[16]);		// eeprom for loopback module - Address: 0x50
+ 		i2c_put_adapter(adapter);
+ 	}
+ 	printk("[CC] NEW device eeprom\n");
+Index: sonic-platform-modules-quanta/ix1b-32x/modules/qci_pmbus.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix1b-32x/modules/qci_pmbus.c
++++ sonic-platform-modules-quanta/ix1b-32x/modules/qci_pmbus.c
+@@ -285,9 +285,7 @@ extern int pmbus_set_page(struct i2c_cli
+ extern int pmbus_read_byte_data(struct i2c_client *client, int page, u8 reg);
+ extern bool pmbus_check_byte_register(struct i2c_client *client, int page, int reg);
+ extern bool pmbus_check_word_register(struct i2c_client *client, int page, int reg);
+-extern int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
+-		   struct pmbus_driver_info *info);
+-extern int pmbus_do_remove(struct i2c_client *client);
++extern int pmbus_do_probe(struct i2c_client *client, struct pmbus_driver_info *info);
+ 
+ /* Needed to access the mutex. Copied from pmbus_core.c */
+ #define PB_STATUS_BASE		0
+@@ -661,9 +659,9 @@ int qci_write_word_data(struct i2c_clien
+ 	return rv;
+ }
+ 
+-static int qci_pmbus_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int qci_pmbus_probe(struct i2c_client *client)
+ {
++	const struct i2c_device_id *id = i2c_match_id(qci_pmbus_id, client);
+ 	struct device *dev = &client->dev;
+ 	struct pmbus_driver_info *info;
+ 	int ret;
+@@ -719,7 +717,7 @@ static int qci_pmbus_probe(struct i2c_cl
+ 		return -1;
+ 	}
+ 
+-	return pmbus_do_probe(client, id, info);
++	return pmbus_do_probe(client, info);
+ }
+ 
+ /* This is the driver that will be inserted */
+@@ -728,7 +726,6 @@ static struct i2c_driver qci_pmbus_drive
+ 		   .name = "qci-pmbus",
+ 		   },
+ 	.probe = qci_pmbus_probe,
+-	.remove = pmbus_do_remove,
+ 	.id_table = qci_pmbus_id,
+ };
+ 
+Index: sonic-platform-modules-quanta/ix7-32x/modules/qci_cpld.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix7-32x/modules/qci_cpld.c
++++ sonic-platform-modules-quanta/ix7-32x/modules/qci_cpld.c
+@@ -64,9 +64,8 @@ struct cpld_data {
+ 	struct sfp_data *port_data[16];
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_remove(struct i2c_client *client);
++static int cpld_probe(struct i2c_client *client);
++static void cpld_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_id[] = {
+ 	{ "CPLD-SFP", SFP },
+@@ -323,9 +322,9 @@ static const struct attribute_group sfp_
+ 	.attrs = (struct attribute **) sfp_attrs,
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_probe(struct i2c_client *client)
+ {
++	const struct i2c_device_id *id = i2c_match_id(cpld_id, client);
+ 	struct cpld_data *data;
+ 	struct sfp_data *port_data;
+ //	struct i2c_monitor_data *monitor_data;
+@@ -347,7 +346,7 @@ static int cpld_probe(struct i2c_client
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-qsfp28");
++		cpld_class = class_create("cpld-qsfp28");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -369,7 +368,7 @@ static int cpld_probe(struct i2c_client
+ 	/* register sfp port data to sysfs */
+ 	for (i = 0; i < max_port_num; i++)
+ 	{
+-		port_nr = ida_simple_get(&cpld_ida, 1, 99, GFP_KERNEL);
++		port_nr = ida_alloc_range(&cpld_ida, 1, 99, GFP_KERNEL);
+ 		if (port_nr < 0)
+ 			goto err_out;
+ 
+@@ -426,7 +425,7 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_remove(struct i2c_client *client)
++static void cpld_remove(struct i2c_client *client)
+ {
+ 	struct cpld_data *data = i2c_get_clientdata(client);
+ 	int i, max_port_num;
+@@ -443,7 +442,7 @@ static int cpld_remove(struct i2c_client
+ 	{
+ 		dev_info(data->port_dev[i], "Remove %s port-%d\n", data->port_data[i]->type , data->port_data[i]->port_id);
+ 		device_unregister(data->port_dev[i]);
+-		ida_simple_remove(&cpld_ida, data->port_data[i]->port_id);
++		ida_free(&cpld_ida, data->port_data[i]->port_id);
+ 		kfree(data->port_data[i]);
+ 	}
+ 
+@@ -453,7 +452,7 @@ static int cpld_remove(struct i2c_client
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_driver);
+Index: sonic-platform-modules-quanta/ix7-32x/modules/qci_cpld_led.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix7-32x/modules/qci_cpld_led.c
++++ sonic-platform-modules-quanta/ix7-32x/modules/qci_cpld_led.c
+@@ -59,9 +59,8 @@ struct cpld_led_data {
+ 	struct cpld_data *cpld_data;
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_led_remove(struct i2c_client *client);
++static int cpld_led_probe(struct i2c_client *client);
++static void cpld_led_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_led_id[] = {
+ 	{ "CPLDLED_IX7", IX7 },
+@@ -179,8 +178,7 @@ static const struct attribute_group led_
+ 	.attrs = (struct attribute **) led_attrs,
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_led_probe(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data;
+ 	struct cpld_data *led_data;
+@@ -189,7 +187,7 @@ static int cpld_led_probe(struct i2c_cli
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-led");
++		cpld_class = class_create("cpld-led");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -202,7 +200,7 @@ static int cpld_led_probe(struct i2c_cli
+ 		return -ENOMEM;
+ 
+ 	/* Test */
+-	nr = ida_simple_get(&cpld_led_ida, 1, 99, GFP_KERNEL);
++	nr = ida_alloc_range(&cpld_led_ida, 1, 99, GFP_KERNEL);
+ 	if (nr < 0)
+ 		goto err_out;
+ 
+@@ -254,13 +252,13 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_led_remove(struct i2c_client *client)
++static void cpld_led_remove(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data = i2c_get_clientdata(client);
+ 
+ 	dev_info(data->port_dev, "Remove CPLDLED-%d\n", data->cpld_data->cpld_id);
+ 	device_unregister(data->port_dev);
+-	ida_simple_remove(&cpld_led_ida, data->cpld_data->cpld_id);
++	ida_free(&cpld_led_ida, data->cpld_data->cpld_id);
+ 	kfree(data->cpld_data);
+ 
+ 	if (ida_is_empty(&cpld_led_ida))
+@@ -269,7 +267,7 @@ static int cpld_led_remove(struct i2c_cl
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_led_driver);
+Index: sonic-platform-modules-quanta/ix7-bwde-32x/modules/qci_cpld.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix7-bwde-32x/modules/qci_cpld.c
++++ sonic-platform-modules-quanta/ix7-bwde-32x/modules/qci_cpld.c
+@@ -64,9 +64,8 @@ struct cpld_data {
+ 	struct sfp_data *port_data[16];
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_remove(struct i2c_client *client);
++static int cpld_probe(struct i2c_client *client);
++static void cpld_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_id[] = {
+ 	{ "CPLD-SFP", SFP },
+@@ -323,9 +322,9 @@ static const struct attribute_group sfp_
+ 	.attrs = (struct attribute **) sfp_attrs,
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_probe(struct i2c_client *client)
+ {
++	const struct i2c_device_id *id = i2c_match_id(cpld_id, client);
+ 	struct cpld_data *data;
+ 	struct sfp_data *port_data;
+ //	struct i2c_monitor_data *monitor_data;
+@@ -347,7 +346,7 @@ static int cpld_probe(struct i2c_client
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-qsfp28");
++		cpld_class = class_create("cpld-qsfp28");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -369,7 +368,7 @@ static int cpld_probe(struct i2c_client
+ 	/* register sfp port data to sysfs */
+ 	for (i = 0; i < max_port_num; i++)
+ 	{
+-		port_nr = ida_simple_get(&cpld_ida, 1, 99, GFP_KERNEL);
++		port_nr = ida_alloc_range(&cpld_ida, 1, 99, GFP_KERNEL);
+ 		if (port_nr < 0)
+ 			goto err_out;
+ 
+@@ -426,7 +425,7 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_remove(struct i2c_client *client)
++static void cpld_remove(struct i2c_client *client)
+ {
+ 	struct cpld_data *data = i2c_get_clientdata(client);
+ 	int i, max_port_num;
+@@ -443,7 +442,7 @@ static int cpld_remove(struct i2c_client
+ 	{
+ 		dev_info(data->port_dev[i], "Remove %s port-%d\n", data->port_data[i]->type , data->port_data[i]->port_id);
+ 		device_unregister(data->port_dev[i]);
+-		ida_simple_remove(&cpld_ida, data->port_data[i]->port_id);
++		ida_free(&cpld_ida, data->port_data[i]->port_id);
+ 		kfree(data->port_data[i]);
+ 	}
+ 
+@@ -453,7 +452,7 @@ static int cpld_remove(struct i2c_client
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_driver);
+Index: sonic-platform-modules-quanta/ix7-bwde-32x/modules/qci_cpld_led.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix7-bwde-32x/modules/qci_cpld_led.c
++++ sonic-platform-modules-quanta/ix7-bwde-32x/modules/qci_cpld_led.c
+@@ -61,9 +61,8 @@ struct cpld_led_data {
+ 	struct cpld_data *cpld_data;
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_led_remove(struct i2c_client *client);
++static int cpld_led_probe(struct i2c_client *client);
++static void cpld_led_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_led_id[] = {
+ 	{ "CPLDLED_IX7", IX7 },
+@@ -183,8 +182,7 @@ static const struct attribute_group led_
+ 	.attrs = (struct attribute **) led_attrs,
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_led_probe(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data;
+ 	struct cpld_data *led_data;
+@@ -193,7 +191,7 @@ static int cpld_led_probe(struct i2c_cli
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-led");
++		cpld_class = class_create("cpld-led");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -206,7 +204,7 @@ static int cpld_led_probe(struct i2c_cli
+ 		return -ENOMEM;
+ 
+ 	/* Test */
+-	nr = ida_simple_get(&cpld_led_ida, 1, 99, GFP_KERNEL);
++	nr = ida_alloc_range(&cpld_led_ida, 1, 99, GFP_KERNEL);
+ 	if (nr < 0)
+ 		goto err_out;
+ 
+@@ -258,13 +256,13 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_led_remove(struct i2c_client *client)
++static void cpld_led_remove(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data = i2c_get_clientdata(client);
+ 
+ 	dev_info(data->port_dev, "Remove CPLDLED-%d\n", data->cpld_data->cpld_id);
+ 	device_unregister(data->port_dev);
+-	ida_simple_remove(&cpld_led_ida, data->cpld_data->cpld_id);
++	ida_free(&cpld_led_ida, data->cpld_data->cpld_id);
+ 	kfree(data->cpld_data);
+ 
+ 	if (ida_is_empty(&cpld_led_ida))
+@@ -273,7 +271,7 @@ static int cpld_led_remove(struct i2c_cl
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_led_driver);
+Index: sonic-platform-modules-quanta/ix8-56x/modules/qci_cpld_led.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix8-56x/modules/qci_cpld_led.c
++++ sonic-platform-modules-quanta/ix8-56x/modules/qci_cpld_led.c
+@@ -59,9 +59,8 @@ struct cpld_led_data {
+ 	struct cpld_data *cpld_data;
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_led_remove(struct i2c_client *client);
++static int cpld_led_probe(struct i2c_client *client);
++static void cpld_led_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_led_id[] = {
+ 	{ "CPLDLED_IX7", IX7 },
+@@ -179,8 +178,7 @@ static const struct attribute_group led_
+ 	.attrs = (struct attribute **) led_attrs,
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_led_probe(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data;
+ 	struct cpld_data *led_data;
+@@ -189,7 +187,7 @@ static int cpld_led_probe(struct i2c_cli
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-led");
++		cpld_class = class_create("cpld-led");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -202,7 +200,7 @@ static int cpld_led_probe(struct i2c_cli
+ 		return -ENOMEM;
+ 
+ 	/* Test */
+-	nr = ida_simple_get(&cpld_led_ida, 1, 99, GFP_KERNEL);
++	nr = ida_alloc_range(&cpld_led_ida, 1, 99, GFP_KERNEL);
+ 	if (nr < 0)
+ 		goto err_out;
+ 
+@@ -254,13 +252,13 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_led_remove(struct i2c_client *client)
++static void cpld_led_remove(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data = i2c_get_clientdata(client);
+ 
+ 	dev_info(data->port_dev, "Remove CPLDLED-%d\n", data->cpld_data->cpld_id);
+ 	device_unregister(data->port_dev);
+-	ida_simple_remove(&cpld_led_ida, data->cpld_data->cpld_id);
++	ida_free(&cpld_led_ida, data->cpld_data->cpld_id);
+ 	kfree(data->cpld_data);
+ 
+ 	if (ida_is_empty(&cpld_led_ida))
+@@ -269,7 +267,7 @@ static int cpld_led_remove(struct i2c_cl
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_led_driver);
+Index: sonic-platform-modules-quanta/ix8-56x/modules/qci_cpld_sfp28.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix8-56x/modules/qci_cpld_sfp28.c
++++ sonic-platform-modules-quanta/ix8-56x/modules/qci_cpld_sfp28.c
+@@ -63,9 +63,8 @@ struct cpld_data {
+ 	struct sfp_data *port_data[16];
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_remove(struct i2c_client *client);
++static int cpld_probe(struct i2c_client *client);
++static void cpld_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_id[] = {
+ 	{ "CPLD-SFP", SFP },
+@@ -274,9 +273,9 @@ static const struct attribute_group sfp_
+ 	.attrs = (struct attribute **) sfp_attrs,
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_probe(struct i2c_client *client)
+ {
++	const struct i2c_device_id *id = i2c_match_id(cpld_id, client);
+ 	struct cpld_data *data;
+ 	struct sfp_data *port_data;
+ //	struct i2c_monitor_data *monitor_data;
+@@ -298,7 +297,7 @@ static int cpld_probe(struct i2c_client
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-sfp28");
++		cpld_class = class_create("cpld-sfp28");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -313,7 +312,7 @@ static int cpld_probe(struct i2c_client
+ 	/* register sfp port data to sysfs */
+ 	for (i = 0; i < 16; i++)
+ 	{
+-		port_nr = ida_simple_get(&cpld_ida, 1, 99, GFP_KERNEL);
++		port_nr = ida_alloc_range(&cpld_ida, 1, 99, GFP_KERNEL);
+ 		if (port_nr < 0)
+ 			goto err_out;
+ 
+@@ -370,7 +369,7 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_remove(struct i2c_client *client)
++static void cpld_remove(struct i2c_client *client)
+ {
+ 	struct cpld_data *data = i2c_get_clientdata(client);
+ 	int i;
+@@ -380,7 +379,7 @@ static int cpld_remove(struct i2c_client
+ 	{
+ 		dev_info(data->port_dev[i], "Remove %s port-%d\n", data->port_data[i]->type , data->port_data[i]->port_id);
+ 		device_unregister(data->port_dev[i]);
+-		ida_simple_remove(&cpld_ida, data->port_data[i]->port_id);
++		ida_free(&cpld_ida, data->port_data[i]->port_id);
+ 		kfree(data->port_data[i]);
+ 	}
+ 
+@@ -390,7 +389,7 @@ static int cpld_remove(struct i2c_client
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_driver);
+Index: sonic-platform-modules-quanta/ix8a-bwde-56x/modules/qci_cpld_led.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix8a-bwde-56x/modules/qci_cpld_led.c
++++ sonic-platform-modules-quanta/ix8a-bwde-56x/modules/qci_cpld_led.c
+@@ -59,9 +59,8 @@ struct cpld_led_data {
+ 	struct cpld_data *cpld_data;
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_led_remove(struct i2c_client *client);
++static int cpld_led_probe(struct i2c_client *client);
++static void cpld_led_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_led_id[] = {
+ 	{ "CPLDLED_IX7", IX7 },
+@@ -179,8 +178,7 @@ static const struct attribute_group led_
+ 	.attrs = (struct attribute **) led_attrs,
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_led_probe(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data;
+ 	struct cpld_data *led_data;
+@@ -189,7 +187,7 @@ static int cpld_led_probe(struct i2c_cli
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-led");
++		cpld_class = class_create("cpld-led");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -202,7 +200,7 @@ static int cpld_led_probe(struct i2c_cli
+ 		return -ENOMEM;
+ 
+ 	/* Test */
+-	nr = ida_simple_get(&cpld_led_ida, 1, 99, GFP_KERNEL);
++	nr = ida_alloc_range(&cpld_led_ida, 1, 99, GFP_KERNEL);
+ 	if (nr < 0)
+ 		goto err_out;
+ 
+@@ -254,13 +252,13 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_led_remove(struct i2c_client *client)
++static void cpld_led_remove(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data = i2c_get_clientdata(client);
+ 
+ 	dev_info(data->port_dev, "Remove CPLDLED-%d\n", data->cpld_data->cpld_id);
+ 	device_unregister(data->port_dev);
+-	ida_simple_remove(&cpld_led_ida, data->cpld_data->cpld_id);
++	ida_free(&cpld_led_ida, data->cpld_data->cpld_id);
+ 	kfree(data->cpld_data);
+ 
+ 	if (ida_is_empty(&cpld_led_ida)) {
+@@ -268,7 +266,7 @@ static int cpld_led_remove(struct i2c_cl
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_led_driver);
+Index: sonic-platform-modules-quanta/ix8a-bwde-56x/modules/qci_cpld_sfp28.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix8a-bwde-56x/modules/qci_cpld_sfp28.c
++++ sonic-platform-modules-quanta/ix8a-bwde-56x/modules/qci_cpld_sfp28.c
+@@ -62,9 +62,8 @@ struct cpld_data {
+ 	struct sfp_data *port_data[16];
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_remove(struct i2c_client *client);
++static int cpld_probe(struct i2c_client *client);
++static void cpld_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_id[] = {
+ 	{ "CPLD-SFP", SFP },
+@@ -270,8 +269,7 @@ static const struct attribute_group sfp_
+ 	.attrs = (struct attribute **) sfp_attrs,
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_probe(struct i2c_client *client)
+ {
+ 	struct cpld_data *data;
+ 	struct sfp_data *port_data;
+@@ -282,7 +280,7 @@ static int cpld_probe(struct i2c_client
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-sfp28");
++		cpld_class = class_create("cpld-sfp28");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -297,7 +295,7 @@ static int cpld_probe(struct i2c_client
+ 	/* register sfp port data to sysfs */
+ 	for (i = 0; i < 16; i++)
+ 	{
+-		port_nr = ida_simple_get(&cpld_ida, 1, 99, GFP_KERNEL);
++		port_nr = ida_alloc_range(&cpld_ida, 1, 99, GFP_KERNEL);
+ 		if (port_nr < 0)
+ 			goto err_out;
+ 
+@@ -352,7 +350,7 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_remove(struct i2c_client *client)
++static void cpld_remove(struct i2c_client *client)
+ {
+ 	struct cpld_data *data = i2c_get_clientdata(client);
+ 	int i;
+@@ -361,7 +359,7 @@ static int cpld_remove(struct i2c_client
+ 	{
+ 		dev_info(data->port_dev[i], "Remove port-%d\n", data->port_data[i]->port_id);
+ 		device_unregister(data->port_dev[i]);
+-		ida_simple_remove(&cpld_ida, data->port_data[i]->port_id);
++		ida_free(&cpld_ida, data->port_data[i]->port_id);
+ 		kfree(data->port_data[i]);
+ 	}
+ 
+@@ -371,7 +369,7 @@ static int cpld_remove(struct i2c_client
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_driver);
+Index: sonic-platform-modules-quanta/ix8c-56x/modules/qci_cpld_led.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix8c-56x/modules/qci_cpld_led.c
++++ sonic-platform-modules-quanta/ix8c-56x/modules/qci_cpld_led.c
+@@ -59,9 +59,8 @@ struct cpld_led_data {
+ 	struct cpld_data *cpld_data;
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_led_remove(struct i2c_client *client);
++static int cpld_led_probe(struct i2c_client *client);
++static void cpld_led_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_led_id[] = {
+ 	{ "CPLDLED_IX7", IX7 },
+@@ -179,8 +178,7 @@ static const struct attribute_group led_
+ 	.attrs = (struct attribute **) led_attrs,
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_led_probe(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data;
+ 	struct cpld_data *led_data;
+@@ -189,7 +187,7 @@ static int cpld_led_probe(struct i2c_cli
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-led");
++		cpld_class = class_create("cpld-led");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -202,7 +200,7 @@ static int cpld_led_probe(struct i2c_cli
+ 		return -ENOMEM;
+ 
+ 	/* Test */
+-	nr = ida_simple_get(&cpld_led_ida, 1, 99, GFP_KERNEL);
++	nr = ida_alloc_range(&cpld_led_ida, 1, 99, GFP_KERNEL);
+ 	if (nr < 0)
+ 		goto err_out;
+ 
+@@ -254,19 +252,19 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_led_remove(struct i2c_client *client)
++static void cpld_led_remove(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data = i2c_get_clientdata(client);
+ 
+ 	dev_info(data->port_dev, "Remove CPLDLED-%d\n", data->cpld_data->cpld_id);
+ 	device_unregister(data->port_dev);
+-	ida_simple_remove(&cpld_led_ida, data->cpld_data->cpld_id);
++	ida_free(&cpld_led_ida, data->cpld_data->cpld_id);
+ 	kfree(data->cpld_data);
+ 
+ 	if (ida_is_empty(&cpld_led_ida))
+ 		class_destroy(cpld_class);
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_led_driver);
+Index: sonic-platform-modules-quanta/ix8c-56x/modules/qci_cpld_sfp28.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix8c-56x/modules/qci_cpld_sfp28.c
++++ sonic-platform-modules-quanta/ix8c-56x/modules/qci_cpld_sfp28.c
+@@ -62,9 +62,8 @@ struct cpld_data {
+ 	struct sfp_data *port_data[16];
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_remove(struct i2c_client *client);
++static int cpld_probe(struct i2c_client *client);
++static void cpld_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_id[] = {
+ 	{ "CPLD-SFP", SFP },
+@@ -270,8 +269,7 @@ static const struct attribute_group sfp_
+ 	.attrs = (struct attribute **) sfp_attrs,
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_probe(struct i2c_client *client)
+ {
+ 	struct cpld_data *data;
+ 	struct sfp_data *port_data;
+@@ -282,7 +280,7 @@ static int cpld_probe(struct i2c_client
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-sfp28");
++		cpld_class = class_create("cpld-sfp28");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -297,7 +295,7 @@ static int cpld_probe(struct i2c_client
+ 	/* register sfp port data to sysfs */
+ 	for (i = 0; i < 16; i++)
+ 	{
+-		port_nr = ida_simple_get(&cpld_ida, 1, 99, GFP_KERNEL);
++		port_nr = ida_alloc_range(&cpld_ida, 1, 99, GFP_KERNEL);
+ 		if (port_nr < 0)
+ 			goto err_out;
+ 
+@@ -352,7 +350,7 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_remove(struct i2c_client *client)
++static void cpld_remove(struct i2c_client *client)
+ {
+ 	struct cpld_data *data = i2c_get_clientdata(client);
+ 	int i;
+@@ -361,7 +359,7 @@ static int cpld_remove(struct i2c_client
+ 	{
+ 		dev_info(data->port_dev[i], "Remove port-%d\n", data->port_data[i]->port_id);
+ 		device_unregister(data->port_dev[i]);
+-		ida_simple_remove(&cpld_ida, data->port_data[i]->port_id);
++		ida_free(&cpld_ida, data->port_data[i]->port_id);
+ 		kfree(data->port_data[i]);
+ 	}
+ 
+@@ -371,7 +369,7 @@ static int cpld_remove(struct i2c_client
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_driver);
+Index: sonic-platform-modules-quanta/ix9-32x/modules/qci_cpld_led.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix9-32x/modules/qci_cpld_led.c
++++ sonic-platform-modules-quanta/ix9-32x/modules/qci_cpld_led.c
+@@ -61,9 +61,8 @@ struct cpld_led_data {
+ 	struct cpld_data *cpld_data;
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_led_remove(struct i2c_client *client);
++static int cpld_led_probe(struct i2c_client *client);
++static void cpld_led_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_led_id[] = {
+ 	{ "CPLDLED_IX7", IX7 },
+@@ -182,8 +181,7 @@ static const struct attribute_group led_
+ 	.attrs = (struct attribute **) led_attrs,
+ };
+ 
+-static int cpld_led_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_led_probe(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data;
+ 	struct cpld_data *led_data;
+@@ -192,7 +190,7 @@ static int cpld_led_probe(struct i2c_cli
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-led");
++		cpld_class = class_create("cpld-led");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -205,7 +203,7 @@ static int cpld_led_probe(struct i2c_cli
+ 		return -ENOMEM;
+ 
+ 	/* Test */
+-	nr = ida_simple_get(&cpld_led_ida, 1, 99, GFP_KERNEL);
++	nr = ida_alloc_range(&cpld_led_ida, 1, 99, GFP_KERNEL);
+ 	if (nr < 0)
+ 		goto err_out;
+ 
+@@ -258,13 +256,13 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_led_remove(struct i2c_client *client)
++static void cpld_led_remove(struct i2c_client *client)
+ {
+ 	struct cpld_led_data *data = i2c_get_clientdata(client);
+ 
+ 	dev_info(data->port_dev, "Remove CPLDLED-%d\n", data->cpld_data->cpld_id);
+ 	device_unregister(data->port_dev);
+-	ida_simple_remove(&cpld_led_ida, data->cpld_data->cpld_id);
++	ida_free(&cpld_led_ida, data->cpld_data->cpld_id);
+ 	kfree(data->cpld_data);
+ #if LINUX_VERSION_CODE > KERNEL_VERSION(4,10,0)
+ 	if (ida_is_empty(&cpld_led_ida))
+@@ -273,7 +271,7 @@ static int cpld_led_remove(struct i2c_cl
+ #endif
+ 		class_destroy(cpld_class);
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_led_driver);
+Index: sonic-platform-modules-quanta/ix9-32x/modules/qci_cpld_qsfpdd.c
+===================================================================
+--- sonic-platform-modules-quanta.orig/ix9-32x/modules/qci_cpld_qsfpdd.c
++++ sonic-platform-modules-quanta/ix9-32x/modules/qci_cpld_qsfpdd.c
+@@ -60,9 +60,8 @@ struct cpld_data {
+ 	struct sfp_data *port_data[16];
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id);
+-static int cpld_remove(struct i2c_client *client);
++static int cpld_probe(struct i2c_client *client);
++static void cpld_remove(struct i2c_client *client);
+ 
+ static const struct i2c_device_id cpld_id[] = {
+ 	{ "CPLD-QSFPDD", QSFPDD },
+@@ -304,8 +303,7 @@ static const struct attribute_group sfp_
+ 	.attrs = (struct attribute **) sfp_attrs,
+ };
+ 
+-static int cpld_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
++static int cpld_probe(struct i2c_client *client)
+ {
+ 	struct cpld_data *data;
+ 	struct sfp_data *port_data;
+@@ -314,7 +312,7 @@ static int cpld_probe(struct i2c_client
+ 
+ 	if (!cpld_class)
+ 	{
+-		cpld_class = class_create(THIS_MODULE, "cpld-qsfpdd");
++		cpld_class = class_create("cpld-qsfpdd");
+ 		if (IS_ERR(cpld_class)) {
+ 			pr_err("couldn't create sysfs class\n");
+ 			return PTR_ERR(cpld_class);
+@@ -329,7 +327,7 @@ static int cpld_probe(struct i2c_client
+ 	/* register sfp port data to sysfs */
+ 	for (i = 0; i < 16; i++)
+ 	{
+-		port_nr = ida_simple_get(&cpld_ida, 1, 99, GFP_KERNEL);
++		port_nr = ida_alloc_range(&cpld_ida, 1, 99, GFP_KERNEL);
+ 		if (port_nr < 0)
+ 			return port_nr;
+ 
+@@ -389,7 +387,7 @@ static bool cpld_idr_is_empty(struct idr
+ }
+ #endif
+ 
+-static int cpld_remove(struct i2c_client *client)
++static void cpld_remove(struct i2c_client *client)
+ {
+ 	struct cpld_data *data = i2c_get_clientdata(client);
+ 	int i;
+@@ -398,7 +396,7 @@ static int cpld_remove(struct i2c_client
+ 	{
+ 		dev_info(data->port_dev[i], "Remove qsfpdd port-%d\n", data->port_data[i]->port_id);
+ 		device_unregister(data->port_dev[i]);
+-		ida_simple_remove(&cpld_ida, data->port_data[i]->port_id);
++		ida_free(&cpld_ida, data->port_data[i]->port_id);
+ 		kfree(data->port_data[i]);
+ 	}
+ #if LINUX_VERSION_CODE > KERNEL_VERSION(4,10,0)
+@@ -411,7 +409,7 @@ static int cpld_remove(struct i2c_client
+ 		cpld_class = NULL;
+ 	}
+ 
+-	return 0;
++	return;
+ }
+ 
+ module_i2c_driver(cpld_driver);

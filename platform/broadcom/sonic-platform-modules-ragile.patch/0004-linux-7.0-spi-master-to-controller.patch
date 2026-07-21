@@ -1,0 +1,391 @@
+Index: sonic-platform-modules-ragile/common/modules/spi-bitbang-txrx.h
+===================================================================
+--- sonic-platform-modules-ragile.orig/common/modules/spi-bitbang-txrx.h
++++ sonic-platform-modules-ragile/common/modules/spi-bitbang-txrx.h
+@@ -54,7 +54,7 @@ bitbang_txrx_be_cpha0(struct spi_device
+ 	for (word <<= (32 - bits); likely(bits); bits--) {
+ 
+ 		/* setup MSB (to slave) on trailing edge */
+-		if ((flags & SPI_MASTER_NO_TX) == 0) {
++		if ((flags & SPI_CONTROLLER_NO_TX) == 0) {
+ 			if ((word & (1 << 31)) != oldbit) {
+ 				setmosi(spi, word & (1 << 31));
+ 				oldbit = word & (1 << 31);
+@@ -67,7 +67,7 @@ bitbang_txrx_be_cpha0(struct spi_device
+ 
+ 		/* sample MSB (from slave) on leading edge */
+ 		word <<= 1;
+-		if ((flags & SPI_MASTER_NO_RX) == 0)
++		if ((flags & SPI_CONTROLLER_NO_RX) == 0)
+ 			word |= getmiso(spi);
+ 		setsck(spi, cpol);
+ 	}
+@@ -87,7 +87,7 @@ bitbang_txrx_be_cpha1(struct spi_device
+ 
+ 		/* setup MSB (to slave) on leading edge */
+ 		setsck(spi, !cpol);
+-		if ((flags & SPI_MASTER_NO_TX) == 0) {
++		if ((flags & SPI_CONTROLLER_NO_TX) == 0) {
+ 			if ((word & (1 << 31)) != oldbit) {
+ 				setmosi(spi, word & (1 << 31));
+ 				oldbit = word & (1 << 31);
+@@ -100,7 +100,7 @@ bitbang_txrx_be_cpha1(struct spi_device
+ 
+ 		/* sample MSB (from slave) on trailing edge */
+ 		word <<= 1;
+-		if ((flags & SPI_MASTER_NO_RX) == 0)
++		if ((flags & SPI_CONTROLLER_NO_RX) == 0)
+ 			word |= getmiso(spi);
+ 	}
+ 	return word;
+Index: sonic-platform-modules-ragile/common/modules/wb_spi_93xx46.c
+===================================================================
+--- sonic-platform-modules-ragile.orig/common/modules/wb_spi_93xx46.c
++++ sonic-platform-modules-ragile/common/modules/wb_spi_93xx46.c
+@@ -60,32 +60,26 @@ struct spi_board_info eeprom_93xx46_info
+         .platform_data      = &eeprom_data,
+ };
+ 
+-static struct spi_device *g_spi_device;
+-
+ static int __init wb_spi_93xx46_init(void)
+ {
+-    struct spi_master *master;
++    int ret;
+ 
+     SPI_93xx46_DEBUG_VERBOSE("Enter.\n");
+ 
+     eeprom_93xx46_info.bus_num = spi_bus_num;
+     eeprom_93xx46_info.controller_data = (void *)(long)spi_cs_gpio;
+-    master = spi_busnum_to_master(eeprom_93xx46_info.bus_num);
+-    if (!master) {
+-        SPI_93xx46_DEBUG_ERROR("get bus_num %u spi master failed.\n",
+-            eeprom_93xx46_info.bus_num);
+-        return -EINVAL;
+-    }
+-
+-    g_spi_device = spi_new_device(master, &eeprom_93xx46_info);
+-    put_device(&master->dev);
+-    if (!g_spi_device) {
+-        SPI_93xx46_DEBUG_ERROR("register spi new device failed.\n");
+-        return -EPERM;
++    /* spi_busnum_to_master() was removed in Linux 7.0; register the board
++     * info so the SPI core creates the device when the matching controller
++     * (by bus_num) is present. */
++    ret = spi_register_board_info(&eeprom_93xx46_info, 1);
++    if (ret) {
++        SPI_93xx46_DEBUG_ERROR("register spi 93xx46 board info failed, ret:%d.\n",
++            ret);
++        return ret;
+     }
+ 
+     if (g_wb_spi_93xx46_debug) {
+-        dev_info(&g_spi_device->dev, "register %u bus_num spi 93xx46 eeprom success\n",
++        pr_info("register %u bus_num spi 93xx46 eeprom success\n",
+             eeprom_93xx46_info.bus_num);
+     }
+ 
+@@ -94,13 +88,12 @@ static int __init wb_spi_93xx46_init(voi
+ 
+ static void __exit wb_spi_93xx46_exit(void)
+ {
+-    spi_unregister_device(g_spi_device);
+-
++    /* Board-info-registered devices are owned by the SPI core and are
++     * removed when the controller goes away, so there is no handle to
++     * unregister here. */
+     if (g_wb_spi_93xx46_debug) {
+-        dev_info(&g_spi_device->dev, "unregister spi 93xx46 eeprom success\n");
++        pr_info("unregister spi 93xx46 eeprom success\n");
+     }
+-
+-    return;
+ }
+ 
+ module_init(wb_spi_93xx46_init);
+Index: sonic-platform-modules-ragile/common/modules/wb_spi_gpio.c
+===================================================================
+--- sonic-platform-modules-ragile.orig/common/modules/wb_spi_gpio.c
++++ sonic-platform-modules-ragile/common/modules/wb_spi_gpio.c
+@@ -36,7 +36,7 @@
+  * spi->controller_state ... reserved for bitbang framework code
+  * spi->controller_data ... holds chipselect GPIO
+  *
+- * spi->master->dev.driver_data ... points to spi_gpio->bitbang
++ * spi->controller->dev.driver_data ... points to spi_gpio->bitbang
+  */
+ 
+ struct spi_gpio {
+@@ -90,7 +90,7 @@ spi_to_spi_gpio(const struct spi_device
+ 	const struct spi_bitbang	*bang;
+ 	struct spi_gpio			*spi_gpio;
+ 
+-	bang = spi_master_get_devdata(spi->master);
++	bang = spi_controller_get_devdata(spi->controller);
+ 	spi_gpio = container_of(bang, struct spi_gpio, bitbang);
+ 	return spi_gpio;
+ }
+@@ -176,7 +176,7 @@ static u32 spi_gpio_txrx_word_mode3(stru
+ 
+ /*
+  * These functions do not call setmosi or getmiso if respective flag
+- * (SPI_MASTER_NO_RX or SPI_MASTER_NO_TX) is set, so they are safe to
++ * (SPI_CONTROLLER_NO_RX or SPI_CONTROLLER_NO_TX) is set, so they are safe to
+  * call when such pin is not present or defined in the controller.
+  * A separate set of callbacks is defined to get highest possible
+  * speed in the generic case (when both MISO and MOSI lines are
+@@ -187,28 +187,28 @@ static u32 spi_gpio_txrx_word_mode3(stru
+ static u32 spi_gpio_spec_txrx_word_mode0(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha0(spi, nsecs, 0, flags, word, bits);
+ }
+ 
+ static u32 spi_gpio_spec_txrx_word_mode1(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha1(spi, nsecs, 0, flags, word, bits);
+ }
+ 
+ static u32 spi_gpio_spec_txrx_word_mode2(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha0(spi, nsecs, 1, flags, word, bits);
+ }
+ 
+ static u32 spi_gpio_spec_txrx_word_mode3(struct spi_device *spi,
+ 		unsigned nsecs, u32 word, u8 bits, unsigned flags)
+ {
+-	flags = spi->master->flags;
++	flags = spi->controller->flags;
+ 	return bitbang_txrx_be_cpha1(spi, nsecs, 1, flags, word, bits);
+ }
+ 
+@@ -289,13 +289,13 @@ static int spi_gpio_request(struct devic
+ 		return PTR_ERR(spi_gpio->mosi);
+ 	if (!spi_gpio->mosi)
+ 		/* HW configuration without MOSI pin */
+-		*mflags |= SPI_MASTER_NO_TX;
++		*mflags |= SPI_CONTROLLER_NO_TX;
+ 
+ 	spi_gpio->miso = devm_gpiod_get_optional(dev, "miso", GPIOD_IN);
+ 	if (IS_ERR(spi_gpio->miso))
+ 		return PTR_ERR(spi_gpio->miso);
+ 	/*
+-	 * No setting SPI_MASTER_NO_RX here - if there is only a MOSI
++	 * No setting SPI_CONTROLLER_NO_RX here - if there is only a MOSI
+ 	 * pin connected the host can still do RX by changing the
+ 	 * direction of the line.
+ 	 */
+@@ -362,7 +362,7 @@ static inline int spi_gpio_probe_dt(stru
+ static int spi_gpio_probe(struct platform_device *pdev)
+ {
+ 	int				status;
+-	struct spi_master		*master;
++	struct spi_controller		*master;
+ 	struct spi_gpio			*spi_gpio;
+ 	struct spi_gpio_platform_data	*pdata;
+ 	u16 master_flags = 0;
+@@ -384,7 +384,7 @@ static int spi_gpio_probe(struct platfor
+ 	if (!master)
+ 		return -ENOMEM;
+ 
+-	spi_gpio = spi_master_get_devdata(master);
++	spi_gpio = spi_controller_get_devdata(master);
+ 
+ 	spi_gpio->cs_gpios = devm_kcalloc(&pdev->dev,
+ 				pdata->num_chipselect,
+@@ -420,11 +420,11 @@ static int spi_gpio_probe(struct platfor
+ 		master->dev.of_node = pdev->dev.of_node;
+ 	}
+ 
+-	spi_gpio->bitbang.master = master;
++	spi_gpio->bitbang.ctlr = master;
+ 	spi_gpio->bitbang.chipselect = spi_gpio_chipselect;
+ 	spi_gpio->bitbang.set_line_direction = spi_gpio_set_direction;
+ 
+-	if ((master_flags & SPI_MASTER_NO_TX) == 0) {
++	if ((master_flags & SPI_CONTROLLER_NO_TX) == 0) {
+ 		spi_gpio->bitbang.txrx_word[SPI_MODE_0] = spi_gpio_txrx_word_mode0;
+ 		spi_gpio->bitbang.txrx_word[SPI_MODE_1] = spi_gpio_txrx_word_mode1;
+ 		spi_gpio->bitbang.txrx_word[SPI_MODE_2] = spi_gpio_txrx_word_mode2;
+@@ -439,7 +439,7 @@ static int spi_gpio_probe(struct platfor
+ 
+ 	status = spi_bitbang_start(&spi_gpio->bitbang);
+ 	if (status)
+-		spi_master_put(master);
++		spi_controller_put(master);
+ 
+ 	return status;
+ }
+@@ -455,7 +455,7 @@ static int spi_gpio_remove(struct platfo
+ 	/* stop() unregisters child devices too */
+ 	spi_bitbang_stop(&spi_gpio->bitbang);
+ 
+-	spi_master_put(spi_gpio->bitbang.master);
++	spi_controller_put(spi_gpio->bitbang.ctlr);
+ 
+ 	return 0;
+ }
+Index: sonic-platform-modules-ragile/common/modules/wb_spi_nor_device.c
+===================================================================
+--- sonic-platform-modules-ragile.orig/common/modules/wb_spi_nor_device.c
++++ sonic-platform-modules-ragile/common/modules/wb_spi_nor_device.c
+@@ -37,31 +37,24 @@ struct spi_board_info spi_nor_device_inf
+     .max_speed_hz       = 10 * 1000 * 1000,
+ };
+ 
+-static struct spi_device *g_spi_device;
+-
+ static int __init wb_spi_nor_dev_init(void)
+ {
+-    struct spi_master *master;
++    int ret;
+ 
+     SPI_NOR_DEV_DEBUG_VERBOSE("Enter.\n");
+ 
+     spi_nor_device_info.bus_num = spi_bus_num;
+-    master = spi_busnum_to_master(spi_nor_device_info.bus_num);  /* Get the controller according to the SPI Bus number */
+-    if (!master) {
+-        SPI_NOR_DEV_DEBUG_ERROR("get bus_num %u spi master failed.\n",
+-            spi_nor_device_info.bus_num);
+-        return -EINVAL;
+-    }
+-
+-    g_spi_device = spi_new_device(master, &spi_nor_device_info);
+-    put_device(&master->dev);
+-    if (!g_spi_device) {
+-        SPI_NOR_DEV_DEBUG_ERROR("register spi new device failed.\n");
+-        return -EPERM;
++    /* spi_busnum_to_master() was removed in Linux 7.0; register the board
++     * info so the SPI core creates the device when the matching controller
++     * (by bus_num) is present. */
++    ret = spi_register_board_info(&spi_nor_device_info, 1);
++    if (ret) {
++        SPI_NOR_DEV_DEBUG_ERROR("register spi nor board info failed, ret:%d.\n", ret);
++        return ret;
+     }
+ 
+     if (g_wb_spi_nor_dev_debug) {
+-        dev_info(&g_spi_device->dev, "register %u bus_num spi nor device success\n",
++        pr_info("register %u bus_num spi nor device success\n",
+             spi_nor_device_info.bus_num);
+     }
+ 
+@@ -70,13 +63,12 @@ static int __init wb_spi_nor_dev_init(vo
+ 
+ static void __exit wb_spi_nor_dev_exit(void)
+ {
+-    spi_unregister_device(g_spi_device);
+-
++    /* Board-info-registered devices are owned by the SPI core and are
++     * removed when the controller goes away, so there is no handle to
++     * unregister here. */
+     if (g_wb_spi_nor_dev_debug) {
+-        dev_info(&g_spi_device->dev, "unregister spi nor device success\n");
++        pr_info("unregister spi nor device success\n");
+     }
+-
+-    return;
+ }
+ 
+ module_init(wb_spi_nor_dev_init);
+Index: sonic-platform-modules-ragile/common/modules/wb_spi_ocores.c
+===================================================================
+--- sonic-platform-modules-ragile.orig/common/modules/wb_spi_ocores.c
++++ sonic-platform-modules-ragile/common/modules/wb_spi_ocores.c
+@@ -476,7 +476,7 @@ static void spioc_chipselect(struct spi_
+     u8 tx_conf;
+     int ret;
+ 
+-    spioc = spi_master_get_devdata(spi->master);
++    spioc = spi_controller_get_devdata(spi->controller);
+     spioc->transfer_busy_flag = 0;
+     ret = spioc_wait_trans(spioc, msecs_to_jiffies(100));
+     if (ret < 0) {
+@@ -542,7 +542,7 @@ static int spioc_setup_transfer(struct s
+     u32 hz;
+     int div;
+ 
+-    spioc = spi_master_get_devdata(spi->master);
++    spioc = spi_controller_get_devdata(spi->controller);
+     ctrl = 0;
+ 
+     if (spi->mode & SPI_LSB_FIRST) {
+@@ -595,7 +595,7 @@ static int spioc_spi_setup(struct spi_de
+         return -EINVAL;
+     }
+ 
+-    spioc = spi_master_get_devdata(spi->master);
++    spioc = spi_controller_get_devdata(spi->controller);
+     if (spi->chip_select >= spioc->num_chipselect) {
+         SPI_OC_ERROR("Spi device chipselect:%u, more than max chipselect:%u.\n",
+             spi->chip_select, spioc->num_chipselect);
+@@ -746,7 +746,7 @@ static int spioc_spi_txrx_bufs(struct sp
+         return 0;
+     }
+ 
+-    spioc = spi_master_get_devdata(spi->master);
++    spioc = spi_controller_get_devdata(spi->controller);
+     if (spioc->transfer_busy_flag) {
+         ret = -EBUSY;
+         goto err;
+@@ -883,7 +883,7 @@ static int ocores_spi_config_init(struct
+ 
+ static int spioc_probe(struct platform_device *pdev)
+ {
+-    struct spi_master *master;
++    struct spi_controller *master;
+     struct spioc *spioc;
+     int ret;
+     bool be;
+@@ -895,7 +895,7 @@ static int spioc_probe(struct platform_d
+         goto out;
+     }
+ 
+-    spioc = spi_master_get_devdata(master);
++    spioc = spi_controller_get_devdata(master);
+     platform_set_drvdata(pdev, spioc);
+ 
+     spioc->dev = &pdev->dev;
+@@ -955,7 +955,7 @@ static int spioc_probe(struct platform_d
+     }
+ 
+     /* setup the state for the bitbang driver */
+-    spioc->bitbang.master = master;
++    spioc->bitbang.ctlr = master;
+     spioc->bitbang.setup_transfer = spioc_setup_transfer;
+     spioc->bitbang.chipselect = spioc_chipselect;
+     spioc->bitbang.txrx_bufs = spioc_spi_txrx_bufs;
+@@ -983,7 +983,7 @@ static int spioc_probe(struct platform_d
+ 
+     return ret;
+ free:
+-    spi_master_put(master);
++    spi_controller_put(master);
+ out:
+     return ret;
+ }
+@@ -991,13 +991,13 @@ out:
+ static int spioc_remove(struct platform_device *pdev)
+ {
+     struct spioc *spioc;
+-    struct spi_master *master;
++    struct spi_controller *master;
+ 
+     spioc = platform_get_drvdata(pdev);
+-    master = spioc->bitbang.master;
++    master = spioc->bitbang.ctlr;
+     spi_bitbang_stop(&spioc->bitbang);
+     platform_set_drvdata(pdev, NULL);
+-    spi_master_put(master);
++    spi_controller_put(master);
+ 
+     return 0;
+ }

@@ -1,0 +1,213 @@
+Index: sonic-platform-modules-delta/ag5648/modules/delta_ag5648_platform.c
+===================================================================
+--- sonic-platform-modules-delta.orig/ag5648/modules/delta_ag5648_platform.c
++++ sonic-platform-modules-delta/ag5648/modules/delta_ag5648_platform.c
+@@ -692,7 +692,7 @@ static int __init i2c_device_probe(struc
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -1540,7 +1540,7 @@ static int __init delta_ag5648_platform_
+     //Use pca9548 in i2c_mux_pca954x.c
+     adapter = i2c_get_adapter(BUS1); 
+     
+-    i2c_client_9548 = i2c_new_device(adapter, &i2c_info_pca9548[0]);
++    i2c_client_9548 = i2c_new_client_device(adapter, &i2c_info_pca9548[0]);
+     i2c_put_adapter(adapter);
+ 
+     // set the CPLD prob and remove
+Index: sonic-platform-modules-delta/ag9032v1/modules/delta_ag9032v1_platform.c
+===================================================================
+--- sonic-platform-modules-delta.orig/ag9032v1/modules/delta_ag9032v1_platform.c
++++ sonic-platform-modules-delta/ag9032v1/modules/delta_ag9032v1_platform.c
+@@ -532,7 +532,7 @@ static int __init i2c_device_probe(struc
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -2445,8 +2445,8 @@ static int __init delta_ag9032v1_platfor
+     
+     //Use pca9547 in i2c_mux_pca954x.c
+     adapter = i2c_get_adapter(BUS1); 
+-    //client = i2c_new_device(adapter, &i2c_info_pca9547[0]);
+-    i2c_client_9547 = i2c_new_device(adapter, &i2c_info_pca9547[0]);
++    //client = i2c_new_client_device(adapter, &i2c_info_pca9547[0]);
++    i2c_client_9547 = i2c_new_client_device(adapter, &i2c_info_pca9547[0]);
+ 	
+     i2c_put_adapter(adapter);
+ 
+Index: sonic-platform-modules-delta/ag9032v2a/modules/delta_ag9032v2a_platform.c
+===================================================================
+--- sonic-platform-modules-delta.orig/ag9032v2a/modules/delta_ag9032v2a_platform.c
++++ sonic-platform-modules-delta/ag9032v2a/modules/delta_ag9032v2a_platform.c
+@@ -508,7 +508,7 @@ static int __init i2c_device_probe(struc
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -1646,7 +1646,7 @@ static int __init delta_ag9032v2a_platfo
+     }
+ 
+     adapter = i2c_get_adapter(BUS2);
+-    i2c_client_9548 = i2c_new_device(adapter, &i2c_info_pca9548[0]);
++    i2c_client_9548 = i2c_new_client_device(adapter, &i2c_info_pca9548[0]);
+     i2c_put_adapter(adapter);
+ 
+     // register the SWPLD
+Index: sonic-platform-modules-delta/ag9064/modules/delta_ag9064_platform.c
+===================================================================
+--- sonic-platform-modules-delta.orig/ag9064/modules/delta_ag9064_platform.c
++++ sonic-platform-modules-delta/ag9064/modules/delta_ag9064_platform.c
+@@ -706,7 +706,7 @@ static int __init i2c_device_probe(struc
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -1288,7 +1288,7 @@ static int __init delta_ag9064_platform_
+     mutex_init(&dni_lock);
+ 
+     adapter = i2c_get_adapter(BUS2);
+-    i2c_client_9548 = i2c_new_device(adapter, &i2c_info_pca9548[0]);
++    i2c_client_9548 = i2c_new_client_device(adapter, &i2c_info_pca9548[0]);
+     i2c_put_adapter(adapter);
+ 
+     ret = dni_create_user();
+Index: sonic-platform-modules-delta/ag9064/modules/i2c-mei_rw.c
+===================================================================
+--- sonic-platform-modules-delta.orig/ag9064/modules/i2c-mei_rw.c
++++ sonic-platform-modules-delta/ag9064/modules/i2c-mei_rw.c
+@@ -87,7 +87,7 @@ EFI_STATUS HeciInit (   HECI_DEVICE   *p
+   
+   // Check MBAR, 
+   pAddrPoint = HeciMbarRead(pThis);
+-  pMbarRegs = (HECI_MBAR_REGS*)ioremap_nocache(pAddrPoint, 0x1000);
++  pMbarRegs = (HECI_MBAR_REGS*)ioremap(pAddrPoint, 0x1000);
+   if (pMbarRegs == NULL)
+   {
+     printk("[HECI-%d] Init failed (device disabled)\n", pThis->Fun);
+@@ -149,7 +149,7 @@ EFI_STATUS HecClearQue (    HECI_DEVICE
+   
+   // Check for HECI availability on PCI
+   pAddrPoint = HeciMbarRead(pThis);
+-  pMbarRegs = (HECI_MBAR_REGS*)ioremap_nocache(pAddrPoint, 0x1000);
++  pMbarRegs = (HECI_MBAR_REGS*)ioremap(pAddrPoint, 0x1000);
+   printk("pMbarRegs: %x\n", pMbarRegs);
+ 
+   if (pMbarRegs == NULL)
+@@ -256,7 +256,7 @@ EFI_STATUS HeciMsgRecv (    HECI_DEVICE
+ 
+   // Check for HECI availability on PCI
+   pAddrPoint = HeciMbarRead(pThis);
+-  pMbarRegs = (HECI_MBAR_REGS*)ioremap_nocache(pAddrPoint, 0x1000);
++  pMbarRegs = (HECI_MBAR_REGS*)ioremap(pAddrPoint, 0x1000);
+   if (pMbarRegs == NULL)
+   {
+     printk("[HECI-%d] Receive failed (device disabled)\n", pThis->Fun);
+@@ -405,7 +405,7 @@ EFI_STATUS HeciMsgSend (    HECI_DEVICE
+   
+   // Check for HECI availability 
+   pAddrPoint = HeciMbarRead(pThis);
+-  pMbarRegs = (HECI_MBAR_REGS*)ioremap_nocache(pAddrPoint, 0x1000);
++  pMbarRegs = (HECI_MBAR_REGS*)ioremap(pAddrPoint, 0x1000);
+   if (pMbarRegs == NULL)
+   {
+     printk("[HECI-%d] Send failed (device disabled)\n", pThis->Fun);
+Index: sonic-platform-modules-delta/agc032/modules/delta_agc032_platform.c
+===================================================================
+--- sonic-platform-modules-delta.orig/agc032/modules/delta_agc032_platform.c
++++ sonic-platform-modules-delta/agc032/modules/delta_agc032_platform.c
+@@ -197,7 +197,7 @@ static int __init i2c_device_probe(struc
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -247,7 +247,7 @@ static int __init delta_agc032_platform_
+     printk("agc032_platform module initialization\n");
+ 
+     adapter = i2c_get_adapter(BUS0);
+-//    i2c_client_9548 = i2c_new_device(adapter, &i2c_info_pca9548[0]);
++//    i2c_client_9548 = i2c_new_client_device(adapter, &i2c_info_pca9548[0]);
+ 
+     i2c_put_adapter(adapter);
+ 
+Index: sonic-platform-modules-delta/agc032/modules/delta_agc032_qsfp.c
+===================================================================
+--- sonic-platform-modules-delta.orig/agc032/modules/delta_agc032_qsfp.c
++++ sonic-platform-modules-delta/agc032/modules/delta_agc032_qsfp.c
+@@ -551,7 +551,7 @@ static int __init i2c_device_probe(struc
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -640,11 +640,11 @@ static int __init delta_agc032_platform_
+     printk("agc032_qsfp module initialization\n");
+ 
+     adapter = i2c_get_adapter(BUS0);
+-    i2c_client_9548_1 = i2c_new_device(adapter, &i2c_info_pca9548[0]);
+-    i2c_client_9548_2 = i2c_new_device(adapter, &i2c_info_pca9548[1]);
+-    i2c_client_9548_3 = i2c_new_device(adapter, &i2c_info_pca9548[2]);
+-    i2c_client_9548_4 = i2c_new_device(adapter, &i2c_info_pca9548[3]);
+-    i2c_client_9548_5 = i2c_new_device(adapter, &i2c_info_pca9548[4]);
++    i2c_client_9548_1 = i2c_new_client_device(adapter, &i2c_info_pca9548[0]);
++    i2c_client_9548_2 = i2c_new_client_device(adapter, &i2c_info_pca9548[1]);
++    i2c_client_9548_3 = i2c_new_client_device(adapter, &i2c_info_pca9548[2]);
++    i2c_client_9548_4 = i2c_new_client_device(adapter, &i2c_info_pca9548[3]);
++    i2c_client_9548_5 = i2c_new_client_device(adapter, &i2c_info_pca9548[4]);
+     i2c_put_adapter(adapter);
+ 
+     /* pca9548-0x70 */
+Index: sonic-platform-modules-delta/et-6248brb/modules/delta_et-6248brb_platform.c
+===================================================================
+--- sonic-platform-modules-delta.orig/et-6248brb/modules/delta_et-6248brb_platform.c
++++ sonic-platform-modules-delta/et-6248brb/modules/delta_et-6248brb_platform.c
+@@ -193,7 +193,7 @@ static int __init i2c_device_probe(struc
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -718,7 +718,7 @@ static int __init gpio_device_probe(stru
+         return -ENODEV;
+     }
+ 
+-    pdata->client = i2c_new_device(parent, &pdata->info);
++    pdata->client = i2c_new_client_device(parent, &pdata->info);
+     if (!pdata->client) {
+         dev_err(&pdev->dev, "Failed to create i2c client %s at %d\n",
+             pdata->info.type, pdata->parent);
+@@ -841,7 +841,7 @@ static int __init delta_et6248brb_platfo
+     
+     //Use pca9547 in i2c_mux_pca954x.c
+     adapter = i2c_get_adapter(BUS1); 
+-    i2c_client_9547 = i2c_new_device(adapter, &i2c_info_pca9547[0]);
++    i2c_client_9547 = i2c_new_client_device(adapter, &i2c_info_pca9547[0]);
+     i2c_put_adapter(adapter);
+ 
+     // register the i2c devices
