@@ -1,0 +1,13 @@
+Index: sonic-platform-modules-ufispace/debian/control
+===================================================================
+--- sonic-platform-modules-ufispace.orig/debian/control
++++ sonic-platform-modules-ufispace/debian/control
+@@ -1,7 +1,7 @@
+ Source: sonic-ufispace-platform-modules
+ Section: main
+ Priority: extra
+-Maintainer: Leo Lin <leo.yt.lin@ufispace.com>, Nonodark Huang <nonodark.huang@ufispace.com>, Jason Tsai <jason.cy.tsai@ufispace.com>
++Maintainer: Leo Lin <leo.yt.lin@ufispace.com>
+ Build-Depends: debhelper (>= 9), bzip2
+ Standards-Version: 1.0.0
+ 
