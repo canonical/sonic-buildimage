@@ -67,10 +67,3 @@ $(SYNCD)_DEPENDS := $(filter-out $(LIBTHRIFT_DEV),$($(SYNCD)_DEPENDS))
 $(SYNCD)_DEPENDS += $(LIBSAITHRIFT_DEV)
 endif
 
-# Broadcom vendor/PDDF platform-module kmod debs declare Depends: linux-image-...,
-# but the slave container only installs kernel HEADERS (not the image). dpkg -i then
-# refuses to configure them. Force-depends on install, mirroring slave.mk's handling
-# of LINUX_HEADERS (slave.mk ~1017). Scoped to broadcom kmod debs only
-# (sonic-platform-*, platform-modules-*); does not touch other SONIC_DPKG_DEBS.
-BRCM_KMOD_DEBS := $(filter sonic-platform-% platform-modules-%,$(SONIC_DPKG_DEBS))
-$(foreach d,$(BRCM_KMOD_DEBS),$(eval $(d)_DEB_INSTALL_OPTS += --force-depends))
