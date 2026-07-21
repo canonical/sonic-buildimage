@@ -101,6 +101,8 @@ git commit -m "build: default PLATFORM=broadcom for broadcom bring-up"
 
 ## Task 1:XGS kmod patch(M1 核心)
 
+> **执行状态(2026-07-20):** ✅ M1 XGS kmod 完成。实际产生 **9 个 patch**(commit `0365f7c520`+`d895c45aa6`+`346ea22436`),覆盖 4 类问题,超出原 plan 的 4-patch 预估。`target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb` 已构建并验证(Depends=`linux-image-7.0.0-1002-sonic`,8 个 .ko 在 `lib/modules/7.0.0-1002-sonic/extra/`)。完整 patch 清单与每类根因见 `~/sonic-buildimage-resolute/.superpowers/sdd/progress-broadcom.md` ledger。下方 Task 1/1b 节为原设计意图(保留);实际新增的 0003-0009(kbuild 配置 + 打包路径)是执行中发现的同型问题,根因与 ledger 记录一致。
+
 **目的:** 给 `saibcm-modules`(XGS)子模块做 quilt patch,让 opennsl-modules 能对 resolute `7.0.0-1002-sonic` 内核编译。这是整个计划最硬的点,单独验证。
 
 **Files:**
@@ -247,6 +249,102 @@ Adapt saibcm-modules debian/rules + control to resolute kernel:
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```
 Expected: 只 commit `.patch/` 目录,子模块 gitlink 不变。
+
+---
+
+## Task 1b:opennsl 源码兼容 Linux 7.0 API(M1 新增,Task 1 构建暴露)
+
+**背景(实现中发现):** Task 1 的 ABI/路径 patch 成功(软链 OK、headers 找到),但构建进入 C 编译阶段失败。根因:opennsl SDK 6.5.35(SAI 15.2)的内核模块兼容层(`lkm.h` 的 `#if LINUX_VERSION_CODE`)只覆盖到 Linux 4.15/6.8/6.11,未覆盖 linux-sonic 7.0.0(= mainline Linux 7.0,VERSION=7/0/0)的 API 漂移。**这是可打的源码 patch,非根本不兼容**(research 已用 commit + 头文件二分确认,见 ledger)。公开上游 saibcm-modules 无适配分支,只能本地 patch。
+
+**三类错误 + 修法:**
+
+1. **`del_timer_sync` 隐式声明** — Linux 6.2 改名 `timer_delete_sync`,保留 deprecated wrapper 到 6.14,**6.15 删除**。7.0 无。修:在两处 lkm.h 加兼容宏。
+2. **`from_timer` 隐式声明** — Linux 6.16 改名 `timer_container_of`(**无兼容 wrapper**)。7.0 timer.h:132 有 `timer_container_of`,无 `from_timer`。修:加兼容宏 `#define from_timer(...) timer_container_of(...)`。
+3. **`struct filename` static_assert(fs.h:2433)** — Linux 7.0 重构 `struct filename`(`__filename_head` + `static_assert(sizeof % 64 == 0)`),需 `-fms-extensions` 让匿名 struct 成员字段注入;opennsl `make/Make.config` 用自定义 `$(CC)` 编内核 .o 不走 kbuild,没继承 `KBUILD_CFLAGS` 的 `-fms-extensions`。修:给内核对象 CFLAGS 加 `-fms-extensions`(**一行 flag,不动源码**)。
+
+**Files:**
+- Modify(经 quilt patch,进 `saibcm-modules.patch/0002-linux-7.0-api-compat.patch`):
+  - `platform/broadcom/saibcm-modules/systems/linux/kernel/modules/include/lkm.h`(公共 lkm.h)
+  - `platform/broadcom/saibcm-modules/systems/linux/kernel/modules/bcm-ngknet/include/lkm/lkm.h`(bcm-ngknet lkm.h,已有 timer_arg wrapper)
+  - `platform/broadcom/saibcm-modules/make/Make.config`(CFLAGS 加 -fms-extensions)
+
+**Interfaces:**
+- Produces: 同 Task 1,`target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb`(这次能编译通过)
+
+- [ ] **Step 1: 在 saibcm-modules.patch 里新增第二个 patch**
+
+```bash
+cd /home/sheldon-qi/sonic-buildimage-resolute/platform/broadcom/saibcm-modules
+export QUILT_PATCHES=../saibcm-modules.patch
+# Task 1 的 0001 patch 已存在;新增 0002
+quilt new 0002-linux-7.0-api-compat.patch
+```
+
+- [ ] **Step 2: 加 timer 兼容宏到两个 lkm.h**
+
+对**公共** `systems/linux/kernel/modules/include/lkm.h` 和 **bcm-ngknet** `systems/linux/kernel/modules/bcm-ngknet/include/lkm/lkm.h`,在 `#include <linux/timer.h>` 之后(若文件无该 include,加在 `#include <linux/sched.h>` 附近)加:
+```c
+/* Linux 6.15 removed del_timer_sync (renamed timer_delete_sync in 6.2,
+ * wrapper kept till 6.14). Linux 6.16 renamed from_timer to timer_container_of
+ * (no compat wrapper). Provide aliases for older opennsl source. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,15,0)
+#define del_timer_sync(t) timer_delete_sync(t)
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,16,0)
+#define from_timer(var, cb, field) timer_container_of(var, cb, field)
+#endif
+```
+若公共 lkm.h 无 `#include <linux/timer.h>`,先加 `#include <linux/timer.h>`(否则 `timer_delete_sync`/`timer_container_of` 未声明)。
+
+- [ ] **Step 3: make/Make.config 内核对象 CFLAGS 加 -fms-extensions**
+
+```bash
+quilt edit make/Make.config
+```
+在内核对象编译的 CFLAGS 段(research 指出 line ~362/366/387 的 `$(CC) $(CFLAGS)` 内核 .o 编译;也可在公共 `CFLAGS +=` 段加)加:
+```make
+CFLAGS += -fms-extensions
+```
+> 注意:只在编译内核模块 .o 的路径加,避免影响用户态编译(若公共 CFLAGS 会污染用户态,则加到内核专属的 `LKM_CFLAGS` 或 `KMOD_CFLAGS` 变量;先查 `make/Make.config` 哪个 CFLAGS 只作用于内核对象)。优先加在内核专属 CFLAGS。
+
+- [ ] **Step 4: refresh + pop**
+
+```bash
+cd /home/sheldon-qi/sonic-buildimage-resolute/platform/broadcom/saibcm-modules
+quilt refresh
+quilt pop -a
+cat ../saibcm-modules.patch/series   # 应有 0001 + 0002 两行
+```
+
+- [ ] **Step 5: 重新构建(验证全部三类错误消除)**
+
+```bash
+cd /home/sheldon-qi/sonic-buildimage-resolute
+export BLDENV=resolute NORESOLUTE=0
+rm -f target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb
+make PLATFORM=broadcom target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb 2>&1 | tee /tmp/broadcom-m1-xgs-retry.log
+```
+Expected: 成功,产出 deb,`dpkg-deb -I` Depends = `linux-image-7.0.0-1002-sonic`。
+
+- [ ] **Step 5b: 失败兜底(可能冒出更多 6.x/7.0 API 漂移)**
+
+如 net_device ops、ethtool、genl、ktime 等其他 API 漂移。**这些是增量兼容宏工作**(同 zitingguo 分支沿 6.12 打补丁的套路),不是架构问题。按报错 `grep` 受影响 API,加对应 `#if LINUX_VERSION_CODE` 兼容宏或调整调用。每修一类重跑 Step 5。若漂移过多(>5 类),回报评估。
+
+- [ ] **Step 6: amend Task 1 commit 或新增 commit**
+
+```bash
+cd /home/sheldon-qi/sonic-buildimage-resolute
+git add platform/broadcom/saibcm-modules.patch/
+# 若 Task 1 的 0001 commit 已存在,新增 0002 commit:
+git commit -m "build(broadcom): opennsl kmod Linux 7.0 API compat (timer + fms-extensions)
+
+- lkm.h: del_timer_sync->timer_delete_sync alias (>=6.15), from_timer->timer_container_of (>=6.16)
+- make/Make.config: -fms-extensions for struct filename anonymous member injection (7.0 fs.h static_assert)
+
+linux-sonic 7.0.0 = mainline 7.0; opennsl SDK 6.5.35 compat layer only covered <=4.15/6.11.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+```
 
 ---
 
