@@ -1,2 +1,4 @@
 0001-skip-dh-auto-test.patch
 0002-linux-7.0-module-import-ns-string.patch
+0003-linux-7.0-export-symbol-ns-string.patch
+0004-linux-7.0-kernel-build-dir.patch
