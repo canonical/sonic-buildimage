@@ -1,0 +1,88 @@
+Index: sonic-platform-modules-accton/as7312-54x/modules/accton_as7312_54x_sfp.c
+===================================================================
+--- sonic-platform-modules-accton.orig/as7312-54x/modules/accton_as7312_54x_sfp.c
++++ sonic-platform-modules-accton/as7312-54x/modules/accton_as7312_54x_sfp.c
+@@ -963,7 +963,7 @@ static ssize_t sfp_port_write(struct sfp
+ #endif
+ 
+ static ssize_t sfp_bin_write(struct file *filp, struct kobject *kobj,
+-                             struct bin_attribute *attr,
++                             const struct bin_attribute *attr,
+                              char *buf, loff_t off, size_t count)
+ {
+     int present;
+@@ -1600,7 +1600,7 @@ static ssize_t sfp_port_read(struct sfp_
+ #endif
+ 
+ static ssize_t sfp_bin_read(struct file *filp, struct kobject *kobj,
+-                            struct bin_attribute *attr,
++                            const struct bin_attribute *attr,
+                             char *buf, loff_t off, size_t count)
+ {
+     int present;
+Index: sonic-platform-modules-accton/as7312-54xs/modules/accton_as7312_54x_sfp.c
+===================================================================
+--- sonic-platform-modules-accton.orig/as7312-54xs/modules/accton_as7312_54x_sfp.c
++++ sonic-platform-modules-accton/as7312-54xs/modules/accton_as7312_54x_sfp.c
+@@ -963,7 +963,7 @@ static ssize_t sfp_port_write(struct sfp
+ #endif
+ 
+ static ssize_t sfp_bin_write(struct file *filp, struct kobject *kobj,
+-                             struct bin_attribute *attr,
++                             const struct bin_attribute *attr,
+                              char *buf, loff_t off, size_t count)
+ {
+     int present;
+@@ -1600,7 +1600,7 @@ static ssize_t sfp_port_read(struct sfp_
+ #endif
+ 
+ static ssize_t sfp_bin_read(struct file *filp, struct kobject *kobj,
+-                            struct bin_attribute *attr,
++                            const struct bin_attribute *attr,
+                             char *buf, loff_t off, size_t count)
+ {
+     int present;
+Index: sonic-platform-modules-accton/as7712-32x/modules/accton_as7712_32x_sfp.c
+===================================================================
+--- sonic-platform-modules-accton.orig/as7712-32x/modules/accton_as7712_32x_sfp.c
++++ sonic-platform-modules-accton/as7712-32x/modules/accton_as7712_32x_sfp.c
+@@ -781,7 +781,7 @@ static ssize_t sfp_port_write(struct sfp
+ 
+ 
+ static ssize_t sfp_bin_write(struct file *filp, struct kobject *kobj,
+-				struct bin_attribute *attr,
++				const struct bin_attribute *attr,
+ 				char *buf, loff_t off, size_t count)
+ {
+ 	struct sfp_port_data *data;
+@@ -888,7 +888,7 @@ static ssize_t sfp_port_read(struct sfp_
+ }
+ 
+ static ssize_t sfp_bin_read(struct file *filp, struct kobject *kobj,
+-		struct bin_attribute *attr,
++		const struct bin_attribute *attr,
+ 		char *buf, loff_t off, size_t count)
+ {
+ 	struct sfp_port_data *data;
+Index: sonic-platform-modules-accton/as7816-64x/modules/x86-64-accton-as7816-64x-sfp.c
+===================================================================
+--- sonic-platform-modules-accton.orig/as7816-64x/modules/x86-64-accton-as7816-64x-sfp.c
++++ sonic-platform-modules-accton/as7816-64x/modules/x86-64-accton-as7816-64x-sfp.c
+@@ -678,7 +678,7 @@ static ssize_t sfp_port_write(struct sfp
+ #endif
+ 
+ static ssize_t sfp_bin_write(struct file *filp, struct kobject *kobj,
+-				struct bin_attribute *attr,
++				const struct bin_attribute *attr,
+ 				char *buf, loff_t off, size_t count)
+ {
+ 	int present;
+@@ -1293,7 +1293,7 @@ static ssize_t sfp_port_read(struct sfp_
+ #endif
+ 
+ static ssize_t sfp_bin_read(struct file *filp, struct kobject *kobj,
+-		struct bin_attribute *attr,
++		const struct bin_attribute *attr,
+ 		char *buf, loff_t off, size_t count)
+ {
+ 	int present;

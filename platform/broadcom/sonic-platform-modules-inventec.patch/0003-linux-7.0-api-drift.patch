@@ -1,0 +1,250 @@
+Index: sonic-platform-modules-inventec/d6254qs/modules/inv_platform.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6254qs/modules/inv_platform.c
++++ sonic-platform-modules-inventec/d6254qs/modules/inv_platform.c
+@@ -217,7 +217,7 @@ static int __init plat_magnolia_init(voi
+     
+         i2c_put_adapter(adap);
+         for(j=0; j<i2cdev_list[i].size; j++) {
+-            e = i2c_new_device(adap, &i2cdev_list[i].board_info[j] );
++            e = i2c_new_client_device(adap, &i2cdev_list[i].board_info[j] );
+ 
+             if (plat_i2c_client_add(e)<0) {
+                printk("too many i2c clients added (PLAT_MAX_I2C_CLIENTS=%d)\n", PLAT_MAX_I2C_CLIENTS);
+Index: sonic-platform-modules-inventec/d6254qs/modules/inv_swps.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6254qs/modules/inv_swps.c
++++ sonic-platform-modules-inventec/d6254qs/modules/inv_swps.c
+@@ -2718,7 +2718,7 @@ register_swp_module(void){
+     port_major = MAJOR(port_devt);
+ 
+     /* Create class object */
+-    swp_class_p = class_create(THIS_MODULE, SWP_CLS_NAME);
++    swp_class_p = class_create(SWP_CLS_NAME);
+     if (IS_ERR(swp_class_p)) {
+         SWPS_ERR("Create class failure! \n");
+         goto err_register_swp_module_3;
+Index: sonic-platform-modules-inventec/d6332/modules/i2c-gpio.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6332/modules/i2c-gpio.c
++++ sonic-platform-modules-inventec/d6332/modules/i2c-gpio.c
+@@ -211,7 +211,7 @@ static int i2c_gpio_probe(struct platfor
+ 
+ 	adap->owner = THIS_MODULE;
+ 	if (pdev->dev.of_node)
+-		strlcpy(adap->name, dev_name(&pdev->dev), sizeof(adap->name));
++		strscpy(adap->name, dev_name(&pdev->dev), sizeof(adap->name));
+ 	else
+ 		snprintf(adap->name, sizeof(adap->name), "i2c-gpio%d", pdev->id);
+ 
+Index: sonic-platform-modules-inventec/d6332/modules/inv_platform.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6332/modules/inv_platform.c
++++ sonic-platform-modules-inventec/d6332/modules/inv_platform.c
+@@ -203,9 +203,9 @@ static int __init inv_platform_init(void
+                 for(k=0; k<3; k++) {
+ 			if (i2cdev_list[i].probe == 1) {
+ 				short unsigned int i2c_address[2]={i2cdev_list[i].board_info[j].addr, I2C_CLIENT_END};
+-				e = i2c_new_probed_device(adap, &i2cdev_list[i].board_info[j] ,i2c_address, NULL);
++				e = i2c_new_scanned_device(adap, &i2cdev_list[i].board_info[j] ,i2c_address, NULL);
+ 			} else {
+-				e = i2c_new_device(adap, &i2cdev_list[i].board_info[j]);
++				e = i2c_new_client_device(adap, &i2cdev_list[i].board_info[j]);
+ 			}
+                         if(e == NULL) msleep(10); else break;
+                 }
+Index: sonic-platform-modules-inventec/d6332/modules/inv_swps.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6332/modules/inv_swps.c
++++ sonic-platform-modules-inventec/d6332/modules/inv_swps.c
+@@ -2976,7 +2976,7 @@ register_swp_module(void){
+     port_major = MAJOR(port_devt);
+ 
+     /* Create class object */
+-    swp_class_p = class_create(THIS_MODULE, SWP_CLS_NAME);
++    swp_class_p = class_create(SWP_CLS_NAME);
+     if (IS_ERR(swp_class_p)) {
+         SWPS_ERR("Create class failure! \n");
+         goto err_register_swp_module_3;
+Index: sonic-platform-modules-inventec/d6332/modules/lpc_ich.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6332/modules/lpc_ich.c
++++ sonic-platform-modules-inventec/d6332/modules/lpc_ich.c
+@@ -878,7 +878,7 @@ static int lpc_ich_finalize_wdt_cell(str
+ 	info = &lpc_chipset_info[priv->chipset];
+ 
+ 	pdata->version = info->iTCO_version;
+-	strlcpy(pdata->name, info->name, sizeof(pdata->name));
++	strscpy(pdata->name, info->name, sizeof(pdata->name));
+ 
+ 	cell->platform_data = pdata;
+ 	cell->pdata_size = sizeof(*pdata);
+Index: sonic-platform-modules-inventec/d6356/modules/inv_platform.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6356/modules/inv_platform.c
++++ sonic-platform-modules-inventec/d6356/modules/inv_platform.c
+@@ -258,7 +258,7 @@ static int __init inv_platform_init(void
+         i2c_put_adapter(adap);
+         for(j=0; j<i2cdev_list[i].size; j++) {
+             for(k=0; k<300; k++) {
+-                e = i2c_new_device(adap, &i2cdev_list[i].board_info[j] );
++                e = i2c_new_client_device(adap, &i2cdev_list[i].board_info[j] );
+                 if(e == NULL) {
+                     msleep(10);
+                 } else {
+Index: sonic-platform-modules-inventec/d6356/modules/inv_swps.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6356/modules/inv_swps.c
++++ sonic-platform-modules-inventec/d6356/modules/inv_swps.c
+@@ -2955,7 +2955,7 @@ register_swp_module(void){
+     port_major = MAJOR(port_devt);
+ 
+     /* Create class object */
+-    swp_class_p = class_create(THIS_MODULE, SWP_CLS_NAME);
++    swp_class_p = class_create(SWP_CLS_NAME);
+     if (IS_ERR(swp_class_p)) {
+         SWPS_ERR("Create class failure! \n");
+         goto err_register_swp_module_3;
+Index: sonic-platform-modules-inventec/d6356/modules/lpc_ich.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6356/modules/lpc_ich.c
++++ sonic-platform-modules-inventec/d6356/modules/lpc_ich.c
+@@ -860,7 +860,7 @@ static int lpc_ich_finalize_wdt_cell(str
+ 	info = &lpc_chipset_info[priv->chipset];
+ 
+ 	pdata->version = info->iTCO_version;
+-	strlcpy(pdata->name, info->name, sizeof(pdata->name));
++	strscpy(pdata->name, info->name, sizeof(pdata->name));
+ 
+ 	cell->platform_data = pdata;
+ 	cell->pdata_size = sizeof(*pdata);
+Index: sonic-platform-modules-inventec/d6556/modules/inv_platform.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6556/modules/inv_platform.c
++++ sonic-platform-modules-inventec/d6556/modules/inv_platform.c
+@@ -200,7 +200,7 @@ static int __init inv_platform_init(void
+         i2c_put_adapter(adap);
+         for(j=0; j<i2cdev_list[i].size; j++) {
+             for(k=0; k<300; k++) {
+-                e = i2c_new_device(adap, &i2cdev_list[i].board_info[j] );
++                e = i2c_new_client_device(adap, &i2cdev_list[i].board_info[j] );
+                 if(e == NULL) msleep(10); else break;
+             }
+         }
+Index: sonic-platform-modules-inventec/d6556/modules/inv_swps.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6556/modules/inv_swps.c
++++ sonic-platform-modules-inventec/d6556/modules/inv_swps.c
+@@ -2740,7 +2740,7 @@ register_swp_module(void){
+     port_major = MAJOR(port_devt);
+ 
+     /* Create class object */
+-    swp_class_p = class_create(THIS_MODULE, SWP_CLS_NAME);
++    swp_class_p = class_create(SWP_CLS_NAME);
+     if (IS_ERR(swp_class_p)) {
+         SWPS_ERR("Create class failure! \n");
+         goto err_register_swp_module_3;
+Index: sonic-platform-modules-inventec/d7032q28b/modules/inv_platform.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7032q28b/modules/inv_platform.c
++++ sonic-platform-modules-inventec/d7032q28b/modules/inv_platform.c
+@@ -182,7 +182,7 @@ static int __init plat_redwood_x86_init(
+     
+         i2c_put_adapter(adap);
+         for(j=0; j<i2cdev_list[i].size; j++) {
+-            e = i2c_new_device(adap, &i2cdev_list[i].board_info[j] );
++            e = i2c_new_client_device(adap, &i2cdev_list[i].board_info[j] );
+         }
+     }
+ 
+Index: sonic-platform-modules-inventec/d7032q28b/modules/inv_swps.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7032q28b/modules/inv_swps.c
++++ sonic-platform-modules-inventec/d7032q28b/modules/inv_swps.c
+@@ -427,7 +427,7 @@ register_swp_module(void){
+     port_major = MAJOR(port_devt);
+ 
+     /* Create class object */
+-    swp_class_p = class_create(THIS_MODULE, SWP_CLS_NAME);
++    swp_class_p = class_create(SWP_CLS_NAME);
+     if (IS_ERR(swp_class_p)) {
+         SWPS_ERR("Create class failure! \n");
+         goto err_register_swp_module_3;
+Index: sonic-platform-modules-inventec/d7054q28b/modules/inv_platform.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7054q28b/modules/inv_platform.c
++++ sonic-platform-modules-inventec/d7054q28b/modules/inv_platform.c
+@@ -204,7 +204,7 @@ static int __init inv_platform_init(void
+     
+         i2c_put_adapter(adap);
+         for(j=0; j<i2cdev_list[i].size; j++) {
+-            e = i2c_new_device(adap, &i2cdev_list[i].board_info[j] );
++            e = i2c_new_client_device(adap, &i2cdev_list[i].board_info[j] );
+         }
+     }
+ 
+Index: sonic-platform-modules-inventec/d7054q28b/modules/inv_swps.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7054q28b/modules/inv_swps.c
++++ sonic-platform-modules-inventec/d7054q28b/modules/inv_swps.c
+@@ -539,7 +539,7 @@ register_swp_module(void){
+     port_major = MAJOR(port_devt);
+ 
+     /* Create class object */
+-    swp_class_p = class_create(THIS_MODULE, SWP_CLS_NAME);
++    swp_class_p = class_create(SWP_CLS_NAME);
+     if (IS_ERR(swp_class_p)) {
+         SWPS_ERR("Create class failure! \n");
+         goto err_register_swp_module_3;
+Index: sonic-platform-modules-inventec/d7264q28b/modules/inv_platform.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7264q28b/modules/inv_platform.c
++++ sonic-platform-modules-inventec/d7264q28b/modules/inv_platform.c
+@@ -222,7 +222,7 @@ static int __init inv_platform_init(void
+         i2c_put_adapter(adap);
+         for(j=0; j<i2cdev_list[i].size; j++) {
+                 for(k=0; k<300; k++) {
+-                        e = i2c_new_device(adap, &i2cdev_list[i].board_info[j] );
++                        e = i2c_new_client_device(adap, &i2cdev_list[i].board_info[j] );
+                         if(e == NULL) msleep(10); else break;
+                 }
+         }
+Index: sonic-platform-modules-inventec/d7264q28b/modules/inv_swps.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d7264q28b/modules/inv_swps.c
++++ sonic-platform-modules-inventec/d7264q28b/modules/inv_swps.c
+@@ -528,7 +528,7 @@ register_swp_module(void){
+     port_major = MAJOR(port_devt);
+ 
+     /* Create class object */
+-    swp_class_p = class_create(THIS_MODULE, SWP_CLS_NAME);
++    swp_class_p = class_create(SWP_CLS_NAME);
+     if (IS_ERR(swp_class_p)) {
+         SWPS_ERR("Create class failure! \n");
+         goto err_register_swp_module_3;
+Index: sonic-platform-modules-inventec/d6332/modules/inv_cpld.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6332/modules/inv_cpld.c
++++ sonic-platform-modules-inventec/d6332/modules/inv_cpld.c
+@@ -1454,7 +1454,7 @@ cpld_probe(struct i2c_client *client, co
+ 	}
+ 
+ 	//Check CPLD2 exist or not
+-	client2 = i2c_new_dummy(client->adapter, CPLD2_ADDRESS);
++	client2 = i2c_new_dummy_device(client->adapter, CPLD2_ADDRESS);
+ 	if(!client2) {
+ 		hasCPLD2 = 0;
+ 		client2 = client;
+Index: sonic-platform-modules-inventec/d6356/modules/inv_cpld.c
+===================================================================
+--- sonic-platform-modules-inventec.orig/d6356/modules/inv_cpld.c
++++ sonic-platform-modules-inventec/d6356/modules/inv_cpld.c
+@@ -929,7 +929,7 @@ cpld_probe(struct i2c_client *client, co
+ 	}
+ 
+ 	//Check CPLD2 exist or not 
+-	client2 = i2c_new_dummy(client->adapter, CPLD2_ADDRESS);
++	client2 = i2c_new_dummy_device(client->adapter, CPLD2_ADDRESS);
+ 	if(!client2) {
+ 		hasCPLD2 = 0;
+ 		client2 = client;

@@ -1,0 +1,170 @@
+Index: sonic-platform-modules-juniper/common/modules/gpio-tmc.c
+===================================================================
+--- sonic-platform-modules-juniper.orig/common/modules/gpio-tmc.c
++++ sonic-platform-modules-juniper/common/modules/gpio-tmc.c
+@@ -624,7 +624,7 @@ static int tmc_gpio_probe(struct platfor
+ 
+ 	tmc_gpio_setup(chip, cell->id);
+ 
+-	ret = gpiochip_add(&chip->gpio);
++	ret = gpiochip_add_data(&chip->gpio, chip);
+ 	if (ret) {
+ 		dev_err(dev,
+ 			"Failed to register TMC gpiochip : %d\n", ret);
+Index: sonic-platform-modules-juniper/qfx5200/modules/jnx-psu-monitor.c
+===================================================================
+--- sonic-platform-modules-juniper.orig/qfx5200/modules/jnx-psu-monitor.c
++++ sonic-platform-modules-juniper/qfx5200/modules/jnx-psu-monitor.c
+@@ -171,8 +171,7 @@ static const struct attribute_group jnx_
+     .attrs = psu_attributes,
+ };
+ 
+-static int jnx_psu_probe(struct i2c_client *client,
+-                         const struct i2c_device_id *dev_id)
++static int jnx_psu_probe(struct i2c_client *client)
+ {
+     struct psu_data *data;
+     int status;
+@@ -222,15 +221,13 @@ exit:
+     return status;
+ }
+ 
+-static int jnx_psu_remove(struct i2c_client *client)
++static void jnx_psu_remove(struct i2c_client *client)
+ {
+     struct psu_data *data = i2c_get_clientdata(client);
+ 
+     hwmon_device_unregister(data->hwmon_dev);
+     sysfs_remove_group(&client->dev.kobj, &jnx_psu_group);
+     kfree(data);
+-
+-    return 0;
+ }
+ 
+ enum {
+Index: sonic-platform-modules-juniper/qfx5210/modules/juniper_i2c_cpld.c
+===================================================================
+--- sonic-platform-modules-juniper.orig/qfx5210/modules/juniper_i2c_cpld.c
++++ sonic-platform-modules-juniper/qfx5210/modules/juniper_i2c_cpld.c
+@@ -726,9 +726,9 @@ static int add_attributes(struct i2c_cli
+     return 0;
+ }
+ 
+-static int juniper_i2c_cpld_probe(struct i2c_client *client,
+-                                 const struct i2c_device_id *dev_id)
++static int juniper_i2c_cpld_probe(struct i2c_client *client)
+ {
++    const struct i2c_device_id *dev_id = i2c_match_id(juniper_i2c_cpld_id, client);
+     int status;
+     struct cpld_data *data = NULL;
+     struct device *dev = &client->dev;
+@@ -791,7 +791,7 @@ out_kfree:
+ 
+ }
+ 
+-static int juniper_i2c_cpld_remove(struct i2c_client *client)
++static void juniper_i2c_cpld_remove(struct i2c_client *client)
+ {
+     struct cpld_data *data = i2c_get_clientdata(client);
+ 
+@@ -799,7 +799,6 @@ static int juniper_i2c_cpld_remove(struc
+     sysfs_remove_group(&client->dev.kobj, &data->group);
+     kfree(data->group.attrs);
+     juniper_i2c_cpld_remove_client(client);
+-    return 0;
+ }
+ 
+ int juniper_i2c_cpld_read(u8 cpld_addr, u8 reg)
+Index: sonic-platform-modules-juniper/qfx5210/modules/x86-64-juniper-qfx5210-64x-fan.c
+===================================================================
+--- sonic-platform-modules-juniper.orig/qfx5210/modules/x86-64-juniper-qfx5210-64x-fan.c
++++ sonic-platform-modules-juniper/qfx5210/modules/x86-64-juniper-qfx5210-64x-fan.c
+@@ -373,8 +373,7 @@ static struct qfx5210_64x_fan_data *qfx5
+     return data;
+ }
+ 
+-static int qfx5210_64x_fan_probe(struct i2c_client *client,
+-            const struct i2c_device_id *dev_id)
++static int qfx5210_64x_fan_probe(struct i2c_client *client)
+ {
+     struct qfx5210_64x_fan_data *data;
+     int status;
+@@ -422,13 +421,11 @@ exit:
+     return status;
+ }
+ 
+-static int qfx5210_64x_fan_remove(struct i2c_client *client)
++static void qfx5210_64x_fan_remove(struct i2c_client *client)
+ {
+     struct qfx5210_64x_fan_data *data = i2c_get_clientdata(client);
+     hwmon_device_unregister(data->hwmon_dev);
+     sysfs_remove_group(&client->dev.kobj, &qfx5210_64x_fan_group);
+-    
+-    return 0;
+ }
+ 
+ /* Addresses to scan */
+Index: sonic-platform-modules-juniper/qfx5210/modules/x86-64-juniper-qfx5210-64x-psu.c
+===================================================================
+--- sonic-platform-modules-juniper.orig/qfx5210/modules/x86-64-juniper-qfx5210-64x-psu.c
++++ sonic-platform-modules-juniper/qfx5210/modules/x86-64-juniper-qfx5210-64x-psu.c
+@@ -157,9 +157,9 @@ static void qfx5210_cpld_power_off(void)
+  */
+ static void (*default_pm_power_off)(void);
+ 
+-static int qfx5210_64x_psu_probe(struct i2c_client *client,
+-            const struct i2c_device_id *dev_id)
++static int qfx5210_64x_psu_probe(struct i2c_client *client)
+ {
++    const struct i2c_device_id *dev_id = i2c_match_id(qfx5210_64x_psu_id, client);
+     struct qfx5210_64x_psu_data *data;
+     int status;
+ 
+@@ -207,15 +207,13 @@ exit:
+     return status;
+ }
+ 
+-static int qfx5210_64x_psu_remove(struct i2c_client *client)
++static void qfx5210_64x_psu_remove(struct i2c_client *client)
+ {
+     struct qfx5210_64x_psu_data *data = i2c_get_clientdata(client);
+ 
+     hwmon_device_unregister(data->hwmon_dev);
+     sysfs_remove_group(&client->dev.kobj, &qfx5210_64x_psu_group);
+     kfree(data);
+-
+-    return 0;
+ }
+ 
+ enum psu_index 
+Index: sonic-platform-modules-juniper/qfx5210/modules/ym2651y.c
+===================================================================
+--- sonic-platform-modules-juniper.orig/qfx5210/modules/ym2651y.c
++++ sonic-platform-modules-juniper/qfx5210/modules/ym2651y.c
+@@ -375,8 +375,7 @@ static const struct attribute_group ym26
+     .attrs = ym2651y_attributes,
+ };
+ 
+-static int ym2651y_probe(struct i2c_client *client,
+-                         const struct i2c_device_id *dev_id)
++static int ym2651y_probe(struct i2c_client *client)
+ {
+     struct ym2651y_data *data;
+     int status;
+@@ -426,15 +425,13 @@ exit:
+     return status;
+ }
+ 
+-static int ym2651y_remove(struct i2c_client *client)
++static void ym2651y_remove(struct i2c_client *client)
+ {
+     struct ym2651y_data *data = i2c_get_clientdata(client);
+ 
+     hwmon_device_unregister(data->hwmon_dev);
+     sysfs_remove_group(&client->dev.kobj, &ym2651y_group);
+     kfree(data);
+-
+-    return 0;
+ }
+ 
+ static const struct i2c_device_id ym2651y_id[] = {
