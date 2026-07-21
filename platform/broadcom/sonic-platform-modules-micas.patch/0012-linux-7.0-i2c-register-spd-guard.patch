@@ -1,0 +1,18 @@
+Index: sonic-platform-modules-micas/common/modules/wb_i2c_i801.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_i2c_i801.c
++++ sonic-platform-modules-micas/common/modules/wb_i2c_i801.c
+@@ -1431,11 +1431,13 @@ static void i801_probe_optional_slaves(s
+ 	if (is_dell_system_with_lis3lv02d())
+ 		register_dell_lis3lv02d_i2c_device(priv);
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6,11,0)
+ 	/* Instantiate SPD EEPROMs unless the SMBus is multiplexed */
+ #if IS_ENABLED(CONFIG_I2C_MUX_GPIO)
+ 	if (!priv->mux_drvdata)
+ #endif
+ 		i2c_register_spd(&priv->adapter);
++#endif
+ }
+ #else
+ static void __init input_apanel_init(void) {}

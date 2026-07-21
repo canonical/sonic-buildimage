@@ -2,3 +2,4 @@
 0001-linux-7.0-kmod-compat.patch
 0002-linux-7.0-bin-attr-const.patch
 0003-linux-7.0-irq-linear-revmap.patch
+0004-linux-7.0-bin-attr-array-const.patch

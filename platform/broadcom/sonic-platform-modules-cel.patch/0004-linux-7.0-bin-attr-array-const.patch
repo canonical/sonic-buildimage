@@ -1,0 +1,104 @@
+Index: sonic-platform-modules-cel/ds2000/modules/lpc_basecpld.c
+===================================================================
+--- sonic-platform-modules-cel.orig/ds2000/modules/lpc_basecpld.c
++++ sonic-platform-modules-cel/ds2000/modules/lpc_basecpld.c
+@@ -619,7 +619,7 @@ static struct attribute *cpld_b_attrs[]
+ 	NULL,
+ };
+ 
+-static struct bin_attribute *cpld_b_bin_attrs[] = {
++static const struct bin_attribute *cpld_b_bin_attrs[] = {
+ 	&bin_attr_dump,
+ 	NULL,
+ };
+Index: sonic-platform-modules-cel/ds2000/modules/pddf_custom_fpga_extend.c
+===================================================================
+--- sonic-platform-modules-cel.orig/ds2000/modules/pddf_custom_fpga_extend.c
++++ sonic-platform-modules-cel/ds2000/modules/pddf_custom_fpga_extend.c
+@@ -247,7 +247,7 @@ static DEVICE_ATTR( bcm_temp_fpga, 0400,
+ static DEVICE_ATTR( bcm_temp, 0400, get_fpga_bcm_temp, NULL);
+ static BIN_ATTR_RO( dump, FPGA_REG_SPACE_SIZE);
+ 
+-static struct bin_attribute *fpga_bin_attrs[] = {
++static const struct bin_attribute *fpga_bin_attrs[] = {
+     &bin_attr_dump,
+     NULL,
+ };
+Index: sonic-platform-modules-cel/ds3000/modules/pddf_custom_fpga_extend.c
+===================================================================
+--- sonic-platform-modules-cel.orig/ds3000/modules/pddf_custom_fpga_extend.c
++++ sonic-platform-modules-cel/ds3000/modules/pddf_custom_fpga_extend.c
+@@ -247,7 +247,7 @@ static DEVICE_ATTR( bcm_temp_fpga, 0400,
+ static DEVICE_ATTR( bcm_temp, 0400, get_fpga_bcm_temp, NULL);
+ static BIN_ATTR_RO( dump, FPGA_REG_SPACE_SIZE);
+ 
+-static struct bin_attribute *fpga_bin_attrs[] = {
++static const struct bin_attribute *fpga_bin_attrs[] = {
+     &bin_attr_dump,
+     NULL,
+ };
+Index: sonic-platform-modules-cel/questone2/modules/questone2_baseboard_cpld.c
+===================================================================
+--- sonic-platform-modules-cel.orig/questone2/modules/questone2_baseboard_cpld.c
++++ sonic-platform-modules-cel/questone2/modules/questone2_baseboard_cpld.c
+@@ -310,7 +310,7 @@ static struct attribute *baseboard_cpld_
+     NULL,
+ };
+ 
+-static struct bin_attribute *baseboard_cpld_bin_attrs[] = {
++static const struct bin_attribute *baseboard_cpld_bin_attrs[] = {
+     &bin_attr_dump,
+     NULL,
+ };
+Index: sonic-platform-modules-cel/questone2/modules/questone2_switchboard.c
+===================================================================
+--- sonic-platform-modules-cel.orig/questone2/modules/questone2_switchboard.c
++++ sonic-platform-modules-cel/questone2/modules/questone2_switchboard.c
+@@ -633,7 +633,7 @@ static DEVICE_ATTR( setreg, 0200, NULL ,
+ static DEVICE_ATTR_RO(ready);
+ static BIN_ATTR_RO( dump, PORT_XCVR_REGISTER_SIZE);
+ 
+-static struct bin_attribute *fpga_bin_attrs[] = {
++static const struct bin_attribute *fpga_bin_attrs[] = {
+         &bin_attr_dump,
+         NULL,
+ };
+Index: sonic-platform-modules-cel/silverstone-v2/modules/pddf_custom_fpga_extend.c
+===================================================================
+--- sonic-platform-modules-cel.orig/silverstone-v2/modules/pddf_custom_fpga_extend.c
++++ sonic-platform-modules-cel/silverstone-v2/modules/pddf_custom_fpga_extend.c
+@@ -215,7 +215,7 @@ static DEVICE_ATTR( scratch, 0600, get_f
+ static DEVICE_ATTR( version, 0400, get_fpga_version, NULL);
+ static BIN_ATTR_RO( dump, XILINX_FPGA_REG_SIZE);
+ 
+-static struct bin_attribute *fpga_bin_attrs[] = {
++static const struct bin_attribute *fpga_bin_attrs[] = {
+     &bin_attr_dump,
+     NULL,
+ };
+Index: sonic-platform-modules-cel/silverstone-v2/modules/pddf_custom_lpc_basecpld.c
+===================================================================
+--- sonic-platform-modules-cel.orig/silverstone-v2/modules/pddf_custom_lpc_basecpld.c
++++ sonic-platform-modules-cel/silverstone-v2/modules/pddf_custom_lpc_basecpld.c
+@@ -340,7 +340,7 @@ static struct attribute *cpld_b_attrs[]
+     NULL,
+ };
+ 
+-static struct bin_attribute *cpld_b_bin_attrs[] = {
++static const struct bin_attribute *cpld_b_bin_attrs[] = {
+     &bin_attr_dump,
+     NULL,
+ };
+Index: sonic-platform-modules-cel/silverstone/modules/baseboard-lpc.c
+===================================================================
+--- sonic-platform-modules-cel.orig/silverstone/modules/baseboard-lpc.c
++++ sonic-platform-modules-cel/silverstone/modules/baseboard-lpc.c
+@@ -333,7 +333,7 @@ static struct attribute *cpld_b_attrs[]
+     NULL,
+ };
+ 
+-static struct bin_attribute *cpld_b_bin_attrs[] = {
++static const struct bin_attribute *cpld_b_bin_attrs[] = {
+     &bin_attr_dump,
+     NULL,
+ };
