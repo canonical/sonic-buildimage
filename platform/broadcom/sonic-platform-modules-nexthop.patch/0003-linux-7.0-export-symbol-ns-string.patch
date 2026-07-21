@@ -1,0 +1,172 @@
+Index: sonic-platform-modules-nexthop/common/modules/nh_pmbus_core.c
+===================================================================
+--- sonic-platform-modules-nexthop.orig/common/modules/nh_pmbus_core.c
++++ sonic-platform-modules-nexthop/common/modules/nh_pmbus_core.c
+@@ -174,7 +174,7 @@ void nh_pmbus_clear_cache(struct i2c_cli
+ 	for (sensor = data->sensors; sensor; sensor = sensor->next)
+ 		sensor->data = -ENODATA;
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_clear_cache, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_clear_cache, "PMBUS");
+ 
+ void nh_pmbus_set_update(struct i2c_client *client, u8 reg, bool update)
+ {
+@@ -185,7 +185,7 @@ void nh_pmbus_set_update(struct i2c_clie
+ 		if (sensor->reg == reg)
+ 			sensor->update = update;
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_set_update, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_set_update, "PMBUS");
+ 
+ int nh_pmbus_set_page(struct i2c_client *client, int page, int phase)
+ {
+@@ -221,7 +221,7 @@ int nh_pmbus_set_page(struct i2c_client
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_set_page, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_set_page, "PMBUS");
+ 
+ int nh_pmbus_write_byte(struct i2c_client *client, int page, u8 value)
+ {
+@@ -233,7 +233,7 @@ int nh_pmbus_write_byte(struct i2c_clien
+ 
+ 	return i2c_smbus_write_byte(client, value);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_write_byte, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_write_byte, "PMBUS");
+ 
+ /*
+  * _pmbus_write_byte() is similar to pmbus_write_byte(), but checks if
+@@ -264,7 +264,7 @@ int nh_pmbus_write_word_data(struct i2c_
+ 
+ 	return i2c_smbus_write_word_data(client, reg, word);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_write_word_data, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_write_word_data, "PMBUS");
+ 
+ 
+ static int pmbus_write_virt_reg(struct i2c_client *client, int page, int reg,
+@@ -370,7 +370,7 @@ int nh_pmbus_update_fan(struct i2c_clien
+ 	return _pmbus_write_word_data(client, page,
+ 				      pmbus_fan_command_registers[id], command);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_update_fan, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_update_fan, "PMBUS");
+ 
+ int nh_pmbus_read_word_data(struct i2c_client *client, int page, int phase, u8 reg)
+ {
+@@ -382,7 +382,7 @@ int nh_pmbus_read_word_data(struct i2c_c
+ 
+ 	return i2c_smbus_read_word_data(client, reg);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_read_word_data, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_read_word_data, "PMBUS");
+ 
+ static int pmbus_read_virt_reg(struct i2c_client *client, int page, int reg)
+ {
+@@ -441,7 +441,7 @@ int nh_pmbus_read_byte_data(struct i2c_c
+ 
+ 	return i2c_smbus_read_byte_data(client, reg);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_read_byte_data, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_read_byte_data, "PMBUS");
+ 
+ int nh_pmbus_write_byte_data(struct i2c_client *client, int page, u8 reg, u8 value)
+ {
+@@ -453,7 +453,7 @@ int nh_pmbus_write_byte_data(struct i2c_
+ 
+ 	return i2c_smbus_write_byte_data(client, reg, value);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_write_byte_data, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_write_byte_data, "PMBUS");
+ 
+ int nh_pmbus_update_byte_data(struct i2c_client *client, int page, u8 reg,
+ 			   u8 mask, u8 value)
+@@ -472,7 +472,7 @@ int nh_pmbus_update_byte_data(struct i2c
+ 
+ 	return rv;
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_update_byte_data, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_update_byte_data, "PMBUS");
+ 
+ static int pmbus_read_block_data(struct i2c_client *client, int page, u8 reg,
+ 				 char *data_buf)
+@@ -539,14 +539,14 @@ int nh_pmbus_get_fan_rate_device(struct
+ {
+ 	return pmbus_get_fan_rate(client, page, id, mode, false);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_fan_rate_device, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_fan_rate_device, "PMBUS");
+ 
+ int nh_pmbus_get_fan_rate_cached(struct i2c_client *client, int page, int id,
+ 			      enum pmbus_fan_mode mode)
+ {
+ 	return pmbus_get_fan_rate(client, page, id, mode, true);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_fan_rate_cached, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_fan_rate_cached, "PMBUS");
+ 
+ static void pmbus_clear_fault_page(struct i2c_client *client, int page)
+ {
+@@ -561,7 +561,7 @@ void nh_pmbus_clear_faults(struct i2c_cl
+ 	for (i = 0; i < data->info->pages; i++)
+ 		pmbus_clear_fault_page(client, i);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_clear_faults, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_clear_faults, "PMBUS");
+ 
+ static int pmbus_check_status_cml(struct i2c_client *client)
+ {
+@@ -615,13 +615,13 @@ bool nh_pmbus_check_byte_register(struct
+ {
+ 	return pmbus_check_register(client, _pmbus_read_byte_data, page, reg);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_check_byte_register, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_check_byte_register, "PMBUS");
+ 
+ bool nh_pmbus_check_word_register(struct i2c_client *client, int page, int reg)
+ {
+ 	return pmbus_check_register(client, __pmbus_read_word_data, page, reg);
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_check_word_register, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_check_word_register, "PMBUS");
+ 
+ static bool __maybe_unused pmbus_check_block_register(struct i2c_client *client,
+ 						      int page, int reg)
+@@ -645,7 +645,7 @@ const struct pmbus_driver_info *nh_pmbus
+ 
+ 	return data->info;
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_driver_info, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_driver_info, "PMBUS");
+ 
+ static int pmbus_get_status(struct i2c_client *client, int page, int reg)
+ {
+@@ -3046,7 +3046,7 @@ const struct regulator_ops nh_pmbus_regu
+ 	.set_voltage = pmbus_regulator_set_voltage,
+ 	.list_voltage = pmbus_regulator_list_voltage,
+ };
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_regulator_ops, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_regulator_ops, "PMBUS");
+ 
+ static int pmbus_regulator_register(struct pmbus_data *data)
+ {
+@@ -3177,7 +3177,7 @@ int nh_pmbus_do_probe(struct i2c_client
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_do_probe, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_do_probe, "PMBUS");
+ 
+ struct dentry *nh_pmbus_get_debugfs_dir(struct i2c_client *client)
+ {
+@@ -3185,7 +3185,7 @@ struct dentry *nh_pmbus_get_debugfs_dir(
+ 
+ 	return data->debugfs;
+ }
+-EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_debugfs_dir, PMBUS);
++EXPORT_SYMBOL_NS_GPL(nh_pmbus_get_debugfs_dir, "PMBUS");
+ 
+ static int __init pmbus_core_init(void)
+ {
