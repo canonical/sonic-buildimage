@@ -1,1 +1,3 @@
 0001-linux-7.0-gpio-chip-set-int.patch
+0002-linux-7.0-irq-and-gpio-api-drift.patch
+0003-linux-7.0-i2c-probe-remove-signature.patch

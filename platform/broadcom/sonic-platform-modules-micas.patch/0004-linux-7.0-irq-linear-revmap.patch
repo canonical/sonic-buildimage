@@ -1,0 +1,13 @@
+Index: sonic-platform-modules-micas/common/modules/wb_i2c_mux_pca954x.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_i2c_mux_pca954x.c
++++ sonic-platform-modules-micas/common/modules/wb_i2c_mux_pca954x.c
+@@ -891,7 +891,7 @@ static irqreturn_t pca954x_irq_handler(i
+ 
+     for (i = 0; i < data->chip->nchans; i++) {
+         if (ret & BIT(PCA954X_IRQ_OFFSET + i)) {
+-            child_irq = irq_linear_revmap(data->irq, i);
++            child_irq = irq_find_mapping(data->irq, i);
+             handle_nested_irq(child_irq);
+             handled++;
+         }
