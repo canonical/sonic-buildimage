@@ -5,3 +5,4 @@
 0004-linux-7.0-irq-linear-revmap.patch
 0009-resolute-maintainer-format.patch
 0010-linux-7.0-ccflags-y.patch
+0011-linux-7.0-gpiof-active-low.patch

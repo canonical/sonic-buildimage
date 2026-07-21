@@ -1,0 +1,20 @@
+Index: sonic-platform-modules-micas/common/modules/wb_wdt.c
+===================================================================
+--- sonic-platform-modules-micas.orig/common/modules/wb_wdt.c
++++ sonic-platform-modules-micas/common/modules/wb_wdt.c
+@@ -36,6 +36,15 @@
+ 
+ #include "wb_wdt.h"
+ 
++/* Linux >= 7.0 dropped the legacy GPIOF_* enum in favor of the GPIOD API.
++ * gpio.h still defines GPIOF_IN / GPIOF_OUT_INIT_* but no longer defines
++ * GPIOF_ACTIVE_LOW. Restore the historical flag value (bit 2) so the
++ * platform-data active-low bit check below still compiles unchanged.
++ */
++#ifndef GPIOF_ACTIVE_LOW
++#define GPIOF_ACTIVE_LOW        BIT(2)
++#endif
++
+ #define GPIO_FEED_WDT_MODE   (1)
+ #define LOGIC_FEED_WDT_MODE  (2)
+ 
