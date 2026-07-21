@@ -4,3 +4,4 @@
 0003-linux-7.0-irq-linear-revmap.patch
 0004-linux-7.0-bin-attr-array-const.patch
 0009-linux-7.0-cdev-include.patch
+0010-linux-7.0-kmod-objs-dmodule.patch
