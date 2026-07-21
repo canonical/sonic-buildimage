@@ -139,11 +139,21 @@ broadcom 的确切 make 目标与标志,执行时对照 broadcom 构建成功记
 1. **定位并修复** — 遇到构建错误时,先按 systematic-debugging 思路定位根因;修改遵循 AGENTS.md 的 Editing Rules(最小范围、patch 文件而非直接改外部源、保留 pin 等)。
 2. **提交修复**(分两种情况):
    - **父仓库改动**(`rules/*.mk`、`*.j2` 模板、Dockerfile 等):直接 commit 到 `202605_resolute`。
-   - **子模块改动**:按 AGENTS.md Submodules 节——子模块内 commit 到其 `202605_resolute` 分支 → push `canonical/<sub>:202605_resolute`(**绝不 push `sonic-net/`**)→ 父仓库 `git add <sub>` bump gitlink → commit 父仓库。**只有父仓库 gitlink 指向新 commit,reset 后重建才真带上修复。**
+   - **子模块改动**:按 AGENTS.md Submodules 节——子模块内 commit 到其 `202605_resolute` 分支 → 父仓库 `git add <sub>` bump gitlink → commit 父仓库。**只有父仓库 gitlink 指向新 commit,reset 后 `git submodule update --init` 才能 checkout 到修复**(子模块本地 commit 可达,无需远程)。push 时序见 7.3。
 3. **执行完整清理** — 重新跑第 4 节全部(4a–4e),不跳过。其中 4c(docker 清理)不可跳过:若修复触及 slave Dockerfile 或喂给 slave 的子模块,不清掉旧 slave 镜像它就不会重新派生、修复不会生效。
 4. **从零重建** — 重新跑第 5 节构建。
 
 "修改→commit→完整清理→重建"是从零可复现的硬保证:commit 让修复进 git、reset 不丢它、clean rebuild 验证它在干净环境真实有效。
+
+### 7.3 Git 操作时机(先 commit 后 push)
+
+本次从零构建期间,所有 git 提交(spec 文档、父仓库修复、子模块修复 + gitlink bump)一律**先只本地 commit,不 push**;直到 vs 与 broadcom 两个 build 均通过,再统一 push:
+
+- spec 文档 → `canonical/sonic-buildimage:202605_resolute_doc`
+- 子模块修复 → `canonical/<sub>:202605_resolute`(**绝不 `sonic-net/`**)
+- 父仓库修复 → `canonical/sonic-buildimage:202605_resolute`
+
+技术上可行:`git reset --hard` reset 到本地 HEAD(含新 commit 与新 gitlink);`git submodule update --init` checkout 到 gitlink commit 时,只要该 commit 在子模块本地 `.git` 中已存在即可达,不触发远程拉取。故本地从零重建无需先 push 即可保留修复(前提是子模块修复已 bump 父仓库 gitlink,见 7.2)。push 仅影响他人 clone 的可复现性,推迟到 build 验证通过后不影响本次本地验证。
 
 ## 8. 风险与回滚
 
@@ -151,3 +161,4 @@ broadcom 的确切 make 目标与标志,执行时对照 broadcom 构建成功记
 - **slave 派生阶段崩溃(bash.pdf / iptables)** — 先查宿主机修复(第 3 节第 5 项)是否真在位。
 - **子模块 `update --init` 报 missing blob** — 按 [[sonic-resolute-submodule-object-store-corruption]] 的 deinit + re-clone 修复。
 - **dpkg 缓存全清影响 sibling trixie clone** — 仅多花一次构建时间,不破坏(见 4d)。
+- **push 前 commit 仅存本地** — 按 7.3,验证窗口内修复 commit 只在本地;若本地仓库损坏则丢失。可接受(窗口短,且 build 通过后立即 push)。

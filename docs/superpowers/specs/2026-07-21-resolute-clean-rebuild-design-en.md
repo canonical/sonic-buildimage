@@ -139,11 +139,21 @@ If a build error is encountered that **genuinely requires modifying source or bu
 1. **Locate and fix** — on a build error, first locate the root cause via systematic-debugging; the modification follows AGENTS.md Editing Rules (minimal scope, patch files rather than direct edits to external sources, preserve pins, etc.).
 2. **Commit the fix** (two cases):
    - **Parent-repo change** (`rules/*.mk`, `*.j2` templates, Dockerfiles, etc.): commit directly to `202605_resolute`.
-   - **Submodule change**: per AGENTS.md Submodules — commit in the submodule to its `202605_resolute` branch → push `canonical/<sub>:202605_resolute` (**never push to `sonic-net/`**) → in the parent `git add <sub>` to bump the gitlink → commit the parent. **Only when the parent gitlink points at the new commit does the post-reset rebuild actually carry the fix.**
+   - **Submodule change**: per AGENTS.md Submodules — commit in the submodule to its `202605_resolute` branch → in the parent `git add <sub>` to bump the gitlink → commit the parent. **Only when the parent gitlink points at the new commit does the post-reset `git submodule update --init` check out the fix** (the submodule's local commit is reachable; no remote needed). Push timing is in 7.3.
 3. **Run the full cleanup** — re-run all of Section 4 (4a–4e), skipping nothing. Step 4c (docker cleanup) is non-skippable: if the fix touches the slave Dockerfile or a submodule that feeds the slave, the stale slave image must be removed or it will not re-derive and the fix will not take effect.
 4. **Rebuild from scratch** — re-run the Section 5 build.
 
 Modify → commit → full clean → rebuild is the hard guarantee of from-scratch reproducibility: commit puts the fix in git, reset does not lose it, and the clean rebuild verifies it truly works in a clean environment.
+
+### 7.3 Git Operation Timing (commit first, push later)
+
+During this from-scratch build, all git commits (spec docs, parent-repo fixes, submodule fixes + gitlink bumps) are **committed locally only, not pushed**, until both the vs and broadcom builds pass; then push all at once:
+
+- spec docs → `canonical/sonic-buildimage:202605_resolute_doc`
+- submodule fixes → `canonical/<sub>:202605_resolute` (**never `sonic-net/`**)
+- parent-repo fixes → `canonical/sonic-buildimage:202605_resolute`
+
+This is technically sound: `git reset --hard` resets to the local HEAD (which carries the new commit and new gitlink); `git submodule update --init` checks out the gitlink commit, which is reachable as long as that commit already exists in the submodule's local `.git`, so no remote fetch is triggered. Therefore the local from-scratch rebuild retains the fix without any prior push (provided the submodule fix has bumped the parent gitlink, per 7.2). Push only affects reproducibility for others who clone; deferring it until after the build passes does not affect this local verification.
 
 ## 8. Risks and Rollback
 
@@ -151,3 +161,4 @@ Modify → commit → full clean → rebuild is the hard guarantee of from-scrat
 - **slave-derivation stage crash (bash.pdf / iptables)** — first verify the host fix (Section 3 item 5) is actually in place.
 - **`git submodule update --init` reports missing blob** — fix via deinit + re-clone per [[sonic-resolute-submodule-object-store-corruption]].
 - **dpkg cache full clear affects the sibling trixie clone** — costs one extra build only, no breakage (see 4d).
+- **Pre-push commits exist only locally** — per 7.3, fix commits during the verification window are local only; a local repo corruption would lose them. Acceptable (short window, and pushed immediately once the build passes).
