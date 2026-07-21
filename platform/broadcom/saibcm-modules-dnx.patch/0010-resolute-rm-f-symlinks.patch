@@ -2,7 +2,7 @@ Index: saibcm-modules-dnx/debian/rules
 ===================================================================
 --- saibcm-modules-dnx.orig/debian/rules
 +++ saibcm-modules-dnx/debian/rules
-@@ -91,8 +91,11 @@ build-arch-stamp:
+@@ -91,22 +91,24 @@ build-arch-stamp:
  
  	# create links
  	cd /; sudo mkdir -p /lib/modules/$(KVER_ARCH)
@@ -15,4 +15,29 @@ Index: saibcm-modules-dnx/debian/rules
 +	cd /; sudo rm -f /lib/modules/$(KVER_ARCH)/source
  	cd /; sudo ln -s /usr/src/linux-sonic-headers-$(KVER_COMMON)/ /lib/modules/$(KVER_ARCH)/source
  	cd /; sudo ln -s /usr/src/linux-headers-$(KVER_ARCH)/ /lib/modules/$(KVER_ARCH)/build
- 	if [ ! -e /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/generated ]; then \
+-	if [ ! -e /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/generated ]; then \
+-		sudo ln -s /usr/src/linux-headers-$(KVER_ARCH)/include/generated/ /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/generated; \
+-	fi
+-	if [ ! -e /usr/src/linux-sonic-headers-$(KVER_COMMON)/arch/x86/include/generated ]; then \
+-		sudo ln -s /usr/src/linux-headers-$(KVER_ARCH)/arch/x86/include/generated/ /usr/src/linux-sonic-headers-$(KVER_COMMON)/arch/x86/include/generated; \
+-	fi
+-	if [ ! -e /usr/src/linux-sonic-headers-$(KVER_COMMON)/arch/x86/module.lds ]; then \
+-		sudo ln -s /usr/src/linux-headers-$(KVER_ARCH)/arch/x86/module.lds /usr/src/linux-sonic-headers-$(KVER_COMMON)/arch/x86/module.lds; \
+-	fi
+-	if [ ! -e /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/config ]; then \
+-		sudo ln -s /usr/src/linux-headers-$(KVER_ARCH)/include/config/ /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/config; \
+-	fi
++	# Resolute: use force, no-dereference symlinks (ln -sfn/-sf) instead
++	# of an "if [ ! -e ... ]" existence guard. "[ -e ]" follows symlinks,
++	# so it does not detect a pre-existing (or dangling) symlink already
++	# created here by a sibling opennsl variant (e.g. saibcm-modules)
++	# in this SHARED container headers dir -- the guarded "ln -s" then
++	# runs anyway and fails with "ln: Already exists". saibcm-modules /
++	# saibcm-modules-legacy-th already use this idempotent form.
++	cd /; sudo ln -sfn /usr/src/linux-headers-$(KVER_ARCH)/include/generated/ /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/generated
++	cd /; sudo ln -sfn /usr/src/linux-headers-$(KVER_ARCH)/arch/x86/include/generated/ /usr/src/linux-sonic-headers-$(KVER_COMMON)/arch/x86/include/generated
++	cd /; sudo ln -sf /usr/src/linux-headers-$(KVER_ARCH)/arch/x86/module.lds /usr/src/linux-sonic-headers-$(KVER_COMMON)/arch/x86/module.lds
++	cd /; sudo ln -sfn /usr/src/linux-headers-$(KVER_ARCH)/include/config/ /usr/src/linux-sonic-headers-$(KVER_COMMON)/include/config
+ 	sudo cp /usr/src/linux-headers-$(KVER_ARCH)/Module.symvers /usr/src/linux-sonic-headers-$(KVER_COMMON)/Module.symvers
+ 
+ 	# Add here command to compile/build the package.
