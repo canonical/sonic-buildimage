@@ -1,0 +1,13 @@
+Index: sonic-platform-modules-ragile/debian/control
+===================================================================
+--- sonic-platform-modules-ragile.orig/debian/control
++++ sonic-platform-modules-ragile/debian/control
+@@ -1,7 +1,7 @@
+ Source: sonic-ragile-platform-modules
+ Section: main
+ Priority: extra
+-Maintainer: support
++Maintainer: support <support@ragile.com>
+ Standards-Version: 3.9.3
+ 
+ Package: platform-modules-ragile-ra-b6510-48v8c
