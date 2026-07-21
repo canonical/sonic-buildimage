@@ -1,0 +1,39 @@
+Index: sonic-platform-modules-nexthop/common/modules/nh_adm1266.c
+===================================================================
+--- sonic-platform-modules-nexthop.orig/common/modules/nh_adm1266.c
++++ sonic-platform-modules-nexthop/common/modules/nh_adm1266.c
+@@ -864,4 +864,4 @@ module_i2c_driver(nh_adm1266_driver);
+ MODULE_AUTHOR("Alexandru Tachici <alexandru.tachici@analog.com>");
+ MODULE_DESCRIPTION("PMBus driver for Analog Devices ADM1266");
+ MODULE_LICENSE("GPL v2");
+-MODULE_IMPORT_NS(PMBUS);
++MODULE_IMPORT_NS("PMBUS");
+Index: sonic-platform-modules-nexthop/common/modules/nh_isl68137.c
+===================================================================
+--- sonic-platform-modules-nexthop.orig/common/modules/nh_isl68137.c
++++ sonic-platform-modules-nexthop/common/modules/nh_isl68137.c
+@@ -392,4 +392,4 @@ module_i2c_driver(isl68137_driver);
+ MODULE_AUTHOR("Maxim Sloyko <maxims@google.com>");
+ MODULE_DESCRIPTION("PMBus driver for Renesas digital multiphase voltage regulators");
+ MODULE_LICENSE("GPL");
+-MODULE_IMPORT_NS(PMBUS);
++MODULE_IMPORT_NS("PMBUS");
+Index: sonic-platform-modules-nexthop/common/modules/nh_tda38740.c
+===================================================================
+--- sonic-platform-modules-nexthop.orig/common/modules/nh_tda38740.c
++++ sonic-platform-modules-nexthop/common/modules/nh_tda38740.c
+@@ -22,7 +22,7 @@
+ #include <linux/version.h>
+ #include "nh_pmbus.h"
+ 
+-MODULE_IMPORT_NS(PMBUS);
++MODULE_IMPORT_NS("PMBUS");
+ 
+ #define TDA38725_IC_DEVICE_ID "\x92"
+ #define TDA38725A_IC_DEVICE_ID "\xA9"
+@@ -292,4 +292,4 @@ MODULE_AUTHOR("Ashish Yadav <Ashish.Yada
+ MODULE_AUTHOR("Nexthop Systems Inc.");
+ MODULE_DESCRIPTION("PMBus driver for Infineon IPOL/DMC");
+ MODULE_LICENSE("GPL");
+-MODULE_IMPORT_NS(PMBUS);
++MODULE_IMPORT_NS("PMBUS");
