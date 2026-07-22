@@ -29,8 +29,9 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	git add -f *
 	git commit -qm "initial commit"
 
-	# Add rtnl_route_get_nh_id aliases (swss expects the underscore name).
-	bash ../patch/add-nh_id-aliases.sh
+	# Apply patches
+	stg init
+	stg import -s ../patch/series
 
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	DPKG_GENSYMBOLS_CHECK_LEVEL=0 dpkg-buildpackage -rfakeroot -d -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)

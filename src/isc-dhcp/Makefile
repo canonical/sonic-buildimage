@@ -27,10 +27,6 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# reference. Disable LTO for this package (CFLAGS + LDFLAGS).
 	export DEB_CFLAGS_MAINT_STRIP="-flto=auto -ffat-lto-objects"
 	export DEB_LDFLAGS_MAINT_STRIP="-flto=auto -ffat-lto-objects"
-	# resolute: dh_install doesn't populate debian/tmp/usr/sbin/dhclient, so
-	# debian/isc-dhcp-client-udeb/sbin/ is never created -> cp to it fails.
-	# Patch debian/rules override_dh_install to mkdir before the udeb cp.
-	sed -i '/cp debian\/dhclient-script\.\$$(DEB_HOST_ARCH_OS)\.udeb/i\\tmkdir -p debian/isc-dhcp-client-udeb/sbin' debian/rules
 
 	# Build source and Debian packages
 ifeq ($(CROSS_BUILD_ENVIRON), y)

@@ -1,5 +1,9 @@
-0003-Adding-support-for-RTA_NH_ID-attribute.patch
-switch-to-debhelper.patch
-keep-symbol-versions-in-libraries.patch
-update-changelog.patch
-skip-tests-when-having-no-private-netns.patch
+# These legacy libnl 3.7.0 patches remain intentionally disabled for Ubuntu
+# libnl 3.12.0-2, matching the Resolute source-swap behavior before this series
+# import was re-enabled:
+# 0003-Adding-support-for-RTA_NH_ID-attribute.patch
+# switch-to-debhelper.patch
+# keep-symbol-versions-in-libraries.patch
+# update-changelog.patch
+# skip-tests-when-having-no-private-netns.patch
+0001-Add-SONiC-compatible-nh-id-aliases.patch

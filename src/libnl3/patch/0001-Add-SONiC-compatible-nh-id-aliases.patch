@@ -1,0 +1,50 @@
+Description: Add SONiC-compatible next-hop ID aliases
+ libnl 3.12 provides rtnl_route_get_nhid and rtnl_route_set_nhid, while
+ SONiC swss uses the historical rtnl_route_get_nh_id and
+ rtnl_route_set_nh_id spellings. Export forwarding aliases.
+Origin: vendor
+Forwarded: no
+Author: Sheldon Qi <sheldon.qi@canonical.com>
+Last-Update: 2026-07-22
+
+--- a/include/netlink/route/route.h
++++ b/include/netlink/route/route.h
+@@ -95,7 +95,9 @@
+ 					     uint8_t ttl_prop);
+ extern int	rtnl_route_get_ttl_propagate(struct rtnl_route *route);
+ extern void	rtnl_route_set_nhid(struct rtnl_route *, uint32_t);
++extern void	rtnl_route_set_nh_id(struct rtnl_route *, uint32_t);
+ extern uint32_t	rtnl_route_get_nhid(struct rtnl_route *);
++extern uint32_t	rtnl_route_get_nh_id(struct rtnl_route *);
+
+ extern void	rtnl_route_add_nexthop(struct rtnl_route *,
+ 				       struct rtnl_nexthop *);
+--- a/lib/route/route_obj.c
++++ b/lib/route/route_obj.c
+@@ -1581,3 +1581,13 @@
+ /** @endcond */
+
+ /** @} */
++
++void rtnl_route_set_nh_id(struct rtnl_route *route, uint32_t nhid)
++{
++	rtnl_route_set_nhid(route, nhid);
++}
++
++uint32_t rtnl_route_get_nh_id(struct rtnl_route *route)
++{
++	return rtnl_route_get_nhid(route);
++}
+--- a/libnl-route-3.sym
++++ b/libnl-route-3.sym
+@@ -1329,8 +1329,10 @@
+ 	rtnl_link_bridge_set_port_vlan_pvid;
+ 	rtnl_link_bridge_unset_port_vlan_map_range;
+ 	rtnl_route_get_nhid;
++	rtnl_route_get_nh_id;
+ 	rtnl_route_nh_identical;
+ 	rtnl_route_set_nhid;
++	rtnl_route_set_nh_id;
+ } libnl_3_9;
+
+ libnl_3_11 {
