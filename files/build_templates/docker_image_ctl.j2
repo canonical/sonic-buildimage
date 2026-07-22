@@ -282,7 +282,7 @@ function postStartAction()
         # database will try to access to all other instance database-config.json. If other instance
         # database-config.json files are not ready yet, it will generate the sonic-db-cli core files.
 	waitForAllInstanceDatabaseConfigJsonFilesReady
-        until [[ (($(docker exec -i database$DEV pgrep -x -c pebble) -gt 0) || ($(docker exec -i database$DEV pgrep -x -c supervisord) -gt 0)) && ($($SONIC_DB_CLI PING | grep -c PONG) -gt 0) &&
+        until [[ ($(docker exec -i database$DEV pgrep -x -c pebble) -gt 0 || $(docker exec -i database$DEV pgrep -x -c supervisord) -gt 0) && ($($SONIC_DB_CLI PING | grep -c PONG) -gt 0) &&
                  ($(docker exec -i database$DEV sonic-db-cli PING | grep -c PONG) -gt 0) ]]; do
           sleep 1;
         done
