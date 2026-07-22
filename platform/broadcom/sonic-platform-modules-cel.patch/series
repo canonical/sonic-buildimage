@@ -1,7 +1,0 @@
-0008-linux-7.0-module-import-ns-string.patch
-0001-linux-7.0-kmod-compat.patch
-0002-linux-7.0-bin-attr-const.patch
-0003-linux-7.0-irq-linear-revmap.patch
-0004-linux-7.0-bin-attr-array-const.patch
-0009-linux-7.0-cdev-include.patch
-0010-linux-7.0-kmod-objs-dmodule.patch
