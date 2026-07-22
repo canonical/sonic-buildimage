@@ -12,9 +12,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 
 	dget -u http://archive.ubuntu.com/ubuntu/pool/main/b/bash/bash_$(BASH_VERSION_FULL).dsc
 
-	# Apply plugin support patches
-	# 0001 plugin patch ported to bash 5.3 (Ubuntu bash_5.3-2ubuntu1) for the
-	# resolute base swap: bash-tacplus / TACACS+ command auditing depend on it.
+	# Apply plugin suport patches
 	quilt push -a
 
 	pushd bash-$(BASH_VERSION_MAJOR)
