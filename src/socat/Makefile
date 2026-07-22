@@ -14,12 +14,9 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 
 	# Build source and Debian packages
 	pushd socat-1.8.1.1
-	# resolute base swap: enable_readline patch + fix-strchr patch not yet
-	# ported to 1.8.1.1. 1.8.1.1 builds clean with pure Ubuntu CFLAGS (verified),
-	# and defaults to --disable-readline. TODO: port enable_readline if SONiC
-	# needs interactive readline in socat.
-	# patch -p0 < ../patch/enable_readline.patch
-	# patch -p1 < ../patch/fix-strchr-const-write.patch
+	# Enable readline: drop debian/rules' --disable-readline override and add
+	# libreadline-dev to Build-Depends (rebased for 1.8.1.1-1).
+	patch -p1 < ../patch/enable_readline.patch
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	dpkg-buildpackage -rfakeroot -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
 else
@@ -31,4 +28,3 @@ endif
 	mv $(DERIVED_TARGETS) $* $(DEST)/
 
 $(addprefix $(DEST)/, $(DERIVED_TARGETS)): $(DEST)/% : $(DEST)/$(MAIN_TARGET)
-
