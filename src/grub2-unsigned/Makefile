@@ -23,10 +23,10 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 
 	pushd ./grub2-unsigned-$(GRUB2_UNSIGNED_UPSTREAM)
 
-	# resolute: 2.14 debian/rules uses 'ln obj/monolithic/* <version>/' to
-	# hardlink files into a staging dir for tar; overlayfs disallows directory
-	# hard links. Reuse the grub2 patch script (ln -> per-file cp -al).
-	chmod +x ../grub2/patch-overlayfs-ln.sh && ../grub2/patch-overlayfs-ln.sh
+	# resolute: 2.14's debian/rules stages files with 'ln obj/monolithic/* <ver>/';
+	# the harmless 'hard link not allowed for directory' warning (swallowed by
+	# '|| :') only affects the raw-uefi signing tarball, not the produced .debs.
+	# No ln->cp patch needed.
 
 	# Build packages (DEB_SOURCE=grub2-unsigned -> SB_SUBMIT=yes -> builds
 	# grub-efi-amd64-bin etc.)

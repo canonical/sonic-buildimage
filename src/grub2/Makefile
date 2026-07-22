@@ -33,12 +33,12 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# stg init
 	# stg import -s ../patch/series
 
-	# resolute: 2.14 debian/rules uses 'ln obj/monolithic/* <version>/' to
-	# hardlink files into a staging dir for tar; overlayfs disallows directory
-	# hard links ('ln: hard link not allowed for directory'), which leaves
-	# grub-efi-amd64-bin etc. unproduced. Patch ln -> cp -al (archive copy)
-	# which works on overlayfs.
-	chmod +x ../patch-overlayfs-ln.sh && ../patch-overlayfs-ln.sh
+	# resolute: 2.14's debian/rules stages files with 'ln obj/monolithic/* <ver>/'.
+	# The glob includes the freshly-created version subdir, so 'ln' logs a harmless
+	# 'hard link not allowed for directory' (swallowed by '|| :'); regular files
+	# still link and the installed .debs (built by dh_builddeb) are unaffected. The
+	# staging only feeds the raw-uefi signing tarball, which SONiC does not consume,
+	# so no ln->cp patch is needed.
 
 	# Build packages
 	# Unset the MAKEFLAGS and MFLAGS variables to remove the jobserver information
