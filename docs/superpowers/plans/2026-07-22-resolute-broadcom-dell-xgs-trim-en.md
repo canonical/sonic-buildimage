@@ -339,12 +339,14 @@ Expected: one line, `%G?` = `G` (good signature), subject as above. Record this 
 - Consumes: `202605_resolute_sheldon` @ `SHELDON_TRIM`.
 - Produces: confidence that the trim leaves a buildable XGS/dell graph (gate before touching `pr08`).
 
+> **Important (found during execution):** every `make -f Makefile.work` below must pass `PLATFORM=broadcom` explicitly. `rules/config.user` sets `PLATFORM ?= vs`, which otherwise silently targets the `vs` platform (the repo-root `.platform` file only feeds `CONFIGURED_PLATFORM`, not the recipe-gating `PLATFORM`). The commands below already include it.
+
 - [ ] **Step 1: Structural — no DNX/legacy-TH/non-dell targets in the dep graph**
 
 Run:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/sonic-broadcom.bin SONIC_CONFIG_PRINT_DEPENDENCIES=y 2>&1 | tee /tmp/brcm_deps.txt | tail -5
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/sonic-broadcom.bin SONIC_CONFIG_PRINT_DEPENDENCIES=y 2>&1 | tee /tmp/brcm_deps.txt | tail -5
 echo "-- dnx/legacy-th targets (expect 0) --"; grep -cE 'opennsl-modules-(dnx|legacy-th)|broadcom-(dnx|legacy-th)|libsaibcm_(dnx|13\.2)' /tmp/brcm_deps.txt
 echo "-- non-dell vendor module debs (expect 0) --"; grep -cE 'platform-modules-(accton|arista|nokia|cel|nexthop|ufispace|micas|quanta|ingrasys)' /tmp/brcm_deps.txt
 ```
@@ -355,7 +357,7 @@ Expected: both counts `0`. (If the print target errors before emitting deps, fal
 Run:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb 2>&1 | tail -15
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb 2>&1 | tail -15
 ls -l target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb
 ```
 Expected: `[ finished ] … opennsl-modules_…deb` and the file exists.
@@ -365,8 +367,8 @@ Expected: `[ finished ] … opennsl-modules_…deb` and the file exists.
 Run:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/debs/resolute/platform-modules-z9332f_1.1_amd64.deb 2>&1 | tail -20
-BLDENV=resolute make -f Makefile.work target/debs/resolute/platform-modules-z9864f_1.1_amd64.deb 2>&1 | tail -20
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/debs/resolute/platform-modules-z9332f_1.1_amd64.deb 2>&1 | tail -20
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/debs/resolute/platform-modules-z9864f_1.1_amd64.deb 2>&1 | tail -20
 ls -l target/debs/resolute/platform-modules-z9332f_1.1_amd64.deb target/debs/resolute/platform-modules-z9864f_1.1_amd64.deb
 ```
 Expected: both builds finish and both debs exist. Coverage: `z9332f` exercises the bin_attribute-const (`mc24lc64t.c`) and irq_find_mapping (`cls-i2c-mux-pca954x.c`) fixes; `z9864f` exercises the gpio `.set` void→int fix (`fpga_gpio.c`).
@@ -376,7 +378,7 @@ Expected: both builds finish and both debs exist. Coverage: `z9332f` exercises t
 Run:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/sonic-broadcom.bin 2>&1 | tail -25
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/sonic-broadcom.bin 2>&1 | tail -25
 ls -l target/sonic-broadcom.bin
 ```
 Expected: ONIE installer produced. Long-running; skip if Steps 1–3 pass and time is short.

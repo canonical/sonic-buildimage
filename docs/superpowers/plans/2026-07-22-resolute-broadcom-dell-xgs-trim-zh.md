@@ -339,12 +339,14 @@ git log -1 --format='%h %G? %s'
 - 消费:`202605_resolute_sheldon` @ `SHELDON_TRIM`。
 - 产出:确认裁剪后仍是可构建的 XGS/dell 图(动 `pr08` 前的闸)。
 
+> **重要(执行中发现):** 下面每条 `make -f Makefile.work` 都必须显式带 `PLATFORM=broadcom`。`rules/config.user` 里有 `PLATFORM ?= vs`,否则会静默按 `vs` 平台构建(仓库根的 `.platform` 只喂 `CONFIGURED_PLATFORM`,不喂真正 gate 构建配方的 `PLATFORM`)。下面的命令已经带上了。
+
 - [ ] **步骤 1:结构性 —— 依赖图里无 DNX/legacy-TH/非-dell 目标**
 
 运行:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/sonic-broadcom.bin SONIC_CONFIG_PRINT_DEPENDENCIES=y 2>&1 | tee /tmp/brcm_deps.txt | tail -5
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/sonic-broadcom.bin SONIC_CONFIG_PRINT_DEPENDENCIES=y 2>&1 | tee /tmp/brcm_deps.txt | tail -5
 echo "-- dnx/legacy-th 目标 (期望 0) --"; grep -cE 'opennsl-modules-(dnx|legacy-th)|broadcom-(dnx|legacy-th)|libsaibcm_(dnx|13\.2)' /tmp/brcm_deps.txt
 echo "-- 非-dell 厂商 module deb (期望 0) --"; grep -cE 'platform-modules-(accton|arista|nokia|cel|nexthop|ufispace|micas|quanta|ingrasys)' /tmp/brcm_deps.txt
 ```
@@ -355,7 +357,7 @@ echo "-- 非-dell 厂商 module deb (期望 0) --"; grep -cE 'platform-modules-(
 运行:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb 2>&1 | tail -15
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb 2>&1 | tail -15
 ls -l target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb
 ```
 期望:`[ finished ] … opennsl-modules_…deb`,文件存在。
@@ -365,8 +367,8 @@ ls -l target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb
 运行:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/debs/resolute/platform-modules-z9332f_1.1_amd64.deb 2>&1 | tail -20
-BLDENV=resolute make -f Makefile.work target/debs/resolute/platform-modules-z9864f_1.1_amd64.deb 2>&1 | tail -20
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/debs/resolute/platform-modules-z9332f_1.1_amd64.deb 2>&1 | tail -20
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/debs/resolute/platform-modules-z9864f_1.1_amd64.deb 2>&1 | tail -20
 ls -l target/debs/resolute/platform-modules-z9332f_1.1_amd64.deb target/debs/resolute/platform-modules-z9864f_1.1_amd64.deb
 ```
 期望:两个构建都完成,两个 deb 都存在。覆盖:`z9332f` 覆盖 bin_attribute-const(`mc24lc64t.c`)和 irq_find_mapping(`cls-i2c-mux-pca954x.c`)两处修复;`z9864f` 覆盖 gpio `.set` void→int 修复(`fpga_gpio.c`)。
@@ -376,7 +378,7 @@ ls -l target/debs/resolute/platform-modules-z9332f_1.1_amd64.deb target/debs/res
 运行:
 ```bash
 cd /home/sheldon-qi/sonic-buildimage-resolute
-BLDENV=resolute make -f Makefile.work target/sonic-broadcom.bin 2>&1 | tail -25
+BLDENV=resolute PLATFORM=broadcom make -f Makefile.work target/sonic-broadcom.bin 2>&1 | tail -25
 ls -l target/sonic-broadcom.bin
 ```
 期望:产出 ONIE installer。耗时长;步骤 1–3 通过且时间紧则可跳过。
