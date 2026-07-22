@@ -187,3 +187,28 @@ pr08 shares the identical Broadcom subtree, so verifying sheldon covers both.
   `/tmp/g3` group lists (unless a later step needs to regenerate the stack from
   trimmed sheldon).
 - No push, no PR — pending review.
+
+---
+
+## 9. Appendix: kernel root cause — why dell (and every vendor) needs kmod patches while Noble did not
+
+(5-agent workflow investigation; adversarial verify verdict **confirmed**; high confidence.)
+
+**Conclusion:** Noble (Linux 6.8) needed no patches purely because **6.8 predates the relevant kernel-API changes**. The dell driver source is **byte-identical** in the patched regions across both branches; Noble compiles it as-is with zero patches. resolute switches to Ubuntu linux-sonic **7.0** (mainline base ≥6.16/6.17), which crosses the change boundary, so the same source no longer compiles — hence the overlay. The difference is the **kernel**, not the source.
+
+The dell overlay's 3 real drifts (all 2024–2025 mainline work, strictly newer than 6.8):
+- `gpio_chip.set` callback **void → int** (`z9864f/modules/fpga_gpio.c`, ~v6.17; same as Ubuntu LP#2120461)
+- sysfs **`bin_attribute` constification**: `.read` arg becomes `const` (`mc24lc64t.c` ×4: s5448f/z9332f/z9432f/z9664f, ~v6.16)
+- **`irq_linear_revmap()` removed** → `irq_find_mapping()` (`z9332f/modules/cls-i2c-mux-pca954x.c`, ~v6.16)
+- plus a `debian/control` kernel package-name retarget (`6.12.41+deb13` → `linux-sonic 7.0.0-1002`) — not an API change, driven by the kernel swap.
+
+**Key subtlety: it is not "6.8 → 7.0" but "≤6.12 → 7.0".** The upstream sonic-net/202605 base uses the Debian trixie **6.12** kernel, and 6.12 is also < 6.16, so **even upstream dell needs none of these patches**. The overlay exists purely because Canonical swaps in the Ubuntu 7.0 kernel — it is not a resolute mistake, it is the inevitable consequence of a cross-major kernel API drift.
+
+**Confounders ruled out (high confidence):**
+- **Not** GCC/compiler: these are C kmods built by kernel kbuild against kernel headers, unrelated to the GCC15/C++17/boost userspace issues elsewhere; a newer GCC against 6.12 headers still builds. The compiler is the messenger; the kernel is the cause.
+- **Not** a dell source version bump: package version is 1.1 on both; resolute in-tree dell == upstream 202605 (empty diff); the patched lines are byte-identical to Noble's.
+- **Not** dpkg/kbuild tooling: no `debian/rules` and no Kbuild Makefile changes in the patch set.
+
+**Honest caveats (do not change the verdict):** ① `z9864f`/`s5448f`/`z9664f` are new 202605 platforms absent from Noble, so the gpio case rests on API history rather than a same-file byte match; ② the exact merge window (6.16 vs 6.17) is medium-confidence, but ">6.8" is high-confidence; ③ resolute's mainline base "≥6.17" is inferred (the kernel is a prebuilt Launchpad deb; source not in-tree) — what is solid is that the build **succeeds** with the const `.read`, int `.set`, and absent `irq_linear_revmap`, which only holds on ≥6.16/6.17.
+
+**Implication for this trim:** dell's 3 patches are **kernel-forced and required**, and dell is the only validated platform — so they are firm keepers, not speculative overlays. The other 17 vendor overlays are the **same kind** of kernel-forced fix but for **unvalidated platforms** — so "keep them?" reduces to "do we support/validate those platforms on 7.0?"

@@ -131,3 +131,28 @@ pr08 与 sheldon 共享同一 Broadcom 子树,验证 sheldon 即覆盖两者。
 - 不动 `sai-xgs.mk`、`docker-syncd-brcm` 的 XGS 内容。
 - 不改 `AGENTS.md`、不改 `/tmp/g3` group 列表以外的正式化脚本(除非后续需要从裁剪后的 sheldon 重生 stack)。
 - 不 push、不建 PR —— 待 review。
+
+---
+
+## 9. 附:内核根因 —— 为什么 dell(及各厂商)需要 kmod 补丁,而 Noble 不需要
+
+(5-agent workflow 调查,对抗性 verify 判定 **confirmed**,高置信。)
+
+**结论:** Noble(Linux 6.8)不需要这些补丁,纯粹因为 **6.8 早于相关内核 API 变更**。dell 驱动源码在被改的那几行上两分支**逐字节相同**,Noble 原样编译通过、零补丁。resolute 换到 Ubuntu linux-sonic **7.0**(mainline 基线 ≥6.16/6.17)后越过了变更点,同一份源码编不过,才需要 overlay。差别不在源码,在**内核**。
+
+dell overlay 的 3 个真实 drift(均为 2024–2025 mainline 改动,严格晚于 6.8):
+- `gpio_chip.set` 回调 **void → int**(`z9864f/modules/fpga_gpio.c`,~v6.17;同 Ubuntu LP#2120461)
+- sysfs **`bin_attribute` 常量化**:`.read` 参数变 `const`(`mc24lc64t.c` ×4:s5448f/z9332f/z9432f/z9664f,~v6.16)
+- **`irq_linear_revmap()` 被删** → `irq_find_mapping()`(`z9332f/modules/cls-i2c-mux-pca954x.c`,~v6.16)
+- 外加 `debian/control` 内核包名 retarget(`6.12.41+deb13` → `linux-sonic 7.0.0-1002`)—— 非 API,由换内核驱动。
+
+**关键细节:其实不是 "6.8 → 7.0",而是 "≤6.12 → 7.0"。** 上游 sonic-net/202605 基线用的是 Debian trixie **6.12** 内核,6.12 也 < 6.16,所以**连上游 dell 都不需要这些补丁**。补丁纯粹是 Canonical 把内核换成 Ubuntu 7.0 逼出来的 —— 不是 resolute 的失误,是内核跨版本 API drift 的必然。
+
+**排除的干扰项(高置信):**
+- **非** GCC/编译器:C kmod 由内核 kbuild 配内核头文件编,与别处 GCC15/C++17/boost 用户态问题无关;用新 GCC 配 6.12 头文件照样编过。编译器只是"报信的",内核才是起因。
+- **非** dell 源码升版:包版本两边都是 1.1;resolute 在树 dell == 上游 202605(空 diff);被改的行与 Noble 逐字节相同。
+- **非** dpkg/kbuild 工具链:补丁里没有 `debian/rules`、没有 Kbuild Makefile 改动。
+
+**诚实边角(不改变结论):** ① `z9864f`/`s5448f`/`z9664f` 是 202605 新增平台、Noble 没有,故 gpio 那条靠 API 历史而非同文件逐字节比对;② 精确落地版本(6.16 vs 6.17)中等置信,但"晚于 6.8"高置信;③ resolute mainline 基线"≥6.17"为推断(内核取自 Launchpad 预编译 deb,源码不在树)——铁的部分是:构建带着 const `.read`、int `.set`、无 `irq_linear_revmap` **成功了**,这只有 ≥6.16/6.17 才成立。
+
+**对本裁剪的意义:** dell 这 3 个补丁是**内核逼出来的、必需的**,dell 又是唯一验证平台 —— 妥妥保留项,不是"投机 overlay"。其它 17 厂商 overlay 是**同一类**内核逼出来的修复,只是针对**未验证平台** —— 所以"要不要留"就等于"要不要在 7.0 上支持/验证那些平台"。
