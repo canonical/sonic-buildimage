@@ -43,12 +43,13 @@
 - `platform/broadcom/rules.mk` —— 编辑为 dell/XGS-only include 列表(见 §4.1)
 - `platform/broadcom/sai-modules.mk` —— 编辑为仅 XGS kmod(见 §4.2)
 - `platform/broadcom/one-image.mk` —— 编辑 `DEPENDENT_MACHINE` 与 `LAZY_BUILD_INSTALLS`(见 §4.3)
-- `platform/broadcom/saibcm-modules.patch/**`(10 文件,XGS kmod 的 Linux-7.0 patch 系列)
-- `platform/broadcom/sswsyncd/debian/rules`(1)
+- `platform/broadcom/saibcm-modules.patch/**`(10 文件,XGS kmod 的 Linux-7.0 patch 系列;saibcm-modules 是**子模块**,故保留 overlay 形式,见 §3.4)
+- `platform/broadcom/sswsyncd/debian/rules`(1;在树源码,**直接改**)
 - `platform/broadcom/docker-syncd-brcm/Dockerfile.j2`(1)
-- `platform/broadcom/sonic-platform-modules-dell.patch/**`(4)
+- **dell kmod 修复:直接改在树源码** `platform/broadcom/sonic-platform-modules-dell/`(**不再**用 `.patch/` overlay;3 处内核 API hunk + `debian/control` 内核包名 retarget,见 §4.4)
 
 ### 3.2 删除(resolute 新增的)
+- `platform/broadcom/sonic-platform-modules-dell.patch/**`(4;其 3 处修复改为**直接落入在树源码**,见 §3.1/§4.4)
 - `platform/broadcom/saibcm-modules-dnx.patch/**`
 - `platform/broadcom/saibcm-modules-legacy-th.patch/**`
 - 17 个非-dell 厂商目录:`sonic-platform-modules-{accton,alphanetworks,arista,cel,delta,ingrasys,inventec,juniper,micas,mitac,nexthop,nokia,quanta,ragile,ruijie,tencent,ufispace}.patch/**`
@@ -56,6 +57,18 @@
 ### 3.3 还原为上游(resolute 改过、现已失去引用的)
 - `docker-pde.mk`、`docker-saiserver-brcm.mk`、`docker-syncd-brcm-dnx.mk`、`docker-syncd-brcm-legacy-th.mk`
 - `docker-syncd-brcm-dnx/Dockerfile.j2`、`docker-syncd-brcm-legacy-th/Dockerfile.j2`、`docker-saiserver-brcm/Dockerfile.j2`
+
+### 3.4 机制原则:patch overlay vs 直接改源码(用户决策 A)
+
+**能自己拥有/编辑 base 就直接改;不能就打 patch。** 按 base 类型分:
+
+| base 类型 | 例(本裁剪保留项) | 修复形式 | 理由 |
+|---|---|---|---|
+| **子模块**(锁上游 pin) | `saibcm-modules`(XGS kmod,锁 sonic-net `b9b38791`) | **`.patch/series` overlay** | 直接改 = fork 子模块(新 canonical 仓 + gitlink/url 分叉);上游自己也是这么干(swss/dash-ha 等 11 个 `.patch/series` 全在子模块/拉取源上) |
+| **拉取型 tarball** | bash / socat / grub | **patch**(`-p1` / quilt) | tarball 编不了,只能取后打 |
+| **在树源码**(仓库自持) | `sonic-platform-modules-dell`、`sswsyncd` | **直接改源码** | 上游对在树源码零 overlay、直接改;最简、无 quilt/fuzz、分支上源码即正确;也正是这类通用 7.0 修复上游能接受的形式(普通 `.c` PR) |
+
+据此:`saibcm-modules.patch` 保留(子模块);`dell` 改为直接改在树源码(删 overlay);`sswsyncd` 本就直接改(维持)。
 
 ---
 
@@ -81,11 +94,21 @@
 - 第 148 行:`LAZY_BUILD_INSTALLS = $(BRCM_OPENNSL_KERNEL)`(去掉 `$(BRCM_DNX_OPENNSL_KERNEL)`)。
 - `LAZY_INSTALLS` 那一大串厂商变量**不动** —— 未 include 的厂商变量展开为空,自然 no-op;去动它只会给 diff 平白增加上百行、零收益。
 
+### 4.4 dell 在树源码直接编辑(§3.4 决策 A;删除 `sonic-platform-modules-dell.patch/`)
+
+把原 overlay 的修复直接落入在树 `sonic-platform-modules-dell/`:
+- `z9864f/modules/fpga_gpio.c`:`fpga_gpio_set` 返回值 `void → int`(末尾加 `return 0;`);`.set = fpga_gpio_set` 赋值行不动(kernel ≥6.17,`gpio_chip.set` 改为返回 int)
+- `mc24lc64t.c` ×4(`s5448f/`、`z9332f/`、`z9432f/`、`z9664f/` 各 `modules/`):`.read` 回调第 3 参 `struct bin_attribute *` → `const struct bin_attribute *`(kernel ≥6.16,sysfs bin_attribute 常量化)
+- `z9332f/modules/cls-i2c-mux-pca954x.c`:`irq_linear_revmap(...)` → `irq_find_mapping(...)`(kernel ≥6.16,移除 irq_linear_revmap)
+- `debian/control`:kernel Build-Depends + 18 个 per-platform linux-image Depends 由 `6.12.41+deb13` 名改为 Ubuntu `linux-sonic 7.0.0-1002` 名
+
+覆盖完备(全树仅此 1 处 void gpio setter、4 处非 const bin_attribute read、1 处 irq_linear_revmap;无 bin_attribute `.write`)。根因见 §9。
+
 ---
 
 ## 5. 双目标执行(用户决策:sheldon 顶上加 trim commit + 同步重写 pr08)
 
-§3、§4 的文件操作(删除 + 还原上游 + 3 个 `.mk` 编辑)对两条分支完全相同。3 个编辑后的 `.mk` 写一次、复用。
+§3、§4 的文件操作(删除 + 还原上游 + 3 个 `.mk` 编辑 + dell 在树源码直接改)对两条分支完全相同。编辑内容写一次、复用。
 
 ### 5.1 目标 A —— `202605_resolute_sheldon`(主构建树,真正的交付分支)
 **顶上追加一个 commit**(sheldon:129 → 130),加法式:
@@ -95,11 +118,11 @@
 ### 5.2 目标 B —— `202605_resolute_pr08`(reorg worktree,review stack)
 重写 pr08 = `202605_resolute_pr07` + 2 个 GPG 签名 commit,使其最终 tree **等于裁剪后的 sheldon tree**(减去 `rules/config.user`,stack 从不携带它):
 1. `build(broadcom): saibcm-modules XGS Linux 7.0 kmod series + dell-only build wiring`
-   —— `rules.mk`、`sai-modules.mk`、`one-image.mk`、`saibcm-modules.patch`、`sswsyncd`、`docker-syncd-brcm`。
-2. `build(broadcom): dell platform kmods Linux 7.0 API-drift patch series`
-   —— `sonic-platform-modules-dell.patch`。
+   —— `rules.mk`、`sai-modules.mk`、`one-image.mk`、`saibcm-modules.patch`(子模块 overlay)、`sswsyncd`、`docker-syncd-brcm`。
+2. `build(broadcom): dell platform kmods Linux 7.0 API-drift fixes (in-tree)`
+   —— 直接改 `sonic-platform-modules-dell/`(见 §4.4),**不含** `.patch/` overlay。
 
-手法:从 `pr07` 新开分支;`git checkout <旧 pr08> -- <保留的 patch 目录>`;3 个编辑后的 `.mk` 从上游基线落上去;两个 commit。旧 pr08 tip 留在 reflog + 本地 `202605_resolute` 备份。**review 前不 push。**
+手法:从 `pr07` 新开分支;保留项(`saibcm-modules.patch`、`sswsyncd`、`docker-syncd-brcm`)从旧 pr08 checkout;3 个 `.mk` 从上游基线落编辑;dell 在树源码按 §4.4 直接改(等价于把旧 overlay 的 hunk inline 进源码)且删除 `sonic-platform-modules-dell.patch/`;两个 commit。旧 pr08 tip 留在 reflog + 本地 `202605_resolute` 备份。**review 前不 push。**
 
 ### 5.3 一致性校验
 `git diff 202605_resolute_pr08 202605_resolute_sheldon` → 仅剩 `rules/config.user`(与裁剪前的不变式一致)。
@@ -110,7 +133,7 @@
 
 1. **结构性(快,不真建):** `BLDENV=resolute make -f Makefile.work target/sonic-broadcom.bin SONIC_CONFIG_PRINT_DEPENDENCIES=y` —— 确认依赖树里**没有** `broadcom-dnx` / `broadcom-legacy-th` / 非-dell 厂商目标。
 2. **XGS kmod 在 Linux 7.0 上可建:** `target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb`。
-3. **dell 平台 deb 可建**(dell.patch 能 apply)。
+3. **dell 平台 deb 可建**(在树 dell 源码在 7.0 上编过;无 `.patch/` overlay)。
 4. **可选**:完整 `target/sonic-broadcom.bin`(耗时长)作最终确认。
 
 pr08 与 sheldon 共享同一 Broadcom 子树,验证 sheldon 即覆盖两者。

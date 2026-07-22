@@ -70,12 +70,13 @@ These facts fix the boundary and the mechanics of the trim:
 - `platform/broadcom/rules.mk` — edited to a dell/XGS-only include list (§4.1)
 - `platform/broadcom/sai-modules.mk` — edited to XGS kmod only (§4.2)
 - `platform/broadcom/one-image.mk` — edited `DEPENDENT_MACHINE` + `LAZY_BUILD_INSTALLS` (§4.3)
-- `platform/broadcom/saibcm-modules.patch/**` (10 files, XGS kmod Linux-7.0 series)
-- `platform/broadcom/sswsyncd/debian/rules` (1)
+- `platform/broadcom/saibcm-modules.patch/**` (10 files, XGS kmod Linux-7.0 series; saibcm-modules is a **submodule**, so the overlay form is kept — see §3.4)
+- `platform/broadcom/sswsyncd/debian/rules` (1; in-tree source, **directly edited**)
 - `platform/broadcom/docker-syncd-brcm/Dockerfile.j2` (1)
-- `platform/broadcom/sonic-platform-modules-dell.patch/**` (4)
+- **dell kmod fixes: directly edited in-tree source** `platform/broadcom/sonic-platform-modules-dell/` (**no longer** a `.patch/` overlay; 3 kernel-API hunks + `debian/control` kernel package-name retarget — see §4.4)
 
 ### 3.2 Deleted (resolute-added)
+- `platform/broadcom/sonic-platform-modules-dell.patch/**` (4; its 3 fixes move **directly into the in-tree source** — see §3.1/§4.4)
 - `platform/broadcom/saibcm-modules-dnx.patch/**`
 - `platform/broadcom/saibcm-modules-legacy-th.patch/**`
 - 17 non-dell vendor dirs: `sonic-platform-modules-{accton,alphanetworks,arista,cel,delta,ingrasys,inventec,juniper,micas,mitac,nexthop,nokia,quanta,ragile,ruijie,tencent,ufispace}.patch/**`
@@ -83,6 +84,18 @@ These facts fix the boundary and the mechanics of the trim:
 ### 3.3 Reverted to upstream (resolute-modified, now unreferenced)
 - `docker-pde.mk`, `docker-saiserver-brcm.mk`, `docker-syncd-brcm-dnx.mk`, `docker-syncd-brcm-legacy-th.mk`
 - `docker-syncd-brcm-dnx/Dockerfile.j2`, `docker-syncd-brcm-legacy-th/Dockerfile.j2`, `docker-saiserver-brcm/Dockerfile.j2`
+
+### 3.4 Mechanism principle: patch overlay vs direct source edit (user decision A)
+
+**Directly edit a base you own; patch a base you don't.** By base type:
+
+| Base type | Example (kept here) | Fix form | Why |
+|---|---|---|---|
+| **Submodule** (pinned upstream) | `saibcm-modules` (XGS kmod, pinned at sonic-net `b9b38791`) | **`.patch/series` overlay** | Editing directly = forking the submodule (new canonical repo + gitlink/url divergence); upstream does exactly this — its 11 `.patch/series` overlays are all on submodule/fetched sources (swss/dash-ha/…) |
+| **Fetched tarball** | bash / socat / grub | **patch** (`-p1` / quilt) | Can't edit a tarball; must patch after fetch |
+| **In-tree tree** (repo-owned source) | `sonic-platform-modules-dell`, `sswsyncd` | **edit the source directly** | Upstream carries zero overlays on in-tree trees and just edits them; simplest, no quilt/fuzz, source reads correctly on-branch; and it is the form these generic 7.0 fixes take upstream (a normal `.c` PR) |
+
+Hence: `saibcm-modules.patch` stays (submodule); `dell` switches to a direct in-tree edit (overlay deleted); `sswsyncd` was already a direct edit (kept).
 
 ---
 
@@ -119,12 +132,22 @@ Delete the `BRCM_DNX_OPENNSL_KERNEL` (11–20) and `BRCM_LEGACY_TH_OPENNSL_KERNE
   vars expand to empty and no-op; editing it would add 100+ diff lines for zero
   effect.
 
+### 4.4 dell in-tree source, edited directly (§3.4 decision A; `sonic-platform-modules-dell.patch/` deleted)
+
+Fold the former overlay's fixes straight into the in-tree `sonic-platform-modules-dell/`:
+- `z9864f/modules/fpga_gpio.c`: `fpga_gpio_set` return `void → int` (add `return 0;`); the `.set = fpga_gpio_set` line stays (kernel ≥6.17, `gpio_chip.set` now returns int)
+- `mc24lc64t.c` ×4 (`s5448f/`, `z9332f/`, `z9432f/`, `z9664f/` each `modules/`): `.read` callback 3rd arg `struct bin_attribute *` → `const struct bin_attribute *` (kernel ≥6.16, sysfs bin_attribute constification)
+- `z9332f/modules/cls-i2c-mux-pca954x.c`: `irq_linear_revmap(...)` → `irq_find_mapping(...)` (kernel ≥6.16, irq_linear_revmap removed)
+- `debian/control`: kernel Build-Depends + the 18 per-platform linux-image Depends from `6.12.41+deb13` names to Ubuntu `linux-sonic 7.0.0-1002` names
+
+Coverage is complete (tree-wide: exactly 1 void gpio setter, 4 non-const bin_attribute reads, 1 irq_linear_revmap; no bin_attribute `.write`). Root cause in §9.
+
 ---
 
 ## 5. Two-target execution (user decision: trim commit on sheldon + sync-rewrite pr08)
 
-The file operations in §3/§4 (delete + revert-to-upstream + 3 `.mk` edits) are
-identical for both branches. Write the 3 edited `.mk` once, reuse.
+The file operations in §3/§4 (delete + revert-to-upstream + 3 `.mk` edits + the
+dell in-tree source edits) are identical for both branches. Author the edits once, reuse.
 
 ### 5.1 Target A — `202605_resolute_sheldon` (main build tree, the real branch)
 Add **one commit on top** (sheldon: 129 → 130), additive-style:
@@ -138,13 +161,16 @@ Rewrite pr08 = `202605_resolute_pr07` + 2 GPG-signed commits so its final tree
 **equals the trimmed sheldon tree** (minus `rules/config.user`, which the stack
 never carried):
 1. `build(broadcom): saibcm-modules XGS Linux 7.0 kmod series + dell-only build wiring`
-   — `rules.mk`, `sai-modules.mk`, `one-image.mk`, `saibcm-modules.patch`, `sswsyncd`, `docker-syncd-brcm`.
-2. `build(broadcom): dell platform kmods Linux 7.0 API-drift patch series`
-   — `sonic-platform-modules-dell.patch`.
+   — `rules.mk`, `sai-modules.mk`, `one-image.mk`, `saibcm-modules.patch` (submodule overlay), `sswsyncd`, `docker-syncd-brcm`.
+2. `build(broadcom): dell platform kmods Linux 7.0 API-drift fixes (in-tree)`
+   — direct edits to `sonic-platform-modules-dell/` (see §4.4); **no** `.patch/` overlay.
 
-Mechanics: branch fresh from `pr07`; `git checkout <old pr08> -- <kept patch
-dirs>`; drop the 3 edited `.mk` from their upstream base; two commits. Old pr08
-tip stays in reflog + local `202605_resolute` backup. **No push until reviewed.**
+Mechanics: branch fresh from `pr07`; checkout the kept items (`saibcm-modules.patch`,
+`sswsyncd`, `docker-syncd-brcm`) from old pr08; drop the 3 edited `.mk` from their
+upstream base; apply the §4.4 dell edits directly into the in-tree source
+(equivalent to inlining the old overlay's hunks) and delete
+`sonic-platform-modules-dell.patch/`; two commits. Old pr08 tip stays in reflog +
+local `202605_resolute` backup. **No push until reviewed.**
 
 ### 5.3 Consistency check
 `git diff 202605_resolute_pr08 202605_resolute_sheldon` → only `rules/config.user`
@@ -158,7 +184,7 @@ tip stays in reflog + local `202605_resolute` backup. **No push until reviewed.*
    target/sonic-broadcom.bin SONIC_CONFIG_PRINT_DEPENDENCIES=y` — confirm the dep
    tree has **no** `broadcom-dnx` / `broadcom-legacy-th` / non-dell vendor targets.
 2. **XGS kmod builds on Linux 7.0:** `target/debs/resolute/opennsl-modules_15.2.0.0.0.0.0.0_amd64.deb`.
-3. **dell platform debs build** (dell.patch applies).
+3. **dell platform debs build** (in-tree dell source compiles on 7.0; no `.patch/` overlay).
 4. **Optional**: full `target/sonic-broadcom.bin` (long) as final confirmation.
 
 pr08 shares the identical Broadcom subtree, so verifying sheldon covers both.
