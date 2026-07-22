@@ -47,6 +47,20 @@ $(LIBNL_CLI)_URL = $(LIBNL3_POOL_URL)/$(LIBNL_CLI)
 LIBNL_CLI_DEV = libnl-cli-3-dev_$(LIBNL3_VERSION_SONIC)_$(CONFIGURED_ARCH).deb
 $(LIBNL_CLI_DEV)_URL = $(LIBNL3_POOL_URL)/$(LIBNL_CLI_DEV)
 
+# resolute: declare inter-package install order (mirrors the debs' Debian
+# Depends). SONIC_ONLINE_DEBS runs `dpkg -i` per deb via the %-install rule;
+# without these a -dev deb can install before its runtime lib (e.g.
+# libnl-nf-3-dev before libnl-nf-3-200) and dpkg aborts "... is not installed".
+$(LIBNL3_DEV)_DEPENDS       += $(LIBNL3)
+$(LIBNL_GENL3)_DEPENDS      += $(LIBNL3)
+$(LIBNL_GENL3_DEV)_DEPENDS  += $(LIBNL3_DEV) $(LIBNL_GENL3)
+$(LIBNL_ROUTE3)_DEPENDS     += $(LIBNL3)
+$(LIBNL_ROUTE3_DEV)_DEPENDS += $(LIBNL3_DEV) $(LIBNL_ROUTE3)
+$(LIBNL_NF3)_DEPENDS        += $(LIBNL3) $(LIBNL_ROUTE3)
+$(LIBNL_NF3_DEV)_DEPENDS    += $(LIBNL3_DEV) $(LIBNL_NF3) $(LIBNL_ROUTE3_DEV)
+$(LIBNL_CLI)_DEPENDS        += $(LIBNL3) $(LIBNL_GENL3) $(LIBNL_ROUTE3) $(LIBNL_NF3)
+$(LIBNL_CLI_DEV)_DEPENDS    += $(LIBNL3_DEV) $(LIBNL_CLI) $(LIBNL_GENL3_DEV) $(LIBNL_NF3_DEV) $(LIBNL_ROUTE3_DEV)
+
 SONIC_ONLINE_DEBS += $(LIBNL3) $(LIBNL3_DEV) \
 		     $(LIBNL_GENL3) $(LIBNL_GENL3_DEV) \
 		     $(LIBNL_ROUTE3) $(LIBNL_ROUTE3_DEV) \
