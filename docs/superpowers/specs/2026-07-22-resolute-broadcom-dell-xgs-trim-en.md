@@ -99,7 +99,7 @@ Hence: `saibcm-modules.patch` stays (submodule); `dell` switches to a direct in-
 
 ---
 
-## 4. The three `.mk` edits
+## 4. Concrete edits (build wiring `.mk` + dell source)
 
 ### 4.1 `rules.mk` (comment style follows the file's existing `#include` idiom; one resolute rationale line above each group)
 
