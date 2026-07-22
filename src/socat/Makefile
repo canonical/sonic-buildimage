@@ -14,8 +14,6 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 
 	# Build source and Debian packages
 	pushd socat-1.8.1.1
-	# Enable readline: drop debian/rules' --disable-readline override and add
-	# libreadline-dev to Build-Depends (rebased for 1.8.1.1-1).
 	patch -p1 < ../patch/enable_readline.patch
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	dpkg-buildpackage -rfakeroot -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
@@ -28,3 +26,4 @@ endif
 	mv $(DERIVED_TARGETS) $* $(DEST)/
 
 $(addprefix $(DEST)/, $(DERIVED_TARGETS)): $(DEST)/% : $(DEST)/$(MAIN_TARGET)
+
