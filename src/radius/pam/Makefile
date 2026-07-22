@@ -44,6 +44,6 @@ else
 endif
 	popd
 
-	-mv $(DERIVED_TARGETS) $* $(DEST)/
+	mv $(DERIVED_TARGETS) $* $(DEST)/
 
 $(addprefix $(DEST)/, $(DERIVED_TARGETS)): $(DEST)/% : $(DEST)/$(MAIN_TARGET)
