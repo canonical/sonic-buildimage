@@ -25,7 +25,7 @@ do
     rockfullname="${rockname}_1.0.0_amd64.rock"
     rockcraft clean
     rockcraft pack
-    sudo rockcraft.skopeo  --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:latest
+    sudo rockcraft.skopeo --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:latest
     rm -r ./debs/ ./files/ ./python-wheels/ envs ${rockfullname}
 
     popd
