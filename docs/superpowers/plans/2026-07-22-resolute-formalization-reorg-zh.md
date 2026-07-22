@@ -10,6 +10,29 @@
 
 **技术栈：** git（+ GPG 签名）、SONiC make 构建（`BLDENV=resolute`）、bash。
 
+## 执行状态（reviewer 反馈后更新）
+
+Stack 已构建并推送（未创建 PR），随后因 reviewer 指出 Resolute 新增的构建期 `sed`/`awk` 源码修改而重建。最终实现已按每个包自己的 SONiC 补丁机制收敛：
+
+- Parent 包：isc-dhcp / libyang-python / libnl3 / hsflowd 走各自既有 STGit/quilt series；rasdaemon 延续既有 `git apply`；psample 无既有 series，因此使用一个最小显式本地 patch。上游原有的 hsflowd `_VERSION_` 替换保持不动。
+- `sonic-sairedis`：对嵌套上游 SAI Doxyfile 的修改改为 sairedis 自有 DEP-3 patch，条件应用、clean 恢复；SAI 仍锁上游 v1.18.1。
+- `sonic-swss-common`：在自己拥有的接口源头直接修 `$function`→`$action`；`sonic-gnmi` 直接消费，不再 sed。
+- 精确源码 `--fuzz=0` + 字节等价验证通过；swss-common/GNMI clean-cache 构建通过；全部 parent Makefile 解析成功且 recipe TAB 完整。
+
+最终已推送 stack tip（全部 GPG 签名；`pr01` 不变）：
+
+| 分支 | Tip |
+|---|---|
+| `202605_resolute_pr01` | `f2ddaacca0` |
+| `202605_resolute_pr02` | `da20fea22f` |
+| `202605_resolute_pr03` | `32bf0d29d7` |
+| `202605_resolute_pr04` | `fa536c2703` |
+| `202605_resolute_pr05` | `5de7afbc84` |
+| `202605_resolute_pr06` | `fccea22c77` |
+| `202605_resolute_pr07` | `7d8b3a230f` |
+| `202605_resolute_pr08` | `082e13c744` |
+
+
 ## 全局约束
 
 - **基点：** `sonic-net/202605` @ `fe5ae5db34`（每次运行重新 fetch）。**绝不 push 到 `sonic-net`。**
@@ -79,7 +102,10 @@ wc -l /tmp/reso_manifest.txt   # 预期 315
 awk '{
   f=$0
   if (f==".gitmodules") g="G09_submodules";
+  else if (f=="src/sonic-linux-kernel"||f=="src/dhcpmon") g="G00_deforkskip";
+  else if (f=="src/wpasupplicant/sonic-wpa-supplicant") g="G09_submodules";
   else if (f ~ /^src\/[^\/]+$/) g="G09_submodules";
+  else if (f=="platform/vpp") g="G09_submodules";
   else if (f=="src/sonic-linux-kernel") g="G03_kernel";
   else if (f=="AGENTS.md") g="G01_build_env";
   else if (f ~ /^sonic-slave-resolute\//) g="G01_build_env";
@@ -91,7 +117,6 @@ awk '{
   else if (f ~ /^dockers\/.*Dockerfile\.j2$/||f ~ /^dockers\/dockerfile-macros/||f ~ /^dockers\/docker-database\/database_config/) g="G04_common_dockers";
   else if (f ~ /^rules\/docker-/) g="G04_common_dockers";
   else if (f ~ /^rules\/linux-kernel/) g="G03_kernel";
-  else if (f=="platform/vpp") g="G09_submodules";
   else if (f ~ /^platform\/broadcom\//) g="G09z_broadcom";
   else if (f ~ /^platform\//) g="G07_other_platforms";
   else if (f ~ /grub2/) g="G06_grub2";

@@ -8,6 +8,29 @@
 
 **Tech Stack:** git (+ GPG signing), SONiC make build (`BLDENV=resolute`), bash.
 
+## Execution status (updated after reviewer feedback)
+
+The stack was built and pushed (no PRs opened), then rebuilt after review found Resolute-added build-time `sed`/`awk` source mutations. The final implementation now follows each package's native SONiC patch flow:
+
+- Parent packages: isc-dhcp / libyang-python / libnl3 / hsflowd use their existing STGit/quilt series; rasdaemon extends its existing `git apply` convention; psample (no pre-existing series) uses one explicit local patch. Existing upstream hsflowd `_VERSION_` substitution is intentionally preserved.
+- `sonic-sairedis`: nested upstream SAI Doxyfile mutation is a sairedis-owned DEP-3 patch with conditional apply + clean restore; SAI stays at upstream v1.18.1.
+- `sonic-swss-common`: `$function`→`$action` is fixed directly at the owned interface source; `sonic-gnmi` consumes it without `sed`.
+- Exact-source `--fuzz=0` + byte-equivalence checks pass; swss-common and GNMI clean-cache builds pass; all parent Makefiles parse with recipe tabs intact.
+
+Final pushed stack tips (all GPG-signed; `pr01` unchanged):
+
+| Branch | Tip |
+|---|---|
+| `202605_resolute_pr01` | `f2ddaacca0` |
+| `202605_resolute_pr02` | `da20fea22f` |
+| `202605_resolute_pr03` | `32bf0d29d7` |
+| `202605_resolute_pr04` | `fa536c2703` |
+| `202605_resolute_pr05` | `5de7afbc84` |
+| `202605_resolute_pr06` | `fccea22c77` |
+| `202605_resolute_pr07` | `7d8b3a230f` |
+| `202605_resolute_pr08` | `082e13c744` |
+
+
 ## Global Constraints
 
 - **Base:** `sonic-net/202605` @ `fe5ae5db34` (fetch fresh each run). NEVER push to `sonic-net`.
@@ -78,7 +101,10 @@ wc -l /tmp/reso_manifest.txt   # expect 315
 awk '{
   f=$0
   if (f==".gitmodules") g="G09_submodules";
+  else if (f=="src/sonic-linux-kernel"||f=="src/dhcpmon") g="G00_deforkskip";
+  else if (f=="src/wpasupplicant/sonic-wpa-supplicant") g="G09_submodules";
   else if (f ~ /^src\/[^\/]+$/) g="G09_submodules";
+  else if (f=="platform/vpp") g="G09_submodules";
   else if (f=="src/sonic-linux-kernel") g="G03_kernel";
   else if (f=="AGENTS.md") g="G01_build_env";
   else if (f ~ /^sonic-slave-resolute\//) g="G01_build_env";
@@ -90,7 +116,6 @@ awk '{
   else if (f ~ /^dockers\/.*Dockerfile\.j2$/||f ~ /^dockers\/dockerfile-macros/||f ~ /^dockers\/docker-database\/database_config/) g="G04_common_dockers";
   else if (f ~ /^rules\/docker-/) g="G04_common_dockers";
   else if (f ~ /^rules\/linux-kernel/) g="G03_kernel";
-  else if (f=="platform/vpp") g="G09_submodules";
   else if (f ~ /^platform\/broadcom\//) g="G09z_broadcom";
   else if (f ~ /^platform\//) g="G07_other_platforms";
   else if (f ~ /grub2/) g="G06_grub2";
