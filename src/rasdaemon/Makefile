@@ -18,7 +18,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	pushd ./rasdaemon
 	git checkout $(RASDAEMON_COMMIT)
 
-	# Patches
+	# Patch
 	git apply ../0001-Check-CPUs-online-not-configured.patch
 	git apply ../0002-Keep-one-address-in-Maintainer-field.patch
 ifeq ($(CROSS_BUILD_ENVIRON), y)
