@@ -46,5 +46,6 @@ COPY \
 {%- endmacro %}
 
 {% macro rsync_from_builder_stage() -%}
+# resolute: exclude /etc/hosts (like resolv.conf) — BuildKit bind-mounts it, so rsync's rename-over-target fails EBUSY
 RUN --mount=type=bind,from=base,target=/changes-to-image rsync -axAX --omit-dir-times --no-D --exclude=/sys --exclude=/proc --exclude=/dev --exclude=resolv.conf --exclude=/etc/hosts /changes-to-image/ /
 {%- endmacro %}
