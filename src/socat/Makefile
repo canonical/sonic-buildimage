@@ -9,7 +9,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Remove any stale files
 	rm -rf ./socat-1.8.1.1
 
-	# Get source package (resolute base swap: Ubuntu pool via dget)
+	# Get source package
 	dget -u http://archive.ubuntu.com/ubuntu/pool/main/s/socat/socat_$(SOCAT_VERSION).dsc
 
 	# Build source and Debian packages

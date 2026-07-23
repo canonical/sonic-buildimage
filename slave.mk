@@ -1269,9 +1269,7 @@ ifeq ($(BLDENV),bookworm)
 	BOOKWORM_DOCKER_IMAGES = $(filter $(SONIC_BOOKWORM_DOCKERS),$(DOCKER_IMAGES_FOR_INSTALLERS) $(EXTRA_DOCKER_TARGETS) $(SONIC_PACKAGES_LOCAL))
 	BOOKWORM_DBG_DOCKER_IMAGES = $(filter $(SONIC_BOOKWORM_DBG_DOCKERS),$(DOCKER_IMAGES_FOR_INSTALLERS) $(EXTRA_DOCKER_TARGETS) $(SONIC_PACKAGES_LOCAL))
 else ifeq ($(BLDENV),resolute)
-	# resolute build: exclude trixie base images (dead weight — all leaf and
-	# platform dockers now use the resolute base chain; trixie base is FROM
-	# debian:trixie and must not be pulled into the resolute build).
+	# Exclude the trixie base images: all dockers use the resolute base chain.
 	DOCKER_IMAGES = $(filter-out $(DOCKER_BASE_TRIXIE) $(DOCKER_CONFIG_ENGINE_TRIXIE) $(DOCKER_SWSS_LAYER_TRIXIE),$(SONIC_DOCKER_IMAGES))
 	DOCKER_DBG_IMAGES = $(filter-out $(DOCKER_BASE_TRIXIE) $(DOCKER_CONFIG_ENGINE_TRIXIE) $(DOCKER_SWSS_LAYER_TRIXIE),$(SONIC_DOCKER_DBG_IMAGES))
 else

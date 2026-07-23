@@ -1,12 +1,9 @@
 # fips packages
 
 
-# resolute reuses the trixie FIPS binaries (same ABI: glibc 2.43 t64 transition,
-# libssl3t64, libgssrpc4t64), so it shares trixie's exact FIPS versions. The
-# Dockerfile.j2 FIPS Go/openssl pull paths are hardcoded to fips/trixie per the
-# migration design. If the trixie binaries fail to install on resolute
-# (glibc/ABI mismatch), set INCLUDE_FIPS=n in config.user to fall back to Ubuntu
-# official resolute golang-go + openssl.
+# resolute reuses trixie's FIPS binaries (same t64 ABI), so it shares trixie's
+# FIPS versions. If they fail to install on resolute, set INCLUDE_FIPS=n to fall
+# back to Ubuntu's own golang-go + openssl.
 ifneq ($(filter $(BLDENV), trixie resolute),)
 FIPS_VERSION = 1.8.0-24-gd744cf2-2
 FIPS_OPENSSL_VERSION = 3.5.4-1+fips
@@ -46,7 +43,6 @@ FIPS_GOLANG_VERSION = 1.15.15-1~deb11u4+fips
 FIPS_KRB5_VERSION = 1.18.3-6+deb11u5+fips
 endif
 
-# resolute reuses trixie FIPS binaries -> download from fips/trixie/ path.
 FIPS_DOWNLOAD_BLDENV ?= $(BLDENV)
 FIPS_URL_PREFIX = $(BUILD_PUBLIC_URL)/fips/$(FIPS_DOWNLOAD_BLDENV)/$(FIPS_VERSION)/$(CONFIGURED_ARCH)
 

@@ -304,10 +304,8 @@ sudo LANG=C chroot $FILESYSTEM_ROOT usermod -aG redis $USERNAME
 
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
     ## Pre-install hardware drivers
-    # resolute (Ubuntu) doesn't ship firmware-linux-nonfree / firmware-intel-misc
-    # (Debian non-free firmware packages). Install linux-firmware instead if
-    # available; skip silently if not (vs is a virtual image, no real firmware
-    # needed). || true so a missing package doesn't abort the image build.
+    # Ubuntu has no firmware-linux-nonfree/firmware-intel-misc; use
+    # linux-firmware, || true since vs needs no real firmware.
     sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install linux-firmware || true
 fi
 

@@ -29,9 +29,8 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 		# Create a branch out of tag as stg needs a branch.
 		# Prefix branch name with "build-" to avoid conflicts with tag name.
 		git checkout -B build-$(FRR_TAG) refs/tags/$(FRR_TAG)
-		# reset --hard clears any staged/working-tree changes left by a prior
-		# build (e.g. stg patches applied to lib/vty.c); stg branch --create
-		# refuses on a dirty tree. Was CROSS-only; needed for native vs too.
+		# reset --hard clears staged/working-tree changes from a prior build
+		# (e.g. stg patches on lib/vty.c); stg branch --create refuses a dirty tree.
 		git reset --hard
 		if [[ "$$patched_branch_exists" == "yes" ]]; then
 			stg branch --delete --force $(STG_PATCHED_BRANCH)
