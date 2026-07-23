@@ -135,10 +135,6 @@ parts:
       # Move python bins
       mv usr/lib/python3.14/dist-packages/bin/* usr/bin/
 
-      # Copy tz data from build-base
-      cp /etc/timezone etc 2>/dev/null || echo "Etc/UTC" > etc/timezone
-      cp /etc/localtime etc 2>/dev/null || true
-
       # Make update script executable
       chmod +x usr/local/bin/update_chassisdb_config
 
