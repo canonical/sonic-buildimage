@@ -1,6 +1,5 @@
 # Broadcom SAI modules
-# resolute: XGS kmod only — DNX/Jericho and legacy-Tomahawk kmods dropped
-# (no dell platform uses them; see rules.mk).
+# resolute: XGS kmod only — DNX/Jericho and legacy-Tomahawk kmods dropped (see rules.mk).
 
 BRCM_OPENNSL_KERNEL_VERSION = 15.2.0.0.0.0.0.0
 BRCM_OPENNSL_KERNEL = opennsl-modules_$(BRCM_OPENNSL_KERNEL_VERSION)_amd64.deb
