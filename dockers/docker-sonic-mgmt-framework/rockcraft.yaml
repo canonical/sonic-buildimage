@@ -1,0 +1,123 @@
+name: docker-sonic-mgmt-framework
+summary: SONiC sonic-mgmt-framework container
+description: A rock for SONiC sonic-mgmt-framework container
+version: "1.0.0"
+
+base: ubuntu@26.04
+build-base: ubuntu@26.04
+license: Apache-2.0
+
+platforms:
+  amd64:
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  start:
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+  rest-server:
+    command: /usr/bin/rest-server.sh
+    override: replace
+
+parts:
+  setup-mgmt-framework:
+    plugin: dump
+    source: .
+    override-build: |
+      craftctl default
+
+      # Install SONiC debs
+      dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-mgmt-common_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-mgmt-framework_*.deb ${CRAFT_PART_INSTALL}
+
+      # Clean up deb/wheel source files
+      rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
+
+    organize:
+      start.sh: usr/bin/start.sh
+      rest-server.sh: usr/bin/rest-server.sh
+      mgmt_vars.j2: usr/share/sonic/templates/mgmt_vars.j2
+      files/syslog-layer.yaml: usr/share/sonic/templates/syslog-layer.yaml
+      files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
+      files/readiness_probe.sh: usr/bin/readiness_probe.sh
+      files/container_startup.py: usr/share/sonic/scripts/container_startup.py
+
+    stage-packages:
+      - rsyslog
+      - rsyslog-relp
+      - python3
+      - redis-tools
+      - iproute2
+      - net-tools
+      - jq
+      - libzmq5
+      - libwrap0
+      - libatomic1
+      - libdaemon0
+      - libdbus-1-3
+      - libjansson4
+      - python3-redis
+      - python3-yaml
+      - libxml2-16
+      - libcurl4t64
+      - libcjson1
+      - libboost-serialization1.83.0
+      - libhiredis1.1.0
+      - libuuid1
+      - libxxhash0
+
+    override-prime: |
+      craftctl default
+
+      ln -sf /usr/bin/python3.14 usr/bin/python3
+
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
+      cp ${CRAFT_PROJECT_DIR}/manifest.json manifest.json
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      - jinjanator
+      - click
+      - pyangbind==0.8.7
+      - lxml
+      - requests
+      - urllib3
+    stage-packages:
+      - python3-venv
+
+  add-user:
+    plugin: nil
+    after: [setup-mgmt-framework]
+
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+
+    prime:
+      - etc/passwd
+      - etc/group
