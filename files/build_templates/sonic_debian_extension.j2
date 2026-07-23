@@ -84,6 +84,8 @@ install_pip_package() {
     fi
     sudo cp $pip_wheel $FILESYSTEM_ROOT/
     basename_pip_wheel=$(basename -a $@)
+    # resolute/GCC15: relax the C23 warning + define __fds_bits=fds_bits (glibc fd_set member
+    # rename) so source wheels compile; --no-build-isolation reuses the image's numpy/cython
     sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT env CFLAGS="-Wno-error=incompatible-pointer-types -D__fds_bits=fds_bits" pip3 install --no-build-isolation $basename_pip_wheel
     ( cd $FILESYSTEM_ROOT; sudo rm -f $basename_pip_wheel )
 }

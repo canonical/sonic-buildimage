@@ -30,6 +30,7 @@ $(GRUB_PC_BIN)_URL = $(GRUB2_POOL_URL)/$(GRUB_PC_BIN)
 SONIC_ONLINE_DEBS += $(GRUB_PC_BIN)
 endif
 
+# resolute: Ubuntu ships grub-efi-*-bin from a separate src:grub2-unsigned package (own version), unlike Debian's single src:grub2
 ifeq ($(CONFIGURED_ARCH),amd64)
 GRUB_EFI_AMD64 = grub-efi-amd64_$(GRUB2_UNSIGNED_VERSION)_$(CONFIGURED_ARCH).deb
 $(GRUB_EFI_AMD64)_URL = $(GRUB2_UNSIGNED_POOL_URL)/$(GRUB_EFI_AMD64)

@@ -9,7 +9,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Remove any stale files
 	rm -rf ./socat-1.8.1.1
 
-	# Get source package
+	# Get source package (resolute: 1.7.4.1 is gone from the Ubuntu archive; use 1.8.1.1). -u skips the .dsc signature check.
 	dget -u http://archive.ubuntu.com/ubuntu/pool/main/s/socat/socat_$(SOCAT_VERSION).dsc
 
 	# Build source and Debian packages

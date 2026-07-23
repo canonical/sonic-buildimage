@@ -422,6 +422,7 @@ RUN apt-get update && apt-get install -y eatmydata && eatmydata apt-get install 
 # For kdump-tools
         libbz2-dev \
 # For linkmgrd
+# resolute: pin boost 1.83 (resolute default is newer/header-only asio); 1.83 keeps io_service, matching trixie/bookworm so SONiC submodules build unchanged
         libboost1.83-dev \
         libboost-program-options1.83-dev \
         libboost-serialization1.83-dev \
