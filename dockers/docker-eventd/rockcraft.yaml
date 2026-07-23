@@ -34,8 +34,12 @@ parts:
   setup-eventd:
     plugin: dump
     source: .
+    build-packages:
+      - python3-pip
     override-build: |
       craftctl default
+
+      pip install --break-system-packages jinjanator
 
       # Install SONiC debs
       dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
