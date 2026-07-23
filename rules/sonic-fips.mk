@@ -1,7 +1,13 @@
 # fips packages
 
 
-ifeq ($(BLDENV), trixie)
+# resolute reuses the trixie FIPS binaries (same ABI: glibc 2.43 t64 transition,
+# libssl3t64, libgssrpc4t64), so it shares trixie's exact FIPS versions. The
+# Dockerfile.j2 FIPS Go/openssl pull paths are hardcoded to fips/trixie per the
+# migration design. If the trixie binaries fail to install on resolute
+# (glibc/ABI mismatch), set INCLUDE_FIPS=n in config.user to fall back to Ubuntu
+# official resolute golang-go + openssl.
+ifneq ($(filter $(BLDENV), trixie resolute),)
 FIPS_VERSION = 1.8.0-24-gd744cf2-2
 FIPS_OPENSSL_VERSION = 3.5.4-1+fips
 FIPS_OPENSSH_VERSION = 10.0p1-7+fips
@@ -12,22 +18,9 @@ FIPS_GOLANG_VERSION = 1.24.4-1+fips
 FIPS_KRB5_VERSION = 1.21.3-5+fips
 endif
 
-# resolute reuses the trixie FIPS binaries (same ABI: glibc 2.43 t64 transition,
-# libssl3t64, libgssrpc4t64). The Dockerfile.j2 FIPS Go/openssl pull paths are
-# hardcoded to fips/trixie per the migration design. If the trixie binaries fail
-# to install on resolute (glibc/ABI mismatch), set INCLUDE_FIPS=n in config.user
-# to fall back to Ubuntu official resolute golang-go + openssl.
-ifeq ($(BLDENV), resolute)
-FIPS_VERSION = 1.8.0-24-gd744cf2-2
-FIPS_OPENSSL_VERSION = 3.5.4-1+fips
-FIPS_OPENSSH_VERSION = 10.0p1-7+fips
-FIPS_PYTHON_MAIN_VERSION = 3.13
-FIPS_PYTHON_VERSION = 3.13.5-2+fips
-FIPS_GOLANG_MAIN_VERSION = 1.24
-FIPS_GOLANG_VERSION = 1.24.4-1+fips
-FIPS_KRB5_VERSION = 1.21.3-5+fips
 # resolute reuses trixie FIPS binaries, so the download URL must point at the
 # fips/trixie/ path (fips/resolute/ does not exist on the mirror -> 404).
+ifeq ($(BLDENV), resolute)
 FIPS_DOWNLOAD_BLDENV = trixie
 endif
 
@@ -64,9 +57,7 @@ $(SYMCRYPT_OPENSSL)_SRC_PATH = $(SRC_PATH)/sonic-fips
 FIPS_OPENSSL = openssl_$(FIPS_OPENSSL_VERSION)_$(CONFIGURED_ARCH).deb
 ifeq ($(BLDENV), bookworm)
 FIPS_OPENSSL_LIBSSL = libssl3_$(FIPS_OPENSSL_VERSION)_$(CONFIGURED_ARCH).deb
-else ifeq ($(BLDENV), trixie)
-FIPS_OPENSSL_LIBSSL = libssl3t64_$(FIPS_OPENSSL_VERSION)_$(CONFIGURED_ARCH).deb
-else ifeq ($(BLDENV), resolute)
+else ifneq ($(filter $(BLDENV), trixie resolute),)
 FIPS_OPENSSL_LIBSSL = libssl3t64_$(FIPS_OPENSSL_VERSION)_$(CONFIGURED_ARCH).deb
 else
 FIPS_OPENSSL_LIBSSL = libssl1.1_$(FIPS_OPENSSL_VERSION)_$(CONFIGURED_ARCH).deb
@@ -92,9 +83,7 @@ FIPS_GOLANG = golang-$(FIPS_GOLANG_MAIN_VERSION)_$(FIPS_GOLANG_VERSION)_all.deb
 FIPS_GOLANG_GO = golang-$(FIPS_GOLANG_MAIN_VERSION)-go_$(FIPS_GOLANG_VERSION)_$(CONFIGURED_ARCH).deb
 ifeq ($(BLDENV), bookworm)
 FIPS_GOLANG_SRC = golang-$(FIPS_GOLANG_MAIN_VERSION)-src_$(FIPS_GOLANG_VERSION)_all.deb
-else ifeq ($(BLDENV), trixie)
-FIPS_GOLANG_SRC = golang-$(FIPS_GOLANG_MAIN_VERSION)-src_$(FIPS_GOLANG_VERSION)_all.deb
-else ifeq ($(BLDENV), resolute)
+else ifneq ($(filter $(BLDENV), trixie resolute),)
 FIPS_GOLANG_SRC = golang-$(FIPS_GOLANG_MAIN_VERSION)-src_$(FIPS_GOLANG_VERSION)_all.deb
 else
 FIPS_GOLANG_SRC = golang-$(FIPS_GOLANG_MAIN_VERSION)-src_$(FIPS_GOLANG_VERSION)_$(CONFIGURED_ARCH).deb
@@ -108,9 +97,7 @@ FIPS_KRB5_3 = libkrb5-3_$(FIPS_KRB5_VERSION)_$(CONFIGURED_ARCH).deb
 FIPS_KRB5_LIBGSSAPI = libgssapi-krb5-2_$(FIPS_KRB5_VERSION)_$(CONFIGURED_ARCH).deb
 FIPS_KRB5_LIBKADM5CLNT = libkadm5clnt-mit12_$(FIPS_KRB5_VERSION)_$(CONFIGURED_ARCH).deb
 FIPS_KRB5_LIBKADM5SRV = libkadm5srv-mit12_$(FIPS_KRB5_VERSION)_$(CONFIGURED_ARCH).deb
-ifeq ($(BLDENV), trixie)
-FIPS_KRB5_LIBGSSRPC4 = libgssrpc4t64_$(FIPS_KRB5_VERSION)_$(CONFIGURED_ARCH).deb
-else ifeq ($(BLDENV), resolute)
+ifneq ($(filter $(BLDENV), trixie resolute),)
 FIPS_KRB5_LIBGSSRPC4 = libgssrpc4t64_$(FIPS_KRB5_VERSION)_$(CONFIGURED_ARCH).deb
 else
 FIPS_KRB5_LIBGSSRPC4 = libgssrpc4_$(FIPS_KRB5_VERSION)_$(CONFIGURED_ARCH).deb
