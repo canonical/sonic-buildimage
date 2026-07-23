@@ -42,13 +42,11 @@ services:
       DISTRO: "resolute"
 
 parts:
-  install-rsyslog:
+  install-unchiselled-packages:
     plugin: nil
     stage-packages:
       - rsyslog
       - rsyslog-relp
-      - libpython3.14-stdlib
-      - libpython3.14-minimal
       - libpython3.14
       - libboost-serialization1.83.0
       - libxxhash0
