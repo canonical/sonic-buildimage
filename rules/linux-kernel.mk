@@ -13,6 +13,7 @@ ifeq ($(CONFIGURED_ARCH), armhf)
 # Override kernel version for ARMHF as it uses arm MP (multi-platform) for short version
 KVERSION ?= $(KVERSION_SHORT)-armmp
 else
+# Ubuntu linux-sonic ABI string omits the arch (unlike Debian's -amd64), so KVERSION = KVERSION_SHORT
 KVERSION ?= $(KVERSION_SHORT)
 endif
 

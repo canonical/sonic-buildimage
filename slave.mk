@@ -1011,6 +1011,7 @@ $(SONIC_INSTALL_DEBS) : $(DEBS_PATH)/%-install : .platform $$(addsuffix -install
 	# previous mkdir/sleep-10 lock. Waiters block in the kernel until the lock is
 	# released, so there is zero wasted time between consecutive installs.
 ifneq ($(CROSS_BUILD_ENVIRON),y)
+	# resolute: platform/platform-modules debs Depend on kernel modules not yet installed at this stage; --force-depends past the ordering check (deps satisfied later)
 	flock $(DEBS_PATH)/dpkg_lock.lk sudo DEBIAN_FRONTEND=noninteractive $($*_DEB_INSTALL_OPTS) dpkg -i $(if $(filter sonic-platform-% platform-modules-%,$*),--force-depends) $(DEBS_PATH)/$* $(LOG)
 else
 	flock $(DEBS_PATH)/dpkg_lock.lk bash -c '\
@@ -1499,6 +1500,7 @@ $(DOCKER_LOAD_TARGETS) : $(TARGET_PATH)/%.gz-load : .platform docker-start $$(TA
 ## Installers
 ###############################################################################
 
+# resolute: prereqs list the split grub2 debs individually (Ubuntu splits grub2 into per-flavor debs) and omit LINUX_KBUILD (Ubuntu linux-sonic ships no kbuild deb)
 $(addprefix $(TARGET_PATH)/, $(SONIC_RFS_TARGETS)) : $(TARGET_PATH)/% : \
         .platform \
         build_debian.sh \

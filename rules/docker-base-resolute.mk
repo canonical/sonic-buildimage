@@ -3,6 +3,7 @@
 DOCKER_BASE_RESOLUTE = docker-base-resolute.gz
 $(DOCKER_BASE_RESOLUTE)_PATH = $(DOCKERS_PATH)/docker-base-resolute
 
+# resolute: iproute2 comes from the base image apt install (docker-base-resolute Dockerfile), not the SONiC IPROUTE2 deb
 $(DOCKER_BASE_RESOLUTE)_DEPENDS += $(SOCAT)
 
 GDB = gdb
