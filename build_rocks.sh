@@ -3,6 +3,7 @@
 # Finish `make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz` first
 rocklist=(
     "dockers/docker-database"
+    "dockers/docker-sonic-mgmt-framework"
 )
 
 set -x
@@ -13,7 +14,7 @@ do
     mkdir -p $rockitem/debs $rockitem/files $rockitem/python-wheels
 
     cp target/debs/resolute/*.deb            $rockitem/debs/
-    cp target/files/resolute/*               $rockitem/files/
+    cp -r target/files/resolute/*            $rockitem/files/
     cp target/python-wheels/resolute/*.whl   $rockitem/python-wheels/
     echo "export IMAGE_VERSION=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse HEAD)" > $rockitem/envs
 
