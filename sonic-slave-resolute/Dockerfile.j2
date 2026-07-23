@@ -1,22 +1,22 @@
 {% set prefix = DEFAULT_CONTAINER_REGISTRY %}
 {%- if CONFIGURED_ARCH == "armhf" and MULTIARCH_QEMU_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-arm-7.2.0-1 as qemu
-FROM --platform=linux/arm/v7 {{ prefix }}debian:trixie
+FROM --platform=linux/arm/v7 {{ prefix }}ubuntu:resolute
 COPY --from=qemu /usr/bin/qemu-arm-static /usr/bin
 {%- elif CONFIGURED_ARCH == "arm64" and MULTIARCH_QEMU_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-aarch64-7.2.0-1 as qemu
-FROM --platform=linux/arm64 {{ prefix }}debian:trixie
+FROM --platform=linux/arm64 {{ prefix }}ubuntu:resolute
 COPY --from=qemu /usr/bin/qemu-aarch64-static /usr/bin
 {%- elif CONFIGURED_ARCH == "armhf" and CROSS_BUILD_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-arm-7.2.0-1 as qemu
-FROM {{ prefix }}debian:trixie
+FROM {{ prefix }}ubuntu:resolute
 COPY --from=qemu /usr/bin/qemu-arm-static /usr/bin
 {%- elif CONFIGURED_ARCH == "arm64" and CROSS_BUILD_ENVIRON == "y" %}
 FROM {{ prefix }}multiarch/qemu-user-static:x86_64-aarch64-7.2.0-1 as qemu
-FROM {{ prefix }}debian:trixie
+FROM {{ prefix }}ubuntu:resolute
 COPY --from=qemu /usr/bin/qemu-aarch64-static /usr/bin
 {%- else -%}
-FROM {{ prefix }}debian:trixie
+FROM {{ prefix }}ubuntu:resolute
 {%- endif %}
 
 MAINTAINER gulv@microsoft.com
@@ -834,6 +834,6 @@ COPY buildinfo/cargo-wrapper /usr/local/bin/cargo
 RUN chmod 0755 /usr/local/bin/cargo
 
 {# Include vendor-defined rules for slave container if it exists.  Contained in ../files #}
-{% with DEBIAN_VERSION='trixie' %}
+{% with DEBIAN_VERSION='resolute' %}
 {% include 'files/sonic-slave-Dockerfile.vendor.j2' ignore missing %}
 {% endwith %}
