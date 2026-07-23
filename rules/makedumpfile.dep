@@ -1,8 +1,5 @@
-SPATH       := $($(MAKEDUMPFILE)_SRC_PATH)
-DEP_FILES   := $(SONIC_COMMON_FILES_LIST) rules/makedumpfile.mk rules/makedumpfile.dep
-DEP_FILES   += $(SONIC_COMMON_BASE_FILES_LIST)
-DEP_FILES   += $(shell git ls-files $(SPATH))
+# resolute: makedumpfile is an ONLINE_DEB with no in-repo source to hash, so no SPATH / git ls-files.
 
-$(MAKEDUMPFILE)_CACHE_MODE  := GIT_CONTENT_SHA
-$(MAKEDUMPFILE)_DEP_FLAGS   := $(SONIC_COMMON_FLAGS_LIST)
-$(MAKEDUMPFILE)_DEP_FILES   := $(DEP_FILES)
+$(MAKEDUMPFILE)_CACHE_MODE := GIT_CONTENT_SHA
+$(MAKEDUMPFILE)_DEP_FLAGS  := $(SONIC_COMMON_FLAGS_LIST)
+$(MAKEDUMPFILE)_DEP_FILES  := $(SONIC_COMMON_FILES_LIST) rules/makedumpfile.mk rules/makedumpfile.dep $(SONIC_COMMON_BASE_FILES_LIST)
