@@ -1054,15 +1054,6 @@ sudo LANG=C chroot $FILESYSTEM_ROOT systemctl enable kubernetes_master_entrance.
 {{ args | join(' ') }}
 {% endmacro -%}
 
-# Python 3.14 removed pkgutil.get_loader (deprecated since 3.12). sonic-package-manager
-# uses it in manager.py to locate CLI plugin dirs; patch to importlib.util.find_spec.
-# Use spec.origin (= .../show/plugins/__init__.py) so os.path.dirname() downstream
-# (manager.py:170) yields the plugins dir itself; spec.submodule_search_locations[0]
-# is the package dir, whose dirname is the parent (off-by-one — plugins landed
-# one level too high).
-sudo sed -i 's/pkg_loader = pkgutil.get_loader(f.{command}.plugins.)/spec = importlib.util.find_spec(f"{command}.plugins"); pkg_loader = type("L",(),{"path": spec.origin if spec else None})() if spec else None/' $FILESYSTEM_ROOT/usr/local/lib/python3.14/dist-packages/sonic_package_manager/manager.py || true
-sudo sed -i 's/^import pkgutil$/import importlib.util, importlib/' $FILESYSTEM_ROOT/usr/local/lib/python3.14/dist-packages/sonic_package_manager/manager.py || true
-
 {% for package in sonic_packages.strip().split() -%}
 {% set name, repo, version, set_owner, enabled = package.split('|') -%}
 sudo LANG=C DOCKER_HOST="$DOCKER_HOST" chroot $FILESYSTEM_ROOT sonic-package-manager repository add {{ name }} {{ repo }}
