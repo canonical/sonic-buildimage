@@ -2,7 +2,7 @@
 SHELL = /bin/bash
 .SHELLFLAGS += -e
 
-LIBYANG_URL = http://debian-archive.trafficmanager.net/debian/pool/main/liby/libyang
+LIBYANG_URL = http://archive.ubuntu.com/ubuntu/pool/main/liby/libyang
 
 MAIN_TARGET = $(LIBYANG3)
 DERIVED_TARGETS = $(LIBYANG3_DEV) $(LIBYANG3_DBG) $(LIBYANG3_TOOLS) $(LIBYANG3_TOOLS_DBG)

@@ -3,8 +3,9 @@
 DOCKER_BASE_RESOLUTE = docker-base-resolute.gz
 $(DOCKER_BASE_RESOLUTE)_PATH = $(DOCKERS_PATH)/docker-base-resolute
 
-$(DOCKER_BASE_TRIXIE)_DEPENDS += $(SOCAT)
-$(DOCKER_BASE_TRIXIE)_DEPENDS += $(IPROUTE2)
+# resolute: stock Ubuntu iproute2 (apt), not SONiC self-built. The self-built
+# (trixie-only) carries EVPN MH bridge-fdb patch; restore _DEPENDS if needed.
+$(DOCKER_BASE_RESOLUTE)_DEPENDS += $(SOCAT)
 
 GDB = gdb
 GDBSERVER = gdbserver

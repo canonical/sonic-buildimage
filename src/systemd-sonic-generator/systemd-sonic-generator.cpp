@@ -334,7 +334,8 @@ static int get_install_targets_from_line(std::string target_string, std::string 
         strip_trailing_newline(target);
         target += install_type;
         targets[num_targets + existing_targets] = (char*) calloc(target.length() + 1, sizeof(char));
-        snprintf(targets[num_targets + existing_targets], PATH_MAX, "%s", target.c_str());
+        // bound by the calloc'd size (len+1); PATH_MAX over-ran the buffer and trips _FORTIFY_SOURCE=3 on resolute
+        snprintf(targets[num_targets + existing_targets], target.length() + 1, "%s", target.c_str());
         num_targets++;
     }
     return num_targets;

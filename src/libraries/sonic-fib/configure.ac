@@ -32,7 +32,8 @@ fi
 CFLAGS_COMMON=""
 CFLAGS_COMMON+=" -ansi"
 CFLAGS_COMMON+=" -fPIC"
-CFLAGS_COMMON+=" -std=c++14"
+# resolute: C++17 (was c++14) required by the toolchain/deps on GCC 15
+CFLAGS_COMMON+=" -std=c++17"
 CFLAGS_COMMON+=" -Wall"
 CFLAGS_COMMON+=" -Wcast-align"
 CFLAGS_COMMON+=" -Wcast-qual"

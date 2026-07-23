@@ -48,6 +48,9 @@ BOOKWORM_PHONY_PATH = $(TARGET_PATH)/phony/bookworm
 TRIXIE_DEBS_PATH = $(TARGET_PATH)/debs/trixie
 TRIXIE_FILES_PATH = $(TARGET_PATH)/files/trixie
 TRIXIE_PHONY_PATH = $(TARGET_PATH)/phony/trixie
+RESOLUTE_DEBS_PATH = $(TARGET_PATH)/debs/resolute
+RESOLUTE_FILES_PATH = $(TARGET_PATH)/files/resolute
+RESOLUTE_PHONY_PATH = $(TARGET_PATH)/phony/resolute
 
 DBG_IMAGE_MARK = dbg
 DBG_SRC_ARCHIVE_FILE = $(TARGET_PATH)/sonic_src.tar.gz
@@ -75,7 +78,7 @@ IMAGE_DISTRO_DEBS_PATH = $(TARGET_PATH)/debs/$(IMAGE_DISTRO)
 IMAGE_DISTRO_FILES_PATH = $(TARGET_PATH)/files/$(IMAGE_DISTRO)
 
 # Python 2 packages will not be available in Bullseye and newer
-ifneq ($(filter bullseye bookworm trixie,$(BLDENV)),)
+ifneq ($(filter bullseye bookworm trixie resolute,$(BLDENV)),)
 ENABLE_PY2_MODULES = n
 else
 ENABLE_PY2_MODULES = y
@@ -137,6 +140,9 @@ configure :
 	$(Q)mkdir -p $(BOOKWORM_PHONY_PATH)
 	$(Q)mkdir -p $(TRIXIE_FILES_PATH)
 	$(Q)mkdir -p $(TRIXIE_PHONY_PATH)
+	$(Q)mkdir -p $(RESOLUTE_DEBS_PATH)
+	$(Q)mkdir -p $(RESOLUTE_FILES_PATH)
+	$(Q)mkdir -p $(RESOLUTE_PHONY_PATH)
 	$(Q)mkdir -p $(PYTHON_DEBS_PATH)
 	$(Q)mkdir -p $(PYTHON_WHEELS_PATH)
 	$(Q)mkdir -p $(DPKG_ADMINDIR_PATH)
@@ -1005,7 +1011,8 @@ $(SONIC_INSTALL_DEBS) : $(DEBS_PATH)/%-install : .platform $$(addsuffix -install
 	# previous mkdir/sleep-10 lock. Waiters block in the kernel until the lock is
 	# released, so there is zero wasted time between consecutive installs.
 ifneq ($(CROSS_BUILD_ENVIRON),y)
-	flock $(DEBS_PATH)/dpkg_lock.lk sudo DEBIAN_FRONTEND=noninteractive $($*_DEB_INSTALL_OPTS) dpkg -i $(DEBS_PATH)/$* $(LOG)
+	# resolute: platform/platform-modules debs Depend on kernel modules not yet installed at this stage; --force-depends past the ordering check (deps satisfied later)
+	flock $(DEBS_PATH)/dpkg_lock.lk sudo DEBIAN_FRONTEND=noninteractive $($*_DEB_INSTALL_OPTS) dpkg -i $(if $(filter sonic-platform-% platform-modules-%,$*),--force-depends) $(DEBS_PATH)/$* $(LOG)
 else
 	flock $(DEBS_PATH)/dpkg_lock.lk bash -c '\
 		sudo DEBIAN_FRONTEND=noninteractive $($*_DEB_INSTALL_OPTS) dpkg -i $(if $(findstring $(LINUX_HEADERS),$*),--force-depends) $(DEBS_PATH)/$* $(LOG) && \
@@ -1262,6 +1269,10 @@ ifeq ($(BLDENV),bookworm)
 	DOCKER_DBG_IMAGES := $(SONIC_BOOKWORM_DBG_DOCKERS)
 	BOOKWORM_DOCKER_IMAGES = $(filter $(SONIC_BOOKWORM_DOCKERS),$(DOCKER_IMAGES_FOR_INSTALLERS) $(EXTRA_DOCKER_TARGETS) $(SONIC_PACKAGES_LOCAL))
 	BOOKWORM_DBG_DOCKER_IMAGES = $(filter $(SONIC_BOOKWORM_DBG_DOCKERS),$(DOCKER_IMAGES_FOR_INSTALLERS) $(EXTRA_DOCKER_TARGETS) $(SONIC_PACKAGES_LOCAL))
+else ifeq ($(BLDENV),resolute)
+	# Exclude the trixie base images: all dockers use the resolute base chain.
+	DOCKER_IMAGES = $(filter-out $(DOCKER_BASE_TRIXIE) $(DOCKER_CONFIG_ENGINE_TRIXIE) $(DOCKER_SWSS_LAYER_TRIXIE),$(SONIC_DOCKER_IMAGES))
+	DOCKER_DBG_IMAGES = $(filter-out $(DOCKER_BASE_TRIXIE) $(DOCKER_CONFIG_ENGINE_TRIXIE) $(DOCKER_SWSS_LAYER_TRIXIE),$(SONIC_DOCKER_DBG_IMAGES))
 else
 	DOCKER_IMAGES = $(filter-out $(SONIC_JESSIE_DOCKERS) $(SONIC_STRETCH_DOCKERS) $(SONIC_BUSTER_DOCKERS) $(SONIC_BULLSEYE_DOCKERS) $(SONIC_BOOKWORM_DOCKERS),$(SONIC_DOCKER_IMAGES))
 	DOCKER_DBG_IMAGES = $(filter-out $(SONIC_JESSIE_DBG_DOCKERS) $(SONIC_STRETCH_DBG_DOCKERS) $(SONIC_BUSTER_DBG_DOCKERS) $(SONIC_BULLSEYE_DBG_DOCKERS) $(SONIC_BOOKWORM_DBG_DOCKERS), $(SONIC_DOCKER_DBG_IMAGES))
@@ -1489,10 +1500,11 @@ $(DOCKER_LOAD_TARGETS) : $(TARGET_PATH)/%.gz-load : .platform docker-start $$(TA
 ## Installers
 ###############################################################################
 
+# resolute: prereqs list the split grub2 debs individually (Ubuntu splits grub2 into per-flavor debs) and omit LINUX_KBUILD (Ubuntu linux-sonic ships no kbuild deb)
 $(addprefix $(TARGET_PATH)/, $(SONIC_RFS_TARGETS)) : $(TARGET_PATH)/% : \
         .platform \
         build_debian.sh \
-        $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(INITRAMFS_TOOLS) $(LINUX_KERNEL) $(GRUB2_COMMON)) \
+        $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(INITRAMFS_TOOLS) $(LINUX_KERNEL) $(GRUB2_COMMON) $(GRUB_COMMON) $(GRUB_EFI) $(GRUB_EFI_MAIN) $(GRUB_PC_BIN) $(GRUB_EFI_AMD64_BIN) $(GRUB_EFI_ARM64_BIN)) \
         $$(addprefix $(TARGET_PATH)/,$$($$*_DEPENDENT_RFS)) \
         $(call dpkg_depend,$(TARGET_PATH)/%.dep)
 	$(HEADER)
@@ -1561,7 +1573,6 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
 		$$(addprefix $(PYTHON_WHEELS_PATH)/,$$($$*_PYTHON_WHEELS)) \
         $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(INITRAMFS_TOOLS) \
                 $(LINUX_KERNEL) \
-                $(LINUX_KBUILD) \
                 $(SONIC_DEVICE_DATA) \
                 $(IFUPDOWN2) \
                 $(MAKEDUMPFILE) \
@@ -1586,7 +1597,7 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
                 $(AUDISP_TACPLUS) \
                 $(SYSLOG_COUNTER) \
                 $(SEDUTIL) \
-                $(GRUB2_COMMON)) \
+                $(GRUB2_COMMON) $(GRUB_COMMON) $(GRUB_EFI) $(GRUB_EFI_MAIN) $(GRUB_PC_BIN) $(GRUB_EFI_AMD64_BIN) $(GRUB_EFI_ARM64_BIN)) \
         $$(addprefix $(TARGET_PATH)/,$$($$*_DOCKERS)) \
         $$(addprefix $(TARGET_PATH)/,$$(SONIC_PACKAGES_LOCAL)) \
         $$(addprefix $(FILES_PATH)/,$$($$*_FILES)) \
@@ -1611,7 +1622,6 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(SYSTEM_HEALTH)) \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(SONIC_HOST_SERVICES_PY3)) \
         $$(addprefix $(TARGET_PATH)/,$$($$*_RFS_DEPENDS)) \
-        $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(LINUX_KBUILD)-install)
 
 	$(HEADER)
 	# Pass initramfs and linux kernel explicitly. They are used for all platforms
