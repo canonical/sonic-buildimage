@@ -10,13 +10,11 @@ set -e
 
 for rockitem in "${rocklist[@]}"
 do
-    mkdir -p $rockitem/debs
-    mkdir -p $rockitem/files
-    mkdir -p $rockitem/python-wheels
+    mkdir -p $rockitem/debs $rockitem/files $rockitem/python-wheels
 
-    cp -r target/debs/resolute/*.deb            $rockitem/debs/
-    cp -r target/files/resolute/*               $rockitem/files/
-    cp -r target/python-wheels/resolute/*.whl   $rockitem/python-wheels/
+    cp target/debs/resolute/*.deb            $rockitem/debs/
+    cp target/files/resolute/*               $rockitem/files/
+    cp target/python-wheels/resolute/*.whl   $rockitem/python-wheels/
     echo "export IMAGE_VERSION=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse HEAD)" > $rockitem/envs
 
     pushd $rockitem
