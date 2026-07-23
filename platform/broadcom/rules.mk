@@ -58,8 +58,7 @@ $(DSSERVE)_URL = "$(BUILD_PUBLIC_URL)/20190307/dsserve"
 
 SONIC_ONLINE_FILES += $(BCMCMD) $(DSSERVE)
 
-# resolute: SONIC_ONE_ABOOT_IMAGE dropped — Arista Aboot image not built (one-aboot.mk disabled above; dell/XGS only)
-SONIC_ALL += $(SONIC_ONE_IMAGE) \
+SONIC_ALL += $(SONIC_ONE_IMAGE) $(SONIC_ONE_ABOOT_IMAGE) \
              $(DOCKER_FPM)
 
 # Inject brcm sai into syncd
