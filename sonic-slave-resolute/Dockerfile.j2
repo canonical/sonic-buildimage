@@ -857,7 +857,4 @@ RUN grep -q "DBGSYM_PACKAGE_TYPE' => 'ddeb'" /usr/share/perl5/Debian/Debhelper/D
     sed -i "s/DBGSYM_PACKAGE_TYPE' => 'ddeb'/DBGSYM_PACKAGE_TYPE' => 'deb'/" /usr/share/perl5/Debian/Debhelper/Dh_Lib.pm && \
     grep -q "DBGSYM_PACKAGE_TYPE' => 'deb'" /usr/share/perl5/Debian/Debhelper/Dh_Lib.pm
 
-# GCC 15 defaults to C23, which breaks SONiC's K&R prototypes and promotes
-# several warnings to errors. Pin all dpkg-buildpackage builds back to the
-# gnu17 baseline SONiC targets and relax the new -Werror= promotions.
-RUN printf 'APPEND CFLAGS -std=gnu17 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=discarded-qualifiers\n' > /etc/dpkg/buildflags.conf
+COPY ["buildflags.conf", "/etc/dpkg/buildflags.conf"]
