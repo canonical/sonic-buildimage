@@ -20,8 +20,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# Enable large file support for 32-bit arch
 	echo 'add_definitions(-D_FILE_OFFSET_BITS=64)' >> CMakeLists.txt
 
-	# Apply patch series (pr2362 adds LYD_VALIDATE_NOEXTDEPS used by sonic-mgmt-common;
-	# verified applies clean on 3.13.6, all hunks succeeded with offset)
+	# Apply patch series
 	patch -p1 < ../patch/0001-pr2362-lyd_validate_noextdeps.patch
 
 	# Debian buster and below do not have new enough versions of xxhash and

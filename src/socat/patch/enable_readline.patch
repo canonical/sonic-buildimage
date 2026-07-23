@@ -2,11 +2,6 @@ Description: Enable readline support in socat.
  Drop the debian/rules override that passes --disable-readline to
  dh_auto_configure so socat's configure auto-detects and links libreadline,
  and add libreadline-dev to Build-Depends.
- .
- Rebased for socat 1.8.1.1-1 (Ubuntu 26.04 "resolute"); the original was
- written against the socat 1.7.x era debian/rules and debian/control layout
- (debhelper-compat 12, no procps, different override_dh_auto_test body) and no
- longer matched the 1.8.1.1-1 packaging.
 Author: Sheldon Qi <sheldon.qi@canonical.com>
 Forwarded: not-needed
 --- a/debian/rules

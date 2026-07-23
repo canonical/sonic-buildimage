@@ -1,11 +1,8 @@
 # libnl3
 #
-# resolute: install stock Ubuntu libnl3 debs via SONIC_ONLINE_DEBS instead of
-# building from source. SONiC's only libnl customization was the nh-id alias
-# patch (rtnl_route_get_nh_id -> rtnl_route_get_nhid); those call sites were
-# renamed in sonic-swss to the stock spelling, so no fork is needed and the
-# official Ubuntu debs (identical package names/version) satisfy every
-# downstream *_DEV build dependency. Version pinned for reproducibility.
+# resolute: fetch stock Ubuntu libnl3 debs via SONIC_ONLINE_DEBS instead of
+# building from source. SONiC's only patch (nh-id alias) is obsolete — sonic-swss
+# now uses the stock rtnl_route_get_nhid spelling — so no fork is needed.
 
 LIBNL3_VERSION_BASE = 3.12.0
 LIBNL3_VERSION = $(LIBNL3_VERSION_BASE)-2
