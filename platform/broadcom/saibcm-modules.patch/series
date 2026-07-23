@@ -4,6 +4,5 @@
 0004-linux-7.0-objtool-noop.patch
 0005-linux-7.0-kbuild-arch-tree.patch
 0006-linux-7.0-kflags-fms-extensions.patch
-0007-linux-7.0-sdklt-from-timer-compat.patch
-0008-resolute-modules-install-path.patch
-0009-resolute-changelog-timestamps.patch
+0007-resolute-modules-install-path.patch
+0008-resolute-changelog-timestamps.patch
