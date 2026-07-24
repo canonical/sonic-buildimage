@@ -62,8 +62,8 @@ endif
 ifeq ($(NOBOOKWORM), 0)
 	$(MAKE_WITH_RETRY) EXTRA_DOCKER_TARGETS=$(notdir $@) BLDENV=bookworm -f Makefile.work bookworm
 endif
-ifeq ($(NOTRIXIE), 0)
-	$(MAKE_WITH_RETRY) BLDENV=trixie -f Makefile.work $@
+ifeq ($(NORESOLUTE), 0)
+	$(MAKE_WITH_RETRY) BLDENV=resolute -f Makefile.work $@
 endif
 
 	BLDENV=bookworm $(MAKE) -f Makefile.work docker-cleanup
