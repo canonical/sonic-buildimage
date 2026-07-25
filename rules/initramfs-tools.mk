@@ -1,6 +1,6 @@
 # initramfs-tools package
 
-INITRAMFS_TOOLS_VERSION = 0.142
+INITRAMFS_TOOLS_VERSION = 0.151ubuntu1
 export INITRAMFS_TOOLS_VERSION
 
 INITRAMFS_TOOLS = initramfs-tools_$(INITRAMFS_TOOLS_VERSION)_all.deb
