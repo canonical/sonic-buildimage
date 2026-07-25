@@ -13,7 +13,7 @@ DERIVED_TARGETS = fancontrol_$(LM_SENSORS_VERSION_FULL)_all.deb \
 
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf lm-sensors-$(LM_SENSORS_VERSION)
-	dget -u http://deb.debian.org/debian/pool/main/l/lm-sensors/lm-sensors_$(LM_SENSORS_VERSION_FULL).dsc
+	dget -u http://archive.ubuntu.com/ubuntu/pool/main/l/lm-sensors/lm-sensors_$(LM_SENSORS_VERSION_FULL).dsc
 	pushd lm-sensors-$(LM_SENSORS_VERSION)
 
 	# Initialize as git repository
@@ -28,7 +28,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 ifeq ($(CROSS_BUILD_ENVIRON), y)
 	PROG_EXTRA=sensord dpkg-buildpackage -us -uc -b -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
 else
-	DEB_BUILD_OPTIONS=nocheck PROG_EXTRA=sensord dpkg-buildpackage -us -uc -b -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+	DEB_BUILD_OPTIONS=nocheck DEB_BUILD_PROFILES=nocheck PROG_EXTRA=sensord dpkg-buildpackage -us -uc -b -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
 endif
 	popd
 
