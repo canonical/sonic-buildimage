@@ -12,9 +12,9 @@ diff --git a/debian/rules b/debian/rules
 index dc2a9b1..3d12fb5 100755
 --- a/debian/rules
 +++ b/debian/rules
-@@ -23,7 +23,7 @@ CFLAGS+=-D_PATH_DHCLIENT_CONF='\"/etc/dhcp/dhclient.conf\"'
- CFLAGS+=-D_PATH_DHCLIENT_DB='\"$(LEASE_PATH)/dhclient.leases\"'
+@@ -28,7 +28,7 @@ CFLAGS+=-D_PATH_DHCLIENT_DB='\"$(LEASE_PATH)/dhclient.leases\"'
  CFLAGS+=-D_PATH_DHCLIENT6_DB='\"$(LEASE_PATH)/dhclient6.leases\"'
+ CFLAGS+=-fno-strict-aliasing
  
 -CONFFLAGS+=--prefix=/usr --enable-log-pid --enable-paranoia
 +CONFFLAGS+=--prefix=/usr --enable-log-pid --enable-paranoia --enable-use-sockets

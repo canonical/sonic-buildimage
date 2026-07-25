@@ -1,11 +1,20 @@
+From 5c64cb06e3ac50a1cbca85669625fe16439064ad Mon Sep 17 00:00:00 2001
+From: Joe LeVeque <jolevequ@microsoft.com>
+Date: Fri, 17 May 2019 21:49:00 +0000
+Subject: [PATCH] enable-parallel-build
+
+---
+ debian/rules | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
 diff --git a/debian/rules b/debian/rules
-index 0906e53..6e96ffe 100755
+index 3ecf781..13bb8fe 100755
 --- a/debian/rules
 +++ b/debian/rules
-@@ -38,6 +38,13 @@ export DO_LPF=1
- CONFFLAGS+=--enable-use-sockets
+@@ -49,6 +49,13 @@ ifeq ($(DEB_HOST_ARCH),ppc64el)
+   export DEB_CFLAGS_MAINT_STRIP += -O3
  endif
- 
+
 +ifeq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
 +  PARALLEL :=
 +else
@@ -14,9 +23,9 @@ index 0906e53..6e96ffe 100755
 +endif
 +
  %:
- 	dh $@ --parallel --with autoreconf
- 
-@@ -59,17 +66,17 @@ override_dh_auto_build:
+ 	dh $@ --with autoreconf
+
+@@ -73,17 +80,17 @@ override_dh_auto_build:
  	# ldap-enabled build
  	test -f Makefile && $(MAKE) distclean || true
  	./configure --with-ldap --with-ldapcrypto CFLAGS="$(CFLAGS) -DNSUPDATE" $(CONFFLAGS) LIBS="$(LIBS) -latomic"
@@ -34,9 +43,8 @@ index 0906e53..6e96ffe 100755
  	./configure CFLAGS="$(CFLAGS) -DNSUPDATE" $(CONFFLAGS) LIBS="$(LIBS) -latomic"
 -	$(MAKE)
 +	$(MAKE) $(PARALLEL)
- 
- override_dh_install:
- 	# rename some upstream files
--- 
-2.25.1
+ 	# keama build
+ 	$(MAKE) -C keama
 
+--
+2.25.1
