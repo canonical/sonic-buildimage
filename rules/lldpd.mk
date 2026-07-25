@@ -1,20 +1,23 @@
-# lldpd package
+# lldpd package — stock Ubuntu online deb (all SONiC patches upstreamed)
 
-LLDPD_VERSION = 1.0.16
-LLDPD_VERSION_SUFFIX = 1+deb12u1
-LLDPD_VERSION_FULL = $(LLDPD_VERSION)-$(LLDPD_VERSION_SUFFIX)
+LLDPD_VERSION = 1.0.19
+LLDPD_VERSION_FULL = $(LLDPD_VERSION)-1
+
+LLDPD_POOL_URL = http://archive.ubuntu.com/ubuntu/pool/universe/l/lldpd
 
 LLDPD = lldpd_$(LLDPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
-$(LLDPD)_DEPENDS += $(LIBSNMP_DEV)
-$(LLDPD)_RDEPENDS += $(LIBSNMP)
-$(LLDPD)_SRC_PATH = $(SRC_PATH)/lldpd
-SONIC_MAKE_DEBS += $(LLDPD)
+$(LLDPD)_URL = $(LLDPD_POOL_URL)/$(LLDPD)
+SONIC_ONLINE_DEBS += $(LLDPD)
 
 LIBLLDPCTL = liblldpctl-dev_$(LLDPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
-$(eval $(call add_derived_package,$(LLDPD),$(LIBLLDPCTL)))
+$(LIBLLDPCTL)_URL = $(LLDPD_POOL_URL)/$(LIBLLDPCTL)
+SONIC_ONLINE_DEBS += $(LIBLLDPCTL)
 
+# NOTE: lldpd-dbgsym is NOT available as an online deb — Ubuntu dbgsym
+# packages live at ddebs.ubuntu.com (separate archive), not the main pool.
+# LLDPD_DBG is kept as a variable so rules/docker-lldp.mk can reference it
+# without error, but it is intentionally NOT added to SONIC_ONLINE_DEBS.
 LLDPD_DBG = lldpd-dbgsym_$(LLDPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
-$(eval $(call add_derived_package,$(LLDPD),$(LLDPD_DBG)))
 
 # Export these variables so they can be used in a sub-make
 export LLDPD_VERSION
