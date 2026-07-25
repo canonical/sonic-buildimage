@@ -1,28 +1,17 @@
-SHELL = /bin/bash
 .ONESHELL:
+SHELL = /bin/bash
 .SHELLFLAGS += -e
 
-
-MAIN_TARGET = $(FLASHROM)
-DERIVED_TARGETS = $(FLASHROM_DBG)
+MAIN_TARGET = flashrom_$(FLASHROM_VERSION)_$(CONFIGURED_ARCH).deb
+DERIVED_TARGETS = flashrom-dbgsym_$(FLASHROM_VERSION)_$(CONFIGURED_ARCH).deb
 
 $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
-	rm -rf ./flashrom-$(FLASHROM_VERSION_FULL)
-	# Obtain flashrom
-	git clone https://github.com/flashrom/flashrom.git flashrom-$(FLASHROM_VERSION_FULL)
-	pushd ./flashrom-$(FLASHROM_VERSION_FULL)
-
-	# Check out tag: tags/0.9.7
-	git checkout -b flashrom-src v$(FLASHROM_VERSION_FULL)
-
-	# Apply patch series
-	stg init
-	stg import -s ../patch/series
-
-	# Build package
-	dpkg-buildpackage -rfakeroot -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS)
+	rm -rf ./flashrom-*
+	dget -u http://archive.ubuntu.com/ubuntu/pool/main/f/flashrom/flashrom_$(FLASHROM_VERSION).dsc
+	pushd flashrom-*
+	for p in $$(grep -v '^#' ../patch/series 2>/dev/null | grep -v '^$$'); do patch -p1 < "../patch/$$p"; done
+	dpkg-buildpackage -rfakeroot -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
 	popd
-
 	mv $(DERIVED_TARGETS) $* $(DEST)/
 
 $(addprefix $(DEST)/, $(DERIVED_TARGETS)): $(DEST)/% : $(DEST)/$(MAIN_TARGET)

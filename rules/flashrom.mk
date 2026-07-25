@@ -1,16 +1,11 @@
-# flashrom package
-#
+# flashrom package — stock Ubuntu online deb (all SONiC patches upstreamed)
 
-FLASHROM_VERSION_FULL = 0.9.7
+FLASHROM_VERSION = 1.6.0-2ubuntu1
 
-export FLASHROM_VERSION_FULL
+FLASHROM = flashrom_$(FLASHROM_VERSION)_$(CONFIGURED_ARCH).deb
+FLASHROM_POOL_URL = http://archive.ubuntu.com/ubuntu/pool/main/f/flashrom
+$(FLASHROM)_URL = $(FLASHROM_POOL_URL)/$(FLASHROM)
+SONIC_ONLINE_DEBS += $(FLASHROM)
 
-FLASHROM = flashrom_$(FLASHROM_VERSION_FULL)_amd64.deb
-$(FLASHROM)_SRC_PATH = $(SRC_PATH)/flashrom
-SONIC_MAKE_DEBS += $(FLASHROM)
-
-FLASHROM_DBG = flashrom-dbgsym_$(FLASHROM_VERSION_FULL)_amd64.deb
-$(FLASHROM_DBG)_RDEPENDS += $(FLASHROM)
-$(eval $(call add_derived_package,$(FLASHROM),$(FLASHROM_DBG)))
-
-export FLASHROM FLASHROM_DBG
+export FLASHROM_VERSION
+export FLASHROM
