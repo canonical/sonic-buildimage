@@ -407,6 +407,11 @@ EOF
 # override tcpdump profile to allow tcpdump access TACACS config file.
 sudo cp files/apparmor/usr.bin.tcpdump $FILESYSTEM_ROOT/etc/apparmor.d/local/usr.bin.tcpdump
 
+# Ubuntu's rsyslog ships an enforced AppArmor profile; Debian's does not. Override it to allow
+# rsyslogd to run the SONiC event plugin, otherwise every omprog action in
+# /etc/rsyslog.d/*_events.conf fails with EACCES and no sonic-event is ever published.
+sudo cp files/apparmor/usr.sbin.rsyslogd $FILESYSTEM_ROOT/etc/apparmor.d/local/usr.sbin.rsyslogd
+
 ## Set /etc/shadow permissions to -rw-------.
 sudo LANG=c chroot $FILESYSTEM_ROOT chmod 600 /etc/shadow
 
