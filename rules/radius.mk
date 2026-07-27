@@ -1,13 +1,19 @@
-# libpam-radius-auth — resolute: stock Ubuntu online deb (de-fork, no source needed)
+# libpam-radius-auth packages
 
-PAM_RADIUS_VERSION = 3.0.0-1build1
+PAM_RADIUS_VERSION = 1.4.1-1
 
 export PAM_RADIUS_VERSION
 
 LIBPAM_RADIUS = libpam-radius-auth_$(PAM_RADIUS_VERSION)_$(CONFIGURED_ARCH).deb
-LIBPAM_RADIUS_POOL_URL = http://archive.ubuntu.com/ubuntu/pool/universe/libp/libpam-radius-auth
-$(LIBPAM_RADIUS)_URL = $(LIBPAM_RADIUS_POOL_URL)/$(LIBPAM_RADIUS)
-SONIC_ONLINE_DEBS += $(LIBPAM_RADIUS)
+$(LIBPAM_RADIUS)_SRC_PATH = $(SRC_PATH)/radius/pam
+SONIC_MAKE_DEBS += $(LIBPAM_RADIUS)
+
+LIBPAM_RADIUS_DBG = libpam-radius-auth-dbgsym_$(PAM_RADIUS_VERSION)_$(CONFIGURED_ARCH).deb
+$(LIBPAM_RADIUS_DBG)_DEPENDS += $(LIBPAM_RADIUS)
+$(LIBPAM_RADIUS_DBG)_RDEPENDS += $(LIBPAM_RADIUS)
+$(eval $(call add_derived_package,$(LIBPAM_RADIUS),$(LIBPAM_RADIUS_DBG)))
+
+SONIC_STRETCH_DEBS += $(LIBPAM_RADIUS)
 
 # libnss-radius packages
 
