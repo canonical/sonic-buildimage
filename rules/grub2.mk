@@ -1,14 +1,9 @@
 # grub2 package
 #
-# resolute: SONiC does not customize grub itself — the historical patches only
-# adjusted Debian packaging (debian/control, debian/rules) and skipped a cpio
-# test, none of which touch the grub binaries. The rebuilt-from-source debs were
-# therefore functionally identical to Ubuntu's own. Procure the official Ubuntu
-# grub debs directly via SONIC_ONLINE_DEBS (like the kernel), instead of building
-# from source. Versions are pinned for reproducibility; bump GRUB2_VERSION /
-# GRUB2_UNSIGNED_VERSION here when moving to a newer archive build.
-# Secure Boot is unaffected: signed shim/grub/mm come from the separate
-# post-install signing flow, not from these unsigned debs.
+# resolute: fetch stock Ubuntu grub debs via SONIC_ONLINE_DEBS instead of
+# building from source — SONiC's patches only touched Debian packaging, not the
+# grub binaries. Secure Boot is unaffected (signed shim/grub come from the
+# separate post-install signing flow).
 
 GRUB2_VERSION := 2.14-2ubuntu2
 GRUB2_UNSIGNED_VERSION := 2.14-2ubuntu1
@@ -35,6 +30,7 @@ $(GRUB_PC_BIN)_URL = $(GRUB2_POOL_URL)/$(GRUB_PC_BIN)
 SONIC_ONLINE_DEBS += $(GRUB_PC_BIN)
 endif
 
+# resolute: Ubuntu ships grub-efi-*-bin from a separate src:grub2-unsigned package (own version), unlike Debian's single src:grub2
 ifeq ($(CONFIGURED_ARCH),amd64)
 GRUB_EFI_AMD64 = grub-efi-amd64_$(GRUB2_UNSIGNED_VERSION)_$(CONFIGURED_ARCH).deb
 $(GRUB_EFI_AMD64)_URL = $(GRUB2_UNSIGNED_POOL_URL)/$(GRUB_EFI_AMD64)

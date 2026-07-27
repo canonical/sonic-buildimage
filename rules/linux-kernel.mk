@@ -1,9 +1,7 @@
-# linux kernel package — Launchpad PPA prebuilt (linux-sonic 7.0.0-1002.2)
-#
-# Source: ~canonical-kernel-team/+archive/ubuntu/bootstrap (resolute series).
-# Procured via SONIC_ONLINE_DEBS (curl +files URL), not built from source.
-# Package style: Ubuntu (image depends on separate linux-modules; no linux-kbuild;
-# build-script tree ships inside linux-headers).
+# linux kernel package — prebuilt linux-sonic from the Launchpad PPA
+# (canonical-kernel-team/bootstrap), fetched via SONIC_ONLINE_DEBS, not built
+# from source. Ubuntu packaging: image depends on separate linux-modules, no
+# linux-kbuild, build-script tree ships inside linux-headers.
 
 KERNEL_VERSION = 7.0.0
 KERNEL_ABISUFFIX = -1002
@@ -15,16 +13,17 @@ ifeq ($(CONFIGURED_ARCH), armhf)
 # Override kernel version for ARMHF as it uses arm MP (multi-platform) for short version
 KVERSION ?= $(KVERSION_SHORT)-armmp
 else
+# Ubuntu linux-sonic ABI string omits the arch (unlike Debian's -amd64), so KVERSION = KVERSION_SHORT
 KVERSION ?= $(KVERSION_SHORT)
 endif
 
 export KVERSION_SHORT KVERSION KERNEL_VERSION KERNEL_ABISUFFIX KERNEL_FEATURESET KERNEL_PKGVERSION
 
-# Launchpad PPA binary pool (ppa.launchpadcontent.net direct 200; the +files URL's 303
-# target launchpadlibrarian.net is unreachable from the build env — see Task 0).
+# Launchpad PPA binary pool — use ppa.launchpadcontent.net directly; the +files
+# URL redirects to launchpadlibrarian.net, which is unreachable from the build env.
 KERNEL_PPA_URL = https://ppa.launchpadcontent.net/canonical-kernel-team/bootstrap/ubuntu/pool/main/l/linux-sonic
 
-# common headers (architecture-independent, all) — MAIN_TARGET
+# common headers (MAIN_TARGET)
 LINUX_HEADERS_COMMON = linux-sonic-headers-$(KERNEL_VERSION)$(KERNEL_ABISUFFIX)_$(KERNEL_PKGVERSION)_all.deb
 $(LINUX_HEADERS_COMMON)_URL = $(KERNEL_PPA_URL)/$(LINUX_HEADERS_COMMON)
 

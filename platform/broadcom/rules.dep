@@ -3,6 +3,7 @@ include $(PLATFORM_PATH)/sai.dep
 # TODO(trixie): re-enable modules after updating for Trixie
 include $(PLATFORM_PATH)/platform-modules-s6000.dep
 include $(PLATFORM_PATH)/platform-modules-dell.dep
+# resolute: entries below commented to mirror the disabled includes in rules.mk (dell/XGS-only; DNX, legacy-TH, rpc/saiserver/pde, non-dell vendors dropped)
 #include $(PLATFORM_PATH)/platform-modules-arista.dep
 #include $(PLATFORM_PATH)/platform-modules-nexthop.dep
 #include $(PLATFORM_PATH)/platform-modules-ingrasys.dep

@@ -148,6 +148,7 @@ sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install pigz
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install busybox linux-base
 echo '[INFO] Install SONiC linux kernel image'
 ## Note: duplicate apt-get command to ensure every line return zero
+## resolute: Ubuntu linux-sonic ships kernel modules in a separate linux-modules deb (Debian bundled them in linux-image)
 sudo cp $debs_path/initramfs-tools-core_*.deb $debs_path/initramfs-tools_*.deb $debs_path/linux-image-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb $debs_path/linux-modules-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb $FILESYSTEM_ROOT
 basename_deb_packages=$(basename -a $debs_path/initramfs-tools-core_*.deb $debs_path/initramfs-tools_*.deb $debs_path/linux-image-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb $debs_path/linux-modules-${LINUX_KERNEL_VERSION}_*_${CONFIGURED_ARCH}.deb | sed 's,^,./,')
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt -y install $basename_deb_packages
@@ -304,9 +305,8 @@ sudo LANG=C chroot $FILESYSTEM_ROOT usermod -aG redis $USERNAME
 
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
     ## Pre-install hardware drivers
-    # resolute (Ubuntu) doesn't ship firmware-linux-nonfree / firmware-intel-misc
-    # (Debian non-free firmware packages). linux-firmware carries the same blobs
-    # and is present in the resolute archive.
+    # Ubuntu has no firmware-linux-nonfree/firmware-intel-misc; linux-firmware
+    # carries the same blobs and is present in the resolute archive.
     sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install linux-firmware
 fi
 
@@ -556,7 +556,8 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
 # Install GCC, needed for building/installing some Python packages
 # resolute: grpcio's setup.py invokes `c++` to probe for libatomic; the `c++`
 # binary lives in the g++ package (not gcc). Install g++ (pulls gcc too).
-# Also install libxml2-dev + libxslt1-dev for lxml (sonic-config-engine dep).
+# Also install libxml2-dev + libxslt1-dev for lxml (sonic-config-engine dep),
+# plus swig + libssl-dev (openssl headers) for chroot-built Python wheels that need them.
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install g++ libxml2-dev libxslt1-dev swig libssl-dev
 
 ## Create /var/run/redis folder for docker-database to mount
