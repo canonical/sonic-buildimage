@@ -50,13 +50,15 @@ start()
         render_static
     else
         # Dynamic configuration: the dhclient hook renders /etc/resolv.conf from
-        # the lease. Drop the static marker so that it may, and make sure the
-        # file exists even before the first lease arrives.
-        rm -f ${STATIC_MARKER}
-        if [[ -L ${RESOLV_CONF} || ! -e ${RESOLV_CONF} ]]; then
+        # the lease. Reset the file when static configuration has just been
+        # removed — its nameservers are stale, and nothing else would clear them
+        # until a lease event happens to arrive — but leave a file the hook has
+        # already written alone, and make sure one exists before the first lease.
+        if [[ -e ${STATIC_MARKER} || -L ${RESOLV_CONF} || ! -e ${RESOLV_CONF} ]]; then
             rm -f ${RESOLV_CONF}
             install -m 644 ${RESOLV_CONF_HEAD} ${RESOLV_CONF}
         fi
+        rm -f ${STATIC_MARKER}
     fi
 
     ${UPDATE_CONTAINERS}
