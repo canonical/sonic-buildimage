@@ -379,7 +379,6 @@ sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y in
     auditd                  \
     linux-perf              \
     util-linux-extra        \
-    resolvconf              \
     lsof                    \
     sysstat                 \
     xxd                     \
@@ -908,10 +907,10 @@ sudo rm -f $INSTALLER_PAYLOAD $FILESYSTEM_SQUASHFS
 sudo du -hsx $FILESYSTEM_ROOT
 sudo mkdir -p $FILESYSTEM_ROOT/var/lib/docker
 
-## Clear DNS configuration inherited from the build server
-sudo rm -f $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d/original || true
-sudo mkdir -p $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d
-sudo cp files/image_config/resolv-config/resolv.conf.head $FILESYSTEM_ROOT/etc/resolvconf/resolv.conf.d/head
+## Clear DNS configuration inherited from the build server. resolv-config.service
+## and the dhclient hook render /etc/resolv.conf from the SONiC templates on boot.
+sudo rm -f $FILESYSTEM_ROOT/etc/resolv.conf
+sudo cp files/image_config/resolv-config/resolv.conf.head $FILESYSTEM_ROOT/etc/resolv.conf
 
 ## Optimize filesystem size
 if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ]; then
