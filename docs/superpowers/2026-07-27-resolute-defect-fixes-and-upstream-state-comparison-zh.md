@@ -175,6 +175,26 @@ resolved 既表达不了 `ndots` 也表达不了 `timeout`，其 stub 解析器�
 
 重启后的整机状态：14 个容器，BGP v4 136 / v6 73 已建立，215 条 ASIC 路由，PortChannel200 LACP Up。
 
+### DHCP 路径
+
+管理口之所以是静态，仅仅因为手写的那份 T0 minigraph 这么写；于是把它切到 DHCP，以检验改造的另一半：
+从运行态配置里删除 `MGMT_INTERFACE`、重启 `interfaces-config`，并预约一次重启作为兜底，以防租约给出
+不同地址。并没有 —— 该地址是保留地址 —— `eth0` 以 `dynamic` 起来，两个 dhclient 实例都在运行。
+
+不过该租约**不携带 `domain-name-servers`**（只有 subnet mask、routers、lease time 和 server
+identifier），因此钩子正确地没有去动 `/etc/resolv.conf`，而不是把它清空。于是改用 source 钩子并以
+dhclient 会设置的同一组环境变量调用 `make_resolv_conf()` 来检验其渲染 —— 这正是 dhclient-script 调用
+它的方式：文件写入了 search 域和两个 nameserver，`update-containers` 把它们同步进了容器，
+而在静态标记存在时钩子正确地拒绝改动任何东西。
+
+这次验证还揪出了本次工作自身的一个缺陷：动态分支只在 `/etc/resolv.conf` 是软链或缺失时才替换它，
+于是静态配置遗留的 nameserver 会跨越切换、并在之后的重启中继续存活。已在 `6d534d9aa1` 修复 ——
+静态标记仍在时重置该文件，其余情况保持不动。
+
+管理口**已保留在 DHCP 上**，写入存盘配置并跨重启确认。注意：由于该 DHCP 服务器不下发 DNS，
+除非用 `config dns nameserver add` 配一个，交换机将没有 nameserver；另外将来若执行
+`config load_minigraph`，静态地址会回来，因为 minigraph 里仍然声明着它。
+
 ---
 
 ## 6. 全状态对比：上游 sonic-net 对自建
@@ -250,8 +270,8 @@ d605df6b58  build(resolute): drop the libpam-radius-auth de-fork
 
 遗留：
 
-- **resolv.conf 改造的 DHCP 路径尚未验证。** 这台交换机的管理口是静态配置，
-  `dhclient-enter-hooks.d/sonic-resolv` 在这里不会被执行；需要一台管理口走 DHCP 租约的 DUT。
+- **仍未遇到会下发 DNS 的 DHCP 服务器。** 钩子已安装、会被 source、渲染正确，交换机的管理口现在也跑在
+  DHCP 上 —— 但该服务器不发 `domain-name-servers`，所以下发传播是用模拟租约而非真实租约验证的。
 - **`dmesg.service` 让 sysready 持续为红。** 该 unit 是 Ubuntu 独有，`Type=idle` 且无
   `RemainAfterExit`，跑完数秒即变为 inactive。无害，但等待 sysready 的测试会超时。
   drop-in、mask，或加入监控忽略列表，任一即可闭环。

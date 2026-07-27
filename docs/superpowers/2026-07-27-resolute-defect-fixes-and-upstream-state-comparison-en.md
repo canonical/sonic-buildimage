@@ -194,6 +194,31 @@ All four fixes hold on the installed image:
 Switch-level state after the reboot: 14 containers, BGP v4 136 / v6 73 established, 215 ASIC routes,
 PortChannel200 LACP up.
 
+### The DHCP path
+
+The management interface was static only because the hand-written T0 minigraph says so, so it was moved
+to DHCP to exercise the other half of the rework: `MGMT_INTERFACE` removed from the running configuration,
+`interfaces-config` restarted, a reboot scheduled as a fallback in case the lease brought a different
+address. It did not — the address is a reservation — and `eth0` came up `dynamic` with both dhclient
+instances running.
+
+The lease, however, carries no `domain-name-servers` (only subnet mask, routers, lease time and server
+identifier), so the hook correctly left `/etc/resolv.conf` untouched rather than emptying it. Its
+rendering was therefore exercised by sourcing the hook and calling `make_resolv_conf()` with the
+environment dhclient sets, which is exactly how dhclient-script invokes it: the file gained the search
+domain and both nameservers, `update-containers` propagated them into the containers, and with the static
+marker present the hook correctly declined to touch anything.
+
+That verification also caught a defect in this work: the dynamic branch only replaced `/etc/resolv.conf`
+when it was a symlink or missing, so nameservers left over from static configuration survived the
+transition and the reboots after it. Fixed in `6d534d9aa1` — the file is reset when the static marker is
+still present, and left alone otherwise.
+
+The management interface has been **left on DHCP**, saved to the configuration and confirmed across a
+reboot. Note that with this DHCP server offering no DNS, the switch has no nameserver unless one is
+configured with `config dns nameserver add`, and that a future `config load_minigraph` would put the
+static address back, since the minigraph still declares it.
+
 ---
 
 ## 6. Full-state comparison: upstream sonic-net versus our build
@@ -278,9 +303,9 @@ pushed to `sonic-net`.
 
 Open:
 
-- **The DHCP path of the resolv.conf rework is unverified.** This switch has a statically configured
-  management interface, so `dhclient-enter-hooks.d/sonic-resolv` never runs here; it needs a DUT whose
-  management interface takes a lease.
+- **A DHCP server that offers DNS has still not been seen.** The hook is installed, sourced and renders
+  correctly, and the switch now runs its management interface on DHCP — but this server sends no
+  `domain-name-servers`, so the propagation was verified through a simulated lease rather than a real one.
 - **`dmesg.service` keeps sysready red.** The unit is Ubuntu-only, `Type=idle` with no `RemainAfterExit`,
   so it is inactive within seconds of finishing. Harmless, but tests that wait for sysready will time out.
   A drop-in, a mask, or an entry in the monitor's ignore list would each close it.
