@@ -103,6 +103,11 @@ unless the task requires them.
   upstream remote and rebase the submodule's `202605_resolute` branch onto the
   upstream branch, then bump this repository's gitlink to the rebased commit.
   Do not fast-forward over the resolute-specific commits.
+- After syncing this repository with upstream, run
+  `scripts/submodule-ff-audit.sh` and confirm every submodule is either
+  identical to upstream or a strict fast-forward from it. A diverged submodule
+  forces a rebase of this repository to keep our gitlink, which silently drops
+  upstream changes — including fixes — from the build.
 
 ## Resolute Migration Work
 
