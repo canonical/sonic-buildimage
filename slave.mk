@@ -1498,7 +1498,7 @@ $(DOCKER_LOAD_TARGETS) : $(TARGET_PATH)/%.gz-load : .platform docker-start $$(TA
 $(addprefix $(TARGET_PATH)/, $(SONIC_RFS_TARGETS)) : $(TARGET_PATH)/% : \
         .platform \
         build_debian.sh \
-        $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(INITRAMFS_TOOLS) $(LINUX_KERNEL) $(GRUB2_COMMON)) \
+        $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(INITRAMFS_TOOLS) $(LINUX_KERNEL) $(GRUB2_COMMON) $(GRUB_COMMON) $(GRUB_EFI) $(GRUB_EFI_MAIN) $(GRUB_PC_BIN) $(GRUB_EFI_AMD64_BIN) $(GRUB_EFI_ARM64_BIN)) \
         $$(addprefix $(TARGET_PATH)/,$$($$*_DEPENDENT_RFS)) \
         $(call dpkg_depend,$(TARGET_PATH)/%.dep)
 	$(HEADER)
@@ -1567,7 +1567,6 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
 		$$(addprefix $(PYTHON_WHEELS_PATH)/,$$($$*_PYTHON_WHEELS)) \
         $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(INITRAMFS_TOOLS) \
                 $(LINUX_KERNEL) \
-                $(LINUX_KBUILD) \
                 $(SONIC_DEVICE_DATA) \
                 $(IFUPDOWN2) \
                 $(MAKEDUMPFILE) \
@@ -1592,7 +1591,7 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
                 $(AUDISP_TACPLUS) \
                 $(SYSLOG_COUNTER) \
                 $(SEDUTIL) \
-                $(GRUB2_COMMON)) \
+                $(GRUB2_COMMON) $(GRUB_COMMON) $(GRUB_EFI) $(GRUB_EFI_MAIN) $(GRUB_PC_BIN) $(GRUB_EFI_AMD64_BIN) $(GRUB_EFI_ARM64_BIN)) \
         $$(addprefix $(TARGET_PATH)/,$$($$*_DOCKERS)) \
         $$(addprefix $(TARGET_PATH)/,$$(SONIC_PACKAGES_LOCAL)) \
         $$(addprefix $(FILES_PATH)/,$$($$*_FILES)) \
@@ -1617,7 +1616,6 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(SYSTEM_HEALTH)) \
         $(addprefix $(PYTHON_WHEELS_PATH)/,$(SONIC_HOST_SERVICES_PY3)) \
         $$(addprefix $(TARGET_PATH)/,$$($$*_RFS_DEPENDS)) \
-        $(addprefix $(IMAGE_DISTRO_DEBS_PATH)/,$(LINUX_KBUILD)-install)
 
 	$(HEADER)
 	# Pass initramfs and linux kernel explicitly. They are used for all platforms
