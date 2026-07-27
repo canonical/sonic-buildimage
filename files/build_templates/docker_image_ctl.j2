@@ -412,7 +412,7 @@ function postStartAction()
 {%- else %}
     : # nothing
 {%- endif %}
-    /etc/resolvconf/update-libc.d/update-containers ${DOCKERNAME} &
+    /usr/bin/update-containers ${DOCKERNAME} &
 }
 
 start() {
