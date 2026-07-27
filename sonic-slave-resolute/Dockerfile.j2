@@ -844,7 +844,7 @@ COPY buildinfo/cargo-wrapper /usr/local/bin/cargo
 RUN chmod 0755 /usr/local/bin/cargo
 
 {# Include vendor-defined rules for slave container if it exists.  Contained in ../files #}
-{% with DEBIAN_VERSION='trixie' %}
+{% with DEBIAN_VERSION='resolute' %}
 {% include 'files/sonic-slave-Dockerfile.vendor.j2' ignore missing %}
 {% endwith %}
 
