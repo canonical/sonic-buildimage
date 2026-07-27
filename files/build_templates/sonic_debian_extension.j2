@@ -545,7 +545,10 @@ sudo cp $IMAGE_CONFIGS/resolv-config/resolv-config.sh $FILESYSTEM_ROOT/usr/bin/
 sudo cp $IMAGE_CONFIGS/resolv-config/resolv.conf.j2 $FILESYSTEM_ROOT_USR_SHARE_SONIC_TEMPLATES/
 sudo cp $IMAGE_CONFIGS/resolv-config/resolv.conf.head $FILESYSTEM_ROOT_USR_SHARE_SONIC_TEMPLATES/
 echo "resolv-config.service" | sudo tee -a $GENERATED_SERVICE_FILE
-sudo LANG=C chroot $FILESYSTEM_ROOT systemctl disable resolv-config.service
+# Upstream disables resolvconf.service here so that Debian's resolvconf does not
+# compete with SONiC's. Ubuntu has no such package and no such unit, and
+# resolv-config.service itself is started through the generated service list, so
+# there is nothing to disable.
 sudo cp $IMAGE_CONFIGS/resolv-config/update-containers $FILESYSTEM_ROOT/usr/bin/
 sudo mkdir -p $FILESYSTEM_ROOT/etc/dhcp/dhclient-enter-hooks.d/
 sudo cp $IMAGE_CONFIGS/resolv-config/dhclient-enter-hook $FILESYSTEM_ROOT/etc/dhcp/dhclient-enter-hooks.d/sonic-resolv
