@@ -1,10 +1,8 @@
-SEDUTIL_GITHUB_URL = https://github.com/ChubbyAnt/sedutil
-SEDUTIL_VERSION = 1.15-5ad84d8
+# resolute: fetch stock Ubuntu sedutil deb via SONIC_ONLINE_DEBS instead of
+# binary-repackaging from GitHub. Ubuntu provides sedutil 1.20.0 in universe.
+
+SEDUTIL_VERSION = 1.20.0-2build1
 SEDUTIL = sedutil_$(SEDUTIL_VERSION)_$(CONFIGURED_ARCH).deb
-$(SEDUTIL)_SRC_PATH = $(SRC_PATH)/sedutil
-
-SONIC_MAKE_DEBS += $(SEDUTIL)
-
-export SEDUTIL_GITHUB_URL
-export SEDUTIL_VERSION
-export SEDUTIL
+SEDUTIL_POOL_URL = http://archive.ubuntu.com/ubuntu/pool/universe/s/sedutil
+$(SEDUTIL)_URL = $(SEDUTIL_POOL_URL)/$(SEDUTIL)
+SONIC_ONLINE_DEBS += $(SEDUTIL)

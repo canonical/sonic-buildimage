@@ -1,6 +1,6 @@
 # monit package
 
-MONIT_VERSION = 5.34.3-1
+MONIT_VERSION = 5.35.2-3
 
 export MONIT_VERSION
 

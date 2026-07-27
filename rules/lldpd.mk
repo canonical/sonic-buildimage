@@ -1,7 +1,11 @@
 # lldpd package
+#
+# Ubuntu source package, not the stock archive deb: patch 0001 is not upstream
+# in 1.0.19 and dockers/docker-lldp/lldpmgrd relies on its non-zero exit code
+# to retry port configuration.
 
-LLDPD_VERSION = 1.0.16
-LLDPD_VERSION_SUFFIX = 1+deb12u1
+LLDPD_VERSION = 1.0.19
+LLDPD_VERSION_SUFFIX = 1
 LLDPD_VERSION_FULL = $(LLDPD_VERSION)-$(LLDPD_VERSION_SUFFIX)
 
 LLDPD = lldpd_$(LLDPD_VERSION_FULL)_$(CONFIGURED_ARCH).deb
