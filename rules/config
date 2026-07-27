@@ -372,7 +372,12 @@ ENABLE_BOOTCHART = n
 
 # INCLUDE_FIPS - support FIPS feature, only for amd64 or arm64, armhf not supported yet
 # ENABLE_FIPS - support FIPS flag, if enabled, no additional config requred for the image to support FIPS
-INCLUDE_FIPS ?= y
+# resolute: off by default. The FIPS mirror publishes no fips/resolute/ tree, so
+# the only usable binaries are trixie's, and several are older than what resolute
+# ships -- notably python3.13/libpython3.13 against resolute's 3.13-free rootfs.
+# Nothing here has been tested with FIPS on, so take Ubuntu's own openssl, openssh,
+# python and golang instead. See rules/sonic-fips.mk for the trixie version pins.
+INCLUDE_FIPS ?= n
 ENABLE_FIPS ?= n
 
 # SONIC_SLAVE_DOCKER_DRIVER - set the sonic slave docker storage driver
