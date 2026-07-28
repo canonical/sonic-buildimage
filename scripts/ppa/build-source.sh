@@ -13,6 +13,18 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 REPO=$PWD
 
+# 每个包一个 $WORK；set -e 下任何一个包中途失败都会让脚本立即退出，跳过
+# 该包循环体末尾原本的清理。用一个数组记录所有已创建的 $WORK，EXIT trap
+# 统一清理——只清最后一个是不够的，前面已成功的包的 $WORK 目录不会自己消失。
+WORK_DIRS=()
+cleanup_work_dirs() {
+    local d
+    for d in "${WORK_DIRS[@]}"; do
+        rm -rf "$d"
+    done
+}
+trap cleanup_work_dirs EXIT
+
 for PKG in "$@"; do
     echo "=== $PKG"
     # 用 read 而非 eval：DERIVED_DEBS 的值含空格，eval 会把它按词拆开去执行
@@ -30,6 +42,7 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     fi
 
     WORK=$(mktemp -d)
+    WORK_DIRS+=("$WORK")
     OUT="$REPO/target/source/$PKG"
     mkdir -p "$OUT"
 
@@ -61,7 +74,8 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
 
     # 该 upstream 版本首次上传要带 orig（-sa）；后续必须 -sd，否则 Launchpad
     # 会因 orig 校验和冲突 reject。以 PPA pool 里是否已有该 orig 为准；
-    # 无法判定时保守用 -sd 并提示。
+    # 无法判定时保守用 -sa —— 多余重传一次 orig 通常无害，但首次上传缺 orig
+    # 会被 Launchpad 直接拒绝，两害相权取其轻。
     # pool URL 由 query.mk 给出(见 Q_PPA_POOL_URL),不在这里用 sed 重推一遍
     # ppa_pool_dir 的逻辑 —— 那会让同一规则存在两份实现。
     SA_FLAG=-sd
@@ -80,15 +94,21 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     # $WORK also still holds dget's original stock download (same basenames
     # minus our suffix): a blanket */*.dsc glob would carry that stock .dsc
     # into $OUT too, and a consumer that expects exactly one .dsc there (e.g.
-    # build-clean.sh) would break. Scope the move to the version we just
-    # built; only pull in the shared orig when -sa actually referenced it.
+    # build-clean.sh) would break. Scope the move to the version we just built.
+    #
+    # The orig tarball is collected independently of $SA_FLAG: -sd only tells
+    # dpkg-buildpackage not to *reference* the orig in *.changes, it does not
+    # delete the physical .orig.tar.* that dget already placed in $WORK. So the
+    # orig must always be picked up when present, or build-clean.sh's
+    # `dpkg-source -x` (which needs the orig alongside the .dsc) breaks on
+    # every -sd run — i.e. every build after a package's first upload.
     rm -f "$OUT"/*
     mv ./"${Q_SOURCE}_${Q_STOCK_VERSION}${Q_SUFFIX}"* "$OUT"/
-    if [ "$SA_FLAG" = -sa ]; then
-        mv ./*.orig.tar.* "$OUT"/
-    fi
+    shopt -s nullglob
+    orig=(./*.orig.tar.*)
+    shopt -u nullglob
+    [ "${#orig[@]}" -eq 0 ] || mv "${orig[@]}" "$OUT"/
     popd >/dev/null
-    rm -rf "$WORK"
 
     echo "  -> $OUT"
     ls -1 "$OUT"
