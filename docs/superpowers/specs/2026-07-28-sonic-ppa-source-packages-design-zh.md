@@ -204,6 +204,8 @@ scripts/ppa/query.mk             唯一事实出口：在最小 stub 上下文�
                                  deb 清单以 key=value 打印。下面三个脚本与单测
                                  共用它，因此这些信息只有 rules/*.mk 一个来源。
 scripts/ppa/build-source.sh      容器内：产出未签名源码包 → target/source/<pkg>/
+scripts/ppa/build-clean.sh       在一次性 ubuntu:resolute 容器里构建源码包，
+                                 模拟 Launchpad builder（验收第 1 项）
 scripts/ppa/sign-upload.sh       宿主机：debsign → dput
 scripts/ppa/manifest.sh          make ppa-manifest 的实现，输出状态表
 ```
@@ -381,7 +383,9 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 
 每个包独立验收，四项全过才算迁移完成：
 
-1. **源码包可在干净 chroot 中构建。** 用 `sbuild` 或 `pbuilder` 以 resolute 干净环境构建生成的 `.dsc`，不依赖 slave 容器的任何预装内容与网络。这一步在上传前本地完成，用来提前暴露 §3.7 的树外动作丢失。**前置条件：本项目目前没有 resolute 的 sbuild/pbuilder chroot，需新建**（在产出第一个源码包那一步一并建，见 §11 第 2 步）。
+1. **源码包可在干净环境中构建。** 用 `scripts/ppa/build-clean.sh` 在一次性 `ubuntu:resolute` 容器里构建生成的 `.dsc`，不依赖 slave 容器的任何预装内容。这一步在上传前本地完成，用来提前暴露 §3.7 的树外动作丢失。
+
+  刻意**不用** `sbuild`/`pbuilder`：那需要往宿主机装 4 个包、建持久 `/srv/chroot` 树、`sbuild-adduser` 再重新登录，全部要 sudo；而本项目的规矩是宿主机改动只作最后手段。`ubuntu:resolute` 正是 slave 镜像自己的 `FROM` base，构建时已经拉好，`docker run --rm` 每次从原始镜像起因而天然干净，且**没有** slave 里那个 `Dh_Lib.pm` 补丁 —— dbgsym 会如实产出 `.ddeb`，顺带验证了 §3.6。保真度与 sbuild 相同：Launchpad builder 同样用 apt 解 `Build-Depends`，只是构建过程本身没有外网。
 2. **产物文件清单一致。** `dpkg -c` 对比 PPA 产物与本地自建产物，除版本号字符串外文件列表一致。这是抓 `lm-sensors` 那类静默缺失的关键一项。
 3. **二进制包集合一致。** PPA 实际发布的 deb 名单与 `rules/<pkg>.mk` 声明的主包 + 派生包集合完全对应，无缺无多。
 4. **整镜像构建通过。** `SONIC_PPA_PACKAGES` 含该包的情况下走完 vs 与 broadcom 两个目标。
@@ -407,7 +411,7 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 ## 11. 实现顺序
 
 1. `rules/config` 三个变量 + `rules/functions` 四个函数 + `scripts/ppa/query.mk` + 单测夹具。此时 `SONIC_PPA_PACKAGES` 为空，构建行为零变化。
-2. `libteam` 接入：改 `.mk` / `.dep`，写 `build-source.sh` 产出源码包，建一个 resolute 的 sbuild/pbuilder chroot（验收第 1 项所需，本项目目前没有），`sbuild` 干净构建验收第 1 项。
+2. `libteam` 接入：改 `.mk` / `.dep`，写 `build-source.sh` 产出源码包，写 `build-clean.sh` 并用它完成验收第 1 项。全程无需 sudo、不动宿主机。
 3. `isc-dhcp` 接入：额外把 `DEB_*_MAINT_STRIP` 内化为一个进 `debian/patches` 的补丁。
 4. `lm-sensors` 接入：额外把 `PROG_EXTRA=sensord` 内化进 `debian/rules`。
 5. `make ppa-manifest`。

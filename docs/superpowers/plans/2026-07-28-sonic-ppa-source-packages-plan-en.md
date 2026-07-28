@@ -6,7 +6,7 @@
 
 **Architecture:** Three switches in `rules/config` decide per package whether it comes from the PPA or is built locally. Four functions in `rules/functions` centralise the version-suffix and pool-URL derivation. Each `rules/<pkg>.mk` gets a pure-insertion mode branch. `scripts/ppa/query.mk` includes `rules/<pkg>.mk` in a minimal stub context and prints key=value, making it the single fact source for both the scripts and the tests. Source packages are generated unsigned inside the slave container; signing and uploading happen on the host.
 
-**Tech Stack:** GNU Make (conditionals, `$(call)` functions), Bash, `devscripts` (`dget` / `dch` / `debsign` / `dpkg-buildpackage -S`), quilt patch format, `sbuild` clean chroot, `dput`.
+**Tech Stack:** GNU Make (conditionals, `$(call)` functions), Bash, `devscripts` (`dget` / `dch` / `debsign` / `dpkg-buildpackage -S`), quilt patch format, a throwaway `ubuntu:resolute` docker container (the clean build environment), `dput`. On the host side only the already-installed `debsign` and `dput` are used — **no sudo and no host modification anywhere**.
 
 **Design document:** [2026-07-28 PPA source-package design](../specs/2026-07-28-sonic-ppa-source-packages-design-en.md)
 
@@ -36,6 +36,7 @@
 | `rules/functions` | The four `ppa_*` derivation functions. Modified, not created. |
 | `scripts/ppa/query.mk` | **The single fact exit**: includes `rules/<pkg>.mk` in a stub context and prints mode, versions, dsc URL, patch dir and deb list as key=value. Shared by three scripts and two test suites. |
 | `scripts/ppa/build-source.sh` | In-container: `dget` stock → patches into `debian/patches` → `dch` → `dpkg-buildpackage -S` → `target/source/<pkg>/`. |
+| `scripts/ppa/build-clean.sh` | Build the source package in a throwaway `ubuntu:resolute` container, modelling the Launchpad builder. Used for acceptance criterion 1. |
 | `scripts/ppa/sign-upload.sh` | On the host: `debsign` plus optional `dput`. |
 | `scripts/ppa/manifest.sh` | Implements `make ppa-manifest`; prints the status table. |
 | `scripts/ppa/tests/functions_test.mk` | Unit tests for the four `ppa_*` functions (10 cases). |
@@ -590,25 +591,73 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Files:**
 - Create: `scripts/ppa/build-source.sh`
+- Create: `scripts/ppa/build-clean.sh`
 - Create: `scripts/ppa/tests/test-build-source.sh`
 
 **Interfaces:**
 - Consumes: `scripts/ppa/query.mk` (Task 1), `LIBTEAM_DSC_URL` / `LIBTEAM_VERSION_STOCK` (Task 2)
-- Produces: `target/source/<pkg>/<source>_<stock><suffix>.dsc` plus the matching `_source.changes`, `.debian.tar.xz`, and the orig depending on `-sa` / `-sd`
+- Produces: `target/source/<pkg>/<source>_<stock><suffix>.dsc` plus the matching `_source.changes`, `.debian.tar.xz`, and the orig depending on `-sa` / `-sd`; `scripts/ppa/build-clean.sh <pkg>` places the binary artifacts in `target/source/<pkg>/build/`
 
-- [ ] **Step 1: Prepare a resolute clean chroot (this project has none today)**
+- [ ] **Step 1: Write `scripts/ppa/build-clean.sh` (the clean-environment builder)**
 
-On the host:
+`sbuild`/`pbuilder` are not used: they would mean installing four packages on the host, building a persistent `/srv/chroot` tree, running `sbuild-adduser` and logging back in — all requiring sudo. This project's rule is that host modifications are a last resort. Use a throwaway `ubuntu:resolute` container instead: it is the slave image's own `FROM` base (`sonic-slave-resolute/Dockerfile.j2:19`), already pulled by the build; `--rm` starts from the pristine image every time and so is clean by construction; and it does **not** carry the slave's `Dh_Lib.pm` patch, so dbgsym comes out as a real `.ddeb`.
+
+Create (`chmod +x`):
 
 ```bash
-sudo apt-get install -y sbuild schroot mmdebstrap devscripts dput
-sudo sbuild-createchroot --arch=amd64 --components=main,universe \
-     resolute /srv/chroot/resolute-amd64 http://archive.ubuntu.com/ubuntu
-sudo sbuild-adduser "$USER"
-schroot -l | grep resolute
+#!/bin/bash
+# Build an already-generated source package inside a throwaway ubuntu:resolute
+# container, to model the Launchpad builder. Acceptance criterion 1.
+#
+# Deliberately not the slave image: the slave preinstalls a lot of build-deps
+# and carries the Dh_Lib.pm patch, so it cannot surface the lost-out-of-tree-
+# action class of problems, nor the .ddeb behaviour.
+# Deliberately not sbuild/pbuilder: those need sudo to install host packages
+# and to build a persistent chroot.
+#
+# Usage: scripts/ppa/build-clean.sh <pkg>
+set -euo pipefail
+
+PKG="${1:?usage: $0 <pkg>}"
+cd "$(dirname "$0")/../.."
+REPO=$PWD
+SRCDIR="$REPO/target/source/$PKG"
+
+ls "$SRCDIR"/*.dsc >/dev/null 2>&1 || { echo "$PKG: no .dsc in $SRCDIR; run build-source.sh first" >&2; exit 1; }
+
+rm -rf "$SRCDIR/build"
+
+# apt-get build-dep ./ reads the unpacked debian/control and needs no deb-src
+# entries, so the ubuntu:resolute image's default sources are enough.
+docker run --rm \
+    -v "$SRCDIR:/src" \
+    -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+    ubuntu:resolute bash -euc '
+        apt-get -qq update
+        apt-get -qq install -y --no-install-recommends build-essential devscripts
+        mkdir /build && cd /build
+        dpkg-source -x /src/*.dsc pkg
+        cd pkg
+        apt-get -qq build-dep -y --no-install-recommends ./
+        dpkg-buildpackage -b -us -uc
+        mkdir -p /src/build
+        cp -a /build/*.deb /build/*.ddeb /src/build/ 2>/dev/null || true
+        chown -R "$HOST_UID:$HOST_GID" /src/build
+    '
+
+echo "== $PKG built in a clean ubuntu:resolute container:"
+ls -1 "$SRCDIR/build"
 ```
 
-Expected: `schroot -l` lists `chroot:resolute-amd64` (or `source:resolute-amd64`). If `sbuild-createchroot` fails because the series is unknown, use `mmdebstrap resolute /srv/chroot/resolute-amd64 http://archive.ubuntu.com/ubuntu` and hand-write `/etc/schroot/chroot.d/resolute-amd64`. The implementer must log out and back in, or run `newgrp sbuild`, for the group change to take effect.
+First confirm the base image is present locally (the slave build already pulled it):
+
+```bash
+chmod +x scripts/ppa/build-clean.sh
+docker images --format '{{.Repository}}:{{.Tag}}' | grep -x 'ubuntu:resolute'
+./scripts/ppa/build-clean.sh libteam
+```
+
+Expected: `grep -x` prints `ubuntu:resolute`; `build-clean.sh` then reports `libteam: no .dsc in .../target/source/libteam; run build-source.sh first` and exits 1 — the source package does not exist yet, which is what the next steps produce.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -800,21 +849,20 @@ ok   patches ship unapplied
 test-build-source(libteam): all assertions passed
 ```
 
-- [ ] **Step 6: Build in the clean chroot — acceptance criterion 1**
+- [ ] **Step 6: Build in the clean container — acceptance criterion 1**
 
 ```bash
-sbuild --dist=resolute --arch=amd64 --no-run-lintian \
-       target/source/libteam/libteam_1.31-1build4+sonic1~ppa1.dsc
+./scripts/ppa/build-clean.sh libteam
 ```
 
-Expected: the build succeeds and produces 7 debs (`libteam5`, `libteam5-dbgsym`, `libteam-dev`, `libteamdctl0`, `libteamdctl0-dbgsym`, `libteam-utils`, `libteam-utils-dbgsym`), with the three dbgsym ones carrying the `.ddeb` extension — confirming design §3.6, since a clean chroot has no `Dh_Lib.pm` patch from the slave image.
+Expected: the build succeeds and `target/source/libteam/build/` holds 7 artifacts — `libteam5`, `libteam-dev`, `libteamdctl0`, `libteam-utils` as `.deb`, plus `libteam5-dbgsym`, `libteamdctl0-dbgsym`, `libteam-utils-dbgsym` as **`.ddeb`** (confirming design §3.6: a clean container has no `Dh_Lib.pm` patch from the slave image, so the extension stays Ubuntu-native `.ddeb`).
 
 If it fails on patch fuzz (`stg import` tolerates fuzz, `dpkg-source` applies patches with zero fuzz), refresh each offending patch with `quilt push -a` plus `quilt refresh`, update the corresponding file in `src/libteam/patch/`, and commit the refresh separately.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add scripts/ppa/build-source.sh scripts/ppa/tests/test-build-source.sh
+git add scripts/ppa/build-source.sh scripts/ppa/build-clean.sh scripts/ppa/tests/test-build-source.sh
 git commit -m "build(ppa): generate unsigned source packages from the in-tree patch series
 
 build-source.sh turns a package's stock .dsc plus src/<pkg>/patch/series into
@@ -983,11 +1031,10 @@ Expected: exit code 0, both suites printing `all assertions passed`.
 ```bash
 make sonic-slave-run SONIC_RUN_CMDS="scripts/ppa/build-source.sh isc-dhcp"
 ./scripts/ppa/tests/test-build-source.sh isc-dhcp
-sbuild --dist=resolute --arch=amd64 --no-run-lintian \
-       target/source/isc-dhcp/isc-dhcp_4.4.3-P1-2+sonic1~ppa1.dsc
+./scripts/ppa/build-clean.sh isc-dhcp
 ```
 
-Expected: the test script reports `ok   18 SONiC patches appended in order` (17 existing plus the new `0019`); `sbuild` succeeds. **This is the core acceptance point of this task** — without `0019` taking effect, the build fails with undefined references while linking `svtest` / `dhclient`.
+Expected: the test script reports `ok   18 SONiC patches appended in order` (17 existing plus the new `0019`); `build-clean.sh` succeeds and `target/source/isc-dhcp/build/` holds `isc-dhcp-relay_*.deb` and `isc-dhcp-relay-dbgsym_*.ddeb`. **This is the core acceptance point of this task** — without `0019` taking effect, the build fails with undefined references while linking `svtest` / `dhclient`.
 
 - [ ] **Step 10: Confirm the local build path did not regress**
 
@@ -1151,21 +1198,22 @@ Expected: exit code 0.
 ```bash
 make sonic-slave-run SONIC_RUN_CMDS="scripts/ppa/build-source.sh lm-sensors"
 ./scripts/ppa/tests/test-build-source.sh lm-sensors
-sbuild --dist=resolute --arch=amd64 --no-run-lintian \
-       target/source/lm-sensors/lm-sensors_3.6.2-2build1+sonic1~ppa1.dsc
-ls -1 sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb
-dpkg -c sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb | grep -E 'usr/sbin/sensord$'
+./scripts/ppa/build-clean.sh lm-sensors
+B=target/source/lm-sensors/build
+ls -1 "$B"/sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb
+dpkg -c "$B"/sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb | grep -E 'usr/sbin/sensord$'
 ```
 
-Expected: the test script reports `ok   3 SONiC patches appended in order`; `sbuild` produces 7 debs; `sensord_*.deb` exists; `dpkg -c` output contains `usr/sbin/sensord`. **This is the core acceptance point of this task** — without `0003` taking effect the `sensord` executable is absent while the build may still "succeed".
+Expected: the test script reports `ok   3 SONiC patches appended in order`; `build-clean.sh` produces 7 artifacts under `target/source/lm-sensors/build/`; `sensord_*.deb` exists; `dpkg -c` output contains `usr/sbin/sensord`. **This is the core acceptance point of this task** — without `0003` taking effect the `sensord` executable is absent while the build may still "succeed".
 
 - [ ] **Step 9: Compare against the local build artifact — acceptance criterion 2**
 
 ```bash
 make sonic-slave-run SONIC_RUN_CMDS="rm -f target/debs/resolute/sensord_* && make target/debs/resolute/lm-sensors_3.6.2-2build1_amd64.deb"
+B=target/source/lm-sensors/build
 dpkg -c target/debs/resolute/sensord_3.6.2-2build1_amd64.deb | awk '{print $NF}' | sort > /tmp/local.list
-dpkg -c sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb      | awk '{print $NF}' | sort > /tmp/chroot.list
-diff -u /tmp/local.list /tmp/chroot.list && echo "file lists identical"
+dpkg -c "$B"/sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb     | awk '{print $NF}' | sort > /tmp/clean.list
+diff -u /tmp/local.list /tmp/clean.list && echo "file lists identical"
 ```
 
 Expected: `diff` produces no output and `file lists identical` is printed. This also confirms the local path did not regress after moving `PROG_EXTRA` from the Makefile into `debian/rules`.

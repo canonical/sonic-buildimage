@@ -6,7 +6,7 @@
 
 **架构：** `rules/config` 三个开关决定每个包走 PPA 还是本地自建；`rules/functions` 四个函数把版本后缀与 PPA pool URL 的推导集中掉；`rules/<pkg>.mk` 只做纯插入式的模式分支。`scripts/ppa/query.mk` 在最小 stub 上下文里 include `rules/<pkg>.mk` 并输出 key=value，成为脚本与单测的唯一事实来源。源码包生成在 slave 容器内完成且不签名，签名与上传在宿主机。
 
-**技术栈：** GNU Make（条件、`$(call)` 函数）、Bash、`devscripts`（`dget` / `dch` / `debsign` / `dpkg-buildpackage -S`）、`quilt` 补丁格式、`sbuild` 干净 chroot、`dput`。
+**技术栈：** GNU Make（条件、`$(call)` 函数）、Bash、`devscripts`（`dget` / `dch` / `debsign` / `dpkg-buildpackage -S`）、`quilt` 补丁格式、一次性 `ubuntu:resolute` docker 容器（干净构建环境）、`dput`。宿主机侧只用已装好的 `debsign` 与 `dput`，**全程无需 sudo、不动宿主机**。
 
 **设计文档：** [2026-07-28 PPA 源码包设计](../specs/2026-07-28-sonic-ppa-source-packages-design-zh.md)
 
@@ -36,6 +36,7 @@
 | `rules/functions` | 四个 `ppa_*` 推导函数。修改，不新建。 |
 | `scripts/ppa/query.mk` | **唯一事实出口**：在 stub 上下文里 include `rules/<pkg>.mk`，把模式、版本、dsc URL、补丁目录、deb 清单以 key=value 打印。被三个脚本与两个单测共用。 |
 | `scripts/ppa/build-source.sh` | 容器内：`dget` stock → 补丁进 `debian/patches` → `dch` → `dpkg-buildpackage -S` → `target/source/<pkg>/`。 |
+| `scripts/ppa/build-clean.sh` | 在一次性 `ubuntu:resolute` 容器里构建源码包，模拟 Launchpad builder。验收第 1 项用。 |
 | `scripts/ppa/sign-upload.sh` | 宿主机：`debsign` + 可选 `dput`。 |
 | `scripts/ppa/manifest.sh` | `make ppa-manifest` 的实现，打印状态表。 |
 | `scripts/ppa/tests/functions_test.mk` | `ppa_*` 四函数的单测（10 个用例）。 |
@@ -574,25 +575,71 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **文件：**
 - 新建：`scripts/ppa/build-source.sh`
+- 新建：`scripts/ppa/build-clean.sh`
 - 新建：`scripts/ppa/tests/test-build-source.sh`
 
 **接口：**
 - 消费：`scripts/ppa/query.mk`（Task 1）、`LIBTEAM_DSC_URL` / `LIBTEAM_VERSION_STOCK`（Task 2）
-- 产出：`target/source/<pkg>/<source>_<stock><suffix>.dsc` 与同名 `_source.changes`、`.debian.tar.xz`；`orig` 视 `-sa`/`-sd` 而定
+- 产出：`target/source/<pkg>/<source>_<stock><suffix>.dsc` 与同名 `_source.changes`、`.debian.tar.xz`（`orig` 视 `-sa`/`-sd` 而定）；`scripts/ppa/build-clean.sh <pkg>` 把二进制产物放进 `target/source/<pkg>/build/`
 
-- [ ] **Step 1：准备 resolute 干净 chroot（本项目目前没有）**
+- [ ] **Step 1：写 `scripts/ppa/build-clean.sh`（干净环境构建器）**
 
-在宿主机执行：
+不用 `sbuild`/`pbuilder`：那要往宿主机装 4 个包、建持久 `/srv/chroot` 树、`sbuild-adduser` 再重新登录，全部需要 sudo。本项目的规矩是宿主机改动只作最后手段。改用一次性 `ubuntu:resolute` 容器 —— 它正是 slave 镜像自己的 `FROM` base（`sonic-slave-resolute/Dockerfile.j2:19`），构建时已经拉好；`--rm` 每次从原始镜像起因而天然干净；且**没有** slave 里那个 `Dh_Lib.pm` 补丁，dbgsym 会如实产出 `.ddeb`。
+
+新建（`chmod +x`）：
 
 ```bash
-sudo apt-get install -y sbuild schroot mmdebstrap devscripts dput
-sudo sbuild-createchroot --arch=amd64 --components=main,universe \
-     resolute /srv/chroot/resolute-amd64 http://archive.ubuntu.com/ubuntu
-sudo sbuild-adduser "$USER"
-schroot -l | grep resolute
+#!/bin/bash
+# 在一次性 ubuntu:resolute 容器里构建一个已生成的源码包,用来模拟 Launchpad
+# builder。验收标准第 1 项。
+#
+# 刻意不用 slave 镜像:slave 预装了大量 build-dep 并打了 Dh_Lib.pm 补丁,用它
+# 就验不出「树外动作丢失」这类问题,也验不出 .ddeb 行为。
+# 刻意不用 sbuild/pbuilder:那需要 sudo 往宿主机装东西并建持久 chroot。
+#
+# 用法: scripts/ppa/build-clean.sh <pkg>
+set -euo pipefail
+
+PKG="${1:?usage: $0 <pkg>}"
+cd "$(dirname "$0")/../.."
+REPO=$PWD
+SRCDIR="$REPO/target/source/$PKG"
+
+ls "$SRCDIR"/*.dsc >/dev/null 2>&1 || { echo "$PKG: no .dsc in $SRCDIR; run build-source.sh first" >&2; exit 1; }
+
+rm -rf "$SRCDIR/build"
+
+# apt-get build-dep ./ 读的是解包后的 debian/control,不需要 deb-src 源,
+# 所以 ubuntu:resolute 镜像默认的 sources 就够。
+docker run --rm \
+    -v "$SRCDIR:/src" \
+    -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+    ubuntu:resolute bash -euc '
+        apt-get -qq update
+        apt-get -qq install -y --no-install-recommends build-essential devscripts
+        mkdir /build && cd /build
+        dpkg-source -x /src/*.dsc pkg
+        cd pkg
+        apt-get -qq build-dep -y --no-install-recommends ./
+        dpkg-buildpackage -b -us -uc
+        mkdir -p /src/build
+        cp -a /build/*.deb /build/*.ddeb /src/build/ 2>/dev/null || true
+        chown -R "$HOST_UID:$HOST_GID" /src/build
+    '
+
+echo "== $PKG built in a clean ubuntu:resolute container:"
+ls -1 "$SRCDIR/build"
 ```
 
-期望：`schroot -l` 输出含 `chroot:resolute-amd64`（或 `source:resolute-amd64`）。若 `sbuild-createchroot` 因 series 未知失败，改用 `mmdebstrap resolute /srv/chroot/resolute-amd64 http://archive.ubuntu.com/ubuntu` 再手写 `/etc/schroot/chroot.d/resolute-amd64`。执行者需重新登录或 `newgrp sbuild` 让组生效。
+先确认基础镜像在本地（构建 slave 时已拉过）：
+
+```bash
+chmod +x scripts/ppa/build-clean.sh
+docker images --format '{{.Repository}}:{{.Tag}}' | grep -x 'ubuntu:resolute'
+./scripts/ppa/build-clean.sh libteam
+```
+
+期望：`grep -x` 输出 `ubuntu:resolute`；此时 `build-clean.sh` 报 `libteam: no .dsc in .../target/source/libteam; run build-source.sh first` 并退出码 1 —— 源码包还没造出来，这正是接下来几步要做的。
 
 - [ ] **Step 2：写失败的测试**
 
@@ -776,21 +823,20 @@ ok   patches ship unapplied
 test-build-source(libteam): all assertions passed
 ```
 
-- [ ] **Step 6：在干净 chroot 里构建，验收标准第 1 项**
+- [ ] **Step 6：在干净容器里构建，验收标准第 1 项**
 
 ```bash
-sbuild --dist=resolute --arch=amd64 --no-run-lintian \
-       target/source/libteam/libteam_1.31-1build4+sonic1~ppa1.dsc
+./scripts/ppa/build-clean.sh libteam
 ```
 
-期望：构建成功，产出 7 个 deb（`libteam5`、`libteam5-dbgsym`、`libteam-dev`、`libteamdctl0`、`libteamdctl0-dbgsym`、`libteam-utils`、`libteam-utils-dbgsym`），其中 3 个 dbgsym 的扩展名是 `.ddeb`（证实设计 §3.6：干净 chroot 里没有 slave 的 `Dh_Lib.pm` 补丁）。
+期望：构建成功，`target/source/libteam/build/` 下 7 个产物 —— `libteam5`、`libteam-dev`、`libteamdctl0`、`libteam-utils` 四个 `.deb`，以及 `libteam5-dbgsym`、`libteamdctl0-dbgsym`、`libteam-utils-dbgsym` 三个 **`.ddeb`**（证实设计 §3.6：干净容器里没有 slave 的 `Dh_Lib.pm` 补丁，扩展名保持 Ubuntu 原生的 `.ddeb`）。
 
 若因补丁 fuzz 失败（`stg import` 容忍 fuzz，`dpkg-source` 应用补丁时零 fuzz），用 `quilt push -a` + `quilt refresh` 逐个 refresh 后更新 `src/libteam/patch/` 里对应的补丁文件，并把 refresh 单独提交。
 
 - [ ] **Step 7：提交**
 
 ```bash
-git add scripts/ppa/build-source.sh scripts/ppa/tests/test-build-source.sh
+git add scripts/ppa/build-source.sh scripts/ppa/build-clean.sh scripts/ppa/tests/test-build-source.sh
 git commit -m "build(ppa): generate unsigned source packages from the in-tree patch series
 
 build-source.sh turns a package's stock .dsc plus src/<pkg>/patch/series into
@@ -957,11 +1003,10 @@ endif
 ```bash
 make sonic-slave-run SONIC_RUN_CMDS="scripts/ppa/build-source.sh isc-dhcp"
 ./scripts/ppa/tests/test-build-source.sh isc-dhcp
-sbuild --dist=resolute --arch=amd64 --no-run-lintian \
-       target/source/isc-dhcp/isc-dhcp_4.4.3-P1-2+sonic1~ppa1.dsc
+./scripts/ppa/build-clean.sh isc-dhcp
 ```
 
-期望：测试脚本报 `ok   18 SONiC patches appended in order`（17 个原有 + 新增的 `0019`）；`sbuild` 构建成功。**这是本任务的核心验收点** —— 若 `0019` 没生效，构建会在链接 `svtest` / `dhclient` 时报 undefined reference 而失败。
+期望：测试脚本报 `ok   18 SONiC patches appended in order`（17 个原有 + 新增的 `0019`）；`build-clean.sh` 构建成功，`target/source/isc-dhcp/build/` 下有 `isc-dhcp-relay_*.deb` 与 `isc-dhcp-relay-dbgsym_*.ddeb`。**这是本任务的核心验收点** —— 若 `0019` 没生效，构建会在链接 `svtest` / `dhclient` 时报 undefined reference 而失败。
 
 - [ ] **Step 10：确认本地自建路径未回归**
 
@@ -1125,21 +1170,22 @@ LM_SENSORS_DSC_URL=http://archive.ubuntu.com/ubuntu/pool/main/l/lm-sensors/lm-se
 ```bash
 make sonic-slave-run SONIC_RUN_CMDS="scripts/ppa/build-source.sh lm-sensors"
 ./scripts/ppa/tests/test-build-source.sh lm-sensors
-sbuild --dist=resolute --arch=amd64 --no-run-lintian \
-       target/source/lm-sensors/lm-sensors_3.6.2-2build1+sonic1~ppa1.dsc
-ls -1 sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb
-dpkg -c sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb | grep -E 'usr/sbin/sensord$'
+./scripts/ppa/build-clean.sh lm-sensors
+B=target/source/lm-sensors/build
+ls -1 "$B"/sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb
+dpkg -c "$B"/sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb | grep -E 'usr/sbin/sensord$'
 ```
 
-期望：测试脚本报 `ok   3 SONiC patches appended in order`；`sbuild` 产出 7 个 deb；`sensord_*.deb` 存在；`dpkg -c` 输出含 `usr/sbin/sensord`。**这是本任务的核心验收点** —— 若 `0003` 没生效，`sensord` 可执行文件不会出现，而构建可能仍然「成功」。
+期望：测试脚本报 `ok   3 SONiC patches appended in order`；`build-clean.sh` 在 `target/source/lm-sensors/build/` 下产出 7 个产物；`sensord_*.deb` 存在；`dpkg -c` 输出含 `usr/sbin/sensord`。**这是本任务的核心验收点** —— 若 `0003` 没生效，`sensord` 可执行文件不会出现，而构建可能仍然「成功」。
 
 - [ ] **Step 9：对比本地自建产物，验收标准第 2 项**
 
 ```bash
 make sonic-slave-run SONIC_RUN_CMDS="rm -f target/debs/resolute/sensord_* && make target/debs/resolute/lm-sensors_3.6.2-2build1_amd64.deb"
-dpkg -c target/debs/resolute/sensord_3.6.2-2build1_amd64.deb | awk '{print $NF}' | sort > /tmp/local.list
-dpkg -c sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb      | awk '{print $NF}' | sort > /tmp/chroot.list
-diff -u /tmp/local.list /tmp/chroot.list && echo "file lists identical"
+B=target/source/lm-sensors/build
+dpkg -c target/debs/resolute/sensord_3.6.2-2build1_amd64.deb        | awk '{print $NF}' | sort > /tmp/local.list
+dpkg -c "$B"/sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb            | awk '{print $NF}' | sort > /tmp/clean.list
+diff -u /tmp/local.list /tmp/clean.list && echo "file lists identical"
 ```
 
 期望：`diff` 无输出，打印 `file lists identical`。这一步同时证实把 `PROG_EXTRA` 从 Makefile 挪进 `debian/rules` 之后本地路径未回归。

@@ -205,6 +205,9 @@ scripts/ppa/query.mk             the single fact exit: includes rules/<pkg>.mk i
                                  by the three scripts below and by the unit tests, so
                                  rules/*.mk stays the only source for those facts.
 scripts/ppa/build-source.sh      in-container: produce unsigned source packages → target/source/<pkg>/
+scripts/ppa/build-clean.sh       build the source package in a throwaway
+                                 ubuntu:resolute container, modelling the
+                                 Launchpad builder (acceptance criterion 1)
 scripts/ppa/sign-upload.sh       on the host: debsign → dput
 scripts/ppa/manifest.sh          implements make ppa-manifest, prints the status table
 ```
@@ -385,7 +388,9 @@ Selection criterion is **risk-dimension coverage**, not "start with the easy one
 
 Each package is accepted independently; all four must pass before its migration counts as done:
 
-1. **The source package builds in a clean chroot.** Build the generated `.dsc` with `sbuild` or `pbuilder` in a clean resolute environment, depending on nothing preinstalled in the slave container and no network. This runs locally before uploading and is what surfaces the lost out-of-tree actions from §3.7 early. **Prerequisite: this project has no resolute sbuild/pbuilder chroot today; one must be created** (done alongside the first source package — see §11 step 2).
+1. **The source package builds in a clean environment.** Build the generated `.dsc` with `scripts/ppa/build-clean.sh` in a throwaway `ubuntu:resolute` container, depending on nothing preinstalled in the slave container. This runs locally before uploading and is what surfaces the lost out-of-tree actions from §3.7 early.
+
+  `sbuild`/`pbuilder` are deliberately **not** used: they would mean installing four packages on the host, building a persistent `/srv/chroot` tree, running `sbuild-adduser` and logging back in — all requiring sudo — while this project's rule is that host modifications are a last resort. `ubuntu:resolute` is the slave image's own `FROM` base, already pulled by the build; `docker run --rm` starts from the pristine image every time and is therefore clean by construction; and it does **not** carry the slave's `Dh_Lib.pm` patch, so dbgsym is emitted as a real `.ddeb`, which incidentally verifies §3.6. Fidelity matches sbuild: a Launchpad builder also resolves `Build-Depends` through apt, and it is only the build itself that has no internet.
 2. **Artifact file lists match.** `dpkg -c` diff between the PPA artifact and the locally built one shows identical file lists apart from version strings. This is the criterion that catches the `lm-sensors` class of silent omission.
 3. **Binary package sets match.** The debs actually published by the PPA correspond exactly to the main plus derived package set declared in `rules/<pkg>.mk` — nothing missing, nothing extra.
 4. **The full image builds.** With the package present in `SONIC_PPA_PACKAGES`, both the vs and broadcom targets complete.
@@ -411,7 +416,7 @@ If any criterion fails, removing the package from `SONIC_PPA_PACKAGES` rolls it 
 ## 11. Implementation order
 
 1. Three variables in `rules/config`, four functions in `rules/functions`, `scripts/ppa/query.mk`, and the unit-test harness. At this point `SONIC_PPA_PACKAGES` is empty and build behaviour is unchanged.
-2. Land `libteam`: change `.mk` / `.dep`, write `build-source.sh` to produce the source package, create a resolute sbuild/pbuilder chroot (needed for acceptance criterion 1; this project has none today), and verify criterion 1 with `sbuild`.
+2. Land `libteam`: change `.mk` / `.dep`, write `build-source.sh` to produce the source package, write `build-clean.sh` and use it to satisfy acceptance criterion 1. No sudo and no host modification anywhere in the sequence.
 3. Land `isc-dhcp`: additionally internalise `DEB_*_MAINT_STRIP` as a patch in `debian/patches`.
 4. Land `lm-sensors`: additionally internalise `PROG_EXTRA=sensord` into `debian/rules`.
 5. `make ppa-manifest`.
