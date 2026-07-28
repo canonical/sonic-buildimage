@@ -441,3 +441,21 @@ SBOM_INCLUDE_LICENSES ?= y
 # (SPDX conversion, provenance emit, license resolution) always
 # warn-and-continue regardless.
 SBOM_STRICT ?= y
+
+# ---- Launchpad PPA 消费（仅 resolute）----
+
+# SONIC_PPA_PACKAGES - 从 PPA 拉取预编译 deb、而不本地自建的包，按 src/ 下的
+# 目录名列出，空格分隔。留空则全部本地自建，构建行为与未引入本机制时一致。
+# 可在 rules/config.user 里覆盖，便于单机把某个包临时切回本地自建。
+SONIC_PPA_PACKAGES ?=
+
+# SONIC_PPA_URL - PPA 的 pool 根 URL。必须用 ppa.launchpadcontent.net 直连，
+# 因为 +files 形式会重定向到 launchpadlibrarian.net，构建环境不可达。
+# 例：https://ppa.launchpadcontent.net/<owner>/<name>/ubuntu
+SONIC_PPA_URL ?=
+
+# SONIC_PPA_SUFFIX - 追加在上游版本号之后的 SONiC 修订后缀。排序位于 stock
+# 版本之上、下一个 Ubuntu 修订之下，因此 Ubuntu 出 SRU 时会自然盖过我们。
+# 同一修订需要重传时用 SONIC_PPA_SUFFIX_<pkg> 覆盖单个包，例：
+#   SONIC_PPA_SUFFIX_libteam ?= +sonic1~ppa2
+SONIC_PPA_SUFFIX ?= +sonic1~ppa1
