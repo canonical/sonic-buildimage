@@ -10,3 +10,4 @@ ifneq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 else ifneq "$(DEB_HOST_ARCH)" "armhf"
 	make test
 endif
+

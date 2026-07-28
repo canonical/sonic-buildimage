@@ -9,7 +9,7 @@ Forwarded: not-needed
 @@ -11,9 +11,6 @@
  # upsteram maintains config.h.in manually
  export AUTOHEADER = true
-
+ 
 -override_dh_auto_configure:
 -	dh_auto_configure -- --disable-readline
 -
@@ -19,7 +19,7 @@ Forwarded: not-needed
 @@ -24,4 +21,4 @@
  %:
  	dh $@ --with=autoreconf
-
+ 
 -.PHONY: override_dh_auto_configure override_dh_auto_test
 +.PHONY: override_dh_auto_test
 --- a/debian/control
@@ -32,4 +32,4 @@ Forwarded: not-needed
 +Build-Depends: debhelper-compat (= 13), libssl-dev, libwrap0-dev, libreadline-dev, openssl <!nocheck>, net-tools <!nocheck>, iproute2 [linux-any] <!nocheck>, netbase <!nocheck>, procps <!nocheck>
  Standards-Version: 4.7.2
  Homepage: http://www.dest-unreach.org/socat/
-
+ 
