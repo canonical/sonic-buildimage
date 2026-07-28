@@ -2,6 +2,7 @@
 # 验证 build-source.sh 为一个包产出的源码包是否正确：
 #   - 产出 .dsc 与 _source.changes
 #   - 上传清单里没有任何 .deb（PPA 只收 source upload）
+#   - 版本号是 stock 版本 + suffix（<STOCK_VERSION><SUFFIX>）
 #   - SONiC 补丁已追加进 debian/patches/series，顺序与 src/<pkg>/patch/series 一致
 #   - 补丁能在零 fuzz 下被 dpkg-source -x 原样应用（Launchpad builder 用的
 #     正是 dpkg-source，不是本地开发循环里容忍 fuzz 的 stg import）
@@ -15,12 +16,20 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     < <(make -s -f scripts/ppa/query.mk PKG="$PKG")
 OUT="target/source/$PKG"
 
-dsc=$(ls "$OUT"/*.dsc 2>/dev/null | head -1)
-[ -n "$dsc" ] || { echo "FAIL: no .dsc in $OUT"; exit 1; }
+# nullglob 数组而非 `ls | head -1`：glob 不匹配时 ls 以非零退出，pipefail 下
+# 会在这条赋值语句本身就把 errexit 触发掉，永远走不到下面的 FAIL 分支。
+shopt -s nullglob
+dsc_candidates=("$OUT"/*.dsc)
+shopt -u nullglob
+[ "${#dsc_candidates[@]}" -gt 0 ] || { echo "FAIL: no .dsc in $OUT"; exit 1; }
+dsc="${dsc_candidates[0]}"
 echo "ok   dsc present: $dsc"
 
-changes=$(ls "$OUT"/*_source.changes 2>/dev/null | head -1)
-[ -n "$changes" ] || { echo "FAIL: no _source.changes in $OUT"; exit 1; }
+shopt -s nullglob
+changes_candidates=("$OUT"/*_source.changes)
+shopt -u nullglob
+[ "${#changes_candidates[@]}" -gt 0 ] || { echo "FAIL: no _source.changes in $OUT"; exit 1; }
+changes="${changes_candidates[0]}"
 echo "ok   changes present: $changes"
 
 if grep -qE '^\s.*\.deb$' "$changes"; then
@@ -31,7 +40,16 @@ echo "ok   changes contains no .deb"
 # 版本号必须是 stock + suffix。逐字段比较而非塞进 grep 正则：$want_ver 里的
 # '.' 在 BRE 里是「任意字符」元字符，塞进 grep 模式会让校验比预期宽松。
 want_ver="${Q_STOCK_VERSION}${Q_SUFFIX}"
-dsc_ver=$(grep '^Version:' "$dsc" | head -1 | sed -e 's/^Version:[[:space:]]*//' -e 's/[[:space:]]*$//')
+# `if cmd; then` 而不是裸的 `x=$(cmd)`：cmd 作为 if 条件时，其非零退出不会
+# 触发 errexit，所以 .dsc 里没有 Version: 字段时能落到下面的 FAIL，而不是
+# 在这条赋值本身就被 set -e 杀掉（.dsc 不匹配用 grep -m1，本来就没有管道，
+# 不需要额外的 head -1）。
+if version_line=$(grep -m1 '^Version:' "$dsc"); then
+    dsc_ver=$(sed -e 's/^Version:[[:space:]]*//' -e 's/[[:space:]]*$//' <<< "$version_line")
+else
+    dsc_ver=""
+fi
+[ -n "$dsc_ver" ] || { echo "FAIL: no Version: field found in $dsc"; exit 1; }
 if [ "$dsc_ver" != "$want_ver" ]; then
     echo "FAIL: $dsc Version is '$dsc_ver', not '$want_ver'"; exit 1
 fi
@@ -43,7 +61,13 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 #   just reads debian/patches/series and does not need patches actually
 #   applied.
 dpkg-source --no-check --skip-patches -x "$dsc" "$tmp/src" >/dev/null
-grep -vE '^\s*(#|$)' "$Q_PATCH_DIR/series" > "$tmp/want"
+# grep 退出 1（没有匹配行）在这里是合法状态：series 里当前一个生效补丁都没有
+# 时就该产出一个空 want，走到下面「0 个补丁」的比较，而不是被 set -e 当成
+# 出错杀掉脚本。用 `|| rc=$?` 显式接住退出码，只有 >1（比如 series 文件本身
+# 读不到）才是真错误。
+rc=0
+grep -vE '^\s*(#|$)' "$Q_PATCH_DIR/series" > "$tmp/want" || rc=$?
+[ "$rc" -le 1 ] || { echo "FAIL: could not read patch series at $Q_PATCH_DIR/series (grep exit $rc)"; exit 1; }
 tail -n "$(wc -l < "$tmp/want")" "$tmp/src/debian/patches/series" > "$tmp/got"
 if ! diff -u "$tmp/want" "$tmp/got"; then
     echo "FAIL: SONiC patches are not appended verbatim at the end of debian/patches/series"; exit 1

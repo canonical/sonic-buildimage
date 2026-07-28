@@ -34,12 +34,18 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     [ -n "${Q_DSC_URL:-}" ] || { echo "$PKG: <PREFIX>_DSC_URL is not set in rules/$PKG.mk" >&2; exit 1; }
     [ -n "${Q_STOCK_VERSION:-}" ] || { echo "$PKG: <PREFIX>_VERSION_STOCK is not set in rules/$PKG.mk" >&2; exit 1; }
 
-    # 补丁里含二进制文件需要 debian/source/include-binaries；本批次没有，
-    # 但要显式报错而不是静默产出一个 dpkg-source 会拒绝的包。
-    if grep -rlq $'^GIT binary patch' "$REPO/$Q_PATCH_DIR"/*.patch 2>/dev/null; then
-        echo "$PKG: patch series contains a binary patch; needs debian/source/include-binaries" >&2
-        exit 1
-    fi
+    # 只看 series 里当前生效的补丁：一个被注释掉、从不会被应用的补丁文件如果
+    # 恰好含二进制 diff，不该拖累这次构建；后面追加补丁的循环也复用这份列表，
+    # 不必对 series 再 grep 一遍。
+    mapfile -t ACTIVE_PATCHES < <(grep -vE '^\s*(#|$)' "$REPO/$Q_PATCH_DIR/series")
+    for p in "${ACTIVE_PATCHES[@]}"; do
+        # 补丁里含二进制文件需要 debian/source/include-binaries；本批次没有，
+        # 但要显式报错而不是静默产出一个 dpkg-source 会拒绝的包。
+        if grep -q $'^GIT binary patch' "$REPO/$Q_PATCH_DIR/$p" 2>/dev/null; then
+            echo "$PKG: $p contains a binary diff; needs debian/source/include-binaries" >&2
+            exit 1
+        fi
+    done
 
     WORK=$(mktemp -d)
     WORK_DIRS+=("$WORK")
@@ -60,10 +66,10 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     # 但补丁本身必须保持未应用 —— builder 会在构建时应用。
     mkdir -p debian/patches
     [ -f debian/patches/series ] || : > debian/patches/series
-    while read -r p; do
+    for p in "${ACTIVE_PATCHES[@]}"; do
         cp "$REPO/$Q_PATCH_DIR/$p" debian/patches/
         echo "$p" >> debian/patches/series
-    done < <(grep -vE '^\s*(#|$)' "$REPO/$Q_PATCH_DIR/series")
+    done
 
     # dget 解包时留下的 .pc 会让 dpkg-source 认为补丁已应用
     rm -rf .pc

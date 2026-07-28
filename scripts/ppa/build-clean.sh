@@ -36,10 +36,13 @@ docker run --rm \
         # 各自允许失配;但至少要有一个产物,否则是真失败,不能被 || true 吞掉。
         cp -a /build/*.deb  /src/build/ 2>/dev/null || true
         cp -a /build/*.ddeb /src/build/ 2>/dev/null || true
+        # chown 必须在下面的产物数量检查之前:检查失败会 exit 1 提前退出容器,
+        # 零产物的情况下 /src/build 仍要归还宿主机用户,否则下一次运行在宿主机
+        # 侧 rm -rf 这个目录会因为它 root 属主而权限不够。
+        chown -R "$HOST_UID:$HOST_GID" /src/build
         n=$(ls -1 /src/build | wc -l)
         [ "$n" -gt 0 ] || { echo "build produced no .deb/.ddeb artifacts" >&2; exit 1; }
         echo "collected $n artifact(s)"
-        chown -R "$HOST_UID:$HOST_GID" /src/build
     '
 
 echo "== $PKG built in a clean ubuntu:resolute container:"
