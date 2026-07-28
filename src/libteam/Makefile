@@ -15,7 +15,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf ./libteam-$(LIBTEAM_VERSION)
 
 	# Get libteam release, debian files
-	dget -u http://archive.ubuntu.com/ubuntu/pool/main/libt/libteam/libteam_$(LIBTEAM_VERSION_FULL).dsc
+	dget -u $(LIBTEAM_DSC_URL)
 	pushd ./libteam-$(LIBTEAM_VERSION)
 
 	# Create a git repository here for stg to apply patches
