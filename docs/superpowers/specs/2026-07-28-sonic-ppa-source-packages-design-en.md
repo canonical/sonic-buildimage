@@ -199,6 +199,11 @@ rules/functions                  4 helper functions (§6.2)
 rules/<pkg>.mk                   1 changed line + 1 ifneq block (§6.3)
 rules/<pkg>.dep                  2 inserted lines (§6.4)
 
+scripts/ppa/query.mk             the single fact exit: includes rules/<pkg>.mk in a
+                                 minimal stub context and prints mode / versions /
+                                 dsc URL / patch dir / deb list as key=value. Shared
+                                 by the three scripts below and by the unit tests, so
+                                 rules/*.mk stays the only source for those facts.
 scripts/ppa/build-source.sh      in-container: produce unsigned source packages → target/source/<pkg>/
 scripts/ppa/sign-upload.sh       on the host: debsign → dput
 scripts/ppa/manifest.sh          implements make ppa-manifest, prints the status table
@@ -246,14 +251,16 @@ ppa_suffix = $(or $(SONIC_PPA_SUFFIX_$(1)),$(SONIC_PPA_SUFFIX))
 ppa_ver = $(if $(filter $(1),$(SONIC_PPA_PACKAGES)),$(call ppa_suffix,$(1)))
 
 # Debian pool second-level directory: libxxx → libx, otherwise the first letter
-pool_dir = $(if $(filter lib%,$(1)),$(shell echo $(1) | cut -c1-4),$(shell echo $(1) | cut -c1))
+ppa_pool_dir = $(if $(filter lib%,$(1)),$(shell echo $(1) | cut -c1-4),$(shell echo $(1) | cut -c1))
 
 # dbgsym is a .ddeb on a PPA; only the URL side changes — make target and on-disk name stay .deb
 ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
-ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
+ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
 ```
 
-`pool_dir`'s `$(shell cut)` runs once per package during make's parse phase, so the cost is negligible; if it ever becomes hot it can be rewritten in pure make.
+All four functions carry the `ppa_` prefix: `rules/functions` is a global namespace, and a generic name like `pool_dir` invites a future collision.
+
+`ppa_pool_dir`'s `$(shell cut)` runs once per package during make's parse phase, so the cost is negligible; if it ever becomes hot it can be rewritten in pure make.
 
 ### 6.3 Shape of the `rules/<pkg>.mk` change
 
@@ -324,7 +331,9 @@ scripts/ppa/build-source.sh <pkg>...
      — patches stay UNAPPLIED; the builder applies them at build time
   4. Check whether any patch contains binary files; error out if so (would need
      debian/source/include-binaries — none in scope today)
-  5. dch -v <stock-version><suffix> --distribution resolute -D resolute
+  5. dch --newversion <stock-version><suffix> --distribution resolute --force-distribution
+     (--force-distribution is required: dch otherwise refuses to change the
+      distribution to anything but the current one)
   6. dpkg-buildpackage -S -sa -us -uc               # or -sd, see below
   7. Emit into target/source/<pkg>/
 
@@ -360,7 +369,7 @@ Selection criterion is **risk-dimension coverage**, not "start with the easy one
 
 | Package | Risk covered | Why it has to be this one |
 |---|---|---|
-| **libteam** | Clean baseline | All 14 patches are in the series, **zero out-of-tree actions**, 6 binaries (3 of them dbgsym), has `_DEPENDS` ordering, has `add_derived_package`. If it fails, the pipeline itself is wrong rather than one package being special. Should be done first. |
+| **libteam** | Clean baseline | All 14 active patches are in the series (4 more are commented out), **zero out-of-tree actions**, 7 binaries (1 main + 6 derived, 3 of them dbgsym), has `_DEPENDS` ordering, has `add_derived_package`. If it fails, the pipeline itself is wrong rather than one package being special. Should be done first. |
 | **isc-dhcp** | Guaranteed build failure class | Without internalising `DEB_CFLAGS_MAINT_STRIP` / `DEB_LDFLAGS_MAINT_STRIP` into `debian/rules` it cannot build. 17 patches (highest fuzz risk). A Debian source uploaded to an Ubuntu PPA. |
 | **lm-sensors** | Builds fine but the artifact is wrong | `PROG_EXTRA=sensord` is a functional out-of-tree variable: losing it raises no error, `sensord` simply does not exist — and `docker-platform-monitor` needs it. This is the only silent-failure class, so it must be exercised in the first batch, and it also tests whether the acceptance criteria in §9 actually catch it. Plus 7 binaries, one of them `_all.deb`, plus nocheck. |
 
@@ -376,7 +385,7 @@ Selection criterion is **risk-dimension coverage**, not "start with the easy one
 
 Each package is accepted independently; all four must pass before its migration counts as done:
 
-1. **The source package builds in a clean chroot.** Build the generated `.dsc` with `sbuild` or `pbuilder` in a clean resolute environment, depending on nothing preinstalled in the slave container and no network. This runs locally before uploading and is what surfaces the lost out-of-tree actions from §3.7 early. **Prerequisite: this project has no resolute sbuild/pbuilder chroot today; one must be created** (part of implementation step 1, see §11).
+1. **The source package builds in a clean chroot.** Build the generated `.dsc` with `sbuild` or `pbuilder` in a clean resolute environment, depending on nothing preinstalled in the slave container and no network. This runs locally before uploading and is what surfaces the lost out-of-tree actions from §3.7 early. **Prerequisite: this project has no resolute sbuild/pbuilder chroot today; one must be created** (done alongside the first source package — see §11 step 2).
 2. **Artifact file lists match.** `dpkg -c` diff between the PPA artifact and the locally built one shows identical file lists apart from version strings. This is the criterion that catches the `lm-sensors` class of silent omission.
 3. **Binary package sets match.** The debs actually published by the PPA correspond exactly to the main plus derived package set declared in `rules/<pkg>.mk` — nothing missing, nothing extra.
 4. **The full image builds.** With the package present in `SONIC_PPA_PACKAGES`, both the vs and broadcom targets complete.
@@ -401,8 +410,8 @@ If any criterion fails, removing the package from `SONIC_PPA_PACKAGES` rolls it 
 
 ## 11. Implementation order
 
-1. Three variables in `rules/config`, four functions in `rules/functions`, the skeletons of the three `scripts/ppa/` scripts, and a resolute sbuild/pbuilder chroot (needed for acceptance criterion 1). At this point `SONIC_PPA_PACKAGES` is empty and build behaviour is unchanged.
-2. Land `libteam`: change `.mk` / `.dep`, have `build-source.sh` produce the source package, verify criterion 1 with `sbuild`.
+1. Three variables in `rules/config`, four functions in `rules/functions`, `scripts/ppa/query.mk`, and the unit-test harness. At this point `SONIC_PPA_PACKAGES` is empty and build behaviour is unchanged.
+2. Land `libteam`: change `.mk` / `.dep`, write `build-source.sh` to produce the source package, create a resolute sbuild/pbuilder chroot (needed for acceptance criterion 1; this project has none today), and verify criterion 1 with `sbuild`.
 3. Land `isc-dhcp`: additionally internalise `DEB_*_MAINT_STRIP` as a patch in `debian/patches`.
 4. Land `lm-sensors`: additionally internalise `PROG_EXTRA=sensord` into `debian/rules`.
 5. `make ppa-manifest`.

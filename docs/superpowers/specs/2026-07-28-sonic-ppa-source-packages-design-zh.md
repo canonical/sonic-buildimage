@@ -199,6 +199,10 @@ rules/functions                  4 个辅助函数（见 §6.2）
 rules/<pkg>.mk                   1 行改动 + 1 个 ifneq 块（见 §6.3）
 rules/<pkg>.dep                  2 行插入（见 §6.4）
 
+scripts/ppa/query.mk             唯一事实出口：在最小 stub 上下文里 include
+                                 rules/<pkg>.mk，把模式/版本/dsc URL/补丁目录/
+                                 deb 清单以 key=value 打印。下面三个脚本与单测
+                                 共用它，因此这些信息只有 rules/*.mk 一个来源。
 scripts/ppa/build-source.sh      容器内：产出未签名源码包 → target/source/<pkg>/
 scripts/ppa/sign-upload.sh       宿主机：debsign → dput
 scripts/ppa/manifest.sh          make ppa-manifest 的实现，输出状态表
@@ -246,14 +250,16 @@ ppa_suffix = $(or $(SONIC_PPA_SUFFIX_$(1)),$(SONIC_PPA_SUFFIX))
 ppa_ver = $(if $(filter $(1),$(SONIC_PPA_PACKAGES)),$(call ppa_suffix,$(1)))
 
 # Debian pool 二级目录：libxxx → libx，其余取首字母
-pool_dir = $(if $(filter lib%,$(1)),$(shell echo $(1) | cut -c1-4),$(shell echo $(1) | cut -c1))
+ppa_pool_dir = $(if $(filter lib%,$(1)),$(shell echo $(1) | cut -c1-4),$(shell echo $(1) | cut -c1))
 
 # dbgsym 在 PPA 上是 .ddeb；只改 URL 一侧，make 目标名与落盘名仍是 .deb
 ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
-ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
+ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
 ```
 
-`pool_dir` 的 `$(shell cut)` 每包只在 make 解析期执行一次，开销可忽略；若后续成为热点可改为纯 make 的 `$(word)` 实现。
+四个函数一律加 `ppa_` 前缀 —— `rules/functions` 是全局命名空间，`pool_dir` 这种通用名容易与后续新增冲突。
+
+`ppa_pool_dir` 的 `$(shell cut)` 每包只在 make 解析期执行一次，开销可忽略；若后续成为热点可改为纯 make 的 `$(word)` 实现。
 
 ### 6.3 `rules/<pkg>.mk` 改动形态
 
@@ -322,7 +328,8 @@ scripts/ppa/build-source.sh <pkg>...
   3. 拷补丁进 debian/patches/，把 series 条目追加进 debian/patches/series
      —— 补丁保持「未应用」状态，由 builder 在构建时应用
   4. 检查补丁是否含二进制文件；若有则报错（需 debian/source/include-binaries，B1 内目前没有）
-  5. dch -v <stock版本><后缀> --distribution resolute -D resolute
+  5. dch --newversion <stock版本><后缀> --distribution resolute --force-distribution
+     （--force-distribution 必需：否则 dch 拒绝把 distribution 改成非当前值）
   6. dpkg-buildpackage -S -sa -us -uc               # 或 -sd，见下
   7. 落到 target/source/<pkg>/
 
@@ -358,7 +365,7 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 
 | 包 | 覆盖的风险 | 为什么非它不可 |
 |---|---|---|
-| **libteam** | 干净基线 | 14 个补丁全在 series 里、**零树外动作**、6 个二进制（含 3 个 dbgsym）、有 `_DEPENDS` 排序、有 `add_derived_package`。它跑不通即说明链路本身有问题，而非某包特殊。应第一个做。 |
+| **libteam** | 干净基线 | 14 个生效补丁全在 series 里（另有 4 个被注释掉）、**零树外动作**、7 个二进制（1 主 + 6 派生，含 3 个 dbgsym）、有 `_DEPENDS` 排序、有 `add_derived_package`。它跑不通即说明链路本身有问题，而非某包特殊。应第一个做。 |
 | **isc-dhcp** | 构建必挂类 | `DEB_CFLAGS_MAINT_STRIP` / `DEB_LDFLAGS_MAINT_STRIP` 不内化进 `debian/rules` 就一定失败。17 个补丁（fuzz 风险最高）。Debian 源上传 Ubuntu PPA。 |
 | **lm-sensors** | 构建成功但产物错 | `PROG_EXTRA=sensord` 是功能性树外变量，丢了不报错、只是 `sensord` 不存在，而 `docker-platform-monitor` 需要它。这是唯一一类静默失败，必须在首批验到，同时检验 §9 的验收标准是否真抓得住。外加 7 个二进制、含 `_all.deb`、含 nocheck。 |
 
@@ -374,7 +381,7 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 
 每个包独立验收，四项全过才算迁移完成：
 
-1. **源码包可在干净 chroot 中构建。** 用 `sbuild` 或 `pbuilder` 以 resolute 干净环境构建生成的 `.dsc`，不依赖 slave 容器的任何预装内容与网络。这一步在上传前本地完成，用来提前暴露 §3.7 的树外动作丢失。**前置条件：本项目目前没有 resolute 的 sbuild/pbuilder chroot，需新建**（属实现第 1 步的一部分，见 §11）。
+1. **源码包可在干净 chroot 中构建。** 用 `sbuild` 或 `pbuilder` 以 resolute 干净环境构建生成的 `.dsc`，不依赖 slave 容器的任何预装内容与网络。这一步在上传前本地完成，用来提前暴露 §3.7 的树外动作丢失。**前置条件：本项目目前没有 resolute 的 sbuild/pbuilder chroot，需新建**（在产出第一个源码包那一步一并建，见 §11 第 2 步）。
 2. **产物文件清单一致。** `dpkg -c` 对比 PPA 产物与本地自建产物，除版本号字符串外文件列表一致。这是抓 `lm-sensors` 那类静默缺失的关键一项。
 3. **二进制包集合一致。** PPA 实际发布的 deb 名单与 `rules/<pkg>.mk` 声明的主包 + 派生包集合完全对应，无缺无多。
 4. **整镜像构建通过。** `SONIC_PPA_PACKAGES` 含该包的情况下走完 vs 与 broadcom 两个目标。
@@ -399,8 +406,8 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 
 ## 11. 实现顺序
 
-1. `rules/config` 三个变量 + `rules/functions` 四个函数 + `scripts/ppa/` 三个脚本骨架 + 一个 resolute 的 sbuild/pbuilder chroot（验收第 1 项所需）。此时 `SONIC_PPA_PACKAGES` 为空，构建行为零变化。
-2. `libteam` 接入：改 `.mk` / `.dep`，`build-source.sh` 产出源码包，`sbuild` 干净构建验收第 1 项。
+1. `rules/config` 三个变量 + `rules/functions` 四个函数 + `scripts/ppa/query.mk` + 单测夹具。此时 `SONIC_PPA_PACKAGES` 为空，构建行为零变化。
+2. `libteam` 接入：改 `.mk` / `.dep`，写 `build-source.sh` 产出源码包，建一个 resolute 的 sbuild/pbuilder chroot（验收第 1 项所需，本项目目前没有），`sbuild` 干净构建验收第 1 项。
 3. `isc-dhcp` 接入：额外把 `DEB_*_MAINT_STRIP` 内化为一个进 `debian/patches` 的补丁。
 4. `lm-sensors` 接入：额外把 `PROG_EXTRA=sensord` 内化进 `debian/rules`。
 5. `make ppa-manifest`。
