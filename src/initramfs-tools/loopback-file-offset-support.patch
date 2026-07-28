@@ -5,55 +5,59 @@ Subject: Add loopback from file support
 By providing the extra loopoffset= parameter, it becomes possible to
 mount a rootfs from within the file pointed by loop= at a given offset.
 This mechanism uses losetup to create a loopdevice
+
+Refreshed for Ubuntu initramfs-tools 0.151ubuntu1: the offset now has to be
+honoured both by mount_loop_root() (used by the NFS path) and by the loop
+mount that Ubuntu inlined into scripts/local.
+
 ---
- init              | 4 ++++
- initramfs-tools.7 | 5 +++++
- scripts/functions | 8 ++++++++
- 3 files changed, 17 insertions(+)
+ init              |  5 +++++
+ initramfs-tools.7 |  5 +++++
+ scripts/functions |  8 ++++++++
+ scripts/local     | 14 +++++++++++---
+ 4 files changed, 31 insertions(+), 1 deletion(-)
 
 diff --git a/init b/init
-index fe1005a..5fb054f 100755
 --- a/init
 +++ b/init
-@@ -52,6 +52,7 @@ export ROOTFSTYPE=
+@@ -63,6 +63,7 @@
  export LOOP=
  export LOOPFLAGS=
  export LOOPFSTYPE=
 +export LOOPOFFSET=
  export IP=
- export DEVICE=
- export BOOT=
-@@ -116,6 +117,9 @@ for x in $(cat /proc/cmdline); do
- 	loopfstype=*)
+ export IP6=
+ export VLAN=
+@@ -149,6 +150,10 @@
+ 		# shellcheck disable=SC2034
  		LOOPFSTYPE="${x#loopfstype=}"
  		;;
 +	loopoffset=*)
++		# shellcheck disable=SC2034
 +		LOOPOFFSET="${x#loopoffset=}"
 +		;;
  	nfsroot=*)
  		# shellcheck disable=SC2034
  		NFSROOT="${x#nfsroot=}"
 diff --git a/initramfs-tools.7 b/initramfs-tools.7
-index 745e7a0..a5d92b0 100644
 --- a/initramfs-tools.7
 +++ b/initramfs-tools.7
-@@ -66,6 +66,11 @@ set the loop file system mount option string, if applicable.
- \fB\fI loopfstype
- set the loop file system type, if applicable.
+@@ -71,6 +71,11 @@
+ set the loop file system mount option string, if applicable.
  
-+.TP
+ .TP
 +\fB\fI loopoffset
 +set the loop file offset from which to mount the loop, if applicable.
 +The default is 0 and requires loop to be defined.
 +
- .TP
++.TP
  \fB\fI nfsroot
  can be either "auto" to try to get the relevant information from DHCP or a
+ string of the form NFSSERVER:NFSPATH or NFSSERVER:NFSPATH:NFSOPTS.
 diff --git a/scripts/functions b/scripts/functions
-index a17e740..2bef5cb 100644
 --- a/scripts/functions
 +++ b/scripts/functions
-@@ -473,6 +473,14 @@ mount_loop_root()
+@@ -1071,6 +1071,14 @@
  	modprobe loop
  	modprobe "${FSTYPE}"
  
@@ -68,6 +72,32 @@ index a17e740..2bef5cb 100644
  	# FIXME This has no error checking
  	if [ -z "${LOOPFLAGS}" ]; then
  		mount ${roflag} -o loop -t "${FSTYPE}" "$loopfile" "${rootmnt}"
+diff --git a/scripts/local b/scripts/local
+--- a/scripts/local
++++ b/scripts/local
+@@ -258,9 +258,21 @@
+ 		# FIXME This has no error checking
+ 		modprobe loop
+ 
++		if [ -n "${LOOPOFFSET}" ]; then
++			# create a loop device for the fs within the file
++			loopdev="$(losetup -f)"
++			losetup -o "${LOOPOFFSET:-0}" "${loopdev}" "/host/${LOOP#/}" || \
++			    panic "ALERT! $loopdev could not be setup using /host/${LOOP#/}"
++			LOOPFILE_IS_DEV=y
++		fi
++
+ 		# FIXME This has no error checking
+ 		# shellcheck disable=SC2086
+-		mount ${roflag} -o loop -t ${FSTYPE} ${LOOPFLAGS} "/host/${LOOP#/}" "${rootmnt?}"
++		if [ "${LOOPFILE_IS_DEV}" = "y" ]; then
++			mount ${roflag} -t ${FSTYPE} ${LOOPFLAGS} "${loopdev}" "${rootmnt?}"
++		else
++			mount ${roflag} -o loop -t ${FSTYPE} ${LOOPFLAGS} "/host/${LOOP#/}" "${rootmnt?}"
++		fi
+ 
+ 		if [ -d "$rootmnt/host" ]; then
+ 			mount -o move /host "$rootmnt/host"
 -- 
 2.26.2
 

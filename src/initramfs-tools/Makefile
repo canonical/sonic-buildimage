@@ -14,7 +14,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 
 	# Apply patches
 	pushd initramfs-tools-*
-	QUILT_PATCHES=../patch quilt push -a
+	QUILT_PATCHES=.. quilt push -a
 
 	# Build the package
 	rm -f debian/*.debhelper.log

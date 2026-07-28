@@ -13,19 +13,23 @@ And added NFS support! Full patch below...
 live well,
   vagrant
 
+Refreshed for Ubuntu initramfs-tools 0.151ubuntu1, which already parses the
+loop=, loopflags= and loopfstype= kernel command line arguments and mounts the
+loop file inline in scripts/local.  What is still needed here is the exported
+LOOP* variables, the mount_loop_root() helper used by the NFS path, the NFS
+hook itself and the ntfs-aware read-only condition.
+
 ---
- init              | 12 ++++++++++++
- initramfs-tools.7 | 13 +++++++++++++
+ init              |  3 +++
  scripts/functions | 40 ++++++++++++++++++++++++++++++++++++++++
- scripts/local     |  7 ++++++-
+ scripts/local     |  2 +-
  scripts/nfs       |  4 ++++
- 5 files changed, 75 insertions(+), 1 deletion(-)
+ 4 files changed, 48 insertions(+), 1 deletion(-)
 
 diff --git a/init b/init
-index 3dc9f6b..fe1005a 100755
 --- a/init
 +++ b/init
-@@ -49,6 +49,9 @@ export ROOT=
+@@ -60,6 +60,9 @@
  export ROOTDELAY=
  export ROOTFLAGS=
  export ROOTFSTYPE=
@@ -33,54 +37,13 @@ index 3dc9f6b..fe1005a 100755
 +export LOOPFLAGS=
 +export LOOPFSTYPE=
  export IP=
- export DEVICE=
- export BOOT=
-@@ -104,6 +107,15 @@ for x in $(cat /proc/cmdline); do
- 			;;
- 		esac
- 		;;
-+	loop=*)
-+		LOOP="${x#loop=}"
-+		;;
-+	loopflags=*)
-+		LOOPFLAGS="-o ${x#loopflags=}"
-+		;;
-+	loopfstype=*)
-+		LOOPFSTYPE="${x#loopfstype=}"
-+		;;
- 	nfsroot=*)
- 		# shellcheck disable=SC2034
- 		NFSROOT="${x#nfsroot=}"
-diff --git a/initramfs-tools.7 b/initramfs-tools.7
-index 45b7de7..745e7a0 100644
---- a/initramfs-tools.7
-+++ b/initramfs-tools.7
-@@ -53,6 +53,19 @@ The default is 180 seconds.
- \fB\fI rootflags
- set the file system mount option string.
- 
-+.TP
-+\fB\fI loop
-+path within the original root file system to loop-mount and use as the
-+real root file system.
-+
-+.TP
-+\fB\fI loopflags
-+set the loop file system mount option string, if applicable.
-+
-+.TP
-+\fB\fI loopfstype
-+set the loop file system type, if applicable.
-+
- .TP
- \fB\fI nfsroot
- can be either "auto" to try to get the relevant information from DHCP or a
+ export IP6=
+ export VLAN=
 diff --git a/scripts/functions b/scripts/functions
-index 077697f..a17e740 100644
 --- a/scripts/functions
 +++ b/scripts/functions
-@@ -445,6 +445,46 @@ mountfs()
- 	${type}_mount_fs "$1"
+@@ -1043,6 +1043,46 @@
+ 	echo "$result"
  }
  
 +# Mount a loopback device, which is present on the mounted filesystem.
@@ -127,35 +90,21 @@ index 077697f..a17e740 100644
  # boot scripts.
  mountroot()
 diff --git a/scripts/local b/scripts/local
-index a103e68..2ef6413 100644
 --- a/scripts/local
 +++ b/scripts/local
-@@ -170,7 +170,8 @@ local_mount_root()
- 
+@@ -206,7 +206,7 @@
  	local_premount
  
--	if [ "${readonly?}" = "y" ]; then
-+	if [ "${readonly?}" = "y" ] && \
+ 	if [ "${readonly?}" = "y" ] && \
+-	   [ -z "$LOOP" ]; then
 +	   { [ -z "$LOOP" ] || [ "${FSTYPE#ntfs}" = "$FSTYPE" ]; }; then
  		roflag=-r
  	else
  		roflag=-w
-@@ -183,6 +184,10 @@ local_mount_root()
- 	if ! mount ${roflag} ${FSTYPE:+-t "${FSTYPE}"} ${ROOTFLAGS} "${ROOT}" "${rootmnt?}"; then
- 		panic "Failed to mount ${ROOT} as root file system."
- 	fi
-+
-+	if [ "${LOOP}" ]; then
-+		mount_loop_root
-+	fi
- }
- 
- local_mount_fs()
 diff --git a/scripts/nfs b/scripts/nfs
-index 40c92c7..dfa8e88 100644
 --- a/scripts/nfs
 +++ b/scripts/nfs
-@@ -73,6 +73,10 @@ nfs_mount_root_impl()
+@@ -74,6 +74,10 @@
  
  	# shellcheck disable=SC2086
  	nfsmount -o nolock ${roflag} ${NFSOPTS} "${NFSROOT}" "${rootmnt?}"
