@@ -80,7 +80,10 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     # ppa_pool_dir 的逻辑 —— 那会让同一规则存在两份实现。
     SA_FLAG=-sd
     if [ -n "${Q_PPA_POOL_URL:-}" ]; then
-        if ! curl -sfL "$Q_PPA_POOL_URL/" | grep -q "${Q_SOURCE}_.*\.orig\."; then
+        # -F on the $Q_SOURCE half: it is interpolated from rules/*.mk, and
+        # BRE metacharacters in it (e.g. a literal '.') would otherwise be
+        # read as regex syntax instead of matched literally.
+        if ! curl -sfL "$Q_PPA_POOL_URL/" | grep -F -- "${Q_SOURCE}_" | grep -q '\.orig\.'; then
             SA_FLAG=-sa
         fi
     else
@@ -102,8 +105,19 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     # orig must always be picked up when present, or build-clean.sh's
     # `dpkg-source -x` (which needs the orig alongside the .dsc) breaks on
     # every -sd run — i.e. every build after a package's first upload.
-    rm -f "$OUT"/*
+    # Only clear the regular files directly in $OUT, not the directory itself:
+    # build-clean.sh creates $OUT/build/ in this same tree, and a bare `rm -f
+    # "$OUT"/*` fails under set -e as soon as that subdirectory exists ("Is a
+    # directory"), aborting before any new .dsc/.changes/orig is moved in. A
+    # previous clean-container result is worth keeping until deliberately
+    # replaced, so this deletes files only and leaves build/ (or any other
+    # subdirectory) untouched; it is not `rm -rf "$OUT"`.
+    find "$OUT" -maxdepth 1 -type f -delete
     mv ./"${Q_SOURCE}_${Q_STOCK_VERSION}${Q_SUFFIX}"* "$OUT"/
+    # Single-component orig only (<src>_<ver>.orig.tar.*): a multi-component
+    # orig would be named <src>_<ver>.orig-<component>.tar.*, which this glob
+    # does not match. No package wired up here needs one; add matching support
+    # if/when one does.
     shopt -s nullglob
     orig=(./*.orig.tar.*)
     shopt -u nullglob
