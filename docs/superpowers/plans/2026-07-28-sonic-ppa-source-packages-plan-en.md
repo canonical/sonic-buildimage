@@ -4,7 +4,7 @@
 
 **Goal:** Build the dual-mode scaffolding inside `sonic-buildimage` — packaging recipes stay in the tree, prebuilt artifacts come from a Launchpad PPA — and take the first three packages (`libteam` / `isc-dhcp` / `lm-sensors`) as far as "the source package builds in a clean chroot".
 
-**Architecture:** Three switches in `rules/config` decide per package whether it comes from the PPA or is built locally. Four functions in `rules/functions` centralise the version-suffix and pool-URL derivation. Each `rules/<pkg>.mk` gets a pure-insertion mode branch. `scripts/ppa/query.mk` includes `rules/<pkg>.mk` in a minimal stub context and prints key=value, making it the single fact source for both the scripts and the tests. Source packages are generated unsigned inside the slave container; signing and uploading happen on the host.
+**Architecture:** Three switches in `rules/config` decide per package whether it comes from the PPA or is built locally. Five functions in `rules/functions` centralise the version-suffix and pool-URL derivation. Each `rules/<pkg>.mk` gets a pure-insertion mode branch. `scripts/ppa/query.mk` includes `rules/<pkg>.mk` in a minimal stub context and prints key=value, making it the single fact source for both the scripts and the tests. Source packages are generated unsigned inside the slave container; signing and uploading happen on the host.
 
 **Tech Stack:** GNU Make (conditionals, `$(call)` functions), Bash, `devscripts` (`dget` / `dch` / `debsign` / `dpkg-buildpackage -S`), quilt patch format, a throwaway `ubuntu:resolute` docker container (the clean build environment), `dput`. On the host side only the already-installed `debsign` and `dput` are used — **no sudo and no host modification anywhere**.
 
@@ -33,14 +33,14 @@
 | File | Responsibility |
 |---|---|
 | `rules/config` | The three global switches (`SONIC_PPA_PACKAGES` / `SONIC_PPA_URL` / `SONIC_PPA_SUFFIX`). Modified, not created. |
-| `rules/functions` | The four `ppa_*` derivation functions. Modified, not created. |
+| `rules/functions` | The five `ppa_*` derivation functions. Modified, not created. |
 | `scripts/ppa/query.mk` | **The single fact exit**: includes `rules/<pkg>.mk` in a stub context and prints mode, versions, dsc URL, patch dir and deb list as key=value. Shared by three scripts and two test suites. |
 | `scripts/ppa/build-source.sh` | In-container: `dget` stock → patches into `debian/patches` → `dch` → `dpkg-buildpackage -S` → `target/source/<pkg>/`. |
 | `scripts/ppa/build-clean.sh` | Build the source package in a throwaway `ubuntu:resolute` container, modelling the Launchpad builder. Used for acceptance criterion 1. |
 | `scripts/ppa/sign-upload.sh` | On the host: `debsign` plus optional `dput`. |
 | `scripts/ppa/manifest.sh` | Implements `make ppa-manifest`; prints the status table. |
 | `scripts/ppa/tests/assert.mk` | The `assert` macro and `FAILURES` accumulator shared by both test suites. |
-| `scripts/ppa/tests/functions_test.mk` | Unit tests for the four `ppa_*` functions (10 cases). |
+| `scripts/ppa/tests/functions_test.mk` | Unit tests for the five `ppa_*` functions (10 cases). |
 | `scripts/ppa/tests/rules_test.mk` | Dual-mode unit tests for `rules/<pkg>.mk` (registration lists and URLs in each mode). |
 | `scripts/ppa/tests/run-tests.sh` | Runs the two `.mk` suites; non-zero exit means failure. |
 | `rules/{libteam,isc-dhcp,lm-sensors}.mk` | Two new variables plus one `ifneq/else/endif` registration branch each. |
@@ -194,7 +194,7 @@ SONIC_PPA_URL ?=
 SONIC_PPA_SUFFIX ?= +sonic1~ppa1
 ```
 
-- [ ] **Step 4: Append the four functions to the end of `rules/functions`**
+- [ ] **Step 4: Append the five functions to the end of `rules/functions`**
 
 ```make
 

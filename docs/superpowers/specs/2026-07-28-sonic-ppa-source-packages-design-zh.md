@@ -194,7 +194,7 @@ rules/config                     全局开关（config.user 可覆盖）
   ├─ SONIC_PPA_SUFFIX_<pkg>      单包覆盖，按需出现
   └─ SONIC_PPA_PACKAGES          走 PPA 的包列表
 
-rules/functions                  4 个辅助函数（见 §6.2）
+rules/functions                  5 个辅助函数（见 §6.2）
 
 rules/<pkg>.mk                   1 行改动 + 1 个 ifneq 块（见 §6.3）
 rules/<pkg>.dep                  2 行插入（见 §6.4）
@@ -259,7 +259,7 @@ ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
 ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
 ```
 
-四个函数一律加 `ppa_` 前缀 —— `rules/functions` 是全局命名空间，`pool_dir` 这种通用名容易与后续新增冲突。
+五个函数一律加 `ppa_` 前缀 —— `rules/functions` 是全局命名空间，`pool_dir` 这种通用名容易与后续新增冲突。
 
 `ppa_pool_dir` 的 `$(shell cut)` 每包只在 make 解析期执行一次，开销可忽略；若后续成为热点可改为纯 make 的 `$(word)` 实现。
 
@@ -410,7 +410,7 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 
 ## 11. 实现顺序
 
-1. `rules/config` 三个变量 + `rules/functions` 四个函数 + `scripts/ppa/query.mk` + 单测夹具。此时 `SONIC_PPA_PACKAGES` 为空，构建行为零变化。
+1. `rules/config` 三个变量 + `rules/functions` 五个函数 + `scripts/ppa/query.mk` + 单测夹具。此时 `SONIC_PPA_PACKAGES` 为空，构建行为零变化。
 2. `libteam` 接入：改 `.mk` / `.dep`，写 `build-source.sh` 产出源码包，写 `build-clean.sh` 并用它完成验收第 1 项。全程无需 sudo、不动宿主机。
 3. `isc-dhcp` 接入：额外把 `DEB_*_MAINT_STRIP` 内化为一个进 `debian/patches` 的补丁。
 4. `lm-sensors` 接入：额外把 `PROG_EXTRA=sensord` 内化进 `debian/rules`。

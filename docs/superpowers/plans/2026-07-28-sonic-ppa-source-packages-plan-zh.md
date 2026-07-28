@@ -4,7 +4,7 @@
 
 **目标：** 在 `sonic-buildimage` 内搭出「打包配方留在树里、预编译产物从 Launchpad PPA 拉取」的双模式脚手架，并打通首批三个包（`libteam` / `isc-dhcp` / `lm-sensors`）到「源码包可在干净 chroot 中构建」。
 
-**架构：** `rules/config` 三个开关决定每个包走 PPA 还是本地自建；`rules/functions` 四个函数把版本后缀与 PPA pool URL 的推导集中掉；`rules/<pkg>.mk` 只做纯插入式的模式分支。`scripts/ppa/query.mk` 在最小 stub 上下文里 include `rules/<pkg>.mk` 并输出 key=value，成为脚本与单测的唯一事实来源。源码包生成在 slave 容器内完成且不签名，签名与上传在宿主机。
+**架构：** `rules/config` 三个开关决定每个包走 PPA 还是本地自建；`rules/functions` 五个函数把版本后缀与 PPA pool URL 的推导集中掉；`rules/<pkg>.mk` 只做纯插入式的模式分支。`scripts/ppa/query.mk` 在最小 stub 上下文里 include `rules/<pkg>.mk` 并输出 key=value，成为脚本与单测的唯一事实来源。源码包生成在 slave 容器内完成且不签名，签名与上传在宿主机。
 
 **技术栈：** GNU Make（条件、`$(call)` 函数）、Bash、`devscripts`（`dget` / `dch` / `debsign` / `dpkg-buildpackage -S`）、`quilt` 补丁格式、一次性 `ubuntu:resolute` docker 容器（干净构建环境）、`dput`。宿主机侧只用已装好的 `debsign` 与 `dput`，**全程无需 sudo、不动宿主机**。
 
@@ -33,14 +33,14 @@
 | 文件 | 职责 |
 |---|---|
 | `rules/config` | 三个全局开关（`SONIC_PPA_PACKAGES` / `SONIC_PPA_URL` / `SONIC_PPA_SUFFIX`）。修改，不新建。 |
-| `rules/functions` | 四个 `ppa_*` 推导函数。修改，不新建。 |
+| `rules/functions` | 五个 `ppa_*` 推导函数。修改，不新建。 |
 | `scripts/ppa/query.mk` | **唯一事实出口**：在 stub 上下文里 include `rules/<pkg>.mk`，把模式、版本、dsc URL、补丁目录、deb 清单以 key=value 打印。被三个脚本与两个单测共用。 |
 | `scripts/ppa/build-source.sh` | 容器内：`dget` stock → 补丁进 `debian/patches` → `dch` → `dpkg-buildpackage -S` → `target/source/<pkg>/`。 |
 | `scripts/ppa/build-clean.sh` | 在一次性 `ubuntu:resolute` 容器里构建源码包，模拟 Launchpad builder。验收第 1 项用。 |
 | `scripts/ppa/sign-upload.sh` | 宿主机：`debsign` + 可选 `dput`。 |
 | `scripts/ppa/manifest.sh` | `make ppa-manifest` 的实现，打印状态表。 |
 | `scripts/ppa/tests/assert.mk` | 两个测试套件共用的 `assert` 断言宏与 `FAILURES` 收集。 |
-| `scripts/ppa/tests/functions_test.mk` | `ppa_*` 四函数的单测（10 个用例）。 |
+| `scripts/ppa/tests/functions_test.mk` | `ppa_*` 五函数的单测（10 个用例）。 |
 | `scripts/ppa/tests/rules_test.mk` | `rules/<pkg>.mk` 双模式单测（local 与 ppa 各自的注册列表与 URL）。 |
 | `scripts/ppa/tests/run-tests.sh` | 跑上面两个 `.mk`，非零退出即失败。 |
 | `rules/{libteam,isc-dhcp,lm-sensors}.mk` | 每个加两个变量 + 一个 `ifneq/else/endif` 注册分支。 |
@@ -188,7 +188,7 @@ SONIC_PPA_URL ?=
 SONIC_PPA_SUFFIX ?= +sonic1~ppa1
 ```
 
-- [ ] **Step 4：追加四个函数到 `rules/functions` 末尾**
+- [ ] **Step 4：追加五个函数到 `rules/functions` 末尾**
 
 ```make
 

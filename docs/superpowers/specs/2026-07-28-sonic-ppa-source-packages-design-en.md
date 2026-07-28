@@ -194,7 +194,7 @@ rules/config                     global switches (overridable from config.user)
   ├─ SONIC_PPA_SUFFIX_<pkg>      per-package override, present only when needed
   └─ SONIC_PPA_PACKAGES          list of packages served from the PPA
 
-rules/functions                  4 helper functions (§6.2)
+rules/functions                  5 helper functions (§6.2)
 
 rules/<pkg>.mk                   1 changed line + 1 ifneq block (§6.3)
 rules/<pkg>.dep                  2 inserted lines (§6.4)
@@ -261,7 +261,7 @@ ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
 ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
 ```
 
-All four functions carry the `ppa_` prefix: `rules/functions` is a global namespace, and a generic name like `pool_dir` invites a future collision.
+All five functions carry the `ppa_` prefix: `rules/functions` is a global namespace, and a generic name like `pool_dir` invites a future collision.
 
 `ppa_pool_dir`'s `$(shell cut)` runs once per package during make's parse phase, so the cost is negligible; if it ever becomes hot it can be rewritten in pure make.
 
@@ -415,7 +415,7 @@ If any criterion fails, removing the package from `SONIC_PPA_PACKAGES` rolls it 
 
 ## 11. Implementation order
 
-1. Three variables in `rules/config`, four functions in `rules/functions`, `scripts/ppa/query.mk`, and the unit-test harness. At this point `SONIC_PPA_PACKAGES` is empty and build behaviour is unchanged.
+1. Three variables in `rules/config`, five functions in `rules/functions`, `scripts/ppa/query.mk`, and the unit-test harness. At this point `SONIC_PPA_PACKAGES` is empty and build behaviour is unchanged.
 2. Land `libteam`: change `.mk` / `.dep`, write `build-source.sh` to produce the source package, write `build-clean.sh` and use it to satisfy acceptance criterion 1. No sudo and no host modification anywhere in the sequence.
 3. Land `isc-dhcp`: additionally internalise `DEB_*_MAINT_STRIP` as a patch in `debian/patches`.
 4. Land `lm-sensors`: additionally internalise `PROG_EXTRA=sensord` into `debian/rules`.
