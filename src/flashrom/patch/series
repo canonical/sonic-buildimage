@@ -1,5 +1,3 @@
-# All patches dropped — flashrom is now an online deb (stock Ubuntu 1.6.0-2ubuntu1).
-# Original SONiC patches (0.9.7 era, all upstreamed or obsoleted):
-#   0002: Intel Rangeley/Denverton CPU flash support
-#   0003: Debian package scaffolding
-#   0004: Remove man page template fix
+0002-Flashrom-support-for-Intel-Rangeley-and-Denverton-CP.patch
+0003-Debian-package-base.patch
+0004-Flashrom-remove-tmpl.patch

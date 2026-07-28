@@ -5,7 +5,7 @@ SHELL = /bin/bash
 MAIN_TARGET = $(LLDPD)
 DERIVED_TARGETS = $(LIBLLDPCTL) $(LLDPD_DBG)
 
-LLDP_URL = http://archive.ubuntu.com/ubuntu/pool/universe/l/lldpd
+LLDP_URL = $(BUILD_PUBLIC_URL)/debian/pool/main/l/lldpd
 
 DSC_FILE = lldpd_$(LLDPD_VERSION_FULL).dsc
 ORIG_FILE = lldpd_$(LLDPD_VERSION).orig.tar.gz
@@ -20,7 +20,7 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	rm -rf lldpd-$(LLDPD_VERSION)
 
 	# download debian LLDPDD
-	dget -u $(DSC_FILE_URL)
+	dget $(DSC_FILE_URL)
 
 	pushd lldpd-$(LLDPD_VERSION)
 	git init
