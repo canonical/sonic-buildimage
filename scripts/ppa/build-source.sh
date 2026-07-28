@@ -1,0 +1,95 @@
+#!/bin/bash
+# 为一个或多个包产出未签名的 Debian 源码包，供上传到 Launchpad PPA。
+#
+# 在 slave-resolute 容器内运行（需要 dget / dch / dpkg-source，容器已含
+# devscripts）。刻意不签名、不上传：GPG 与 dput 由宿主机上的
+# scripts/ppa/sign-upload.sh 负责。
+#
+# 用法: scripts/ppa/build-source.sh <pkg>...
+#   例: scripts/ppa/build-source.sh libteam isc-dhcp lm-sensors
+set -euo pipefail
+
+[ $# -ge 1 ] || { echo "usage: $0 <pkg>..." >&2; exit 2; }
+cd "$(dirname "$0")/../.."
+REPO=$PWD
+
+for PKG in "$@"; do
+    echo "=== $PKG"
+    # 用 read 而非 eval：DERIVED_DEBS 的值含空格，eval 会把它按词拆开去执行
+while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
+    < <(make -s -f scripts/ppa/query.mk PKG="$PKG")
+
+    [ -n "${Q_DSC_URL:-}" ] || { echo "$PKG: <PREFIX>_DSC_URL is not set in rules/$PKG.mk" >&2; exit 1; }
+    [ -n "${Q_STOCK_VERSION:-}" ] || { echo "$PKG: <PREFIX>_VERSION_STOCK is not set in rules/$PKG.mk" >&2; exit 1; }
+
+    # 补丁里含二进制文件需要 debian/source/include-binaries；本批次没有，
+    # 但要显式报错而不是静默产出一个 dpkg-source 会拒绝的包。
+    if grep -rlq $'^GIT binary patch' "$REPO/$Q_PATCH_DIR"/*.patch 2>/dev/null; then
+        echo "$PKG: patch series contains a binary patch; needs debian/source/include-binaries" >&2
+        exit 1
+    fi
+
+    WORK=$(mktemp -d)
+    OUT="$REPO/target/source/$PKG"
+    mkdir -p "$OUT"
+
+    pushd "$WORK" >/dev/null
+    # -u 是结构性必需：Ubuntu slave 上 .dsc 上传者的个人 key 不在任何可用
+    # keyring 里，装 debian-keyring 也验不了。
+    dget -u "$Q_DSC_URL"
+
+    SRCDIR=$(find . -maxdepth 1 -type d -name "$Q_SOURCE-*" | head -1)
+    [ -n "$SRCDIR" ] || { echo "$PKG: cannot find extracted source dir for $Q_SOURCE" >&2; exit 1; }
+    pushd "$SRCDIR" >/dev/null
+
+    # dget 已通过 dpkg-source -x 应用了上游 debian/patches，所以工作树是
+    # 「完全打好补丁」的状态。把 SONiC 补丁按同一顺序追加进 series 即等价，
+    # 但补丁本身必须保持未应用 —— builder 会在构建时应用。
+    mkdir -p debian/patches
+    [ -f debian/patches/series ] || : > debian/patches/series
+    while read -r p; do
+        cp "$REPO/$Q_PATCH_DIR/$p" debian/patches/
+        echo "$p" >> debian/patches/series
+    done < <(grep -vE '^\s*(#|$)' "$REPO/$Q_PATCH_DIR/series")
+
+    # dget 解包时留下的 .pc 会让 dpkg-source 认为补丁已应用
+    rm -rf .pc
+
+    dch --newversion "${Q_STOCK_VERSION}${Q_SUFFIX}" \
+        --distribution resolute --force-distribution \
+        "SONiC packaging for Ubuntu resolute: apply the $PKG patch series from sonic-buildimage."
+
+    # 该 upstream 版本首次上传要带 orig（-sa）；后续必须 -sd，否则 Launchpad
+    # 会因 orig 校验和冲突 reject。以 PPA pool 里是否已有该 orig 为准；
+    # 无法判定时保守用 -sd 并提示。
+    # pool URL 由 query.mk 给出(见 Q_PPA_POOL_URL),不在这里用 sed 重推一遍
+    # ppa_pool_dir 的逻辑 —— 那会让同一规则存在两份实现。
+    SA_FLAG=-sd
+    if [ -n "${Q_PPA_POOL_URL:-}" ]; then
+        if ! curl -sfL "$Q_PPA_POOL_URL/" | grep -q "${Q_SOURCE}_.*\.orig\."; then
+            SA_FLAG=-sa
+        fi
+    else
+        echo "  note: SONIC_PPA_URL unset, cannot tell if the orig is already uploaded; using -sa for the first local run" >&2
+        SA_FLAG=-sa
+    fi
+
+    dpkg-buildpackage -S "$SA_FLAG" -us -uc -d
+    popd >/dev/null
+
+    # $WORK also still holds dget's original stock download (same basenames
+    # minus our suffix): a blanket */*.dsc glob would carry that stock .dsc
+    # into $OUT too, and a consumer that expects exactly one .dsc there (e.g.
+    # build-clean.sh) would break. Scope the move to the version we just
+    # built; only pull in the shared orig when -sa actually referenced it.
+    rm -f "$OUT"/*
+    mv ./"${Q_SOURCE}_${Q_STOCK_VERSION}${Q_SUFFIX}"* "$OUT"/
+    if [ "$SA_FLAG" = -sa ]; then
+        mv ./*.orig.tar.* "$OUT"/
+    fi
+    popd >/dev/null
+    rm -rf "$WORK"
+
+    echo "  -> $OUT"
+    ls -1 "$OUT"
+done
