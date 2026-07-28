@@ -39,6 +39,7 @@
 | `scripts/ppa/build-clean.sh` | 在一次性 `ubuntu:resolute` 容器里构建源码包，模拟 Launchpad builder。验收第 1 项用。 |
 | `scripts/ppa/sign-upload.sh` | 宿主机：`debsign` + 可选 `dput`。 |
 | `scripts/ppa/manifest.sh` | `make ppa-manifest` 的实现，打印状态表。 |
+| `scripts/ppa/tests/assert.mk` | 两个测试套件共用的 `assert` 断言宏与 `FAILURES` 收集。 |
 | `scripts/ppa/tests/functions_test.mk` | `ppa_*` 四函数的单测（10 个用例）。 |
 | `scripts/ppa/tests/rules_test.mk` | `rules/<pkg>.mk` 双模式单测（local 与 ppa 各自的注册列表与 URL）。 |
 | `scripts/ppa/tests/run-tests.sh` | 跑上面两个 `.mk`，非零退出即失败。 |
@@ -57,6 +58,7 @@
 - 修改：`rules/config`（追加到文件末尾）
 - 修改：`rules/functions`（追加到文件末尾）
 - 新建：`scripts/ppa/query.mk`
+- 新建：`scripts/ppa/tests/assert.mk`
 - 新建：`scripts/ppa/tests/functions_test.mk`
 - 新建：`scripts/ppa/tests/run-tests.sh`
 
@@ -67,12 +69,36 @@
   - `$(call ppa_pool_dir,<src-name>)` → pool 二级目录，如 `libt` / `l`
   - `$(call ppa_file,<deb-name>)` → dbgsym 换成 `.ddeb`，其余原样
   - `$(call ppa_url,<src-name>,<deb-name>)` → 完整下载 URL
-  - `make -s -f scripts/ppa/query.mk PKG=<pkg>` → 打印 `PKG=` `MODE=` `STOCK_VERSION=` `DSC_URL=` `SUFFIX=` `PATCH_DIR=` `MAIN_DEB=` `DERIVED_DEBS=` `SOURCE=` 九行
+  - `make -s -f scripts/ppa/query.mk PKG=<pkg>` → 打印 `PKG=` `MODE=` `STOCK_VERSION=` `DSC_URL=` `SUFFIX=` `PATCH_DIR=` `MAIN_DEB=` `DERIVED_DEBS=` `SOURCE=` `PPA_POOL_URL=` 十行
   - 变量 `SONIC_PPA_PACKAGES` / `SONIC_PPA_URL` / `SONIC_PPA_SUFFIX` / `SONIC_PPA_SUFFIX_<pkg>`
 
 - [ ] **Step 1：写失败的单测**
 
-新建 `scripts/ppa/tests/functions_test.mk`：
+先新建共用断言宏 `scripts/ppa/tests/assert.mk`（两个测试套件共用，不要各写一份）：
+
+```make
+# make 层单测共用的断言宏。
+#
+# 用法：include 本文件后
+#   $(call assert,<名称>,<实际值>,<期望值>)
+# 收集失败到 FAILURES；测试套件的默认目标据此决定退出码。
+FAILURES :=
+
+define assert
+$(if $(filter-out x$(3),x$(2)),\
+  $(warning FAIL $(1): got "$(2)" want "$(3)")$(eval FAILURES += $(1)),\
+  $(info ok   $(1)))
+endef
+
+# 各测试套件在自己的默认目标里 include 本段逻辑：
+#   ifneq ($(strip $(FAILURES)),)
+#   	@echo "FAILED: $(FAILURES)"; exit 1
+#   else
+#   	@echo "<suite>: all assertions passed"
+#   endif
+```
+
+再新建 `scripts/ppa/tests/functions_test.mk`：
 
 ```make
 # ppa_* 辅助函数的单测。不 include slave.mk —— 只 include rules/functions,
@@ -85,15 +111,7 @@ SONIC_PPA_SUFFIX_lm-sensors := +sonic1~ppa2
 SONIC_PPA_PACKAGES         := libteam lm-sensors
 
 include rules/functions
-
-FAILURES :=
-
-# assert <名称>,<实际>,<期望>
-define assert
-$(if $(filter-out x$(3),x$(2)),\
-  $(warning FAIL $(1): got "$(2)" want "$(3)")$(eval FAILURES += $(1)),\
-  $(info ok   $(1)))
-endef
+include scripts/ppa/tests/assert.mk
 
 $(call assert,ppa_ver-on,$(call ppa_ver,libteam),+sonic1~ppa1)
 $(call assert,ppa_ver-off,$(call ppa_ver,isc-dhcp),)
@@ -248,6 +266,13 @@ MODE       := $(if $(filter $(PKG),$(SONIC_PPA_PACKAGES)),ppa,local)
 # 含 series 的补丁目录。多于一个即为歧义，报错而不猜。
 PATCH_DIRS := $(patsubst %/series,%,$(wildcard src/$(PKG)/*/series))
 
+# Debian 源码包名：dsc URL basename 里 `_` 之前那段
+SOURCE     := $(firstword $(subst _, ,$(notdir $($(PREFIX)_DSC_URL))))
+
+# 该源码包在 PPA pool 里的目录 URL。SONIC_PPA_URL 为空时整串为空，脚本据此
+# 判断「无法确定 orig 是否已上传」。集中在此，避免脚本用 sed 重推一遍。
+PPA_POOL_URL := $(if $(SONIC_PPA_URL),$(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(SOURCE))/$(SOURCE))
+
 ifneq ($(words $(MAIN_DEB)),1)
 $(error $(PKG): expected exactly 1 main deb, got "$(MAIN_DEB)")
 endif
@@ -265,7 +290,8 @@ default:
 	@echo 'PATCH_DIR=$(PATCH_DIRS)'
 	@echo 'MAIN_DEB=$(MAIN_DEB)'
 	@echo 'DERIVED_DEBS=$(SONIC_DERIVED_DEBS)'
-	@echo 'SOURCE=$(firstword $(subst _, ,$(notdir $($(PREFIX)_DSC_URL))))'
+	@echo 'SOURCE=$(SOURCE)'
+	@echo 'PPA_POOL_URL=$(PPA_POOL_URL)'
 ```
 
 - [ ] **Step 7：验证 query.mk 在三个包上都能跑**
@@ -287,6 +313,7 @@ PATCH_DIR=src/libteam/patch
 MAIN_DEB=libteam5_1.31-1build4_amd64.deb
 DERIVED_DEBS=libteam5-dbgsym_1.31-1build4_amd64.deb libteam-dev_1.31-1build4_amd64.deb libteamdctl0_1.31-1build4_amd64.deb libteamdctl0-dbgsym_1.31-1build4_amd64.deb libteam-utils_1.31-1build4_amd64.deb libteam-utils-dbgsym_1.31-1build4_amd64.deb
 SOURCE=
+PPA_POOL_URL=
 --- isc-dhcp
 ...
 MAIN_DEB=isc-dhcp-relay_4.4.3-P1-2_amd64.deb
@@ -370,14 +397,7 @@ SONIC_PPA_PACKAGES := libteam
 
 include rules/functions
 include rules/libteam.mk
-
-FAILURES :=
-
-define assert
-$(if $(filter-out x$(3),x$(2)),\
-  $(warning FAIL $(1): got "$(2)" want "$(3)")$(eval FAILURES += $(1)),\
-  $(info ok   $(1)))
-endef
+include scripts/ppa/tests/assert.mk
 
 # PPA 模式：注册到 ONLINE 而非 MAKE，且 deb 名带后缀
 $(call assert,libteam-online,$(SONIC_ONLINE_DEBS),libteam5_1.31-1build4+sonic1~ppa1_amd64.deb)
@@ -623,7 +643,13 @@ docker run --rm \
         apt-get -qq build-dep -y --no-install-recommends ./
         dpkg-buildpackage -b -us -uc
         mkdir -p /src/build
-        cp -a /build/*.deb /build/*.ddeb /src/build/ 2>/dev/null || true
+        # 每个包的产物组合不同(有的无 dbgsym、有的有 _all.deb),所以两条 glob
+        # 各自允许失配;但至少要有一个产物,否则是真失败,不能被 || true 吞掉。
+        cp -a /build/*.deb  /src/build/ 2>/dev/null || true
+        cp -a /build/*.ddeb /src/build/ 2>/dev/null || true
+        n=$(ls -1 /src/build | wc -l)
+        [ "$n" -gt 0 ] || { echo "build produced no .deb/.ddeb artifacts" >&2; exit 1; }
+        echo "collected $n artifact(s)"
         chown -R "$HOST_UID:$HOST_GID" /src/build
     '
 
@@ -777,11 +803,11 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     # 该 upstream 版本首次上传要带 orig（-sa）；后续必须 -sd，否则 Launchpad
     # 会因 orig 校验和冲突 reject。以 PPA pool 里是否已有该 orig 为准；
     # 无法判定时保守用 -sd 并提示。
+    # pool URL 由 query.mk 给出(见 Q_PPA_POOL_URL),不在这里用 sed 重推一遍
+    # ppa_pool_dir 的逻辑 —— 那会让同一规则存在两份实现。
     SA_FLAG=-sd
-    if [ -n "${SONIC_PPA_URL:-}" ]; then
-        origin_orig="$SONIC_PPA_URL/pool/main/$(echo "$Q_SOURCE" | \
-            sed -E 's/^(lib.).*/\1/; t; s/^(.).*/\1/')/$Q_SOURCE/"
-        if ! curl -sfL "$origin_orig" | grep -q "${Q_SOURCE}_.*\.orig\."; then
+    if [ -n "${Q_PPA_POOL_URL:-}" ]; then
+        if ! curl -sfL "$Q_PPA_POOL_URL/" | grep -q "${Q_SOURCE}_.*\.orig\."; then
             SA_FLAG=-sa
         fi
     else

@@ -39,6 +39,7 @@
 | `scripts/ppa/build-clean.sh` | Build the source package in a throwaway `ubuntu:resolute` container, modelling the Launchpad builder. Used for acceptance criterion 1. |
 | `scripts/ppa/sign-upload.sh` | On the host: `debsign` plus optional `dput`. |
 | `scripts/ppa/manifest.sh` | Implements `make ppa-manifest`; prints the status table. |
+| `scripts/ppa/tests/assert.mk` | The `assert` macro and `FAILURES` accumulator shared by both test suites. |
 | `scripts/ppa/tests/functions_test.mk` | Unit tests for the four `ppa_*` functions (10 cases). |
 | `scripts/ppa/tests/rules_test.mk` | Dual-mode unit tests for `rules/<pkg>.mk` (registration lists and URLs in each mode). |
 | `scripts/ppa/tests/run-tests.sh` | Runs the two `.mk` suites; non-zero exit means failure. |
@@ -57,6 +58,7 @@
 - Modify: `rules/config` (append at end of file)
 - Modify: `rules/functions` (append at end of file)
 - Create: `scripts/ppa/query.mk`
+- Create: `scripts/ppa/tests/assert.mk`
 - Create: `scripts/ppa/tests/functions_test.mk`
 - Create: `scripts/ppa/tests/run-tests.sh`
 
@@ -67,12 +69,37 @@
   - `$(call ppa_pool_dir,<src-name>)` → pool second-level directory, e.g. `libt` / `l`
   - `$(call ppa_file,<deb-name>)` → dbgsym names become `.ddeb`, everything else unchanged
   - `$(call ppa_url,<src-name>,<deb-name>)` → full download URL
-  - `make -s -f scripts/ppa/query.mk PKG=<pkg>` → prints nine lines: `PKG=` `MODE=` `STOCK_VERSION=` `DSC_URL=` `SUFFIX=` `PATCH_DIR=` `MAIN_DEB=` `DERIVED_DEBS=` `SOURCE=`
+  - `make -s -f scripts/ppa/query.mk PKG=<pkg>` → prints ten lines: `PKG=` `MODE=` `STOCK_VERSION=` `DSC_URL=` `SUFFIX=` `PATCH_DIR=` `MAIN_DEB=` `DERIVED_DEBS=` `SOURCE=` `PPA_POOL_URL=`
   - Variables `SONIC_PPA_PACKAGES` / `SONIC_PPA_URL` / `SONIC_PPA_SUFFIX` / `SONIC_PPA_SUFFIX_<pkg>`
 
 - [ ] **Step 1: Write the failing unit tests**
 
-Create `scripts/ppa/tests/functions_test.mk`:
+First create the shared assertion macro `scripts/ppa/tests/assert.mk` (both suites include it — do not write it twice):
+
+```make
+# Assertion macro shared by the make-layer unit tests.
+#
+# Usage, after including this file:
+#   $(call assert,<name>,<actual>,<expected>)
+# Failures accumulate in FAILURES; each suite's default target uses that to
+# decide its exit code.
+FAILURES :=
+
+define assert
+$(if $(filter-out x$(3),x$(2)),\
+  $(warning FAIL $(1): got "$(2)" want "$(3)")$(eval FAILURES += $(1)),\
+  $(info ok   $(1)))
+endef
+
+# Each suite puts this logic in its own default target:
+#   ifneq ($(strip $(FAILURES)),)
+#   	@echo "FAILED: $(FAILURES)"; exit 1
+#   else
+#   	@echo "<suite>: all assertions passed"
+#   endif
+```
+
+Then create `scripts/ppa/tests/functions_test.mk`:
 
 ```make
 # Unit tests for the ppa_* helper functions. Does not include slave.mk — only
@@ -85,15 +112,7 @@ SONIC_PPA_SUFFIX_lm-sensors := +sonic1~ppa2
 SONIC_PPA_PACKAGES         := libteam lm-sensors
 
 include rules/functions
-
-FAILURES :=
-
-# assert <name>,<actual>,<expected>
-define assert
-$(if $(filter-out x$(3),x$(2)),\
-  $(warning FAIL $(1): got "$(2)" want "$(3)")$(eval FAILURES += $(1)),\
-  $(info ok   $(1)))
-endef
+include scripts/ppa/tests/assert.mk
 
 $(call assert,ppa_ver-on,$(call ppa_ver,libteam),+sonic1~ppa1)
 $(call assert,ppa_ver-off,$(call ppa_ver,isc-dhcp),)
@@ -260,6 +279,15 @@ MODE       := $(if $(filter $(PKG),$(SONIC_PPA_PACKAGES)),ppa,local)
 # error out rather than guess.
 PATCH_DIRS := $(patsubst %/series,%,$(wildcard src/$(PKG)/*/series))
 
+# Debian source package name: the part before `_` in the dsc URL basename
+SOURCE     := $(firstword $(subst _, ,$(notdir $($(PREFIX)_DSC_URL))))
+
+# This source package's directory URL in the PPA pool. Empty when
+# SONIC_PPA_URL is empty, which is how the scripts tell "cannot determine
+# whether the orig is already uploaded". Centralised here so no script has to
+# re-derive ppa_pool_dir's rule with sed.
+PPA_POOL_URL := $(if $(SONIC_PPA_URL),$(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(SOURCE))/$(SOURCE))
+
 ifneq ($(words $(MAIN_DEB)),1)
 $(error $(PKG): expected exactly 1 main deb, got "$(MAIN_DEB)")
 endif
@@ -277,7 +305,8 @@ default:
 	@echo 'PATCH_DIR=$(PATCH_DIRS)'
 	@echo 'MAIN_DEB=$(MAIN_DEB)'
 	@echo 'DERIVED_DEBS=$(SONIC_DERIVED_DEBS)'
-	@echo 'SOURCE=$(firstword $(subst _, ,$(notdir $($(PREFIX)_DSC_URL))))'
+	@echo 'SOURCE=$(SOURCE)'
+	@echo 'PPA_POOL_URL=$(PPA_POOL_URL)'
 ```
 
 - [ ] **Step 7: Verify query.mk runs for all three packages**
@@ -299,6 +328,7 @@ PATCH_DIR=src/libteam/patch
 MAIN_DEB=libteam5_1.31-1build4_amd64.deb
 DERIVED_DEBS=libteam5-dbgsym_1.31-1build4_amd64.deb libteam-dev_1.31-1build4_amd64.deb libteamdctl0_1.31-1build4_amd64.deb libteamdctl0-dbgsym_1.31-1build4_amd64.deb libteam-utils_1.31-1build4_amd64.deb libteam-utils-dbgsym_1.31-1build4_amd64.deb
 SOURCE=
+PPA_POOL_URL=
 --- isc-dhcp
 ...
 MAIN_DEB=isc-dhcp-relay_4.4.3-P1-2_amd64.deb
@@ -383,14 +413,7 @@ SONIC_PPA_PACKAGES := libteam
 
 include rules/functions
 include rules/libteam.mk
-
-FAILURES :=
-
-define assert
-$(if $(filter-out x$(3),x$(2)),\
-  $(warning FAIL $(1): got "$(2)" want "$(3)")$(eval FAILURES += $(1)),\
-  $(info ok   $(1)))
-endef
+include scripts/ppa/tests/assert.mk
 
 # PPA mode: registers into ONLINE rather than MAKE, and the deb name carries
 # the suffix
@@ -641,7 +664,14 @@ docker run --rm \
         apt-get -qq build-dep -y --no-install-recommends ./
         dpkg-buildpackage -b -us -uc
         mkdir -p /src/build
-        cp -a /build/*.deb /build/*.ddeb /src/build/ 2>/dev/null || true
+        # Each package has a different artifact mix (some have no dbgsym, some
+        # have an _all.deb), so each glob is allowed to miss — but producing
+        # nothing at all is a real failure and must not be swallowed by || true.
+        cp -a /build/*.deb  /src/build/ 2>/dev/null || true
+        cp -a /build/*.ddeb /src/build/ 2>/dev/null || true
+        n=$(ls -1 /src/build | wc -l)
+        [ "$n" -gt 0 ] || { echo "build produced no .deb/.ddeb artifacts" >&2; exit 1; }
+        echo "collected $n artifact(s)"
         chown -R "$HOST_UID:$HOST_GID" /src/build
     '
 
@@ -803,11 +833,12 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     # later ones must use -sd or Launchpad rejects them over an orig checksum
     # conflict. Decide from whether the orig is already in the PPA pool; when
     # that cannot be determined, be conservative and say so.
+    # The pool URL comes from query.mk (Q_PPA_POOL_URL); do not re-derive
+    # ppa_pool_dir's rule with sed here, which would give one rule two
+    # implementations.
     SA_FLAG=-sd
-    if [ -n "${SONIC_PPA_URL:-}" ]; then
-        origin_orig="$SONIC_PPA_URL/pool/main/$(echo "$Q_SOURCE" | \
-            sed -E 's/^(lib.).*/\1/; t; s/^(.).*/\1/')/$Q_SOURCE/"
-        if ! curl -sfL "$origin_orig" | grep -q "${Q_SOURCE}_.*\.orig\."; then
+    if [ -n "${Q_PPA_POOL_URL:-}" ]; then
+        if ! curl -sfL "$Q_PPA_POOL_URL/" | grep -q "${Q_SOURCE}_.*\.orig\."; then
             SA_FLAG=-sa
         fi
     else
