@@ -68,13 +68,18 @@ for PKG in "$@"; do
     # later loop that appends patches also reuses this list, so series
     # doesn't need to be grepped again.
     #
-    # grep exiting 1 here is legitimate (an empty series has zero active-patch
-    # lines); exiting >=2 (e.g. the series file itself is unreadable) is a
-    # real error. Read via command substitution rather than `mapfile <
-    # <(...)`: process substitution decouples grep's exit status from this
-    # command entirely -- the same defect class fixed in query_pkg() (see
-    # query-pkg.sh) -- so a missing/unreadable series file would otherwise
-    # silently look identical to "zero active patches" instead of erroring.
+    # grep exiting 1 here (no active-patch lines matched) is a legitimate
+    # exit status to handle explicitly, not a real error; exiting >=2 (e.g.
+    # the series file itself is unreadable) is a real error, checked
+    # separately below. The resulting state -- zero active patches -- is a
+    # different problem, checked once ACTIVE_PATCHES is actually built (see
+    # below): a source package built from it would be a real error even
+    # though nothing here failed. Read via command substitution rather than
+    # `mapfile < <(...)`: process substitution decouples grep's exit status
+    # from this command entirely -- the same defect class fixed in
+    # query_pkg() (see query-pkg.sh) -- so a missing/unreadable series file
+    # would otherwise silently look identical to "zero active patches"
+    # instead of erroring.
     rc=0
     active_patches_raw=$(grep -vE '^\s*(#|$)' "$REPO/$Q_PATCH_DIR/series") || rc=$?
     [ "$rc" -le 1 ] || { echo "$PKG: could not read patch series at $Q_PATCH_DIR/series (grep exit $rc)" >&2; exit 1; }
@@ -85,6 +90,13 @@ for PKG in "$@"; do
     if [ -n "$active_patches_raw" ]; then
         mapfile -t ACTIVE_PATCHES <<< "$active_patches_raw"
     fi
+    # A source package built from zero active patches would be stock content
+    # under a +suffix version -- identical to the stock package it claims to
+    # differ from. That is never a legitimate output of this tool (the whole
+    # point of the suffix is that SONiC changed something), whether series is
+    # completely empty or every line in it is commented out; both reach here
+    # with the same empty ACTIVE_PATCHES.
+    [ "${#ACTIVE_PATCHES[@]}" -gt 0 ] || { echo "$PKG: $Q_PATCH_DIR/series has zero active patches -- refusing to build a +suffix source package with no SONiC changes" >&2; exit 1; }
     for p in "${ACTIVE_PATCHES[@]}"; do
         # A patch containing a binary file needs
         # debian/source/include-binaries; none of this batch needs it,
