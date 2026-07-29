@@ -14,7 +14,7 @@
 #
 # 用法(source 本文件,不要直接执行):
 #   source scripts/ppa/patch-class.sh
-#   patch_class <补丁文件>        # 打印 debian / upstream / mixed 到 stdout
+#   patch_class <补丁文件>   # 打印 debian / upstream / mixed / invalid 到 stdout
 #
 # 判定依据:每条 "--- " 和 "+++ " 头去掉第一个路径分量(quilt refresh -p ab
 # 产出的 a/、b/ 前缀)之后剩下的路径是否以 debian/ 开头。两条头都要看,不能
@@ -23,15 +23,37 @@
 # 把本该拦下的 mixed(删 debian/ 文件 + 改 upstream 文件)也放过。/dev/null
 # 本身(来自新建或删除的那一侧)不代表任何路径,要跳过,不能去掉分量后当成
 # "dev/null" 参与判断。
-
+#
+# invalid: a 4th outcome callers must reject, distinct from the debian/
+# upstream/mixed classification above -- this function used to fail open,
+# silently falling into the upstream branch (and from there getting
+# appended to debian/patches/series as if it were a normal patch) for any
+# input it could not actually parse. Two cases now report invalid instead:
+#   - the file has no "--- "/"+++ " header pair at all (e.g. an empty file,
+#     or one that is not a diff at all)
+#   - a header's path does not have the a/-, b/- or /dev/null shape this
+#     function assumes (e.g. a -p0-style diff whose header is
+#     "--- debian/rules" with no a/ prefix at all): blindly stripping "the
+#     first path component" from that, as if it were a quilt a/-prefix,
+#     strips "debian/" itself and misfiles the patch as upstream instead of
+#     debian.
 patch_class() {
     local patch="$1"
-    local has_debian=0 has_upstream=0
-    local line path
+    local has_debian=0 has_upstream=0 saw_header=0
+    local line path comp
     while IFS= read -r line; do
+        saw_header=1
         path="${line#[-+][-+][-+] }"
         path="${path%%$'\t'*}"   # 有些 diff 会在路径后带一个制表符+时间戳
         [ "$path" = "/dev/null" ] && continue   # 新建/删除那一侧,没有真实路径
+        comp="${path%%/*}"       # 第一个路径分量,校验形状后再去掉
+        case "$comp" in
+            a|b) ;;
+            *)
+                echo invalid
+                return 0
+                ;;
+        esac
         path="${path#*/}"        # 去掉第一个路径分量(a/ 或 b/)
         case "$path" in
             debian/*) has_debian=1 ;;
@@ -39,7 +61,9 @@ patch_class() {
         esac
     done < <(grep -E '^(---|\+\+\+) ' "$patch")
 
-    if [ "$has_debian" -eq 1 ] && [ "$has_upstream" -eq 1 ]; then
+    if [ "$saw_header" -eq 0 ]; then
+        echo invalid
+    elif [ "$has_debian" -eq 1 ] && [ "$has_upstream" -eq 1 ]; then
         echo mixed
     elif [ "$has_debian" -eq 1 ]; then
         echo debian

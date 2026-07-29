@@ -91,6 +91,21 @@ cat > "$tmp/multi_debian_creates.patch" <<'EOF'
 +new content
 EOF
 
+# Empty file: no "--- "/"+++ " header pair at all -> invalid, not the old
+# fail-open "upstream" default.
+: > "$tmp/empty.patch"
+
+# -p0-style header, no a/ or b/ prefix at all -> invalid. Naively stripping
+# "the first path component" from "debian/rules" here would strip
+# "debian/" itself and misfile this as upstream instead of debian.
+cat > "$tmp/p0_style.patch" <<'EOF'
+--- debian/rules
++++ debian/rules
+@@ -1 +1 @@
+-old
++new
+EOF
+
 check() {
     local name="$1" file="$2" want="$3" got
     got="$(patch_class "$tmp/$file")"
@@ -109,6 +124,8 @@ check "creates a new debian/ file"                   create_debian.patch        
 check "deletes a debian/ file"                       delete_debian.patch                debian
 check "deletes a debian/ file + modifies upstream"   delete_debian_plus_upstream.patch  mixed
 check "creates several debian/ files (lm-sensors)"   multi_debian_creates.patch         debian
+check "empty file has no header at all"              empty.patch                        invalid
+check "-p0-style header without a/ or b/ prefix"      p0_style.patch                     invalid
 
 if [ "$fail" -ne 0 ]; then
     echo "patch_class_test: FAILED"

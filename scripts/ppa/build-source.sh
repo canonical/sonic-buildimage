@@ -68,6 +68,14 @@ for PKG in "$@"; do
                 echo "$PKG: $p touches both debian/ and non-debian/ paths; dpkg-source's quilt format can't take it either way automatically — split it by hand into a debian/-only patch and an upstream-only patch" >&2
                 exit 1
                 ;;
+            invalid)
+                echo "$PKG: $p has no recognized a/-, b/- or /dev/null-shaped diff header (e.g. empty file, or a -p0-style diff); cannot classify it as debian/ or upstream" >&2
+                exit 1
+                ;;
+            *)
+                echo "$PKG: $p: patch_class printed an unrecognized value; refusing to guess" >&2
+                exit 1
+                ;;
         esac
     done
 

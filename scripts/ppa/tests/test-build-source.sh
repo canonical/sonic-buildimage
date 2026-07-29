@@ -108,6 +108,12 @@ while IFS= read -r p; do
         mixed)
             echo "FAIL: $p touches both debian/ and non-debian/ paths; cannot classify for the series check"; exit 1
             ;;
+        invalid)
+            echo "FAIL: $p has no recognized a/-, b/- or /dev/null-shaped diff header; cannot classify it"; exit 1
+            ;;
+        *)
+            echo "FAIL: $p: patch_class printed an unrecognized value"; exit 1
+            ;;
     esac
 done < "$tmp/all_active"
 
