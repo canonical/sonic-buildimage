@@ -17,3 +17,4 @@
 0017-Register-IO-obj-before-create-fd-watch.patch
 0018-Create-udeb-sbin-directory.patch
 0019-resolute-disable-lto-for-vendored-bind.patch
+0020-resolute-build-with-the-gnu17-baseline.patch

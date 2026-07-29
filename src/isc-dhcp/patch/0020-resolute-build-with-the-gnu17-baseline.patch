@@ -1,0 +1,49 @@
+Description: Pin the C dialect to gnu17 so dhcpv6.c builds under GCC 15's C23 default
+ Ubuntu resolute's GCC 15 defaults to -std=gnu23. Under C23, an empty-parens
+ function declaration such as dhcpv6.c's `void (*ia_na_match)()` changes
+ meaning from "unspecified parameters" (traditional/K&R C, legal through
+ C17) to "takes no parameters". dhcpv6.c's iterate_over_ia_na()/
+ iterate_over_ia_pd() then call/pass those pointers with real arguments,
+ which the C23 reading rejects as "too many arguments" and
+ incompatible-pointer-type errors. No SONiC patch touches dhcpv6.c; this is
+ stock upstream isc-dhcp code that predates C23.
+ .
+ Tested empirically (scripts/ppa/build-clean.sh's plain ubuntu:resolute
+ container, with a copy of the extracted tree so each attempt started from
+ the same state): -std=gnu17 alone, with no -Wno-error= relaxations, is
+ sufficient — dpkg-buildpackage -b completes cleanly and produces all
+ isc-dhcp-* .deb/.ddeb artifacts. No other flag from
+ sonic-slave-resolute/buildflags.conf's blanket
+ "-Wno-error=incompatible-pointer-types -Wno-error=int-conversion
+ -Wno-error=discarded-qualifiers" was needed for this package; only
+ -std=gnu17 is carried forward here.
+ .
+ The sonic-slave-resolute Docker image installs buildflags.conf as
+ /etc/dpkg/buildflags.conf, which applies this (and more) globally to every
+ dpkg-buildpackage run in that image — but only the local self-build ever
+ sees that image. A Launchpad builder, and scripts/ppa/build-clean.sh's
+ vanilla ubuntu:resolute container that models it, only ever see the
+ source package, so the flag has to be carried by the package itself.
+Origin: vendor
+Forwarded: not-needed
+Author: Sheldon Qi <sheldon.qi@canonical.com>
+Last-Update: 2026-07-29
+
+--- a/debian/rules
++++ b/debian/rules
+@@ -9,6 +9,15 @@
+ export DEB_CFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
+ export DEB_LDFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
+ 
++# resolute: GCC 15 默认 C23,dhcpv6.c 里 isc-dhcp 自带的 K&R 风格前置声明
++# (如 void (*ia_na_match)())在 C23 下从「参数不定」变成「零参数」,导致
++# 真实调用点报 too many arguments / incompatible-pointer-types 编译错误。
++# 把 C 方言钉回 gnu17(C17)即可,不需要放宽任何 -Wno-error。
++#
++# sonic-slave-resolute 镜像的 /etc/dpkg/buildflags.conf 全局加了这条 flag,
++# 但那只对本地自建生效;源码包本身也要带上,Launchpad builder 才看得到。
++export DEB_CFLAGS_MAINT_APPEND = -std=gnu17
++
+ export DH_VERBOSE=1
+ export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+ 
