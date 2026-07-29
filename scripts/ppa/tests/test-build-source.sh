@@ -100,7 +100,16 @@ tail -n "$(wc -l < "$tmp/want")" "$tmp/src/debian/patches/series" > "$tmp/got"
 if ! diff -u "$tmp/want" "$tmp/got"; then
     echo "FAIL: SONiC upstream-only patches are not appended verbatim at the end of debian/patches/series"; exit 1
 fi
-total_series=$(wc -l < "$tmp/src/debian/patches/series")
+# `wc -l` here would count comment and blank lines in the series file too
+# (the stock portion may carry both), so build/local-only patch counts read
+# high. Count meaningful entries with the same grep filter used above for
+# $Q_PATCH_DIR/series instead. `grep -c` exits 1 when the count is
+# legitimately zero (no match), and that would kill the script here under
+# `set -e` if not caught — same `|| rc=$?` / `[ "$rc" -le 1 ]` guard as the
+# `all_active` read above.
+rc=0
+total_series=$(grep -cvE '^\s*(#|$)' "$tmp/src/debian/patches/series") || rc=$?
+[ "$rc" -le 1 ] || { echo "FAIL: could not count patch series entries in $tmp/src/debian/patches/series (grep exit $rc)"; exit 1; }
 stock_count=$((total_series - upstream_count))
 echo "ok   debian/patches/series: $total_series entries ($stock_count stock + $upstream_count SONiC upstream-only appended)"
 if [ "${#debian_patches[@]}" -gt 0 ]; then
