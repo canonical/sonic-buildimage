@@ -75,7 +75,13 @@ expect_not_contains() {
 # --- 1. 不带参数：应恰好列出三个真实候选包，exit 0 ---
 run out rc ./scripts/ppa/manifest.sh
 expect_eq "no-args exits 0" "$rc" "0"
-body_lines=$(printf '%s\n' "$out" | tail -n +2 | grep -c .)
+# grep -c exits 1 when the count is legitimately zero (e.g. a body-line
+# regression that drops every row); guard it the same way as build-source.sh
+# and test-build-source.sh do, so that case prints a FAIL instead of killing
+# this test script outright under set -e.
+body_rc=0
+body_lines=$(printf '%s\n' "$out" | tail -n +2 | grep -c .) || body_rc=$?
+[ "$body_rc" -le 1 ] || { echo "FAIL no-args: could not count body lines (grep exit $body_rc)"; fail=1; }
 expect_eq "no-args: exactly 3 body lines" "$body_lines" "3"
 for want in isc-dhcp libteam lm-sensors; do
     row=$(printf '%s\n' "$out" | awk -v w="$want" '$1==w')
