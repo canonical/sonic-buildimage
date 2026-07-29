@@ -40,7 +40,20 @@ stg import -s ../patch/series     # 叠 SONiC 补丁（bash 用 quilt push -a）
 dpkg-buildpackage -us -uc -b      # 只出 binary
 ```
 
-`dget -u` 解包时 `dpkg-source -x` 已把上游 `debian/patches` 全部应用，因此 SONiC 补丁是叠在**完全打好补丁的树**上的。把同一 series 按同一顺序追加进 `debian/patches/series`，结果等价。这是本设计成立的技术前提。
+**本设计最初在这里写错了，实现阶段实测推翻，现修正如下。** 原premise是「把同一 series 按同一顺序追加进 `debian/patches/series` 即等价」。它只在一种情况下成立，实际需要两条规则：
+
+1. **取源码时不能让补丁被预先应用。** `dget -u` 会经 `dpkg-source -x` 把上游 `debian/patches` 全部应用并留下 `.pc`。必须改用 `dget -d -u`（只下载）+ `dpkg-source --skip-patches -x`，让工作树保持原始状态；上游补丁与 SONiC 补丁都以**未应用**状态并列在 series 里，由 builder 在构建时统一应用。
+2. **改 `debian/` 的补丁不能进 series。** 在 `3.0 (quilt)` 里 `debian/patches/*` 是打在**上游源码**上的；`debian/` 目录本身以最终内容装进 debian tarball，且 `dpkg-source` 计算自动补丁时忽略 `debian/` 下的改动。因此一个修改 `debian/rules` 的补丁若同时列在 series 里，会在 builder 端被**二次应用**，报 `Reversed (or previously applied) patch detected!`。这类补丁必须**直接应用到工作树**（让效果烘进 debian tarball），且**不列入 series**。
+
+实测三个首批包的补丁构成：
+
+| 包 | 只改 `debian/` | 只改上游 | 上游源码包自带的 quilt 补丁 |
+|---|---|---|---|
+| `libteam` | 0 | 14（全部） | 0（连 `debian/patches/series` 都没有） |
+| `isc-dhcp` | 4 | 14 | 10 |
+| `lm-sensors` | 2（全部） | 0 | 14 |
+
+`libteam` 恰好一个 `debian/` 补丁都没有、上游也零补丁，这正是它能率先端到端跑通、而问题直到 `isc-dhcp` 才暴露的原因 —— 也说明「先做最干净的基线包」这个选包策略是对的：它把脚手架本身的问题和包特有的问题分开了。
 
 **第二类：上游 tarball / git + SONiC 自写 `debian/`（14 个源码树）**
 
@@ -325,10 +338,14 @@ ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_
 ```
 # 容器内（slave-resolute 已含 devscripts / quilt / stgit / python3-yaml）
 scripts/ppa/build-source.sh <pkg>...
-  1. dget -u $(<PREFIX>_DSC_URL)                    # -u 必需：.dsc 上传者的个人 key 不在任何可用 keyring
+  1. dget -d -u $(<PREFIX>_DSC_URL)                 # -d 只下载不解包；-u 必需，因为 .dsc
+                                                    #   上传者的个人 key 不在任何可用 keyring
+     dpkg-source --skip-patches -x <dsc>            # 解包但一个补丁都不应用，工作树保持原始
   2. 定位 src/<pkg>/ 下含 series 的目录（多于一个则报错退出）
-  3. 拷补丁进 debian/patches/，把 series 条目追加进 debian/patches/series
-     —— 补丁保持「未应用」状态，由 builder 在构建时应用
+  3. 按 §2.1 的规则给每个生效补丁分类（依据其 `+++` 头里的路径）：
+       只改上游文件 → 拷进 debian/patches/ 并追加进 series（保持未应用）
+       只改 debian/ → 直接应用到工作树，不进 series
+       两者都改     → 报错并指名该补丁，必须由人拆分
   4. 检查补丁是否含二进制文件；若有则报错（需 debian/source/include-binaries，B1 内目前没有）
   5. dch --newversion <stock版本><后缀> --distribution resolute --force-distribution
      （--force-distribution 必需：否则 dch 拒绝把 distribution 改成非当前值）

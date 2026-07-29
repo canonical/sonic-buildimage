@@ -40,7 +40,20 @@ stg import -s ../patch/series     # stack the SONiC patches (bash uses quilt pus
 dpkg-buildpackage -us -uc -b      # binary only
 ```
 
-`dget -u` extracts via `dpkg-source -x`, which applies all of the upstream `debian/patches`, so the SONiC patches are stacked on a **fully patched tree**. Appending the same series in the same order into `debian/patches/series` is therefore equivalent. This equivalence is the technical premise the whole design rests on.
+**This design got this wrong initially; implementation measured it and disproved it. The corrected version follows.** The original premise was that appending the same series in the same order into `debian/patches/series` is equivalent. That holds in only one case; two rules are actually needed:
+
+1. **Extraction must not pre-apply the patches.** `dget -u` extracts via `dpkg-source -x`, which applies all of the upstream `debian/patches` and leaves a `.pc`. It has to be `dget -d -u` (download only) plus `dpkg-source --skip-patches -x`, so the tree stays pristine and the upstream and SONiC patches sit side by side in the series **unapplied**, for the builder to apply at build time.
+2. **A patch that modifies `debian/` must not go into the series.** In `3.0 (quilt)`, `debian/patches/*` are applied to the *upstream* source; the `debian/` directory itself ships in the debian tarball at its final content, and `dpkg-source` ignores changes under `debian/` when computing the automatic patch. So a patch that edits `debian/rules` and is also listed in the series gets applied a **second** time at build time, producing `Reversed (or previously applied) patch detected!`. Such patches must be **applied directly to the tree** — baking their effect into the debian tarball — and **left out of the series**.
+
+Measured patch composition for the first three packages:
+
+| Package | `debian/`-only patches | upstream-only patches | quilt patches shipped by the stock source |
+|---|---|---|---|
+| `libteam` | 0 | 14 (all) | 0 (no `debian/patches/series` at all) |
+| `isc-dhcp` | 4 | 14 | 10 |
+| `lm-sensors` | 2 (both) | 0 | 14 |
+
+`libteam` happens to have no `debian/` patches and no upstream patches either, which is exactly why it went end to end first while the problem only surfaced on `isc-dhcp` — and why "start with the cleanest baseline package" was the right selection strategy: it separates defects in the scaffolding from defects specific to a package.
 
 **Category 2: upstream tarball / git plus a SONiC-authored `debian/` (14 source trees)**
 
@@ -327,11 +340,15 @@ Signing and uploading do not happen inside the container — mounting the GPG ag
 ```
 # In the container (slave-resolute already ships devscripts / quilt / stgit / python3-yaml)
 scripts/ppa/build-source.sh <pkg>...
-  1. dget -u $(<PREFIX>_DSC_URL)                    # -u is required: the .dsc uploader's personal
-                                                    #   key is in no available keyring on Ubuntu
+  1. dget -d -u $(<PREFIX>_DSC_URL)                 # -d downloads without extracting; -u is
+                                                    #   required because the .dsc uploader's key
+                                                    #   is in no available keyring on Ubuntu
+     dpkg-source --skip-patches -x <dsc>            # extract applying nothing; tree stays pristine
   2. Locate the directory containing `series` under src/<pkg>/ (error out if more than one)
-  3. Copy the patches into debian/patches/ and append the series entries to debian/patches/series
-     — patches stay UNAPPLIED; the builder applies them at build time
+  3. Classify each active patch per the rules in section 2.1, from the paths in its `+++` headers:
+       upstream files only -> copy into debian/patches/ and append to series (left unapplied)
+       debian/ only        -> apply directly to the tree, keep it out of the series
+       both                -> error out naming the patch; a human must split it
   4. Check whether any patch contains binary files; error out if so (would need
      debian/source/include-binaries — none in scope today)
   5. dch --newversion <stock-version><suffix> --distribution resolute --force-distribution
