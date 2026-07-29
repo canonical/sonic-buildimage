@@ -10,6 +10,23 @@
 set -euo pipefail
 
 [ $# -ge 1 ] || { echo "usage: $0 <pkg>..." >&2; exit 2; }
+
+# This script is meant to run inside the slave-resolute container (see the
+# header comment above); on a bare host missing devscripts/dpkg-dev/
+# debhelper it would otherwise fail well into the first package's
+# dget/dpkg-source/dch/curl sequence instead of up front, and -- worse --
+# fail on the SECOND package after already leaving the first package's
+# $WORK download in place. `dh` specifically is not invoked by this script
+# directly, but `dpkg-buildpackage -S` below runs `debian/rules clean`
+# first, and every package wired up here uses debhelper's dh in that
+# target -- confirmed on this host: dpkg-buildpackage -S fails with
+# "make: dh: No such file or directory" when debhelper isn't installed.
+missing=""
+for tool in dget dpkg-source dpkg-buildpackage dpkg-parsechangelog dch curl patch dh; do
+    command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
+done
+[ -z "$missing" ] || { echo "$0: missing required tool(s):$missing -- run this inside the slave-resolute container (devscripts + dpkg-dev + debhelper)" >&2; exit 1; }
+
 cd "$(dirname "$0")/../.."
 REPO=$PWD
 # patch_class()：判断一个补丁改的是 debian/* 还是 debian/* 之外，还是两者

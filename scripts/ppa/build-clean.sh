@@ -10,6 +10,12 @@
 set -euo pipefail
 
 PKG="${1:?usage: $0 <pkg>}"
+
+# This whole script is built around `docker run`; fail immediately with a
+# clear message instead of a bare "docker: command not found" once the
+# apt-get/dpkg-buildpackage sequence below is already midway through.
+command -v docker >/dev/null 2>&1 || { echo "$0: docker is required (this script builds inside a one-shot ubuntu:resolute container) but was not found on PATH" >&2; exit 1; }
+
 cd "$(dirname "$0")/../.."
 REPO=$PWD
 SRCDIR="$REPO/target/source/$PKG"
