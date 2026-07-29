@@ -1,0 +1,33 @@
+Description: Disable LTO for the vendored bind 9.11.36 build
+ bind 9.11.36 (vendored in isc-dhcp) fails to link svtest/dhclient under
+ -flto=auto: libisc.a has the symbols (T) but the link still reports
+ undefined reference. Strip LTO from both CFLAGS and LDFLAGS.
+ .
+ This strip used to live in src/isc-dhcp/Makefile as the exports
+ DEB_CFLAGS_MAINT_STRIP / DEB_LDFLAGS_MAINT_STRIP set around
+ dpkg-buildpackage, which only reached the local self-build. A Launchpad
+ builder only ever sees the source package, so the vendored bind would fail
+ to link there. Moving the strip into debian/rules makes it apply to the
+ local build and PPA builds alike.
+Origin: vendor
+Forwarded: no
+Author: Sheldon Qi <sheldon.qi@canonical.com>
+Last-Update: 2026-07-28
+
+--- a/debian/rules
++++ b/debian/rules
+@@ -1,5 +1,14 @@
+ #!/usr/bin/make -f
+ 
++# resolute: bind 9.11.36（isc-dhcp 内嵌）无法用 -flto=auto 链接。libisc.a 里
++# 符号是 T，但 svtest 与 dhclient 链接时仍报 undefined reference。
++# 从 CFLAGS 与 LDFLAGS 两侧都剥掉 LTO。
++#
++# 这两行原先在 src/isc-dhcp/Makefile 里、以 dpkg-buildpackage 前后的 export
++# 形式存在。那对本地自建有效，但 Launchpad builder 只看得到源码包。
++export DEB_CFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
++export DEB_LDFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
++
+ export DH_VERBOSE=1
+ export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+ 

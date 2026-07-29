@@ -10,21 +10,24 @@ SONIC_DERIVED_DEBS :=
 
 SONIC_PPA_URL      := https://ppa.launchpadcontent.net/o/n/ubuntu
 SONIC_PPA_SUFFIX   := +sonic1~ppa1
-# 本次只把 libteam 切到 PPA 模式，用于验证「按包生效」而非全局生效
-SONIC_PPA_PACKAGES := libteam
+# 本次只把 libteam、isc-dhcp 切到 PPA 模式，用于验证「按包生效」而非全局生效
+SONIC_PPA_PACKAGES := libteam isc-dhcp
 
 include rules/functions
 include rules/libteam.mk
+include rules/isc-dhcp.mk
 include scripts/ppa/tests/assert.mk
 
 # PPA 模式：注册到 ONLINE 而非 MAKE，且 deb 名带后缀
-$(call assert,libteam-online,$(SONIC_ONLINE_DEBS),libteam5_1.31-1build4+sonic1~ppa1_amd64.deb)
+# （用 $(filter libteam5%,...) 而非裸值比较：现在 SONIC_ONLINE_DEBS 是
+# libteam、isc-dhcp 共用的全局列表，裸比较会被另一个包的主包名弄脏）
+$(call assert,libteam-online,$(filter libteam5%,$(SONIC_ONLINE_DEBS)),libteam5_1.31-1build4+sonic1~ppa1_amd64.deb)
 $(call assert,libteam-not-make,$(SONIC_MAKE_DEBS),)
 $(call assert,libteam-main-name,$(LIBTEAM),libteam5_1.31-1build4+sonic1~ppa1_amd64.deb)
 $(call assert,libteam-stock-ver,$(LIBTEAM_VERSION_STOCK),1.31-1build4)
 
-# 派生包数量不变（1 主 + 6 派生）
-$(call assert,libteam-derived-count,$(words $(SONIC_DERIVED_DEBS)),6)
+# 派生包数量不变（1 主 + 6 派生）。同理过滤：SONIC_DERIVED_DEBS 现在也是共用列表。
+$(call assert,libteam-derived-count,$(words $(filter libteam%,$(SONIC_DERIVED_DEBS))),6)
 
 # 主包 URL
 $(call assert,libteam-main-url,$($(LIBTEAM)_URL),https://ppa.launchpadcontent.net/o/n/ubuntu/pool/main/libt/libteam/libteam5_1.31-1build4+sonic1~ppa1_amd64.deb)
@@ -38,6 +41,11 @@ $(call assert,libteam-dev-url,$($(LIBTEAM_DEV)_URL),https://ppa.launchpadcontent
 
 # dsc URL 用 stock 版本，绝不能带 PPA 后缀
 $(call assert,libteam-dsc-url,$(LIBTEAM_DSC_URL),http://archive.ubuntu.com/ubuntu/pool/main/libt/libteam/libteam_1.31-1build4.dsc)
+
+$(call assert,iscdhcp-online,$(filter isc-dhcp-relay%,$(SONIC_ONLINE_DEBS)),isc-dhcp-relay_4.4.3-P1-2+sonic1~ppa1_amd64.deb)
+$(call assert,iscdhcp-stock-ver,$(ISC_DHCP_VERSION_STOCK),4.4.3-P1-2)
+$(call assert,iscdhcp-dsc-url,$(ISC_DHCP_DSC_URL),http://deb.debian.org/debian/pool/main/i/isc-dhcp/isc-dhcp_4.4.3-P1-2.dsc)
+$(call assert,iscdhcp-dbg-url,$($(ISC_DHCP_RELAY_DBG)_URL),https://ppa.launchpadcontent.net/o/n/ubuntu/pool/main/i/isc-dhcp/isc-dhcp-relay-dbgsym_4.4.3-P1-2+sonic1~ppa1_amd64.ddeb)
 
 .PHONY: default
 default:

@@ -16,3 +16,4 @@
 0016-Don-t-look-up-the-ifindex-for-fallback.patch
 0017-Register-IO-obj-before-create-fd-watch.patch
 0018-Create-udeb-sbin-directory.patch
+0019-resolute-disable-lto-for-vendored-bind.patch
