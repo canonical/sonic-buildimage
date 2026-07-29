@@ -14,6 +14,7 @@ SONIC_PPA_SUFFIX   := +sonic1~ppa1
 SONIC_PPA_PACKAGES := libteam isc-dhcp lm-sensors
 
 include rules/functions
+include rules/ppa-functions
 include rules/libteam.mk
 include rules/isc-dhcp.mk
 include rules/lm-sensors.mk

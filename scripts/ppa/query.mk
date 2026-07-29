@@ -22,6 +22,7 @@ SONIC_DERIVED_DEBS :=
 include rules/config
 -include rules/config.user
 include rules/functions
+include rules/ppa-functions
 include rules/$(PKG).mk
 
 # 包目录名 → make 变量前缀

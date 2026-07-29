@@ -1,5 +1,5 @@
-# ppa_* 辅助函数的单测。不 include slave.mk —— 只 include rules/functions,
-# 使本测试能在裸仓库里瞬间跑完。
+# ppa_* 辅助函数的单测。不 include slave.mk —— 只 include rules/functions
+# 与 rules/ppa-functions,使本测试能在裸仓库里瞬间跑完。
 # 用法: make -s -f scripts/ppa/tests/functions_test.mk
 
 SONIC_PPA_URL              := https://ppa.launchpadcontent.net/o/n/ubuntu
@@ -8,6 +8,7 @@ SONIC_PPA_SUFFIX_lm-sensors := +sonic1~ppa2
 SONIC_PPA_PACKAGES         := libteam lm-sensors
 
 include rules/functions
+include rules/ppa-functions
 include scripts/ppa/tests/assert.mk
 
 $(call assert,ppa_ver-on,$(call ppa_ver,libteam),+sonic1~ppa1)

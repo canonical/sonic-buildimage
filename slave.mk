@@ -287,6 +287,7 @@ endif
 endif
 
 include $(RULES_PATH)/functions
+include $(RULES_PATH)/ppa-functions
 
 ifeq ($(SONIC_USE_PDDF_FRAMEWORK),y)
 PDDF_SUPPORT = y

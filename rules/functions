@@ -210,28 +210,3 @@ define generate_manifest
         mv $($(1).gz_PATH)/manifest.common.json $($(1).gz_PATH)/manifest.json
     fi
 endef
-
-# ---- Launchpad PPA 辅助函数 ----
-#
-# 注意：本文件只被 slave.mk:289 include。Makefile.work:155 会在没有本文件的
-# 宿主机上下文里 include rules/sonic-fips.mk，因此下列函数不可用于该文件。
-
-# ppa_suffix <pkg> —— 单包覆盖优先于全局默认
-ppa_suffix = $(or $(SONIC_PPA_SUFFIX_$(1)),$(SONIC_PPA_SUFFIX))
-
-# ppa_ver <pkg> —— 仅当该包处于 PPA 模式时返回后缀，否则返回空。
-# 供 <PREFIX>_VERSION_FULL 内联使用，从而所有 deb 名定义无需分支。
-ppa_ver = $(if $(filter $(1),$(SONIC_PPA_PACKAGES)),$(call ppa_suffix,$(1)))
-
-# ppa_pool_dir <source-name> —— Debian pool 二级目录：libxxx → libx，其余取首字母
-ppa_pool_dir = $(if $(filter lib%,$(1)),$(shell echo $(1) | cut -c1-4),$(shell echo $(1) | cut -c1))
-
-# ppa_file <deb-name> —— dbgsym 在 PPA 上发布为 .ddeb（Launchpad builder 上无法
-# 施加 slave 里那个 Dh_Lib.pm 补丁）。只改 URL 一侧；make 目标名与落盘名仍是 .deb，
-# 靠 slave.mk:761 的 curl -o 撑住。
-ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
-
-# ppa_url <source-name>,<deb-name> —— PPA 只有 main 一个 component，与该包在
-# Ubuntu 官方归档里属于 main 还是 universe 无关（monit 官方在 universe，
-# 进 PPA 后仍在 pool/main/m/monit/）。
-ppa_url = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))

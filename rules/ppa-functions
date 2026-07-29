@@ -1,0 +1,35 @@
+# ---- Launchpad PPA helper functions ----
+#
+# Deliberately its own file, not appended to rules/functions: rules/functions
+# is one of the paths in Makefile.cache's SONIC_COMMON_FILES_LIST, so it gets
+# hashed into every cached package's dpkg cache key across every distro.
+# Appending here would invalidate that cache for everything, even when
+# SONIC_PPA_PACKAGES is empty. This file is included by slave.mk right after
+# rules/functions instead, and is not itself part of SONIC_COMMON_FILES_LIST.
+#
+# Note: Makefile.work includes rules/sonic-fips.mk in a host context that
+# does not include this file, so the functions below are unavailable there.
+
+# ppa_suffix <pkg> -- a per-package override takes precedence over the global default
+ppa_suffix = $(or $(SONIC_PPA_SUFFIX_$(1)),$(SONIC_PPA_SUFFIX))
+
+# ppa_ver <pkg> -- returns the suffix only when this package is in PPA mode,
+# empty otherwise. Meant to be inlined into <PREFIX>_VERSION_FULL so no deb
+# name definition needs its own branch on PPA mode.
+ppa_ver = $(if $(filter $(1),$(SONIC_PPA_PACKAGES)),$(call ppa_suffix,$(1)))
+
+# ppa_pool_dir <source-name> -- Debian pool second-level directory: libxxx ->
+# libx, everything else -> its first letter
+ppa_pool_dir = $(if $(filter lib%,$(1)),$(shell echo $(1) | cut -c1-4),$(shell echo $(1) | cut -c1))
+
+# ppa_file <deb-name> -- dbgsym packages are published as .ddeb on Launchpad
+# (the Launchpad builder can't have the slave's Dh_Lib.pm patch applied to
+# it). Only the URL side changes; the make target name and the file as
+# written to disk stay .deb, backed by slave.mk:761's curl -o.
+ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
+
+# ppa_url <source-name>,<deb-name> -- PPAs have only one component (main),
+# regardless of whether the package is in main or universe in the official
+# Ubuntu archive (e.g. monit is in universe upstream but still lands in
+# pool/main/m/monit/ once in a PPA).
+ppa_url = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
