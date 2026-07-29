@@ -1418,3 +1418,23 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - 确认 PPA 的 debug symbols 发布开关能否打开。若不能，按 `rules/lldpd.mk` 的现成做法把 dbgsym 从 `SONIC_ONLINE_DEBS` 里摘掉但保留变量定义。
 - `socat` 的 readline 授权判断（设计 §8）。
 - 第二批：从 `libyang3` 开始（树外动作最多的包）。
+
+
+---
+
+## 实现结果（2026-07-29 回填）
+
+本计划已在 `202605_resolute_ppa` 上执行完毕，34 个提交，六个任务全部通过任务级 review 与全分支终审。**上面各步骤里的代码块是执行前的方案，不是最终落地的代码** —— 执行过程中在计划自己的代码里发现并修掉了若干真实缺陷，最终形态以 `scripts/ppa/`、`rules/ppa-functions` 和[设计文档](../specs/2026-07-28-sonic-ppa-source-packages-design-zh.md)为准（设计文档已同步）。
+
+计划与落地的主要差异：
+
+| 计划里写的 | 实际落地 | 原因 |
+|---|---|---|
+| 函数追加进 `rules/functions` | 新建 `rules/ppa-functions` | `Makefile.cache:110` 把 `rules/functions` 列入 `SONIC_COMMON_FILES_LIST`，动它会让全部 267 个缓存目标在所有发行版上 cache key 失效 |
+| `dget -u` | `dget -d -u` + `dpkg-source --skip-patches -x` | `dget -u` 会预先应用上游自带的 quilt 补丁 |
+| 整个 series 追加进 `debian/patches/series` | 按 `debian/`-only / upstream-only / mixed 分类（新增 `scripts/ppa/patch-class.sh`） | 改 `debian/` 的补丁在 builder 端会被二次应用 |
+| 各脚本各自读 `query.mk` | 抽出 `scripts/ppa/query-pkg.sh` | 重复三份导致同一缺陷只修了一处，而漏掉的那处会把 A 包的源码包搬进 B 包目录并退出 0 |
+| 断言 `.pc` 不存在 | 断言 plain `dpkg-source -x` 零 fuzz 成功 | 原断言永真 |
+| 首批仅需内化各包 Makefile 里的动作 | isc-dhcp 还需 `-std=gnu17`；lm-sensors 还需 `librrd-dev` | slave 镜像的全局 `buildflags.conf` 与预装 build-dep 都不会跟到 builder |
+
+新增的测试套件共 7 个（`scripts/ppa/tests/run-tests.sh` 一次跑完）。

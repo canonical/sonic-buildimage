@@ -1457,3 +1457,23 @@ The following depend on the PPA ownership decision (design §10):
 - Confirming whether the PPA's debug-symbol publishing switch can be enabled. If it cannot, follow the existing pattern in `rules/lldpd.mk`: keep the variable defined but drop dbgsym from `SONIC_ONLINE_DEBS`.
 - The `socat` readline licensing call (design §8).
 - The second batch, starting with `libyang3` (the package with the most out-of-tree actions).
+
+
+---
+
+## Implementation outcome (backfilled 2026-07-29)
+
+This plan was executed on `202605_resolute_ppa`: 34 commits, all six tasks through task-level review and a whole-branch final review. **The code blocks in the steps above are the pre-execution proposal, not what shipped** — execution found and fixed several real defects in the plan's own code. The authoritative shapes are `scripts/ppa/`, `rules/ppa-functions` and the [design document](../specs/2026-07-28-sonic-ppa-source-packages-design-en.md), which has been reconciled.
+
+Main divergences:
+
+| The plan said | What shipped | Why |
+|---|---|---|
+| Append the helpers to `rules/functions` | A new `rules/ppa-functions` | `Makefile.cache:110` lists `rules/functions` in `SONIC_COMMON_FILES_LIST`; touching it invalidates the cache key of all 267 cached targets on every distro |
+| `dget -u` | `dget -d -u` plus `dpkg-source --skip-patches -x` | `dget -u` pre-applies the stock package's own quilt patches |
+| Append the whole series to `debian/patches/series` | Classify as `debian/`-only / upstream-only / mixed (new `scripts/ppa/patch-class.sh`) | A patch touching `debian/` is applied a second time on the builder |
+| Each script reads `query.mk` itself | Extracted `scripts/ppa/query-pkg.sh` | Three copies meant one defect got fixed in one place; the copy left behind staged package A's source package into package B's directory and exited 0 |
+| Assert `.pc` is absent | Assert a plain `dpkg-source -x` applies with zero fuzz | The original assertion could never fail |
+| The first batch only needs each package's Makefile actions internalised | isc-dhcp also needs `-std=gnu17`; lm-sensors also needs `librrd-dev` | Neither the slave image's global `buildflags.conf` nor its preinstalled build-deps reach a builder |
+
+Seven test suites now exist, all run by `scripts/ppa/tests/run-tests.sh`.
