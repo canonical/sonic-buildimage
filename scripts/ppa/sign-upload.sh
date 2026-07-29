@@ -1,0 +1,48 @@
+#!/bin/bash
+# 在宿主机上签名（并可选上传）由 build-source.sh 产出的源码包。
+#
+# 刻意不在容器内进行：把 GPG agent socket 挂进 DinD 容器代价高且脆弱。
+# 需要宿主机装有 devscripts（debsign）与 dput。
+#
+# 用法:
+#   scripts/ppa/sign-upload.sh --key <KEYID> [<pkg>...]            只签名
+#   scripts/ppa/sign-upload.sh --key <KEYID> --upload ppa:o/n ...  签名并上传
+#   scripts/ppa/sign-upload.sh --dry-run [<pkg>...]                只列出会做什么
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+KEY=""; PPA=""; DRY=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --key)     KEY="$2"; shift 2 ;;
+        --upload)  PPA="$2"; shift 2 ;;
+        --dry-run) DRY=1; shift ;;
+        *)         break ;;
+    esac
+done
+
+pkgs=("$@")
+if [ ${#pkgs[@]} -eq 0 ]; then
+    mapfile -t pkgs < <(find target/source -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+fi
+[ ${#pkgs[@]} -gt 0 ] || { echo "nothing in target/source/; run build-source.sh first" >&2; exit 1; }
+
+for p in "${pkgs[@]}"; do
+    changes=$(ls "target/source/$p"/*_source.changes 2>/dev/null | head -1) || true
+    [ -n "$changes" ] || { echo "$p: no _source.changes; run build-source.sh first" >&2; exit 1; }
+
+    if [ "$DRY" = 1 ]; then
+        echo "would debsign${KEY:+ -k $KEY} $changes"
+        [ -n "$PPA" ] && echo "would dput $PPA $changes"
+        continue
+    fi
+
+    [ -n "$KEY" ] || { echo "--key is required unless --dry-run" >&2; exit 2; }
+    debsign -k "$KEY" "$changes"
+    echo "signed $changes"
+
+    if [ -n "$PPA" ]; then
+        dput "$PPA" "$changes"
+        echo "uploaded $changes -> $PPA"
+    fi
+done
