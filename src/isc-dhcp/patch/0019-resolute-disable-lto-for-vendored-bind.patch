@@ -19,12 +19,12 @@ Last-Update: 2026-07-28
 @@ -1,5 +1,14 @@
  #!/usr/bin/make -f
  
-+# resolute: bind 9.11.36（isc-dhcp 内嵌）无法用 -flto=auto 链接。libisc.a 里
-+# 符号是 T，但 svtest 与 dhclient 链接时仍报 undefined reference。
-+# 从 CFLAGS 与 LDFLAGS 两侧都剥掉 LTO。
++# resolute: bind 9.11.36 (vendored in isc-dhcp) fails to link under
++# -flto=auto: libisc.a has the symbols (T), but svtest/dhclient still
++# report undefined reference. Strip LTO from both CFLAGS and LDFLAGS.
 +#
-+# 这两行原先在 src/isc-dhcp/Makefile 里、以 dpkg-buildpackage 前后的 export
-+# 形式存在。那对本地自建有效，但 Launchpad builder 只看得到源码包。
++# These two lines used to live in src/isc-dhcp/Makefile as exports set
++# around dpkg-buildpackage -- that only reached local builds; a Launchpad builder only sees the source package.
 +export DEB_CFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
 +export DEB_LDFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
 +

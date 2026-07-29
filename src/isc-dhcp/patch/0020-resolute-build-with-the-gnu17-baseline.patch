@@ -31,17 +31,20 @@ Last-Update: 2026-07-29
 
 --- a/debian/rules
 +++ b/debian/rules
-@@ -9,6 +9,15 @@
+@@ -9,6 +9,18 @@
  export DEB_CFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
  export DEB_LDFLAGS_MAINT_STRIP = -flto=auto -ffat-lto-objects
  
-+# resolute: GCC 15 默认 C23,dhcpv6.c 里 isc-dhcp 自带的 K&R 风格前置声明
-+# (如 void (*ia_na_match)())在 C23 下从「参数不定」变成「零参数」,导致
-+# 真实调用点报 too many arguments / incompatible-pointer-types 编译错误。
-+# 把 C 方言钉回 gnu17(C17)即可,不需要放宽任何 -Wno-error。
++# resolute: GCC 15 defaults to C23. Under C23, isc-dhcp's own K&R-style
++# forward declaration in dhcpv6.c (void (*ia_na_match)()) changes
++# meaning from "unspecified parameters" to "zero parameters", so real
++# call sites fail with too many arguments / incompatible-pointer-types
++# errors. Pin the C dialect back to gnu17 (C17) instead; no -Wno-error
++# relaxation is needed.
 +#
-+# sonic-slave-resolute 镜像的 /etc/dpkg/buildflags.conf 全局加了这条 flag,
-+# 但那只对本地自建生效;源码包本身也要带上,Launchpad builder 才看得到。
++# sonic-slave-resolute's /etc/dpkg/buildflags.conf sets this flag
++# globally, but that only applies to the local self-build; the source
++# package must carry it too, or a Launchpad builder never sees it.
 +export DEB_CFLAGS_MAINT_APPEND = -std=gnu17
 +
  export DH_VERBOSE=1
