@@ -15,10 +15,11 @@ cd "$(dirname "$0")/../../.."
 # patch_class()：与 build-source.sh 共用同一套 debian/ vs 非-debian 判断，
 # 不重复实现。
 source scripts/ppa/patch-class.sh
+# query_pkg(): shared with build-source.sh and manifest.sh -- same
+# query/validate implementation, not reimplemented here.
+source scripts/ppa/query-pkg.sh
 
-# 用 read 而非 eval：DERIVED_DEBS 的值含空格，eval 会把它按词拆开去执行
-while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
-    < <(make -s -f scripts/ppa/query.mk PKG="$PKG")
+query_pkg "$PKG" || exit 1
 OUT="target/source/$PKG"
 
 # nullglob 数组而非 `ls | head -1`：glob 不匹配时 ls 以非零退出，pipefail 下

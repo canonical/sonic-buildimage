@@ -15,6 +15,10 @@ REPO=$PWD
 # patch_class()：判断一个补丁改的是 debian/* 还是 debian/* 之外，还是两者
 # 都有。test-build-source.sh 也要用同一套判断，抽成公共文件，不抄两份。
 source "$REPO/scripts/ppa/patch-class.sh"
+# query_pkg(): queries one package's PPA-related facts and loads them into
+# the current shell as Q_* variables; manifest.sh and test-build-source.sh
+# share this same implementation.
+source "$REPO/scripts/ppa/query-pkg.sh"
 
 # 每个包一个 $WORK；set -e 下任何一个包中途失败都会让脚本立即退出，跳过
 # 该包循环体末尾原本的清理。用一个数组记录所有已创建的 $WORK，EXIT trap
@@ -30,9 +34,7 @@ trap cleanup_work_dirs EXIT
 
 for PKG in "$@"; do
     echo "=== $PKG"
-    # 用 read 而非 eval：DERIVED_DEBS 的值含空格，eval 会把它按词拆开去执行
-while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
-    < <(make -s -f scripts/ppa/query.mk PKG="$PKG")
+    query_pkg "$PKG" || exit 1
 
     [ -n "${Q_DSC_URL:-}" ] || { echo "$PKG: <PREFIX>_DSC_URL is not set in rules/$PKG.mk" >&2; exit 1; }
     [ -n "${Q_STOCK_VERSION:-}" ] || { echo "$PKG: <PREFIX>_VERSION_STOCK is not set in rules/$PKG.mk" >&2; exit 1; }
