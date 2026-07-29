@@ -21,7 +21,13 @@ SONIC_ONLINE_DEBS  :=
 SONIC_DERIVED_DEBS :=
 
 include rules/config
--include rules/config.user
+# CONFIG_USER_PATH indirection: lets callers that need a hermetic run (see
+# scripts/ppa/tests/manifest_test.sh) point this at /dev/null instead of a
+# developer's real rules/config.user, which -include's with a plain `=` and
+# so would otherwise beat both this variable's own `?=` default and any
+# SONIC_PPA_* value the caller passed in via the environment.
+CONFIG_USER_PATH ?= rules/config.user
+-include $(CONFIG_USER_PATH)
 include rules/functions
 include rules/ppa-functions
 include rules/$(PKG).mk

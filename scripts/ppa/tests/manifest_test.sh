@@ -14,6 +14,15 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../../.."
 
+# Hermetic against whatever the developer running this actually has in
+# rules/config.user: query.mk's `-include $(CONFIG_USER_PATH)` uses a plain
+# `=` inside that file, which beats both `?=` defaults and any SONIC_PPA_*
+# value we set via the environment below (e.g. a real config.user setting
+# SONIC_PPA_PACKAGES would silently change which packages test 5 below sees
+# in ppa mode). Point it at /dev/null so this test only ever sees what it
+# itself sets.
+export CONFIG_USER_PATH=/dev/null
+
 BOGUS="nonexistent-pkg-$$"
 fail=0
 
