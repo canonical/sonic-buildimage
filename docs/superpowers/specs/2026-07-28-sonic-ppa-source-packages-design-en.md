@@ -155,7 +155,23 @@ In PPA mode the deb name changes and `_SRC_PATH` is no longer set, so `SPATH` is
 
 Guiding principle: **out-of-tree actions that are functional or that fix the build must be internalised into `debian/rules`** (as a SONiC patch in `debian/patches`); those that only serve local testing can be dropped. Every package migration must walk this table item by item.
 
-### 3.8 Current state of variable exports
+### 3.8 The slave image's global build-flag override (the image-level counterpart to §3.7, missed entirely in the first draft)
+
+The table in §3.7 lists only what each `src/<pkg>/Makefile` does. There is one more out-of-tree action, at **image level, affecting every self-built package**: `sonic-slave-resolute/Dockerfile.j2:860` installs `sonic-slave-resolute/buildflags.conf` as `/etc/dpkg/buildflags.conf` in the container:
+
+```
+APPEND CFLAGS -std=gnu17 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=discarded-qualifiers
+```
+
+GCC 15 defaults to C23; this line pulls the whole build back to the gnu17 baseline and relaxes three newly-promoted error classes. **None of it travels with a source package to Launchpad**, and no such file exists on a builder — nor in the pristine `ubuntu:resolute` container `build-clean.sh` uses, which is precisely why that container surfaces the problem.
+
+Consequence: **any package that only compiles because of this line must carry the part it actually needs in its own `debian/rules` when it moves to the PPA.** That is how `isc-dhcp` was caught — the K&R declarations left in its `dhcpv6.c` (such as `void (*ia_na_match)()`) change meaning under C23 from "unspecified parameters" to "no parameters" and fail to compile. It never showed locally because the global line had always been masking it.
+
+When internalising, **measure the minimal set per package; do not copy the line wholesale.** `isc-dhcp` needed only `-std=gnu17` — none of the three `-Wno-error=` relaxations — which shows the global line is broader than any individual package requires. `libteam` needs none of it at all and builds in the pristine container as-is.
+
+Every package migration must answer: **does it depend on this global override, and on which part?** The way to find out is to build it once in `build-clean.sh`'s pristine container.
+
+### 3.9 Current state of variable exports
 
 Most category-1 packages already `export` their version variables from `rules/<pkg>.mk` (for sub-makes); `redis` and `thrift` export nothing. The stock `.dsc` URL is currently **hardcoded inside `src/<pkg>/Makefile`**; only `iproute2` has lifted it into a variable (`IPROUTE2_DSC_URL`).
 

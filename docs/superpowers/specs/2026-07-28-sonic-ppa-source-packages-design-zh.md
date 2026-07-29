@@ -155,7 +155,23 @@ PPA 模式下 deb 名变了、`_SRC_PATH` 不再设置 → `SPATH` 为空 → `g
 
 处理原则：**功能性与构建修复类的树外动作必须内化进 `debian/rules`**（作为一个 SONiC 补丁进 `debian/patches`）；仅服务本地测试的可以丢弃。每个包迁移时必须逐项过一遍这张表。
 
-### 3.8 变量导出现状
+### 3.8 slave 镜像的全局构建标志覆盖（§3.7 的镜像级版本，设计初稿完全漏了）
+
+§3.7 那张表只列了各包 `src/<pkg>/Makefile` 里的动作。还有一条**镜像级、影响每一个自建包**的树外动作：`sonic-slave-resolute/Dockerfile.j2:860` 把 `sonic-slave-resolute/buildflags.conf` 装到容器的 `/etc/dpkg/buildflags.conf`：
+
+```
+APPEND CFLAGS -std=gnu17 -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=discarded-qualifiers
+```
+
+GCC 15 默认 C23，这行把整个构建拉回 gnu17 基线并放宽三类新提升的错误。它**一行都不会跟着源码包上 Launchpad**，builder 上也不存在这个文件 —— `build-clean.sh` 用的原始 `ubuntu:resolute` 容器同样没有，这正是它能暴露问题的原因。
+
+后果：**任何只因为这行才编得过的包，迁到 PPA 时都必须在自己的 `debian/rules` 里带上它实际需要的那部分。** `isc-dhcp` 就是这么被抓到的 —— 它的 `dhcpv6.c` 里残留的 K&R 声明（如 `void (*ia_na_match)()`）在 C23 下语义从「参数未指定」变成「无参数」，编译直接失败；本地从未暴露，因为全局那行一直在遮掩。
+
+内化时**按包实测最小集，不要整行照抄**。`isc-dhcp` 实测只需要 `-std=gnu17` 一项，三个 `-Wno-error=` 一个都不需要 —— 说明全局那行比任何单个包实际所需都宽。`libteam` 则完全不需要，它在原始容器里直接就能构建。
+
+每个包迁移时必须回答：**它是否依赖这行全局覆盖？依赖哪一部分？** 判定方法就是在 `build-clean.sh` 的原始容器里构建一次。
+
+### 3.9 变量导出现状
 
 多数第一类包的 `rules/<pkg>.mk` 已 `export` 版本变量（供 sub-make 使用）；`redis`、`thrift` 未 export 任何变量。stock `.dsc` 的 URL 目前**硬编码在 `src/<pkg>/Makefile` 里**，只有 `iproute2` 提成了 `IPROUTE2_DSC_URL`。
 
