@@ -2033,7 +2033,7 @@ ccache-clear :
 .PHONY : ccache-stats ccache-clear
 
 # 打印 PPA 候选包状态表。数据全部来自 rules/*.mk,经 scripts/ppa/query.mk 提取。
-.PHONY: ppa-manifest
+.PHONY : ppa-manifest
 ppa-manifest:
 	$(Q)scripts/ppa/manifest.sh
 
