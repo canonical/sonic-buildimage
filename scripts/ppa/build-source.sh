@@ -1,12 +1,14 @@
 #!/bin/bash
-# 为一个或多个包产出未签名的 Debian 源码包，供上传到 Launchpad PPA。
+# Produce unsigned Debian source packages for one or more packages, for
+# upload to a Launchpad PPA.
 #
-# 在 slave-resolute 容器内运行（需要 dget / dch / dpkg-source，容器已含
-# devscripts）。刻意不签名、不上传：GPG 与 dput 由宿主机上的
-# scripts/ppa/sign-upload.sh 负责。
+# Run inside the slave-resolute container (needs dget / dch /
+# dpkg-source; the container already has devscripts). Deliberately does
+# not sign or upload: GPG and dput are handled by
+# scripts/ppa/sign-upload.sh on the host.
 #
-# 用法: scripts/ppa/build-source.sh <pkg>...
-#   例: scripts/ppa/build-source.sh libteam isc-dhcp lm-sensors
+# Usage: scripts/ppa/build-source.sh <pkg>...
+#   e.g.: scripts/ppa/build-source.sh libteam isc-dhcp lm-sensors
 set -euo pipefail
 
 [ $# -ge 1 ] || { echo "usage: $0 <pkg>..." >&2; exit 2; }
@@ -29,17 +31,21 @@ done
 
 cd "$(dirname "$0")/../.."
 REPO=$PWD
-# patch_class()：判断一个补丁改的是 debian/* 还是 debian/* 之外，还是两者
-# 都有。test-build-source.sh 也要用同一套判断，抽成公共文件，不抄两份。
+# patch_class(): determines whether a patch touches debian/*, touches
+# outside debian/*, or touches both. test-build-source.sh needs the
+# same logic, so it's factored into a shared file instead of duplicated.
 source "$REPO/scripts/ppa/patch-class.sh"
 # query_pkg(): queries one package's PPA-related facts and loads them into
 # the current shell as Q_* variables; manifest.sh and test-build-source.sh
 # share this same implementation.
 source "$REPO/scripts/ppa/query-pkg.sh"
 
-# 每个包一个 $WORK；set -e 下任何一个包中途失败都会让脚本立即退出，跳过
-# 该包循环体末尾原本的清理。用一个数组记录所有已创建的 $WORK，EXIT trap
-# 统一清理——只清最后一个是不够的，前面已成功的包的 $WORK 目录不会自己消失。
+# One $WORK per package; under set -e, any package failing partway
+# through makes the script exit immediately, skipping the cleanup at
+# the end of that package's loop body. Track every $WORK created so
+# far in an array and clean them all up in one EXIT trap -- cleaning
+# only the last one isn't enough, since the $WORK dirs of
+# already-succeeded packages won't disappear on their own.
 WORK_DIRS=()
 cleanup_work_dirs() {
     local d
@@ -56,9 +62,11 @@ for PKG in "$@"; do
     [ -n "${Q_DSC_URL:-}" ] || { echo "$PKG: <PREFIX>_DSC_URL is not set in rules/$PKG.mk" >&2; exit 1; }
     [ -n "${Q_STOCK_VERSION:-}" ] || { echo "$PKG: <PREFIX>_VERSION_STOCK is not set in rules/$PKG.mk" >&2; exit 1; }
 
-    # 只看 series 里当前生效的补丁：一个被注释掉、从不会被应用的补丁文件如果
-    # 恰好含二进制 diff，不该拖累这次构建；后面追加补丁的循环也复用这份列表，
-    # 不必对 series 再 grep 一遍。
+    # Only consider patches currently active in series: a commented-out
+    # patch file that will never be applied shouldn't hold up this
+    # build just because it happens to contain a binary diff; the
+    # later loop that appends patches also reuses this list, so series
+    # doesn't need to be grepped again.
     #
     # grep exiting 1 here is legitimate (an empty series has zero active-patch
     # lines); exiting >=2 (e.g. the series file itself is unreadable) is a
@@ -78,20 +86,27 @@ for PKG in "$@"; do
         mapfile -t ACTIVE_PATCHES <<< "$active_patches_raw"
     fi
     for p in "${ACTIVE_PATCHES[@]}"; do
-        # 补丁里含二进制文件需要 debian/source/include-binaries；本批次没有，
-        # 但要显式报错而不是静默产出一个 dpkg-source 会拒绝的包。
+        # A patch containing a binary file needs
+        # debian/source/include-binaries; none of this batch needs it,
+        # but this must error out explicitly instead of silently
+        # producing a package that dpkg-source will reject.
         if grep -q $'^GIT binary patch' "$REPO/$Q_PATCH_DIR/$p" 2>/dev/null; then
             echo "$PKG: $p contains a binary diff; needs debian/source/include-binaries" >&2
             exit 1
         fi
     done
 
-    # dpkg-source 的 "3.0 (quilt)" 格式里 debian/patches/* 只应用给上游代码；
-    # debian/ 目录本身随 debian.tar 打成最终态。一个补丁如果既在 series 里、
-    # 又真的改了 debian/ 下的文件，dpkg-source -b 重建校验树时会把这处改动
-    # 当成"应用了两次"而拒绝（"Reversed (or previously applied) patch
-    # detected!"）。按 patch_class() 的判断分两队：只改 debian/* 的直接焙进
-    # 解包出的树，其余的照常进 series；两者都碰的没法自动决定，报错交给人工拆。
+    # In dpkg-source's "3.0 (quilt)" format, debian/patches/* is only
+    # applied to the upstream code; the debian/ directory itself is
+    # baked into its final state via debian.tar. If a patch is both
+    # listed in series and actually touches files under debian/,
+    # dpkg-source -b will treat that change as "applied twice" when it
+    # rebuilds the verification tree and reject it ("Reversed (or
+    # previously applied) patch detected!"). Split by patch_class()'s
+    # verdict into two groups: patches that only touch debian/* are
+    # baked directly into the extracted tree, everything else goes into
+    # series as usual; a patch that touches both can't be decided
+    # automatically, so error out and leave the split to a human.
     DEBIAN_PATCHES=()
     UPSTREAM_PATCHES=()
     for p in "${ACTIVE_PATCHES[@]}"; do
@@ -119,37 +134,51 @@ for PKG in "$@"; do
     mkdir -p "$OUT"
 
     pushd "$WORK" >/dev/null
-    # -u 是结构性必需：Ubuntu slave 上 .dsc 上传者的个人 key 不在任何可用
-    # keyring 里，装 debian-keyring 也验不了。
+    # -u is structurally required: on the Ubuntu slave, the .dsc
+    # uploader's personal key isn't in any usable keyring, and
+    # installing debian-keyring still can't verify it.
     #
-    # -d：只下载，不解包。普通 `dget -u` 会自动 `dpkg-source -x`，把上游
-    # debian/patches 全部应用到工作树，只留 .pc 记录「上游那些补丁已应用」。
-    # 我们随后把 SONiC 的补丁名追加进同一个 series，但补丁内容本身不应用
-    # （留给 builder 在构建时应用）——这样一来 series 里一部分（上游的）已
-    # 应用、另一部分（SONiC 的）未应用，工作树和 series 互相对不上。带 10
-    # 个上游补丁的包（如 isc-dhcp）在这种状态下 `dpkg-source -b` 会报
-    # "aborting due to unexpected upstream changes"：它按完整 series 重新
-    # 展开一份参照树，与当前工作树一比，SONiC 补丁改到的文件全部不一致。
+    # -d: download only, don't unpack. A plain `dget -u` would
+    # automatically run `dpkg-source -x`, applying all of upstream's
+    # debian/patches to the working tree and leaving only .pc to record
+    # that those upstream patches are applied. We then append the
+    # SONiC patch names to that same series, but their content is not
+    # applied (that's left for the builder to apply at build time) --
+    # which would leave series partly applied (the upstream part) and
+    # partly unapplied (the SONiC part), so the working tree and series
+    # would no longer agree. For a package with 10 upstream patches
+    # (e.g. isc-dhcp), in that state `dpkg-source -b` fails with
+    # "aborting due to unexpected upstream changes": it re-expands a
+    # reference tree from the full series and, comparing it against the
+    # current working tree, finds every file touched by a SONiC patch
+    # disagrees.
     dget -d -u "$Q_DSC_URL"
 
     DSC=$(find . -maxdepth 1 -type f -name '*.dsc' | head -1)
     [ -n "$DSC" ] || { echo "$PKG: dget -d did not leave a .dsc in $WORK" >&2; exit 1; }
-    # --skip-patches：解包但一个补丁都不应用（连上游的都不应用），工作树
-    # 保持 pristine。series 因此从头到尾都是「未应用」，与我们后面追加
-    # SONiC 补丁名的做法一致，不会出现上面那种半应用状态。
+    # --skip-patches: unpack but apply zero patches (not even
+    # upstream's), keeping the working tree pristine. series therefore
+    # stays entirely "unapplied" from start to finish, matching how we
+    # later append SONiC patch names -- so the half-applied state
+    # described above never happens.
     dpkg-source --skip-patches -x "$DSC"
 
     SRCDIR=$(find . -maxdepth 1 -type d -name "$Q_SOURCE-*" | head -1)
     [ -n "$SRCDIR" ] || { echo "$PKG: cannot find extracted source dir for $Q_SOURCE" >&2; exit 1; }
     pushd "$SRCDIR" >/dev/null
 
-    # 有些 stock 包（如 lm-sensors）的 debian/changelog 顶部条目带 dpkg epoch
-    # （如 "1:3.6.2-2build1"），即便归档文件名/URL 从不带 epoch。下面
-    # dch --newversion 如果漏掉 epoch，新条目会被当成隐式 epoch 0——比官方
-    # 归档版本"更旧"，任何已装官方包的机器永远不会 apt upgrade 到我们的 PPA
-    # 构建。此处趁 changelog 还是 pristine 状态读出 epoch 并原样带上；顺带
-    # 校验 rules/<pkg>.mk 里手写的 <PREFIX>_VERSION_STOCK 是否与 changelog
-    # 记的（去掉 epoch 后）一致，防止手写版本号打错字。
+    # Some stock packages (e.g. lm-sensors) have a dpkg epoch in the
+    # top debian/changelog entry (e.g. "1:3.6.2-2build1"), even though
+    # the archive filename/URL never carries the epoch. If the dch
+    # --newversion below omitted the epoch, the new entry would be
+    # treated as implicit epoch 0 -- "older" than the official archive
+    # version, so any machine that already has the official package
+    # would never apt upgrade to our PPA build. Read the epoch here
+    # while the changelog is still pristine and carry it forward
+    # unchanged; while at it, verify that the hand-written
+    # <PREFIX>_VERSION_STOCK in rules/<pkg>.mk agrees with what
+    # changelog records (with the epoch stripped), to catch a typo in
+    # the hand-written version.
     STOCK_CHANGELOG_VERSION=$(dpkg-parsechangelog --show-field Version)
     EPOCH=""
     case "$STOCK_CHANGELOG_VERSION" in
@@ -160,8 +189,10 @@ for PKG in "$@"; do
         exit 1
     fi
 
-    # 只改 debian/* 的补丁直接焙进解包出的树（成为 debian tarball 本体的一部
-    # 分），不进 series——它们不是"builder 构建时要应用的上游补丁"。
+    # Patches that only touch debian/* are baked directly into the
+    # extracted tree (becoming part of the debian tarball itself), not
+    # added to series -- they are not "upstream patches the builder
+    # applies at build time".
     for p in "${DEBIAN_PATCHES[@]}"; do
         if ! patch -p1 -N -f -s -F0 < "$REPO/$Q_PATCH_DIR/$p"; then
             echo "$PKG: debian/-only patch $p did not apply cleanly to the extracted tree" >&2
@@ -169,8 +200,9 @@ for PKG in "$@"; do
         fi
     done
 
-    # 其余（只改 debian/* 之外）的补丁按同一顺序追加进 series；补丁本身保持
-    # 未应用，留给 builder 在构建时应用。
+    # The rest (patches touching only outside debian/*) are appended to
+    # series in the same order; the patches themselves stay unapplied,
+    # left for the builder to apply at build time.
     mkdir -p debian/patches
     [ -f debian/patches/series ] || : > debian/patches/series
     for p in "${UPSTREAM_PATCHES[@]}"; do
@@ -178,18 +210,24 @@ for PKG in "$@"; do
         echo "$p" >> debian/patches/series
     done
 
-    # 不再需要 rm -rf .pc：--skip-patches 从不应用任何补丁，也就从不创建 .pc。
+    # rm -rf .pc is no longer needed: --skip-patches never applies any
+    # patch, so .pc is never created.
 
     dch --newversion "${EPOCH}${Q_STOCK_VERSION}${Q_SUFFIX}" \
         --distribution resolute --force-distribution \
         "SONiC packaging for Ubuntu resolute: apply the $PKG patch series from sonic-buildimage."
 
-    # 该 upstream 版本首次上传要带 orig（-sa）；后续必须 -sd，否则 Launchpad
-    # 会因 orig 校验和冲突 reject。以 PPA pool 里是否已有该 orig 为准；
-    # 无法判定时保守用 -sa —— 多余重传一次 orig 通常无害，但首次上传缺 orig
-    # 会被 Launchpad 直接拒绝，两害相权取其轻。
-    # pool URL 由 query.mk 给出(见 Q_PPA_POOL_URL),不在这里用 sed 重推一遍
-    # ppa_pool_dir 的逻辑 —— 那会让同一规则存在两份实现。
+    # The first upload of a given upstream version needs the orig
+    # (-sa); every later upload must use -sd, or Launchpad will reject
+    # it over an orig checksum conflict. Decide based on whether the
+    # orig is already present in the PPA pool; when that can't be
+    # determined, default conservatively to -sa -- re-uploading an
+    # orig unnecessarily is usually harmless, but a first upload
+    # missing the orig is rejected by Launchpad outright, so between
+    # the two risks this is the lesser one.
+    # The pool URL comes from query.mk (see Q_PPA_POOL_URL); it is not
+    # re-derived here with sed from the ppa_pool_dir logic -- that
+    # would leave the same rule with two implementations.
     SA_FLAG=-sd
     if [ -n "${Q_PPA_POOL_URL:-}" ]; then
         # -F on the $Q_SOURCE half: it is interpolated from rules/*.mk, and

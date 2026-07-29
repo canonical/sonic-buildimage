@@ -1,13 +1,15 @@
 #!/bin/bash
-# 在宿主机上签名（并可选上传）由 build-source.sh 产出的源码包。
+# Sign (and optionally upload) source packages produced by
+# build-source.sh, on the host.
 #
-# 刻意不在容器内进行：把 GPG agent socket 挂进 DinD 容器代价高且脆弱。
-# 需要宿主机装有 devscripts（debsign）与 dput。
+# Deliberately not done inside the container: mounting the GPG agent
+# socket into the DinD container is costly and fragile.
+# Requires the host to have devscripts (debsign) and dput installed.
 #
-# 用法:
-#   scripts/ppa/sign-upload.sh --key <KEYID> [<pkg>...]            只签名
-#   scripts/ppa/sign-upload.sh --key <KEYID> --upload ppa:o/n ...  签名并上传
-#   scripts/ppa/sign-upload.sh --dry-run [<pkg>...]                只列出会做什么
+# Usage:
+#   scripts/ppa/sign-upload.sh --key <KEYID> [<pkg>...]            sign only
+#   scripts/ppa/sign-upload.sh --key <KEYID> --upload ppa:o/n ...  sign and upload
+#   scripts/ppa/sign-upload.sh --dry-run [<pkg>...]                just list what would happen
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

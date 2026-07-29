@@ -19,7 +19,8 @@ endif
 ISC_DHCP_RELAY_DBG = isc-dhcp-relay-dbgsym_$(ISC_DHCP_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 $(eval $(call add_derived_package,$(ISC_DHCP_RELAY),$(ISC_DHCP_RELAY_DBG)))
 
-# PPA 模式:主包与 dbgsym 各自的下载地址。必须位于 add_derived_package 之后。
+# PPA mode: separate download URLs for the main package and dbgsym.
+# Must come after add_derived_package.
 ifneq ($(filter isc-dhcp,$(SONIC_PPA_PACKAGES)),)
 $(ISC_DHCP_RELAY)_URL     = $(call ppa_url,isc-dhcp,$(ISC_DHCP_RELAY))
 $(ISC_DHCP_RELAY_DBG)_URL = $(call ppa_url,isc-dhcp,$(ISC_DHCP_RELAY_DBG))

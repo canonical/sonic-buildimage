@@ -1,8 +1,9 @@
-# make 层单测共用的断言宏。
+# Shared assertion macro for make-level unit tests.
 #
-# 用法：include 本文件后
-#   $(call assert,<名称>,<实际值>,<期望值>)
-# 收集失败到 FAILURES；测试套件的默认目标据此决定退出码。
+# Usage: after including this file
+#   $(call assert,<name>,<actual value>,<expected value>)
+# Failures accumulate into FAILURES; each test suite's default target
+# uses it to decide its exit code.
 FAILURES :=
 
 define assert
@@ -11,7 +12,7 @@ $(if $(filter-out x$(3),x$(2)),\
   $(info ok   $(1)))
 endef
 
-# 各测试套件在自己的默认目标里 include 本段逻辑：
+# Each test suite includes this logic in its own default target:
 #   ifneq ($(strip $(FAILURES)),)
 #   	@echo "FAILED: $(FAILURES)"; exit 1
 #   else

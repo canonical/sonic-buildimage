@@ -1,28 +1,41 @@
-# 判断一个补丁改的路径全在 debian/ 下、全在 debian/ 之外、还是两者都有。
+# Determine whether a patch's touched paths are entirely under
+# debian/, entirely outside debian/, or a mix of both.
 #
-# dpkg-source 的 "3.0 (quilt)" 格式里,debian/patches/* 只应用给上游代码;
-# debian/ 目录本身以 debian.tar 里的最终内容打包。dpkg-source -b 重建校验
-# 树时,会把 series 里列出的补丁整个重新应用一遍去跟当前工作树比较——如果
-# 一个补丁既在 series 里、又真的改了 debian/ 下的文件,那处改动在工作树里
-# 已经是最终态,重新应用等于第二次打,dpkg-source 会报 "Reversed (or
-# previously applied) patch detected!"。
+# In dpkg-source's "3.0 (quilt)" format, debian/patches/* is only
+# applied to the upstream code; the debian/ directory itself is
+# packaged with the final content in debian.tar. When dpkg-source -b
+# rebuilds the verification tree, it reapplies every patch listed in
+# series from scratch and compares the result against the current
+# working tree -- if a patch is both listed in series and actually
+# touches files under debian/, that change is already in its final
+# state in the working tree, so reapplying it amounts to applying it a
+# second time, and dpkg-source reports "Reversed (or previously
+# applied) patch detected!".
 #
-# 因此按补丁修改的路径分两类分别处理:
-#   - 只改 debian/* → 应该直接焙进解包出的树,不进 series
-#   - 只改 debian/* 之外 → 照常进 series,交给 builder 在构建时应用
-#   - 两者都有 → 上面两条规则都套不上,报错交给人工拆分,不猜
+# Handle patches differently based on the paths they touch:
+#   - only touches debian/* -> bake directly into the extracted tree,
+#     don't add to series
+#   - only touches outside debian/* -> add to series as usual, leave
+#     it for the builder to apply at build time
+#   - touches both -> neither rule above applies; error out and leave
+#     the split to a human, don't guess
 #
-# 用法(source 本文件,不要直接执行):
+# Usage (source this file, don't execute it directly):
 #   source scripts/ppa/patch-class.sh
-#   patch_class <补丁文件>   # 打印 debian / upstream / mixed / invalid 到 stdout
+#   patch_class <patch file>   # prints debian / upstream / mixed / invalid to stdout
 #
-# 判定依据:每条 "--- " 和 "+++ " 头去掉第一个路径分量(quilt refresh -p ab
-# 产出的 a/、b/ 前缀)之后剩下的路径是否以 debian/ 开头。两条头都要看,不能
-# 只看 "+++ ":对于删除文件的 hunk,真实路径在 "--- " 行,"+++ " 行只是字面量
-# /dev/null——只看 "+++ " 会把删除 debian/ 下文件的补丁误判成 upstream,连带
-# 把本该拦下的 mixed(删 debian/ 文件 + 改 upstream 文件)也放过。/dev/null
-# 本身(来自新建或删除的那一侧)不代表任何路径,要跳过,不能去掉分量后当成
-# "dev/null" 参与判断。
+# Basis for the decision: whether the path left after stripping the
+# first path component (the a/, b/ prefix produced by quilt refresh -p
+# ab) from each "--- " and "+++ " header starts with debian/. Both
+# headers must be checked, not just "+++ ": for a hunk that deletes a
+# file, the real path is on the "--- " line, and the "+++ " line is
+# just the literal /dev/null -- checking only "+++ " would misjudge a
+# patch that deletes a file under debian/ as upstream, and along with
+# it let through a mixed case (deleting a debian/ file + touching an
+# upstream file) that should have been caught. /dev/null itself (from
+# whichever side is a create or delete) doesn't represent any real
+# path and must be skipped, not stripped of its component and treated
+# as "dev/null" in the decision.
 #
 # invalid: a 4th outcome callers must reject, distinct from the debian/
 # upstream/mixed classification above -- this function used to fail open,
@@ -44,9 +57,9 @@ patch_class() {
     while IFS= read -r line; do
         saw_header=1
         path="${line#[-+][-+][-+] }"
-        path="${path%%$'\t'*}"   # 有些 diff 会在路径后带一个制表符+时间戳
-        [ "$path" = "/dev/null" ] && continue   # 新建/删除那一侧,没有真实路径
-        comp="${path%%/*}"       # 第一个路径分量,校验形状后再去掉
+        path="${path%%$'\t'*}"   # some diffs carry a tab + timestamp after the path
+        [ "$path" = "/dev/null" ] && continue   # the create/delete side, no real path
+        comp="${path%%/*}"       # first path component, validate its shape before stripping
         case "$comp" in
             a|b) ;;
             *)
@@ -54,7 +67,7 @@ patch_class() {
                 return 0
                 ;;
         esac
-        path="${path#*/}"        # 去掉第一个路径分量(a/ 或 b/)
+        path="${path#*/}"        # strip the first path component (a/ or b/)
         case "$path" in
             debian/*) has_debian=1 ;;
             *)        has_upstream=1 ;;

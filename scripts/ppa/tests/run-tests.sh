@@ -1,5 +1,6 @@
 #!/bin/bash
-# 跑 PPA 脚手架的全部 make 层单测。必须从仓库根目录运行。
+# Run all make-level unit tests for the PPA scaffolding. Must be run
+# from the repo root.
 set -euo pipefail
 
 cd "$(dirname "$0")/../../.."
@@ -10,9 +11,12 @@ for t in scripts/ppa/tests/*_test.mk; do
     make -s -f "$t" || rc=1
 done
 
-# 自包含的 shell 测试套件用 *_test.sh 后缀,不带参数就能直接跑,这里一并
-# 拉起来跑;跟 test-build-source.sh 这种要传包名的参数化测试(test-* 前缀)
-# 是两回事,不能被这个 glob 捡到,所以两者的命名规则故意反过来区分开。
+# Self-contained shell test suites use the *_test.sh suffix and can be
+# run directly with no arguments; they are picked up and run here too.
+# This is distinct from parameterized tests like test-build-source.sh,
+# which need a package name (test-* prefix) and must not be caught by
+# this glob -- hence the two naming conventions are deliberately
+# reversed from each other to keep them apart.
 for t in scripts/ppa/tests/*_test.sh; do
     echo "== $t"
     bash "$t" || rc=1

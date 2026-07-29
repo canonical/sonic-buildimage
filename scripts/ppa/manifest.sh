@@ -1,8 +1,10 @@
 #!/bin/bash
-# 打印每个 PPA 候选包的状态表。取代「另建一份 YAML 好一眼看全」的做法：
-# 本表 100% 由 rules/*.mk 推导,是产物而非真相,因此不会漂移。
+# Print a status table for every PPA-candidate package. Replaces the
+# approach of maintaining a separate YAML for an at-a-glance view: this
+# table is 100% derived from rules/*.mk -- it's a derived artifact, not
+# a second source of truth, so it can't drift.
 #
-# 用法: scripts/ppa/manifest.sh [<pkg>...]     不给参数则列出所有已声明 _VERSION_STOCK 的包
+# Usage: scripts/ppa/manifest.sh [<pkg>...]     with no args, lists every package that declares _VERSION_STOCK
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 # query_pkg(): shared with build-source.sh and test-build-source.sh -- see
@@ -11,11 +13,13 @@ source scripts/ppa/query-pkg.sh
 
 pkgs=("$@")
 if [ ${#pkgs[@]} -eq 0 ]; then
-    # 不能只 grep _DSC_URL：rules/iproute2.mk 也定义了 IPROUTE2_DSC_URL,但那
-    # 是它自己直接下载上游 .dsc 用的,跟本设计「stock 版本 + PPA 后缀切换」
-    # 的登记方式无关(它用 *_VERSION,不用 *_VERSION_STOCK,query.mk 对它会
-    # 报 "expected exactly 1 main deb, got \"\"")。_VERSION_STOCK 才是 PPA
-    # 候选包共有、且只有它们才有的标记。
+    # Can't just grep for _DSC_URL: rules/iproute2.mk also defines
+    # IPROUTE2_DSC_URL, but that one is used for downloading its own
+    # upstream .dsc directly and has nothing to do with this design's
+    # "stock version + PPA suffix switch" registration scheme (it uses
+    # *_VERSION, not *_VERSION_STOCK, so query.mk reports "expected
+    # exactly 1 main deb, got \"\"" for it). _VERSION_STOCK is the
+    # marker that PPA candidate packages -- and only they -- carry.
     mapfile -t pkgs < <(grep -l '_VERSION_STOCK' rules/*.mk | sed 's|rules/||; s|\.mk$||' | sort)
 fi
 

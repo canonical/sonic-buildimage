@@ -1,19 +1,24 @@
 #!/bin/bash
-# 验证 build-source.sh 为一个包产出的源码包是否正确：
-#   - 产出 .dsc 与 _source.changes
-#   - 上传清单里没有任何 .deb（PPA 只收 source upload）
-#   - 版本号是 stock 版本 + suffix（<STOCK_VERSION><SUFFIX>）
-#   - 只改 debian/* 之外的 SONiC 补丁已追加进 debian/patches/series，顺序与
-#     src/<pkg>/patch/series 一致；只改 debian/* 的那部分已被直接焙进树，
-#     不出现在 series 里
-#   - 补丁能在零 fuzz 下被 dpkg-source -x 原样应用（Launchpad builder 用的
-#     正是 dpkg-source，不是本地开发循环里容忍 fuzz 的 stg import）
+# Verify that the source package build-source.sh produces for a
+# package is correct:
+#   - produces a .dsc and a _source.changes
+#   - the upload manifest contains no .deb at all (PPAs only accept
+#     source uploads)
+#   - the version number is stock version + suffix
+#     (<STOCK_VERSION><SUFFIX>)
+#   - SONiC patches that only touch outside debian/* have been
+#     appended to debian/patches/series, in the same order as
+#     src/<pkg>/patch/series; the part that only touches debian/* has
+#     been baked directly into the tree and does not appear in series
+#   - the patches can be applied verbatim by dpkg-source -x with zero
+#     fuzz (the Launchpad builder uses dpkg-source itself, not the
+#     fuzz-tolerant stg import used in the local dev loop)
 set -euo pipefail
 
 PKG="${1:?usage: test-build-source.sh <pkg>}"
 cd "$(dirname "$0")/../../.."
-# patch_class()：与 build-source.sh 共用同一套 debian/ vs 非-debian 判断，
-# 不重复实现。
+# patch_class(): shares the same debian/ vs non-debian judgment with
+# build-source.sh, not reimplemented here.
 source scripts/ppa/patch-class.sh
 # query_pkg(): shared with build-source.sh and manifest.sh -- same
 # query/validate implementation, not reimplemented here.
@@ -22,8 +27,10 @@ source scripts/ppa/query-pkg.sh
 query_pkg "$PKG" || exit 1
 OUT="target/source/$PKG"
 
-# nullglob 数组而非 `ls | head -1`：glob 不匹配时 ls 以非零退出，pipefail 下
-# 会在这条赋值语句本身就把 errexit 触发掉，永远走不到下面的 FAIL 分支。
+# A nullglob array rather than `ls | head -1`: when the glob doesn't
+# match, ls exits non-zero, and under pipefail that would trigger
+# errexit right on this assignment itself, never reaching the FAIL
+# branch below.
 shopt -s nullglob
 dsc_candidates=("$OUT"/*.dsc)
 shopt -u nullglob
@@ -43,21 +50,27 @@ if grep -qE '^\s.*\.deb$' "$changes"; then
 fi
 echo "ok   changes contains no .deb"
 
-# 解包（不应用补丁），供下面两处复用：1）从次新的 changelog 条目读出 stock
-# epoch（如果有）；2）检查 series 尾部构成。
+# Unpack (without applying patches), reused by two checks below: 1)
+# reading the stock epoch (if any) from the second-newest changelog
+# entry; 2) checking the tail composition of series.
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 #   --skip-patches here only serves the epoch and series-content checks
 #   below, which just read files under debian/ and do not need patches
 #   actually applied.
 dpkg-source --no-check --skip-patches -x "$dsc" "$tmp/src" >/dev/null
 
-# 版本号必须是 stock + suffix。逐字段比较而非塞进 grep 正则：$want_ver 里的
-# '.' 在 BRE 里是「任意字符」元字符，塞进 grep 模式会让校验比预期宽松。
+# The version number must be stock + suffix. Compare it as a plain
+# string rather than folding it into a grep regex: the '.' in
+# $want_ver is the "any character" metacharacter in a BRE, so putting
+# it into a grep pattern would make the check looser than intended.
 #
-# 有些 stock 包（如 lm-sensors）的 debian/changelog 带 dpkg epoch（如
-# "1:3.6.2-2build1"），build-source.sh 的 dch --newversion 会原样带上。这里
-# 独立地从「次新」的 changelog 条目（dch 新插入的那条之前、pristine 原状的
-# 那条）读出同一个 epoch 来验证，而不是拿 dsc 自己的字段去对自己。
+# Some stock packages (e.g. lm-sensors) have a dpkg epoch in
+# debian/changelog (e.g. "1:3.6.2-2build1"), and build-source.sh's dch
+# --newversion carries it forward unchanged. Here the same epoch is
+# read independently from the "second-newest" changelog entry (the
+# pristine, unmodified one that comes before the entry dch just
+# inserted), to verify against, rather than checking the .dsc's own
+# field against itself.
 epoch=""
 if raw=$(dpkg-parsechangelog -o1 -c1 --show-field Version -l "$tmp/src/debian/changelog" 2>/dev/null); then
     case "$raw" in
@@ -65,10 +78,11 @@ if raw=$(dpkg-parsechangelog -o1 -c1 --show-field Version -l "$tmp/src/debian/ch
     esac
 fi
 want_ver="${epoch}${Q_STOCK_VERSION}${Q_SUFFIX}"
-# `if cmd; then` 而不是裸的 `x=$(cmd)`：cmd 作为 if 条件时，其非零退出不会
-# 触发 errexit，所以 .dsc 里没有 Version: 字段时能落到下面的 FAIL，而不是
-# 在这条赋值本身就被 set -e 杀掉（.dsc 不匹配用 grep -m1，本来就没有管道，
-# 不需要额外的 head -1）。
+# `if cmd; then` rather than a bare `x=$(cmd)`: when cmd is an if
+# condition, its non-zero exit does not trigger errexit, so when the
+# .dsc has no Version: field it falls through to the FAIL below
+# instead of being killed by set -e right on this assignment (grep -m1
+# already has no pipe here, so no extra head -1 is needed).
 if version_line=$(grep -m1 '^Version:' "$dsc"); then
     dsc_ver=$(sed -e 's/^Version:[[:space:]]*//' -e 's/[[:space:]]*$//' <<< "$version_line")
 else
@@ -80,18 +94,22 @@ if [ "$dsc_ver" != "$want_ver" ]; then
 fi
 echo "ok   version is $want_ver"
 
-# 检查 series 尾部
-# grep 退出 1（没有匹配行）在这里是合法状态：series 里当前一个生效补丁都没有
-# 时就该产出一个空 want，走到下面「0 个补丁」的比较，而不是被 set -e 当成
-# 出错杀掉脚本。用 `|| rc=$?` 显式接住退出码，只有 >1（比如 series 文件本身
-# 读不到）才是真错误。
+# Check the tail of series
+# grep exiting 1 (no matching line) is a legitimate state here: when
+# series currently has zero active patches, an empty want should be
+# produced, falling through to the "0 patches" comparison below,
+# rather than being treated as an error and killing the script under
+# set -e. Catch the exit code explicitly with `|| rc=$?`; only >1 (e.g.
+# the series file itself being unreadable) is a real error.
 rc=0
 grep -vE '^\s*(#|$)' "$Q_PATCH_DIR/series" > "$tmp/all_active" || rc=$?
 [ "$rc" -le 1 ] || { echo "FAIL: could not read patch series at $Q_PATCH_DIR/series (grep exit $rc)"; exit 1; }
 
-# 只有"只改 debian/* 之外"的补丁才会被追加进 debian/patches/series；
-# "只改 debian/*"的补丁已经在 build-source.sh 里直接焙进树本体，不出现在
-# series 里。分类用同一份 patch_class()，不在这里另抄一遍判断逻辑。
+# Only patches that "only touch outside debian/*" get appended to
+# debian/patches/series; patches that "only touch debian/*" have
+# already been baked directly into the tree itself by build-source.sh
+# and do not appear in series. Classification uses the same
+# patch_class(), the judgment logic is not duplicated here.
 : > "$tmp/want"
 debian_patches=()
 upstream_count=0

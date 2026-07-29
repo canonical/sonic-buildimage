@@ -1,9 +1,12 @@
 #!/bin/bash
-# patch_class() 自测：用临时目录里手写的最小合法 unified diff 片段，覆盖
-# scripts/ppa/patch-class.sh 分类的每一种输入形状,不依赖任何真实包的补丁。
+# Self-test for patch_class(): uses minimal, hand-written valid
+# unified diff snippets in a temp directory, covering every input
+# shape scripts/ppa/patch-class.sh classifies, without depending on
+# any real package's patch.
 #
-# 这份测试本身是自包含的（*_test.sh 后缀，见 run-tests.sh 里的说明），跟
-# test-build-source.sh 那种要传包名参数的测试不是一回事。
+# This test is itself self-contained (the *_test.sh suffix, see the
+# note in run-tests.sh), unlike test-build-source.sh, which needs a
+# package name argument passed in.
 set -euo pipefail
 
 cd "$(dirname "$0")/../../.."
@@ -14,7 +17,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 fail=0
 
-# 只改 debian/ 下的文件 → debian
+# Only touches files under debian/ -> debian
 cat > "$tmp/only_debian.patch" <<'EOF'
 --- a/debian/rules
 +++ b/debian/rules
@@ -23,7 +26,7 @@ cat > "$tmp/only_debian.patch" <<'EOF'
 +new
 EOF
 
-# 只改 debian/ 之外的文件 → upstream
+# Only touches files outside debian/ -> upstream
 cat > "$tmp/only_upstream.patch" <<'EOF'
 --- a/src/foo.c
 +++ b/src/foo.c
@@ -32,7 +35,7 @@ cat > "$tmp/only_upstream.patch" <<'EOF'
 +new
 EOF
 
-# 一个改 debian/,一个改 upstream → mixed
+# One touches debian/, one touches upstream -> mixed
 cat > "$tmp/one_of_each.patch" <<'EOF'
 --- a/debian/rules
 +++ b/debian/rules
@@ -46,7 +49,7 @@ cat > "$tmp/one_of_each.patch" <<'EOF'
 +new
 EOF
 
-# 新建 debian/ 下的文件（--- /dev/null）→ debian
+# Creates a new file under debian/ (--- /dev/null) -> debian
 cat > "$tmp/create_debian.patch" <<'EOF'
 --- /dev/null
 +++ b/debian/newfile
@@ -54,7 +57,7 @@ cat > "$tmp/create_debian.patch" <<'EOF'
 +new content
 EOF
 
-# 删除 debian/ 下的文件（+++ /dev/null，真实路径在 --- 行）→ debian
+# Deletes a file under debian/ (+++ /dev/null, real path is on the --- line) -> debian
 cat > "$tmp/delete_debian.patch" <<'EOF'
 --- a/debian/oldfile
 +++ /dev/null
@@ -62,7 +65,7 @@ cat > "$tmp/delete_debian.patch" <<'EOF'
 -old content
 EOF
 
-# 删除一个 debian/ 文件,同时改一个 upstream 文件 → mixed
+# Deletes a debian/ file while also touching an upstream file -> mixed
 cat > "$tmp/delete_debian_plus_upstream.patch" <<'EOF'
 --- a/debian/oldfile
 +++ /dev/null
@@ -75,7 +78,7 @@ cat > "$tmp/delete_debian_plus_upstream.patch" <<'EOF'
 +new
 EOF
 
-# 一个补丁里新建多个 debian/ 下的文件（lm-sensors 那种形状）→ debian
+# A single patch creates multiple files under debian/ (the shape seen in lm-sensors) -> debian
 cat > "$tmp/multi_debian_creates.patch" <<'EOF'
 --- /dev/null
 +++ b/debian/newfile1

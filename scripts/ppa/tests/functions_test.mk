@@ -1,6 +1,7 @@
-# ppa_* 辅助函数的单测。不 include slave.mk —— 只 include rules/functions
-# 与 rules/ppa-functions,使本测试能在裸仓库里瞬间跑完。
-# 用法: make -s -f scripts/ppa/tests/functions_test.mk
+# Unit tests for the ppa_* helper functions. Does not include
+# slave.mk -- only includes rules/functions and rules/ppa-functions, so
+# this test can run instantly in a bare checkout.
+# Usage: make -s -f scripts/ppa/tests/functions_test.mk
 
 SONIC_PPA_URL              := https://ppa.launchpadcontent.net/o/n/ubuntu
 SONIC_PPA_SUFFIX           := +sonic1~ppa1

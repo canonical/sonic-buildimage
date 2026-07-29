@@ -1,10 +1,12 @@
-# scripts/ppa/query.mk 自测：以 make -f 真正跑一次 query.mk（不是直接
-# include rules/*.mk），确认它在 local 与 ppa 两种模式下都打印全部十个
-# key。rules_test.mk 已经直接 include rules/*.mk 逐个校验各 deb 的
-# _URL 等具体取值；这里测的是 query.mk 这一层本身——包括它的
-# CONFIG_USER_PATH 隔离、include 链是否完整——用同一个包（libteam）在两种
-# 模式下对照。
-# 用法: make -s -f scripts/ppa/tests/query_test.mk
+# Self-test for scripts/ppa/query.mk: actually runs query.mk via
+# make -f (not by including rules/*.mk directly), confirming it prints
+# all ten keys in both local and ppa mode. rules_test.mk already
+# includes rules/*.mk directly and checks each deb's specific values
+# (its _URL etc.) one by one; this tests the query.mk layer itself --
+# including its CONFIG_USER_PATH isolation and whether its include
+# chain is complete -- by comparing the same package (libteam) across
+# both modes.
+# Usage: make -s -f scripts/ppa/tests/query_test.mk
 
 include scripts/ppa/tests/assert.mk
 

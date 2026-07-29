@@ -40,8 +40,9 @@ $(eval $(call add_derived_package,$(LIBTEAM),$(LIBTEAM_UTILS)))
 LIBTEAM_UTILS_DBG = libteam-utils-dbgsym_$(LIBTEAM_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 $(eval $(call add_derived_package,$(LIBTEAM),$(LIBTEAM_UTILS_DBG)))
 
-# PPA 模式：主包与每个派生包各自的下载地址。必须位于所有 add_derived_package
-# 调用之后 —— 那个宏会让派生包继承主包的 _URL（rules/functions:94）。
+# PPA mode: separate download URLs for the main package and each derived
+# package. Must come after all add_derived_package calls -- that macro
+# makes derived packages inherit the main package's _URL (rules/functions:94).
 ifneq ($(filter libteam,$(SONIC_PPA_PACKAGES)),)
 $(LIBTEAM)_URL             = $(call ppa_url,libteam,$(LIBTEAM))
 $(LIBTEAM_DBG)_URL         = $(call ppa_url,libteam,$(LIBTEAM_DBG))
