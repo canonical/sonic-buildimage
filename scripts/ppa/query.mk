@@ -57,6 +57,32 @@ ifneq ($(words $(PATCH_DIRS)),1)
 $(error $(PKG): expected exactly 1 patch dir containing a series file, got "$(PATCH_DIRS)")
 endif
 
+# add_derived_package (rules/functions:94) gives a derived deb a $(2)_URL that
+# references its main deb's $(1)_URL -- but $(call ...) fully expands that
+# reference at the moment add_derived_package is invoked, which in every
+# rules/<pkg>.mk is BEFORE the ppa-mode block further down the file has set
+# the main deb's own _URL. So a derived deb that never gets its own _URL
+# override afterwards (see rules/libteam.mk's and rules/isc-dhcp.mk's
+# comments on that ordering requirement) does not end up quietly inheriting
+# the main deb's URL -- it ends up with an empty one, downloading nothing.
+# The two checks below catch that (a missing override -> fewer non-empty
+# URLs than debs) and its opposite mistake, a copy-pasted ppa_url call that
+# names the wrong deb (two debs resolving to the identical URL -- $(sort ...)
+# both sorts and deduplicates, so comparing word counts before/after it
+# catches any repeated value). Only meaningful in ppa mode: in local mode
+# none of these debs have a _URL at all, so every word would be "empty" and
+# check (a) would fire for every package.
+ifeq ($(MODE),ppa)
+ALL_DEBS := $(MAIN_DEB) $(SONIC_DERIVED_DEBS)
+ALL_URLS := $(foreach d,$(ALL_DEBS),$($(d)_URL))
+ifneq ($(words $(ALL_URLS)),$(words $(ALL_DEBS)))
+$(error $(PKG): $(words $(ALL_DEBS)) deb(s) registered ($(ALL_DEBS)) but only $(words $(ALL_URLS)) have a non-empty _URL in ppa mode -- one of them is missing its own _URL override after add_derived_package and its URL silently came out empty instead)
+endif
+ifneq ($(words $(sort $(ALL_URLS))),$(words $(ALL_URLS)))
+$(error $(PKG): two or more of $(ALL_DEBS) resolve to the identical _URL in ppa mode -- check for a copy-pasted ppa_url call that names the wrong deb)
+endif
+endif
+
 .PHONY: default
 default:
 	@echo 'PKG=$(PKG)'
