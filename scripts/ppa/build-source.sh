@@ -29,6 +29,18 @@ for tool in dget dpkg-source dpkg-buildpackage dpkg-parsechangelog dch curl patc
 done
 [ -z "$missing" ] || { echo "$0: missing required tool(s):$missing -- run this inside the slave-resolute container (devscripts + dpkg-dev + debhelper)" >&2; exit 1; }
 
+# dch (invoked per-package below) falls back to $LOGNAME@<container hostname>
+# when DEBEMAIL/DEBFULLNAME are unset, so the changelog author in the
+# generated .dsc/.changes would depend on whichever machine happened to run
+# this -- not reproducible across developers, and not an identity fit for a
+# package destined for a public PPA. Require both explicitly rather than
+# defaulting to one: make sonic-slave-run passes the environment through
+# (set DEBEMAIL/DEBFULLNAME in SONIC_RUN_CMDS, or export them before calling
+# this script directly), so there is no need to hardcode anything here. The
+# GPG signing identity is a separate concern, set independently via
+# sign-upload.sh --key.
+[ -n "${DEBEMAIL:-}" ] && [ -n "${DEBFULLNAME:-}" ] || { echo "$0: DEBEMAIL and DEBFULLNAME must both be set -- dch needs a reproducible changelog author, not whatever \$LOGNAME@hostname this container happens to have; make sonic-slave-run passes the environment through, so set them in SONIC_RUN_CMDS (this is separate from the GPG signing identity, which sign-upload.sh --key sets independently)" >&2; exit 1; }
+
 cd "$(dirname "$0")/../.."
 REPO=$PWD
 # patch_class(): determines whether a patch touches debian/*, touches
