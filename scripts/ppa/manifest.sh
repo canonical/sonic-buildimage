@@ -17,8 +17,10 @@ if [ ${#pkgs[@]} -eq 0 ]; then
     # IPROUTE2_DSC_URL, but that one is used for downloading its own
     # upstream .dsc directly and has nothing to do with this design's
     # "stock version + PPA suffix switch" registration scheme (it uses
-    # *_VERSION, not *_VERSION_STOCK, so query.mk reports "expected
-    # exactly 1 main deb, got \"\"" for it). _VERSION_STOCK is the
+    # *_VERSION, not *_VERSION_STOCK). query.mk itself resolves iproute2
+    # fine -- MAIN_DEB comes out non-empty, only STOCK_VERSION is empty --
+    # it is build-source.sh that rejects an empty Q_STOCK_VERSION, and
+    # that is the actual reason _VERSION_STOCK, not _DSC_URL, is the
     # marker that PPA candidate packages -- and only they -- carry.
     mapfile -t pkgs < <(grep -l '_VERSION_STOCK' rules/*.mk | sed 's|rules/||; s|\.mk$||' | sort)
 fi
