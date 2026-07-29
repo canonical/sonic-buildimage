@@ -14,6 +14,7 @@ endif
 
 # rules/<pkg>.mk 期望的最小上下文
 CONFIGURED_ARCH    ?= amd64
+BLDENV             ?= resolute
 SRC_PATH           := src
 SONIC_MAKE_DEBS    :=
 SONIC_ONLINE_DEBS  :=
