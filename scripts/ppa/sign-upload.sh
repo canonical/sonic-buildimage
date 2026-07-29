@@ -14,8 +14,8 @@ cd "$(dirname "$0")/../.."
 KEY=""; PPA=""; DRY=0
 while [ $# -gt 0 ]; do
     case "$1" in
-        --key)     KEY="$2"; shift 2 ;;
-        --upload)  PPA="$2"; shift 2 ;;
+        --key)     [ $# -ge 2 ] || { echo "usage: scripts/ppa/sign-upload.sh --key <KEYID> [--upload ppa:o/n] [--dry-run] [<pkg>...]" >&2; exit 2; }; KEY="$2"; shift 2 ;;
+        --upload)  [ $# -ge 2 ] || { echo "usage: scripts/ppa/sign-upload.sh --key <KEYID> --upload ppa:o/n [<pkg>...]" >&2; exit 2; }; PPA="$2"; shift 2 ;;
         --dry-run) DRY=1; shift ;;
         *)         break ;;
     esac
