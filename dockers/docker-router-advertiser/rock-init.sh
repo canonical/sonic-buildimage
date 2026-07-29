@@ -38,7 +38,7 @@ fi
 
 DELOYMENT_ID=$(sonic-cfggen -d -v DEVICE_METADATA.localhost.deployment_id)
 DEVICE_TYPE=$(sonic-cfggen -d -v DEVICE_METADATA.localhost.type)
-DEVICE_TYPE=$(sonic-cfggen -d -v VLAN_INTERFACE)
+VLAN_INTERFACE=$(sonic-cfggen -d -v VLAN_INTERFACE)
 
 vlan_v6_count=0
 if [ "$DEPLOYMENT_ID" != "8" ]; then
