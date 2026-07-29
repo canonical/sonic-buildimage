@@ -23,6 +23,14 @@ if [ ${#pkgs[@]} -eq 0 ]; then
     # that is the actual reason _VERSION_STOCK, not _DSC_URL, is the
     # marker that PPA candidate packages -- and only they -- carry.
     mapfile -t pkgs < <(grep -l '_VERSION_STOCK' rules/*.mk | sed 's|rules/||; s|\.mk$||' | sort)
+    # Auto-discovery finding zero packages (e.g. _VERSION_STOCK renamed to
+    # something else) must not look like "there is simply nothing to list":
+    # print the header row and exit 0 either way, so a caller driving this
+    # non-interactively would never notice the marker silently stopped
+    # matching anything. Only applies when no package names were given on
+    # argv -- an explicit `manifest.sh somepkg` that fails is already
+    # reported by query_pkg below, one package at a time.
+    [ ${#pkgs[@]} -gt 0 ] || { echo "$0: no package in rules/*.mk declares _VERSION_STOCK -- has the marker been renamed?" >&2; exit 1; }
 fi
 
 printf '%-14s %-6s %-24s %-14s %s\n' PACKAGE MODE STOCK-VERSION SUFFIX DEBS
