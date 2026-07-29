@@ -12,6 +12,9 @@ set -euo pipefail
 [ $# -ge 1 ] || { echo "usage: $0 <pkg>..." >&2; exit 2; }
 cd "$(dirname "$0")/../.."
 REPO=$PWD
+# patch_class()：判断一个补丁改的是 debian/* 还是 debian/* 之外，还是两者
+# 都有。test-build-source.sh 也要用同一套判断，抽成公共文件，不抄两份。
+source "$REPO/scripts/ppa/patch-class.sh"
 
 # 每个包一个 $WORK；set -e 下任何一个包中途失败都会让脚本立即退出，跳过
 # 该包循环体末尾原本的清理。用一个数组记录所有已创建的 $WORK，EXIT trap
@@ -47,6 +50,25 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
         fi
     done
 
+    # dpkg-source 的 "3.0 (quilt)" 格式里 debian/patches/* 只应用给上游代码；
+    # debian/ 目录本身随 debian.tar 打成最终态。一个补丁如果既在 series 里、
+    # 又真的改了 debian/ 下的文件，dpkg-source -b 重建校验树时会把这处改动
+    # 当成"应用了两次"而拒绝（"Reversed (or previously applied) patch
+    # detected!"）。按 patch_class() 的判断分两队：只改 debian/* 的直接焙进
+    # 解包出的树，其余的照常进 series；两者都碰的没法自动决定，报错交给人工拆。
+    DEBIAN_PATCHES=()
+    UPSTREAM_PATCHES=()
+    for p in "${ACTIVE_PATCHES[@]}"; do
+        case "$(patch_class "$REPO/$Q_PATCH_DIR/$p")" in
+            debian)   DEBIAN_PATCHES+=("$p") ;;
+            upstream) UPSTREAM_PATCHES+=("$p") ;;
+            mixed)
+                echo "$PKG: $p touches both debian/ and non-debian/ paths; dpkg-source's quilt format can't take it either way automatically — split it by hand into a debian/-only patch and an upstream-only patch" >&2
+                exit 1
+                ;;
+        esac
+    done
+
     WORK=$(mktemp -d)
     WORK_DIRS+=("$WORK")
     OUT="$REPO/target/source/$PKG"
@@ -77,10 +99,20 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     [ -n "$SRCDIR" ] || { echo "$PKG: cannot find extracted source dir for $Q_SOURCE" >&2; exit 1; }
     pushd "$SRCDIR" >/dev/null
 
-    # 把 SONiC 补丁按同一顺序追加进 series；补丁本身保持未应用。
+    # 只改 debian/* 的补丁直接焙进解包出的树（成为 debian tarball 本体的一部
+    # 分），不进 series——它们不是"builder 构建时要应用的上游补丁"。
+    for p in "${DEBIAN_PATCHES[@]}"; do
+        if ! patch -p1 -N -f -s -F0 < "$REPO/$Q_PATCH_DIR/$p"; then
+            echo "$PKG: debian/-only patch $p did not apply cleanly to the extracted tree" >&2
+            exit 1
+        fi
+    done
+
+    # 其余（只改 debian/* 之外）的补丁按同一顺序追加进 series；补丁本身保持
+    # 未应用，留给 builder 在构建时应用。
     mkdir -p debian/patches
     [ -f debian/patches/series ] || : > debian/patches/series
-    for p in "${ACTIVE_PATCHES[@]}"; do
+    for p in "${UPSTREAM_PATCHES[@]}"; do
         cp "$REPO/$Q_PATCH_DIR/$p" debian/patches/
         echo "$p" >> debian/patches/series
     done
