@@ -30,6 +30,19 @@
 # erroring -- and a caller that then uses $OUT from the *new* package's name
 # with $Q_* data from the *old* package can, e.g., stage the wrong package's
 # source tree under the new package's directory.
+#
+# A second, narrower bug the line-parsing loop below guards against: `out` is
+# captured with `2>&1`, so any stderr line make (or a future $(warning ...) in
+# some rules/*.mk) emits on an otherwise-successful run lands in the same
+# stream that gets parsed as KEY=value pairs. A line like "Makefile:12:
+# warning: overriding recipe for target" has no valid KEY before its first
+# '=' (it may have no '=' at all) -- `declare -g "Q_$k=$v"` on that would fail
+# with "not a valid identifier", and that failure is not behind any `if`/`||`,
+# so under the caller's `set -e` it would exit the caller's shell right there
+# -- exactly the failure mode query_pkg exists to prevent. Every parsed line
+# is checked against the ten keys' actual shape (`^[A-Z][A-Z0-9_]*$`) before
+# it is ever handed to `declare`; anything else is reported and skipped, never
+# declared.
 query_pkg() {
     local pkg="$1"
     local out rc=0
@@ -49,8 +62,22 @@ query_pkg() {
 
     # declare -g: this runs inside a function, and plain `declare` there would
     # make each Q_* local to query_pkg instead of visible to the caller.
-    local k v
-    while IFS='=' read -r k v; do declare -g "Q_$k=$v"; done <<< "$out"
+    #
+    # Only lines whose key matches query.mk's actual key shape are declared;
+    # anything else (a stray stderr line merged in by the 2>&1 above) is
+    # reported and skipped instead of being passed to `declare`, which would
+    # otherwise abort the caller's shell on an invalid identifier -- see the
+    # header comment's second bug.
+    local line k v
+    while IFS= read -r line; do
+        k="${line%%=*}"
+        v="${line#*=}"
+        if [[ "$line" == *=* && "$k" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
+            declare -g "Q_$k=$v"
+        else
+            echo "$pkg: query.mk: ignoring unexpected output line: $line" >&2
+        fi
+    done <<< "$out"
 
     local missing="" req var
     for req in PKG MODE STOCK_VERSION DSC_URL SUFFIX PATCH_DIR MAIN_DEB DERIVED_DEBS SOURCE PPA_POOL_URL; do

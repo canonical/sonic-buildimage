@@ -137,6 +137,37 @@ expect_eq "SONIC_PPA_PACKAGES: libteam mode is ppa"     "$libteam_mode" "ppa"
 expect_eq "SONIC_PPA_PACKAGES: isc-dhcp mode is local"  "$isc_mode"     "local"
 expect_eq "SONIC_PPA_PACKAGES: lm-sensors mode is local" "$lms_mode"    "local"
 
+# --- 6. A stray non-k=v line in query.mk's output stream (e.g. a future
+# $(warning ...) somewhere in the include chain, or make's own "overriding
+# recipe" warning) must not abort manifest.sh under set -e: query-pkg.sh's
+# query_pkg() captures query.mk's stdout+stderr together, so that line lands
+# in the same stream it parses as KEY=value pairs. Before query_pkg's parser
+# skipped non-KEY=value lines instead of handing them straight to `declare`,
+# a line like this made `declare -g "Q_<line>="` fail with "not a valid
+# identifier" -- uncaught by any `if`/`||`, so under set -e it exited
+# manifest.sh's shell from inside query_pkg entirely, not just that one
+# package. QUERY_MK_TEST_WARNING is query.mk's own test-only hook for
+# injecting exactly this.
+WARNING_LINE="Makefile:12: warning: overriding recipe for target"
+run out rc env QUERY_MK_TEST_WARNING="$WARNING_LINE" ./scripts/ppa/manifest.sh libteam isc-dhcp lm-sensors
+expect_eq "stray warning line: all three packages still resolve, exits 0" "$rc" "0"
+for want in isc-dhcp libteam lm-sensors; do
+    expect_eq "stray warning line: exactly one row for $want" \
+        "$(printf '%s\n' "$out" | awk -v w="$want" '$1==w' | wc -l)" "1"
+done
+libteam_mode=$(printf '%s\n' "$out" | awk '$1=="libteam"{print $2}')
+expect_eq "stray warning line: libteam's row is not corrupted by the injected line" "$libteam_mode" "local"
+
+# Same injection, but paired with a genuinely invalid package: the warning
+# must not be what fails the run, and must not swallow the real failure
+# either -- exit non-zero only because of the invalid package, same as
+# test 2 above without the injected warning.
+run out rc env QUERY_MK_TEST_WARNING="$WARNING_LINE" ./scripts/ppa/manifest.sh libteam "$BOGUS"
+expect_nonzero "stray warning line + invalid package: exits non-zero (from the invalid package, not the warning)" "$rc"
+expect_eq "stray warning line + invalid package: libteam row appears exactly once" \
+    "$(printf '%s\n' "$out" | awk '$1=="libteam"' | wc -l)" "1"
+expect_contains "stray warning line + invalid package: error still names the bad package" "$out" "$BOGUS"
+
 if [ "$fail" -ne 0 ]; then
     echo "manifest_test: FAILED"
     exit 1

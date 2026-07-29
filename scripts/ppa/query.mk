@@ -15,6 +15,17 @@ ifeq ($(PKG),)
 $(error PKG is required, e.g. make -s -f scripts/ppa/query.mk PKG=libteam)
 endif
 
+# Test-only hook: lets a caller (see scripts/ppa/tests/manifest_test.sh and
+# scripts/ppa/tests/query_pkg_test.sh) make this file emit one line to
+# stderr that is not a KEY=value pair, the same way a future $(warning ...)
+# elsewhere in the include chain below would -- without permanently
+# changing this file's output for every other caller. Mirrors the
+# CONFIG_USER_PATH indirection below, which exists for the same reason:
+# tests need to control exactly what query.mk emits.
+ifdef QUERY_MK_TEST_WARNING
+$(warning $(QUERY_MK_TEST_WARNING))
+endif
+
 # Minimal context expected by rules/<pkg>.mk
 CONFIGURED_ARCH    ?= amd64
 BLDENV             ?= resolute
