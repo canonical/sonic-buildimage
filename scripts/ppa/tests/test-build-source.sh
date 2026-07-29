@@ -3,13 +3,18 @@
 #   - 产出 .dsc 与 _source.changes
 #   - 上传清单里没有任何 .deb（PPA 只收 source upload）
 #   - 版本号是 stock 版本 + suffix（<STOCK_VERSION><SUFFIX>）
-#   - SONiC 补丁已追加进 debian/patches/series，顺序与 src/<pkg>/patch/series 一致
+#   - 只改 debian/* 之外的 SONiC 补丁已追加进 debian/patches/series，顺序与
+#     src/<pkg>/patch/series 一致；只改 debian/* 的那部分已被直接焙进树，
+#     不出现在 series 里
 #   - 补丁能在零 fuzz 下被 dpkg-source -x 原样应用（Launchpad builder 用的
 #     正是 dpkg-source，不是本地开发循环里容忍 fuzz 的 stg import）
 set -euo pipefail
 
 PKG="${1:?usage: test-build-source.sh <pkg>}"
 cd "$(dirname "$0")/../../.."
+# patch_class()：与 build-source.sh 共用同一套 debian/ vs 非-debian 判断，
+# 不重复实现。
+source scripts/ppa/patch-class.sh
 
 # 用 read 而非 eval：DERIVED_DEBS 的值含空格，eval 会把它按词拆开去执行
 while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
@@ -66,13 +71,43 @@ dpkg-source --no-check --skip-patches -x "$dsc" "$tmp/src" >/dev/null
 # 出错杀掉脚本。用 `|| rc=$?` 显式接住退出码，只有 >1（比如 series 文件本身
 # 读不到）才是真错误。
 rc=0
-grep -vE '^\s*(#|$)' "$Q_PATCH_DIR/series" > "$tmp/want" || rc=$?
+grep -vE '^\s*(#|$)' "$Q_PATCH_DIR/series" > "$tmp/all_active" || rc=$?
 [ "$rc" -le 1 ] || { echo "FAIL: could not read patch series at $Q_PATCH_DIR/series (grep exit $rc)"; exit 1; }
+
+# 只有"只改 debian/* 之外"的补丁才会被追加进 debian/patches/series；
+# "只改 debian/*"的补丁已经在 build-source.sh 里直接焙进树本体，不出现在
+# series 里。分类用同一份 patch_class()，不在这里另抄一遍判断逻辑。
+: > "$tmp/want"
+debian_patches=()
+upstream_count=0
+while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    case "$(patch_class "$Q_PATCH_DIR/$p")" in
+        debian)
+            debian_patches+=("$p")
+            ;;
+        upstream)
+            echo "$p" >> "$tmp/want"
+            upstream_count=$((upstream_count + 1))
+            ;;
+        mixed)
+            echo "FAIL: $p touches both debian/ and non-debian/ paths; cannot classify for the series check"; exit 1
+            ;;
+    esac
+done < "$tmp/all_active"
+
 tail -n "$(wc -l < "$tmp/want")" "$tmp/src/debian/patches/series" > "$tmp/got"
 if ! diff -u "$tmp/want" "$tmp/got"; then
-    echo "FAIL: SONiC patches are not appended verbatim at the end of debian/patches/series"; exit 1
+    echo "FAIL: SONiC upstream-only patches are not appended verbatim at the end of debian/patches/series"; exit 1
 fi
-echo "ok   $(wc -l < "$tmp/want") SONiC patches appended in order"
+total_series=$(wc -l < "$tmp/src/debian/patches/series")
+stock_count=$((total_series - upstream_count))
+echo "ok   debian/patches/series: $total_series entries ($stock_count stock + $upstream_count SONiC upstream-only appended)"
+if [ "${#debian_patches[@]}" -gt 0 ]; then
+    echo "ok   ${#debian_patches[@]} SONiC debian/-only patch(es) applied directly instead of appended: ${debian_patches[*]}"
+else
+    echo "ok   0 SONiC debian/-only patches for $PKG"
+fi
 
 # The property that actually matters: a plain `dpkg-source -x` (patches
 # applied, the default since dpkg 1.14.18) must succeed against the .dsc we
