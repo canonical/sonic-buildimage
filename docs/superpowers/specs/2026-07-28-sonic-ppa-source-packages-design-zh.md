@@ -50,8 +50,8 @@ dpkg-buildpackage -us -uc -b      # 只出 binary
 | 包 | 只改 `debian/` | 只改上游 | 上游源码包自带的 quilt 补丁 |
 |---|---|---|---|
 | `libteam` | 0 | 14（全部） | 0（连 `debian/patches/series` 都没有） |
-| `isc-dhcp` | 4 | 14 | 10 |
-| `lm-sensors` | 2（全部） | 0 | 14 |
+| `isc-dhcp` | 5 | 14 | 10 |
+| `lm-sensors` | 3（全部） | 0 | 14 |
 
 `libteam` 恰好一个 `debian/` 补丁都没有、上游也零补丁，这正是它能率先端到端跑通、而问题直到 `isc-dhcp` 才暴露的原因 —— 也说明「先做最干净的基线包」这个选包策略是对的：它把脚手架本身的问题和包特有的问题分开了。
 
@@ -93,10 +93,15 @@ Launchpad builder 在**无网络**的干净 chroot 里运行，这是排除的�
 |---|---|
 | `slave.mk:164-165` | `include rules/config`、`-include rules/config.user` |
 | `slave.mk:289` | `include rules/functions` |
-| `slave.mk:298` | `include rules/*.mk`（glob） |
+| `slave.mk:290` | `include rules/ppa-functions`（本设计新增） |
+| `slave.mk:299` | `include rules/*.mk`（glob） |
 | `Makefile.cache:129` | `include rules/*.dep`（glob） |
 
-因此：全局开关放 `rules/config`（可被 `config.user` 覆盖），辅助函数放 `rules/functions`（文件名不含 `.mk`，不会被 glob 二次包含）。**任何生成物都不能放进 `rules/` 且以 `.mk` 结尾**，否则会被 298 行二次包含 —— 本设计不产生这类生成物。
+因此：全局开关放 `rules/config`（可被 `config.user` 覆盖）。**任何生成物都不能放进 `rules/` 且以 `.mk` 结尾**，否则会被 299 行二次包含 —— 本设计不产生这类生成物。
+
+辅助函数**不能追加进 `rules/functions`**，尽管它的位置合适。`Makefile.cache:110` 把 `rules/functions` 列进 `SONIC_COMMON_FILES_LIST`，而 267 个 `.dep` 都把该列表纳入 `DEP_FILES`，`Makefile.cache:646-652` 又把每个条目 hash 进 `<pkg>.dep.sha` 并折进缓存文件名 —— 动它就会让**所有发行版上全部 267 个缓存目标的 cache key 一起失效**，直接违反「默认关时行为与以前完全一致」。`Makefile.cache:70-79` 本来就把这件事写成了「所以才把 slave.mk 排除在该列表外」的理由。
+
+因此新建 `rules/ppa-functions`（同样不含 `.mk` 后缀，不会被 glob 二次包含），在 `slave.mk:290` 显式 include 一次，并**刻意不加入** `SONIC_COMMON_FILES_LIST`。
 
 ### 3.3 online deb 的本地文件名可与 URL 不同名
 
@@ -118,11 +123,13 @@ define add_derived_package
 $(2)_DEPENDS += $(1)
 ...
 $(1)_DERIVED_DEBS += $(2)
-$(2)_URL = $($(1)_URL)          # 第 94 行：派生包继承主包 URL
+$(2)_URL = $($(1)_URL)          # 第 94 行
 ...
 ```
 
-派生包本来就进 `$*_DERIVED_DEBS`，被 §3.3 的 foreach 一并下载；只是默认继承主包 URL，需要在 `add_derived_package` 调用**之后**逐个覆盖 `_URL`。这意味着所有 `add_derived_package` 调用、`_DEPENDS`、`_RDEPENDS`、`DBG_SRC_ARCHIVE` 声明**都不需要改动**。
+派生包本来就进 `$*_DERIVED_DEBS`，被 §3.3 的 foreach 一并下载。所以所有 `add_derived_package` 调用、`_DEPENDS`、`_RDEPENDS`、`DBG_SRC_ARCHIVE` 声明**都不需要改动**。
+
+但第 94 行的语义要说准，因为不准的那种理解正好会咬人：`$(eval $(call add_derived_package,…))` 在**调用当时**就把 `$(2)_URL = $($(1)_URL)` 完全展开，而那时主包 `_URL` 往往还没定义。所以一个没被后续覆盖 `_URL` 的派生包拿到的是**空 URL（什么都下不到）**，不是「主包的 URL」。因此 `_URL` 覆盖必须位于该文件所有 `add_derived_package` 调用**之后**，而且漏掉某个派生包是静默的。`scripts/ppa/query.mk` 为此加了两道守卫：PPA 模式下 deb 总数必须等于非空 `_URL` 的个数，且各 `_URL` 必须互不相同。
 
 ### 3.5 `.dep` 的空 SPATH 是已知雷
 
@@ -146,7 +153,7 @@ PPA 模式下 deb 名变了、`_SRC_PATH` 不再设置 → `SPATH` 为空 → `g
 | 包 | 树外动作 | 到 builder 上的后果 |
 |---|---|---|
 | `isc-dhcp` | `export DEB_CFLAGS_MAINT_STRIP="-flto=auto -ffat-lto-objects"`、`DEB_LDFLAGS_MAINT_STRIP` 同 | **必然构建失败**（bind 9.11 vendored 的 LTO 链接错误） |
-| `lm-sensors` | `PROG_EXTRA=sensord` | **静默少一个 binary**：不报错，但 `sensord` 不被构建，而 `docker-platform-monitor` 需要它 |
+| `lm-sensors` | `PROG_EXTRA=sensord` | **静默少一个 binary**：不报错，但 `sensord` 不被构建，而 `docker-platform-monitor` 需要它。实测还有第二层：内化它之后编译 `sensord` 会链接 `-lrrd`，而 stock `debian/control` 从未声明 `librrd-dev` —— 本地一直能过只因为 slave 镜像预装了它（`Dockerfile.j2:372-374`）。**内化一个树外动作可能连带引出新的 `debian/control` 依赖。** |
 | `libyang3` | `sed -i -e '/.*libxxhash.*/d' debian/control`、`dpkg-buildpackage -d` | build-dep 解不开；`-d` 在 builder 上无效 |
 | `bash`、`socat`、`lm-sensors`、`initramfs-tools` | `DEB_BUILD_OPTIONS=nocheck` / `-Pnocheck` | builder 会真跑测试套件 |
 | `socat`、`openssh`、`monit`、`libyang3` | 部分补丁以 `patch -p1 < ../patch/xxx.patch` 硬打，**不在 series 里** | 转 quilt 时最易漏 |
@@ -223,7 +230,8 @@ rules/config                     全局开关（config.user 可覆盖）
   ├─ SONIC_PPA_SUFFIX_<pkg>      单包覆盖，按需出现
   └─ SONIC_PPA_PACKAGES          走 PPA 的包列表
 
-rules/functions                  5 个辅助函数（见 §6.2）
+rules/ppa-functions              5 个辅助函数（见 §6.2）；新建文件，刻意不进
+                                 SONIC_COMMON_FILES_LIST（见 §3.2）
 
 rules/<pkg>.mk                   1 行改动 + 1 个 ifneq 块（见 §6.3）
 rules/<pkg>.dep                  2 行插入（见 §6.4）
@@ -271,7 +279,9 @@ SONIC_PPA_SUFFIX ?= +sonic1~ppa1
 
 `SONIC_PPA_PACKAGES` 为空时所有 `ifneq` 分支不成立，非 resolute 构建与今天零差异。
 
-### 6.2 `rules/functions` 新增
+下面五个函数放在**新建的 `rules/ppa-functions`**（在 `slave.mk:290` include），不能追加进 `rules/functions` —— 理由见 §3.2。
+
+### 6.2 `rules/ppa-functions`（新建文件）
 
 ```make
 # 单包后缀覆盖优先于全局
@@ -288,7 +298,7 @@ ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
 ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
 ```
 
-五个函数一律加 `ppa_` 前缀 —— `rules/functions` 是全局命名空间，`pool_dir` 这种通用名容易与后续新增冲突。
+五个函数一律加 `ppa_` 前缀 —— make 变量/函数是单一全局命名空间，`pool_dir` 这种通用名容易与 `rules/functions` 里现有或后续的名字冲突。
 
 `ppa_pool_dir` 的 `$(shell cut)` 每包只在 make 解析期执行一次，开销可忽略；若后续成为热点可改为纯 make 的 `$(word)` 实现。
 
@@ -358,11 +368,15 @@ scripts/ppa/build-source.sh <pkg>...
                                                     #   上传者的个人 key 不在任何可用 keyring
      dpkg-source --skip-patches -x <dsc>            # 解包但一个补丁都不应用，工作树保持原始
   2. 定位 src/<pkg>/ 下含 series 的目录（多于一个则报错退出）
-  3. 按 §2.1 的规则给每个生效补丁分类（依据其 `+++` 头里的路径）：
+  3. 按 §2.1 的规则给每个生效补丁分类（依据其 `---` **与** `+++` 两侧头里的路径，
+     忽略 `/dev/null` 那一侧，因此删除文件的补丁也能按真实路径归类）：
        只改上游文件 → 拷进 debian/patches/ 并追加进 series（保持未应用）
        只改 debian/ → 直接应用到工作树，不进 series
        两者都改     → 报错并指名该补丁，必须由人拆分
   4. 检查补丁是否含二进制文件；若有则报错（需 debian/source/include-binaries，B1 内目前没有）
+  4b. 从原始 changelog 读出 stock 的 epoch 并带进新版本号，同时校验 changelog 版本
+      与 <PREFIX>_VERSION_STOCK 一致。缺了这步，lm-sensors（1:3.6.2-2build1）会发布成
+      隐含 epoch 0 的版本，永远盖不过归档里的版本。
   5. dch --newversion <stock版本><后缀> --distribution resolute --force-distribution
      （--force-distribution 必需：否则 dch 拒绝把 distribution 改成非当前值）
   6. dpkg-buildpackage -S -sa -us -uc               # 或 -sd，见下
@@ -374,13 +388,13 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
   dput ppa:<owner>/<name> target/source/*/*_source.changes
 ```
 
-`-sa`（携带 orig）仅在该 upstream 版本首次上传时使用；后续同 orig 必须 `-sd`，否则 Launchpad 会因 orig 校验和冲突 reject。脚本依据「PPA 中是否已存在该 orig」自动选择，无法判定时默认 `-sd` 并提示。
+`-sa`（携带 orig）仅在该 upstream 版本首次上传时使用；后续同 orig 必须 `-sd`，否则 Launchpad 会因 orig 校验和冲突 reject。脚本依据「PPA pool 中是否已存在该 orig」自动选择；**无法判定时默认 `-sa`** —— 多传一次 orig 通常无害，而首次上传缺 orig 会被 Launchpad 直接拒收，所以保守方向是 `-sa`。
 
 `dget -u` 中的 `-u` 是结构性必需：Ubuntu slave 上 `.dsc` 上传者的个人 key 不在任何可用 keyring 中，装 `debian-keyring` 也验不了。
 
 ### 6.6 `make ppa-manifest`
 
-打印每个候选包的：包名、模式（ppa/local）、stock 版本、生效后缀、产物 deb 列表、拉取 URL。用于替代 YAML 的「一览」价值。实现为 `scripts/ppa/manifest.sh`，由 `slave.mk` 的 phony 目标调用，数据全部来自已 export 的 make 变量。
+打印每个候选包的：包名、模式（ppa/local）、stock 版本、生效后缀、产物 deb **个数**；deb 清单需 `VERBOSE=1`，拉取 URL 不打印（需要时用 `query.mk` 直接查）。用于替代 YAML 的「一览」价值。实现为 `scripts/ppa/manifest.sh`，由 `slave.mk` 的 phony 目标调用，数据全部来自已 export 的 make 变量。
 
 ---
 
@@ -401,7 +415,7 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 | 包 | 覆盖的风险 | 为什么非它不可 |
 |---|---|---|
 | **libteam** | 干净基线 | 14 个生效补丁全在 series 里（另有 4 个被注释掉）、**零树外动作**、7 个二进制（1 主 + 6 派生，含 3 个 dbgsym）、有 `_DEPENDS` 排序、有 `add_derived_package`。它跑不通即说明链路本身有问题，而非某包特殊。应第一个做。 |
-| **isc-dhcp** | 构建必挂类 | `DEB_CFLAGS_MAINT_STRIP` / `DEB_LDFLAGS_MAINT_STRIP` 不内化进 `debian/rules` 就一定失败。17 个补丁（fuzz 风险最高）。Debian 源上传 Ubuntu PPA。 |
+| **isc-dhcp** | 构建必挂类 | `DEB_CFLAGS_MAINT_STRIP` / `DEB_LDFLAGS_MAINT_STRIP` 不内化进 `debian/rules` 就一定失败。19 个补丁（fuzz 风险最高）。Debian 源上传 Ubuntu PPA。 |
 | **lm-sensors** | 构建成功但产物错 | `PROG_EXTRA=sensord` 是功能性树外变量，丢了不报错、只是 `sensord` 不存在，而 `docker-platform-monitor` 需要它。这是唯一一类静默失败，必须在首批验到，同时检验 §9 的验收标准是否真抓得住。外加 7 个二进制、含 `_all.deb`、含 nocheck。 |
 
 **首批不含 `socat`**：它自建的唯一理由是 `enable_readline`，而 Debian/Ubuntu 是**故意**关闭 readline 的（GPL 与 OpenSSL 授权不兼容，Debian #632481）。在公开 PPA 中发布启用了 readline 的 socat，等于分发 Debian 认定不可分发的二进制。需先确定 PPA 公开/私有并作授权判断，不适合放在验证链路的这批里。其补丁还以 `patch -p1` 硬打、不在 series 中，多一层转换风险。
@@ -434,7 +448,7 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 | PPA 归属与公私 | **未决**，本阶段不阻塞 | `SONIC_PPA_URL` 留空即可搭完架子并本地验证到「源码包在干净 chroot 中构建通过」。归属确定后才能完成上传与端到端验证。私有 PPA 的 pool 需要认证，`curl` 一侧要带凭据 —— 会引入 `_CURL_OPTIONS` 上的额外设计。 |
 | dbgsym 发布开关 | **待验证** | 见 §7。退路已确定。 |
 | `socat` 的 readline 授权 | **待判断** | 见 §8。 |
-| 补丁 fuzz | 已知风险 | `stg import` 容忍 fuzz，而 `dpkg-source` 构建前应用补丁时零 fuzz。老补丁可能需要 refresh。`isc-dhcp` 的 17 个补丁风险最高，故列入首批。 |
+| 补丁 fuzz | 已知风险 | `stg import` 容忍 fuzz，而 `dpkg-source` 构建前应用补丁时零 fuzz。老补丁可能需要 refresh。`isc-dhcp` 的 19 个补丁风险最高，故列入首批。 |
 | `DBG_SRC_ARCHIVE` 降级 | 已接受 | 该机制把 `src/<name>` 下的 `.c/.h` 归档进 debug 镜像。PPA 模式下该目录只剩补丁，归档内容会近乎为空。属外观性降级，不阻塞。 |
 | `_DEPENDS` 语义漂移 | 已知 | 本地模式下 `$(LIBTEAM)_DEPENDS += $(LIBNL_GENL3_DEV) ...` 表达构建依赖；online 模式下 `_DEPENDS` 表达 `dpkg -i` 装序。保留原声明在 PPA 模式下语义不同但无害（装序更保守）。迁移时逐包确认不会引入循环。 |
 | 构建可复现性 | 已接受的权衡 | 迁移后这些包的产物来自外部服务，不再「一切从源码本地可复现」。这是解耦的固有代价；双模式开关保留了随时回到本地构建的能力。 |
@@ -443,7 +457,7 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
 
 ## 11. 实现顺序
 
-1. `rules/config` 三个变量 + `rules/functions` 五个函数 + `scripts/ppa/query.mk` + 单测夹具。此时 `SONIC_PPA_PACKAGES` 为空，构建行为零变化。
+1. `rules/config` 三个变量 + `rules/ppa-functions` 五个函数 + `scripts/ppa/query.mk` + 单测夹具。此时 `SONIC_PPA_PACKAGES` 为空，构建行为零变化。
 2. `libteam` 接入：改 `.mk` / `.dep`，写 `build-source.sh` 产出源码包，写 `build-clean.sh` 并用它完成验收第 1 项。全程无需 sudo、不动宿主机。
 3. `isc-dhcp` 接入：额外把 `DEB_*_MAINT_STRIP` 内化为一个进 `debian/patches` 的补丁。
 4. `lm-sensors` 接入：额外把 `PROG_EXTRA=sensord` 内化进 `debian/rules`。

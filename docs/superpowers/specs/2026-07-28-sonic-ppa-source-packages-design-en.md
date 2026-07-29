@@ -50,8 +50,8 @@ Measured patch composition for the first three packages:
 | Package | `debian/`-only patches | upstream-only patches | quilt patches shipped by the stock source |
 |---|---|---|---|
 | `libteam` | 0 | 14 (all) | 0 (no `debian/patches/series` at all) |
-| `isc-dhcp` | 4 | 14 | 10 |
-| `lm-sensors` | 2 (both) | 0 | 14 |
+| `isc-dhcp` | 5 | 14 | 10 |
+| `lm-sensors` | 3 (both) | 0 | 14 |
 
 `libteam` happens to have no `debian/` patches and no upstream patches either, which is exactly why it went end to end first while the problem only surfaced on `isc-dhcp` — and why "start with the cleanest baseline package" was the right selection strategy: it separates defects in the scaffolding from defects specific to a package.
 
@@ -93,10 +93,15 @@ All of the following were verified against this repository. They are design inpu
 |---|---|
 | `slave.mk:164-165` | `include rules/config`, `-include rules/config.user` |
 | `slave.mk:289` | `include rules/functions` |
-| `slave.mk:298` | `include rules/*.mk` (glob) |
+| `slave.mk:290` | `include rules/ppa-functions` (added by this design) |
+| `slave.mk:299` | `include rules/*.mk` (glob) |
 | `Makefile.cache:129` | `include rules/*.dep` (glob) |
 
-Therefore: global switches go in `rules/config` (overridable from `config.user`); helper functions go in `rules/functions` (the filename has no `.mk` suffix, so the glob will not pick it up twice). **No generated artifact may live under `rules/` with a `.mk` suffix**, or line 298 would include it a second time — this design produces no such artifact.
+Therefore: global switches go in `rules/config` (overridable from `config.user`). **No generated artifact may live under `rules/` with a `.mk` suffix**, or line 299 would include it a second time — this design produces no such artifact.
+
+The helpers must **not** be appended to `rules/functions`, tempting though its position is. `Makefile.cache:110` lists `rules/functions` in `SONIC_COMMON_FILES_LIST`, all 267 `.dep` files fold that list into `DEP_FILES`, and `Makefile.cache:646-652` hashes every entry into `<pkg>.dep.sha` and hence into the cache filename — so touching it **invalidates the cache key of all 267 cached targets on every distro**, in direct violation of "with the switch empty, behaviour is identical to before". `Makefile.cache:70-79` already documents this as the reason `slave.mk` was kept out of that list.
+
+Hence a new `rules/ppa-functions` (also without a `.mk` suffix, so the glob still cannot double-include it), included once at `slave.mk:290`, and deliberately **not** added to `SONIC_COMMON_FILES_LIST`.
 
 ### 3.3 An online deb's local filename may differ from its URL
 
@@ -118,11 +123,13 @@ define add_derived_package
 $(2)_DEPENDS += $(1)
 ...
 $(1)_DERIVED_DEBS += $(2)
-$(2)_URL = $($(1)_URL)          # line 94: derived debs inherit the main deb's URL
+$(2)_URL = $($(1)_URL)          # line 94
 ...
 ```
 
-Derived debs already land in `$*_DERIVED_DEBS` and get downloaded by the foreach in §3.3; they merely inherit the main deb's URL by default, so each one's `_URL` must be overridden **after** the `add_derived_package` call. This means every `add_derived_package` call, `_DEPENDS`, `_RDEPENDS` and `DBG_SRC_ARCHIVE` declaration can stay untouched.
+Derived debs already land in `$*_DERIVED_DEBS` and get downloaded by the foreach in §3.3, so every `add_derived_package` call, `_DEPENDS`, `_RDEPENDS` and `DBG_SRC_ARCHIVE` declaration can stay untouched.
+
+Line 94's semantics need stating precisely, because the imprecise reading is the one that bites: `$(eval $(call add_derived_package,…))` **fully expands** `$(2)_URL = $($(1)_URL)` at call time, when the main deb's `_URL` is usually still undefined. So a derived deb that never gets a later override ends up with an **empty URL (downloading nothing)**, not with the main deb's URL. The `_URL` overrides must therefore come after every `add_derived_package` call in the file, and missing one is silent. `scripts/ppa/query.mk` guards this twice: in PPA mode the deb count must equal the number of non-empty `_URL`s, and all `_URL`s must be distinct.
 
 ### 3.5 An empty SPATH in `.dep` is a known landmine
 
@@ -146,7 +153,7 @@ In PPA mode the deb name changes and `_SRC_PATH` is no longer set, so `SPATH` is
 | Package | Out-of-tree action | Consequence on the builder |
 |---|---|---|
 | `isc-dhcp` | `export DEB_CFLAGS_MAINT_STRIP="-flto=auto -ffat-lto-objects"`, same for `DEB_LDFLAGS_MAINT_STRIP` | **Guaranteed build failure** (the LTO link error in the vendored bind 9.11) |
-| `lm-sensors` | `PROG_EXTRA=sensord` | **Silently loses a binary**: no error, but `sensord` is never built — and `docker-platform-monitor` needs it |
+| `lm-sensors` | `PROG_EXTRA=sensord` | **Silently loses a binary**: no error, but `sensord` is never built — and `docker-platform-monitor` needs it. Measured a second layer: once internalised, compiling `sensord` links `-lrrd`, and the stock `debian/control` never declares `librrd-dev` — the local build only ever passed because the slave image preinstalls it (`Dockerfile.j2:372-374`). **Internalising an out-of-tree action can pull in new `debian/control` requirements.** |
 | `libyang3` | `sed -i -e '/.*libxxhash.*/d' debian/control`, `dpkg-buildpackage -d` | Build-deps become unsatisfiable; `-d` has no effect on a builder |
 | `bash`, `socat`, `lm-sensors`, `initramfs-tools` | `DEB_BUILD_OPTIONS=nocheck` / `-Pnocheck` | The builder will actually run the test suites |
 | `socat`, `openssh`, `monit`, `libyang3` | Some patches are applied with `patch -p1 < ../patch/xxx.patch` and are **not in the series** | Easiest thing to miss when converting to quilt |
@@ -223,7 +230,8 @@ rules/config                     global switches (overridable from config.user)
   ├─ SONIC_PPA_SUFFIX_<pkg>      per-package override, present only when needed
   └─ SONIC_PPA_PACKAGES          list of packages served from the PPA
 
-rules/functions                  5 helper functions (§6.2)
+rules/ppa-functions              5 helper functions (§6.2); a new file, deliberately
+                                 kept out of SONIC_COMMON_FILES_LIST (see §3.2)
 
 rules/<pkg>.mk                   1 changed line + 1 ifneq block (§6.3)
 rules/<pkg>.dep                  2 inserted lines (§6.4)
@@ -273,7 +281,9 @@ SONIC_PPA_SUFFIX ?= +sonic1~ppa1
 
 With `SONIC_PPA_PACKAGES` empty every `ifneq` branch evaluates false, so non-resolute builds are bit-identical to today.
 
-### 6.2 Additions to `rules/functions`
+The five functions below live in a **new `rules/ppa-functions`** (included at `slave.mk:290`), not appended to `rules/functions` — see §3.2 for why.
+
+### 6.2 The new `rules/ppa-functions`
 
 ```make
 # A per-package override wins over the global default
@@ -290,7 +300,7 @@ ppa_file = $(if $(findstring -dbgsym,$(1)),$(patsubst %.deb,%.ddeb,$(1)),$(1))
 ppa_url  = $(SONIC_PPA_URL)/pool/main/$(call ppa_pool_dir,$(1))/$(1)/$(call ppa_file,$(2))
 ```
 
-All five functions carry the `ppa_` prefix: `rules/functions` is a global namespace, and a generic name like `pool_dir` invites a future collision.
+All five functions carry the `ppa_` prefix: make variables and functions share one global namespace, so a generic name like `pool_dir` invites a collision with something already in `rules/functions` or added later.
 
 `ppa_pool_dir`'s `$(shell cut)` runs once per package during make's parse phase, so the cost is negligible; if it ever becomes hot it can be rewritten in pure make.
 
@@ -361,12 +371,18 @@ scripts/ppa/build-source.sh <pkg>...
                                                     #   is in no available keyring on Ubuntu
      dpkg-source --skip-patches -x <dsc>            # extract applying nothing; tree stays pristine
   2. Locate the directory containing `series` under src/<pkg>/ (error out if more than one)
-  3. Classify each active patch per the rules in section 2.1, from the paths in its `+++` headers:
+  3. Classify each active patch per the rules in section 2.1, from the paths on **both**
+     its `---` and `+++` headers, ignoring whichever side is `/dev/null` — so a patch
+     that deletes a file classifies by that file's real path:
        upstream files only -> copy into debian/patches/ and append to series (left unapplied)
        debian/ only        -> apply directly to the tree, keep it out of the series
        both                -> error out naming the patch; a human must split it
   4. Check whether any patch contains binary files; error out if so (would need
      debian/source/include-binaries — none in scope today)
+  4b. Read the stock epoch from the pristine changelog, carry it into the new version,
+      and cross-check the changelog version against <PREFIX>_VERSION_STOCK. Without this,
+      lm-sensors (1:3.6.2-2build1) would publish an implicit-epoch-0 version that can
+      never supersede the archive.
   5. dch --newversion <stock-version><suffix> --distribution resolute --force-distribution
      (--force-distribution is required: dch otherwise refuses to change the
       distribution to anything but the current one)
@@ -379,13 +395,13 @@ scripts/ppa/sign-upload.sh [--key <KEYID>] [--upload]
   dput ppa:<owner>/<name> target/source/*/*_source.changes
 ```
 
-`-sa` (include the orig) is used only on the first upload of a given upstream version; subsequent uploads with the same orig must use `-sd`, or Launchpad rejects them over an orig checksum conflict. The script picks automatically based on whether that orig already exists in the PPA, defaulting to `-sd` with a warning when it cannot tell.
+`-sa` (include the orig) is used only on the first upload of a given upstream version; subsequent uploads with the same orig must use `-sd`, or Launchpad rejects them over an orig checksum conflict. The script picks automatically based on whether that orig already exists in the PPA pool; **when it cannot tell it defaults to `-sa`** — a needless orig re-upload is usually harmless, whereas a first upload missing its orig is rejected outright, so `-sa` is the conservative direction.
 
 The `-u` in `dget -u` is structurally required: on an Ubuntu slave the `.dsc` uploader's personal key is not in any available keyring, and installing `debian-keyring` does not help.
 
 ### 6.6 `make ppa-manifest`
 
-Prints, per candidate package: name, mode (ppa/local), stock version, effective suffix, artifact deb list, and fetch URL. This replaces the "single overview file" value YAML would have provided. Implemented as `scripts/ppa/manifest.sh`, invoked from a phony target in `slave.mk`, with all data coming from already-exported make variables.
+Prints, per candidate package: name, mode (ppa/local), stock version, effective suffix, and the artifact deb **count**; the deb list requires `VERBOSE=1`, and the fetch URL is not printed (query `query.mk` directly when needed). This replaces the "single overview file" value YAML would have provided. Implemented as `scripts/ppa/manifest.sh`, invoked from a phony target in `slave.mk`, with all data coming from already-exported make variables.
 
 ---
 
@@ -406,7 +422,7 @@ Selection criterion is **risk-dimension coverage**, not "start with the easy one
 | Package | Risk covered | Why it has to be this one |
 |---|---|---|
 | **libteam** | Clean baseline | All 14 active patches are in the series (4 more are commented out), **zero out-of-tree actions**, 7 binaries (1 main + 6 derived, 3 of them dbgsym), has `_DEPENDS` ordering, has `add_derived_package`. If it fails, the pipeline itself is wrong rather than one package being special. Should be done first. |
-| **isc-dhcp** | Guaranteed build failure class | Without internalising `DEB_CFLAGS_MAINT_STRIP` / `DEB_LDFLAGS_MAINT_STRIP` into `debian/rules` it cannot build. 17 patches (highest fuzz risk). A Debian source uploaded to an Ubuntu PPA. |
+| **isc-dhcp** | Guaranteed build failure class | Without internalising `DEB_CFLAGS_MAINT_STRIP` / `DEB_LDFLAGS_MAINT_STRIP` into `debian/rules` it cannot build. 19 patches (highest fuzz risk). A Debian source uploaded to an Ubuntu PPA. |
 | **lm-sensors** | Builds fine but the artifact is wrong | `PROG_EXTRA=sensord` is a functional out-of-tree variable: losing it raises no error, `sensord` simply does not exist — and `docker-platform-monitor` needs it. This is the only silent-failure class, so it must be exercised in the first batch, and it also tests whether the acceptance criteria in §9 actually catch it. Plus 7 binaries, one of them `_all.deb`, plus nocheck. |
 
 **`socat` is deliberately excluded from the first batch**: the sole reason it is self-built is `enable_readline`, and Debian/Ubuntu disable readline **on purpose** (GPL/OpenSSL licence incompatibility, Debian #632481). Publishing a readline-enabled socat in a public PPA means distributing a binary Debian considers undistributable. That needs a public/private PPA decision and a licensing call first, so it does not belong in the batch whose job is to prove the pipeline. Its patch is also applied with `patch -p1` outside the series, adding another conversion risk.
@@ -439,7 +455,7 @@ If any criterion fails, removing the package from `SONIC_PPA_PACKAGES` rolls it 
 | PPA ownership, public vs private | **Open**, not blocking this phase | Leaving `SONIC_PPA_URL` empty is enough to build the whole scaffold and verify locally up to "the source package builds in a clean chroot". Upload and end-to-end verification need the ownership decision. A private PPA's pool requires authentication, so the `curl` side would need credentials — introducing extra design work around `_CURL_OPTIONS`. |
 | dbgsym publishing switch | **To verify** | See §7. Fallback already decided. |
 | `socat` readline licensing | **To decide** | See §8. |
-| Patch fuzz | Known risk | `stg import` tolerates fuzz; `dpkg-source` applies patches with zero fuzz before building. Older patches may need refreshing. `isc-dhcp`'s 17 patches carry the highest risk, which is why it is in the first batch. |
+| Patch fuzz | Known risk | `stg import` tolerates fuzz; `dpkg-source` applies patches with zero fuzz before building. Older patches may need refreshing. `isc-dhcp`'s 19 patches carry the highest risk, which is why it is in the first batch. |
 | `DBG_SRC_ARCHIVE` degradation | Accepted | That mechanism archives `.c/.h` files under `src/<name>` into the debug image. In PPA mode only patches remain in that directory, so the archive will be nearly empty. Cosmetic degradation, not blocking. |
 | `_DEPENDS` semantic drift | Known | In local mode `$(LIBTEAM)_DEPENDS += $(LIBNL_GENL3_DEV) ...` expresses a build dependency; in online mode `_DEPENDS` expresses `dpkg -i` ordering. Keeping the original declaration means a different but harmless semantics in PPA mode (a more conservative install order). Confirm per package that it introduces no cycle. |
 | Build reproducibility | Accepted trade-off | After migration these artifacts come from an external service, so "everything is reproducible locally from source" no longer holds. That is the inherent cost of decoupling; the dual-mode switch preserves the ability to return to local builds at any time. |
@@ -448,7 +464,7 @@ If any criterion fails, removing the package from `SONIC_PPA_PACKAGES` rolls it 
 
 ## 11. Implementation order
 
-1. Three variables in `rules/config`, five functions in `rules/functions`, `scripts/ppa/query.mk`, and the unit-test harness. At this point `SONIC_PPA_PACKAGES` is empty and build behaviour is unchanged.
+1. Three variables in `rules/config`, five functions in `rules/ppa-functions`, `scripts/ppa/query.mk`, and the unit-test harness. At this point `SONIC_PPA_PACKAGES` is empty and build behaviour is unchanged.
 2. Land `libteam`: change `.mk` / `.dep`, write `build-source.sh` to produce the source package, write `build-clean.sh` and use it to satisfy acceptance criterion 1. No sudo and no host modification anywhere in the sequence.
 3. Land `isc-dhcp`: additionally internalise `DEB_*_MAINT_STRIP` as a patch in `debian/patches`.
 4. Land `lm-sensors`: additionally internalise `PROG_EXTRA=sensord` into `debian/rules`.
