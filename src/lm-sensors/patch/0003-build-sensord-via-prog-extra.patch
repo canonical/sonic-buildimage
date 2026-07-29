@@ -1,0 +1,45 @@
+Description: Build sensord via PROG_EXTRA in debian/rules, and add the
+ build-dependency it needs
+ lm-sensors' upstream build only compiles the sensord program when
+ PROG_EXTRA names it. Patch 0001 already adds the sensord binary package
+ to debian/control, so without this the build "succeeds" but the sensord
+ binary package ships with no /usr/sbin/sensord in it.
+ .
+ This used to be an environment variable on the dpkg-buildpackage command
+ line in src/lm-sensors/Makefile, which only reached the local self-build.
+ A Launchpad builder only ever sees the source package, so moving it into
+ debian/rules makes it apply to the local build and PPA builds alike.
+ .
+ sensord also links against librrd (prog/sensord/Module.mk: -lrrd), which
+ stock lm-sensors never declared as a build-dependency because it never
+ actually built sensord. Add librrd-dev so the build environment has
+ rrd.h and librrd available.
+Origin: vendor
+Forwarded: no
+Author: Sheldon Qi <sheldon.qi@canonical.com>
+Last-Update: 2026-07-29
+--- a/debian/rules	2026-07-29 03:29:09.326375437 +0000
++++ b/debian/rules	2026-07-29 03:29:09.346907510 +0000
+@@ -3,6 +3,12 @@
+ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+ export deb_systemdsleepdir = $(shell pkg-config --variable=systemdsleepdir systemd)
+ 
++# SONiC: lm-sensors' upstream build only compiles sensord when PROG_EXTRA
++# names it. The sensord binary package is added by patch 0001, but without
++# this the program itself is never built. This used to be an environment
++# variable in src/lm-sensors/Makefile, which a Launchpad builder cannot see.
++export PROG_EXTRA = sensord
++
+ %:
+ 	dh $@
+ 
+--- a/debian/control	2026-07-29 03:29:09.327597710 +0000
++++ b/debian/control	2026-07-29 03:29:09.368118378 +0000
+@@ -4,6 +4,7 @@
+ Build-Depends: debhelper-compat (= 13),
+                bison,
+                flex,
++               librrd-dev,
+                libtest-cmd-perl <!nocheck>,
+                pkgconf,
+                systemd-dev

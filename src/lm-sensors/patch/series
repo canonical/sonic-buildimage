@@ -1,2 +1,3 @@
 0001-patch-the-debian-package-info-to-get-sensord.patch
 0002-Patch-to-peform-dh_installinit-to-include-sensord.in.patch
+0003-build-sensord-via-prog-extra.patch

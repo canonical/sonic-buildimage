@@ -2,7 +2,9 @@
 SPATH       := $($(LM_SENSORS)_SRC_PATH)
 DEP_FILES   := $(SONIC_COMMON_FILES_LIST) rules/lm-sensors.mk rules/lm-sensors.dep   
 DEP_FILES   += $(SONIC_COMMON_BASE_FILES_LIST)
+ifeq ($(filter lm-sensors,$(SONIC_PPA_PACKAGES)),)
 DEP_FILES   += $(shell git ls-files $(SPATH))
+endif
 
 $(LM_SENSORS)_CACHE_MODE  := GIT_CONTENT_SHA 
 $(LM_SENSORS)_DEP_FLAGS   := $(SONIC_COMMON_FLAGS_LIST)

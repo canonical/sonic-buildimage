@@ -7,7 +7,10 @@ LM_SENSORS_PATCH_VERSION = 2
 LIBSENSORS_VERSION = 5
 
 LM_SENSORS_VERSION=$(LM_SENSORS_MAJOR_VERSION).$(LM_SENSORS_MINOR_VERSION).$(LM_SENSORS_PATCH_VERSION)
-LM_SENSORS_VERSION_FULL=$(LM_SENSORS_VERSION)-2build1
+LM_SENSORS_VERSION_STOCK=$(LM_SENSORS_VERSION)-2build1
+LM_SENSORS_VERSION_FULL=$(LM_SENSORS_VERSION_STOCK)$(call ppa_ver,lm-sensors)
+
+LM_SENSORS_DSC_URL=http://archive.ubuntu.com/ubuntu/pool/main/l/lm-sensors/lm-sensors_$(LM_SENSORS_VERSION_STOCK).dsc
 
 LM_SENSORS = lm-sensors_$(LM_SENSORS_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 $(LM_SENSORS)_SRC_PATH = $(SRC_PATH)/lm-sensors
@@ -31,7 +34,18 @@ $(SENSORD)_DEPENDS += $(LIBSENSORS) $(LM_SENSORS)
 SENSORD_DBG = sensord-dbgsym_$(LM_SENSORS_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 $(eval $(call add_derived_package,$(LM_SENSORS),$(SENSORD_DBG)))
 
+ifneq ($(filter lm-sensors,$(SONIC_PPA_PACKAGES)),)
+SONIC_ONLINE_DEBS += $(LM_SENSORS)
+$(LM_SENSORS)_URL     = $(call ppa_url,lm-sensors,$(LM_SENSORS))
+$(LM_SENSORS_DBG)_URL = $(call ppa_url,lm-sensors,$(LM_SENSORS_DBG))
+$(FANCONTROL)_URL     = $(call ppa_url,lm-sensors,$(FANCONTROL))
+$(LIBSENSORS)_URL     = $(call ppa_url,lm-sensors,$(LIBSENSORS))
+$(LIBSENSORS_DBG)_URL = $(call ppa_url,lm-sensors,$(LIBSENSORS_DBG))
+$(SENSORD)_URL        = $(call ppa_url,lm-sensors,$(SENSORD))
+$(SENSORD_DBG)_URL    = $(call ppa_url,lm-sensors,$(SENSORD_DBG))
+else
 SONIC_MAKE_DEBS += $(LM_SENSORS)
+endif
 
 # The .c, .cpp, .h & .hpp files under src/{$DBG_SRC_ARCHIVE list}
 # are archived into debug one image to facilitate debugging.
@@ -43,7 +57,9 @@ export FANCONTROL
 export LIBSENSORS
 export SENSORD
 export LM_SENSORS_VERSION
+export LM_SENSORS_VERSION_STOCK
 export LM_SENSORS_VERSION_FULL
+export LM_SENSORS_DSC_URL
 export LM_SENSORS_DBG
 export LIBSENSORS_DBG
 export SENSORD_DBG

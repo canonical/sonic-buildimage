@@ -10,12 +10,13 @@ SONIC_DERIVED_DEBS :=
 
 SONIC_PPA_URL      := https://ppa.launchpadcontent.net/o/n/ubuntu
 SONIC_PPA_SUFFIX   := +sonic1~ppa1
-# 本次只把 libteam、isc-dhcp 切到 PPA 模式，用于验证「按包生效」而非全局生效
-SONIC_PPA_PACKAGES := libteam isc-dhcp
+# 本次只把 libteam、isc-dhcp、lm-sensors 切到 PPA 模式，用于验证「按包生效」而非全局生效
+SONIC_PPA_PACKAGES := libteam isc-dhcp lm-sensors
 
 include rules/functions
 include rules/libteam.mk
 include rules/isc-dhcp.mk
+include rules/lm-sensors.mk
 include scripts/ppa/tests/assert.mk
 
 # PPA 模式：注册到 ONLINE 而非 MAKE，且 deb 名带后缀
@@ -46,6 +47,12 @@ $(call assert,iscdhcp-online,$(filter isc-dhcp-relay%,$(SONIC_ONLINE_DEBS)),isc-
 $(call assert,iscdhcp-stock-ver,$(ISC_DHCP_VERSION_STOCK),4.4.3-P1-2)
 $(call assert,iscdhcp-dsc-url,$(ISC_DHCP_DSC_URL),http://deb.debian.org/debian/pool/main/i/isc-dhcp/isc-dhcp_4.4.3-P1-2.dsc)
 $(call assert,iscdhcp-dbg-url,$($(ISC_DHCP_RELAY_DBG)_URL),https://ppa.launchpadcontent.net/o/n/ubuntu/pool/main/i/isc-dhcp/isc-dhcp-relay-dbgsym_4.4.3-P1-2+sonic1~ppa1_amd64.ddeb)
+
+$(call assert,lmsensors-stock-ver,$(LM_SENSORS_VERSION_STOCK),3.6.2-2build1)
+$(call assert,lmsensors-main-name,$(LM_SENSORS),lm-sensors_3.6.2-2build1+sonic1~ppa1_amd64.deb)
+$(call assert,lmsensors-dsc-url,$(LM_SENSORS_DSC_URL),http://archive.ubuntu.com/ubuntu/pool/main/l/lm-sensors/lm-sensors_3.6.2-2build1.dsc)
+$(call assert,lmsensors-sensord-url,$($(SENSORD)_URL),https://ppa.launchpadcontent.net/o/n/ubuntu/pool/main/l/lm-sensors/sensord_3.6.2-2build1+sonic1~ppa1_amd64.deb)
+$(call assert,lmsensors-fancontrol-url,$($(FANCONTROL)_URL),https://ppa.launchpadcontent.net/o/n/ubuntu/pool/main/l/lm-sensors/fancontrol_3.6.2-2build1+sonic1~ppa1_all.deb)
 
 .PHONY: default
 default:
