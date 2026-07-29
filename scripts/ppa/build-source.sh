@@ -55,15 +55,29 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     pushd "$WORK" >/dev/null
     # -u 是结构性必需：Ubuntu slave 上 .dsc 上传者的个人 key 不在任何可用
     # keyring 里，装 debian-keyring 也验不了。
-    dget -u "$Q_DSC_URL"
+    #
+    # -d：只下载，不解包。普通 `dget -u` 会自动 `dpkg-source -x`，把上游
+    # debian/patches 全部应用到工作树，只留 .pc 记录「上游那些补丁已应用」。
+    # 我们随后把 SONiC 的补丁名追加进同一个 series，但补丁内容本身不应用
+    # （留给 builder 在构建时应用）——这样一来 series 里一部分（上游的）已
+    # 应用、另一部分（SONiC 的）未应用，工作树和 series 互相对不上。带 10
+    # 个上游补丁的包（如 isc-dhcp）在这种状态下 `dpkg-source -b` 会报
+    # "aborting due to unexpected upstream changes"：它按完整 series 重新
+    # 展开一份参照树，与当前工作树一比，SONiC 补丁改到的文件全部不一致。
+    dget -d -u "$Q_DSC_URL"
+
+    DSC=$(find . -maxdepth 1 -type f -name '*.dsc' | head -1)
+    [ -n "$DSC" ] || { echo "$PKG: dget -d did not leave a .dsc in $WORK" >&2; exit 1; }
+    # --skip-patches：解包但一个补丁都不应用（连上游的都不应用），工作树
+    # 保持 pristine。series 因此从头到尾都是「未应用」，与我们后面追加
+    # SONiC 补丁名的做法一致，不会出现上面那种半应用状态。
+    dpkg-source --skip-patches -x "$DSC"
 
     SRCDIR=$(find . -maxdepth 1 -type d -name "$Q_SOURCE-*" | head -1)
     [ -n "$SRCDIR" ] || { echo "$PKG: cannot find extracted source dir for $Q_SOURCE" >&2; exit 1; }
     pushd "$SRCDIR" >/dev/null
 
-    # dget 已通过 dpkg-source -x 应用了上游 debian/patches，所以工作树是
-    # 「完全打好补丁」的状态。把 SONiC 补丁按同一顺序追加进 series 即等价，
-    # 但补丁本身必须保持未应用 —— builder 会在构建时应用。
+    # 把 SONiC 补丁按同一顺序追加进 series；补丁本身保持未应用。
     mkdir -p debian/patches
     [ -f debian/patches/series ] || : > debian/patches/series
     for p in "${ACTIVE_PATCHES[@]}"; do
@@ -71,8 +85,7 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
         echo "$p" >> debian/patches/series
     done
 
-    # dget 解包时留下的 .pc 会让 dpkg-source 认为补丁已应用
-    rm -rf .pc
+    # 不再需要 rm -rf .pc：--skip-patches 从不应用任何补丁，也就从不创建 .pc。
 
     dch --newversion "${Q_STOCK_VERSION}${Q_SUFFIX}" \
         --distribution resolute --force-distribution \
