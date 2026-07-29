@@ -42,7 +42,24 @@ for PKG in "$@"; do
     # 只看 series 里当前生效的补丁：一个被注释掉、从不会被应用的补丁文件如果
     # 恰好含二进制 diff，不该拖累这次构建；后面追加补丁的循环也复用这份列表，
     # 不必对 series 再 grep 一遍。
-    mapfile -t ACTIVE_PATCHES < <(grep -vE '^\s*(#|$)' "$REPO/$Q_PATCH_DIR/series")
+    #
+    # grep exiting 1 here is legitimate (an empty series has zero active-patch
+    # lines); exiting >=2 (e.g. the series file itself is unreadable) is a
+    # real error. Read via command substitution rather than `mapfile <
+    # <(...)`: process substitution decouples grep's exit status from this
+    # command entirely -- the same defect class fixed in query_pkg() (see
+    # query-pkg.sh) -- so a missing/unreadable series file would otherwise
+    # silently look identical to "zero active patches" instead of erroring.
+    rc=0
+    active_patches_raw=$(grep -vE '^\s*(#|$)' "$REPO/$Q_PATCH_DIR/series") || rc=$?
+    [ "$rc" -le 1 ] || { echo "$PKG: could not read patch series at $Q_PATCH_DIR/series (grep exit $rc)" >&2; exit 1; }
+    # mapfile against an empty herestring produces a one-element array holding
+    # an empty string, not zero elements -- guard explicitly so a series with
+    # zero active patches ends up with a genuinely empty array.
+    ACTIVE_PATCHES=()
+    if [ -n "$active_patches_raw" ]; then
+        mapfile -t ACTIVE_PATCHES <<< "$active_patches_raw"
+    fi
     for p in "${ACTIVE_PATCHES[@]}"; do
         # 补丁里含二进制文件需要 debian/source/include-binaries；本批次没有，
         # 但要显式报错而不是静默产出一个 dpkg-source 会拒绝的包。
