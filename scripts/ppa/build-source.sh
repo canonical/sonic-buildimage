@@ -99,6 +99,23 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
     [ -n "$SRCDIR" ] || { echo "$PKG: cannot find extracted source dir for $Q_SOURCE" >&2; exit 1; }
     pushd "$SRCDIR" >/dev/null
 
+    # 有些 stock 包（如 lm-sensors）的 debian/changelog 顶部条目带 dpkg epoch
+    # （如 "1:3.6.2-2build1"），即便归档文件名/URL 从不带 epoch。下面
+    # dch --newversion 如果漏掉 epoch，新条目会被当成隐式 epoch 0——比官方
+    # 归档版本"更旧"，任何已装官方包的机器永远不会 apt upgrade 到我们的 PPA
+    # 构建。此处趁 changelog 还是 pristine 状态读出 epoch 并原样带上；顺带
+    # 校验 rules/<pkg>.mk 里手写的 <PREFIX>_VERSION_STOCK 是否与 changelog
+    # 记的（去掉 epoch 后）一致，防止手写版本号打错字。
+    STOCK_CHANGELOG_VERSION=$(dpkg-parsechangelog --show-field Version)
+    EPOCH=""
+    case "$STOCK_CHANGELOG_VERSION" in
+        *:*) EPOCH="${STOCK_CHANGELOG_VERSION%%:*}:" ;;
+    esac
+    if [ "${STOCK_CHANGELOG_VERSION#*:}" != "$Q_STOCK_VERSION" ]; then
+        echo "$PKG: debian/changelog's stock version is '$STOCK_CHANGELOG_VERSION' but rules/$PKG.mk's <PREFIX>_VERSION_STOCK is '$Q_STOCK_VERSION' -- they must agree (ignoring any epoch)" >&2
+        exit 1
+    fi
+
     # 只改 debian/* 的补丁直接焙进解包出的树（成为 debian tarball 本体的一部
     # 分），不进 series——它们不是"builder 构建时要应用的上游补丁"。
     for p in "${DEBIAN_PATCHES[@]}"; do
@@ -119,7 +136,7 @@ while IFS='=' read -r k v; do declare "Q_$k=$v"; done \
 
     # 不再需要 rm -rf .pc：--skip-patches 从不应用任何补丁，也就从不创建 .pc。
 
-    dch --newversion "${Q_STOCK_VERSION}${Q_SUFFIX}" \
+    dch --newversion "${EPOCH}${Q_STOCK_VERSION}${Q_SUFFIX}" \
         --distribution resolute --force-distribution \
         "SONiC packaging for Ubuntu resolute: apply the $PKG patch series from sonic-buildimage."
 

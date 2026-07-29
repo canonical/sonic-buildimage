@@ -42,9 +42,28 @@ if grep -qE '^\s.*\.deb$' "$changes"; then
 fi
 echo "ok   changes contains no .deb"
 
+# 解包（不应用补丁），供下面两处复用：1）从次新的 changelog 条目读出 stock
+# epoch（如果有）；2）检查 series 尾部构成。
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+#   --skip-patches here only serves the epoch and series-content checks
+#   below, which just read files under debian/ and do not need patches
+#   actually applied.
+dpkg-source --no-check --skip-patches -x "$dsc" "$tmp/src" >/dev/null
+
 # 版本号必须是 stock + suffix。逐字段比较而非塞进 grep 正则：$want_ver 里的
 # '.' 在 BRE 里是「任意字符」元字符，塞进 grep 模式会让校验比预期宽松。
-want_ver="${Q_STOCK_VERSION}${Q_SUFFIX}"
+#
+# 有些 stock 包（如 lm-sensors）的 debian/changelog 带 dpkg epoch（如
+# "1:3.6.2-2build1"），build-source.sh 的 dch --newversion 会原样带上。这里
+# 独立地从「次新」的 changelog 条目（dch 新插入的那条之前、pristine 原状的
+# 那条）读出同一个 epoch 来验证，而不是拿 dsc 自己的字段去对自己。
+epoch=""
+if raw=$(dpkg-parsechangelog -o1 -c1 --show-field Version -l "$tmp/src/debian/changelog" 2>/dev/null); then
+    case "$raw" in
+        *:*) epoch="${raw%%:*}:" ;;
+    esac
+fi
+want_ver="${epoch}${Q_STOCK_VERSION}${Q_SUFFIX}"
 # `if cmd; then` 而不是裸的 `x=$(cmd)`：cmd 作为 if 条件时，其非零退出不会
 # 触发 errexit，所以 .dsc 里没有 Version: 字段时能落到下面的 FAIL，而不是
 # 在这条赋值本身就被 set -e 杀掉（.dsc 不匹配用 grep -m1，本来就没有管道，
@@ -60,12 +79,7 @@ if [ "$dsc_ver" != "$want_ver" ]; then
 fi
 echo "ok   version is $want_ver"
 
-# 解包，检查 series 尾部
-tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
-#   --skip-patches here only serves the series-content check below, which
-#   just reads debian/patches/series and does not need patches actually
-#   applied.
-dpkg-source --no-check --skip-patches -x "$dsc" "$tmp/src" >/dev/null
+# 检查 series 尾部
 # grep 退出 1（没有匹配行）在这里是合法状态：series 里当前一个生效补丁都没有
 # 时就该产出一个空 want，走到下面「0 个补丁」的比较，而不是被 set -e 当成
 # 出错杀掉脚本。用 `|| rc=$?` 显式接住退出码，只有 >1（比如 series 文件本身
