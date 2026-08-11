@@ -5,6 +5,7 @@ rocklist=(
     "dockers/docker-database"
     "dockers/docker-sonic-mgmt-framework"
     "dockers/docker-eventd"
+    "dockers/docker-router-advertiser"
 )
 
 set -x
