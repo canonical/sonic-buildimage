@@ -140,3 +140,9 @@ apt-retries-count
 
 *service
 justfile
+
+# Design specs and implementation plans (local development docs)
+docs/
+
+# AI config directory
+.opencode/*
