@@ -5,7 +5,6 @@
 USE_PEBBLE=false
 if pgrep -x pebble > /dev/null 2>&1; then
     USE_PEBBLE=true
-    source /usr/share/sonic/scripts/envs
     LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
     pebble add syslog-layer --combine $LAYER_FILE
     pebble replan

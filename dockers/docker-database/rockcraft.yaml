@@ -20,26 +20,14 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
-    environment:
-      DEBIAN_FRONTEND: "noninteractive"
-      IMAGENAME: "docker-database"
-      DISTRO: "resolute"
   redis:
     command: bash -c "{ [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
     override: replace
-    environment:
-      DEBIAN_FRONTEND: "noninteractive"
-      IMAGENAME: "docker-database"
-      DISTRO: "resolute"
   flushdb:
     command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
     override: replace
     on-success: ignore
     on-failure: ignore
-    environment:
-      DEBIAN_FRONTEND: "noninteractive"
-      IMAGENAME: "docker-database"
-      DISTRO: "resolute"
 
 parts:
   install-unchiselled-packages:
@@ -71,25 +59,12 @@ parts:
         dpkg -x debs/libnl-nf-3-200_3.12.0-2_amd64.deb ${CRAFT_PART_INSTALL}
         dpkg -x debs/libnl-cli-3-200_3.12.0-2_amd64.deb ${CRAFT_PART_INSTALL}
 
-        # Install python packages
-        pip3 install --upgrade -t ${CRAFT_PART_INSTALL}/usr/lib/python3.14/dist-packages/ \
-          ./python-wheels/sonic_py_common-1.0-py3-none-any.whl \
-          ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl \
-          ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl \
-          ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl \
-          ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl \
-          jinjanator \
-          click \
-          pyangbind==0.8.7 \
-          lxml
-
         # Clean up deb/wheel source files from install tree
         rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels ${CRAFT_PART_INSTALL}/python-debs
 
     organize:
       database_config.json.j2: usr/share/sonic/templates/database_config.json.j2
       database_global.json.j2: usr/share/sonic/templates/database_global.json.j2
-      envs: usr/share/sonic/scripts/envs
       multi_database_config.json.j2: usr/share/sonic/templates/multi_database_config.json.j2
       files/syslog-layer.yaml: usr/share/sonic/templates/
       docker-database-init.sh: usr/local/bin/docker-database-init.sh
@@ -128,13 +103,6 @@ parts:
     override-prime: |
       craftctl default
 
-      # Create symlinks
-      ln -sf /usr/bin/gawk usr/bin/awk
-      ln -sf /usr/bin/python3.14 usr/bin/python3
-
-      # Move python bins
-      mv usr/lib/python3.14/dist-packages/bin/* usr/bin/
-
       # Make update script executable
       chmod +x usr/local/bin/update_chassisdb_config
 
@@ -146,3 +114,19 @@ parts:
 
       # Copy manifest to root
       cp ${CRAFT_PROJECT_DIR}/manifest.json .
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      - jinjanator
+      - click
+      - pyangbind==0.8.7
+      - lxml
+    stage-packages:
+      - python3-venv
