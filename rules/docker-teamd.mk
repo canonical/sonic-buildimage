@@ -37,6 +37,3 @@ $(DOCKER_TEAMD)_RUN_OPT += -v /etc/sonic:/etc/sonic:ro
 $(DOCKER_TEAMD)_RUN_OPT += -v /etc/localtime:/etc/localtime:ro 
 
 $(DOCKER_TEAMD)_BASE_IMAGE_FILES += teamdctl:/usr/bin/teamdctl
-
-SONIC_TRIXIE_DOCKERS += $(DOCKER_TEAMD)
-SONIC_TRIXIE_DBG_DOCKERS += $(DOCKER_TEAMD_DBG)

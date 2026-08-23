@@ -35,6 +35,3 @@ $(DOCKER_NAT)_RUN_OPT += -v /etc/localtime:/etc/localtime:ro
 
 
 $(DOCKER_NAT)_BASE_IMAGE_FILES += natctl:/usr/bin/natctl
-
-SONIC_TRIXIE_DOCKERS += $(DOCKER_NAT)
-SONIC_TRIXIE_DBG_DOCKERS += $(DOCKER_NAT_DBG)

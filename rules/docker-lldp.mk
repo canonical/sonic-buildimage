@@ -38,6 +38,3 @@ $(DOCKER_LLDP)_RUN_OPT += -v /etc/localtime:/etc/localtime:ro
 
 $(DOCKER_LLDP)_BASE_IMAGE_FILES += lldpctl:/usr/bin/lldpctl
 $(DOCKER_LLDP)_BASE_IMAGE_FILES += lldpcli:/usr/bin/lldpcli
-
-SONIC_TRIXIE_DOCKERS += $(DOCKER_LLDP)
-SONIC_TRIXIE_DBG_DOCKERS += $(DOCKER_LLDP_DBG)

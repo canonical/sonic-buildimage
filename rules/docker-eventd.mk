@@ -35,6 +35,3 @@ $(DOCKER_EVENTD)_CONTAINER_NAME = eventd
 $(DOCKER_EVENTD)_RUN_OPT += -t
 $(DOCKER_EVENTD)_RUN_OPT += -v /etc/sonic:/etc/sonic:ro
 $(DOCKER_EVENTD)_RUN_OPT += -v /etc/localtime:/etc/localtime:ro
-
-SONIC_TRIXIE_DOCKERS += $(DOCKER_EVENTD)
-SONIC_TRIXIE_DBG_DOCKERS += $(DOCKER_EVENTD_DBG)

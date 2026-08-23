@@ -36,6 +36,3 @@ $(DOCKER_SFLOW)_RUN_OPT += -v /etc/localtime:/etc/localtime:ro
 
 $(DOCKER_SFLOW)_BASE_IMAGE_FILES += psample:/usr/bin/psample
 $(DOCKER_SFLOW)_BASE_IMAGE_FILES += sflowtool:/usr/bin/sflowtool
-
-SONIC_TRIXIE_DOCKERS += $(DOCKER_SFLOW)
-SONIC_TRIXIE_DBG_DOCKERS += $(DOCKER_SFLOW_DBG)

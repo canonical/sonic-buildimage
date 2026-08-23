@@ -26,6 +26,3 @@ $(DOCKER_ICCPD)_RUN_OPT += -v /etc/sonic:/etc/sonic:ro
 $(DOCKER_ICCPD)_RUN_OPT += -v /etc/localtime:/etc/localtime:ro 
 
 $(DOCKER_ICCPD)_BASE_IMAGE_FILES += mclagdctl:/usr/bin/mclagdctl
-
-SONIC_TRIXIE_DOCKERS += $(DOCKER_ICCPD)
-SONIC_TRIXIE_DBG_DOCKERS += $(DOCKER_ICCPD_DBG)
