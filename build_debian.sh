@@ -305,9 +305,9 @@ sudo LANG=C chroot $FILESYSTEM_ROOT usermod -aG redis $USERNAME
 
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
     ## Pre-install hardware drivers
-    # Ubuntu has no firmware-linux-nonfree/firmware-intel-misc; use
-    # linux-firmware, || true since vs needs no real firmware.
-    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install linux-firmware || true
+    # Ubuntu has no firmware-linux-nonfree/firmware-intel-misc; linux-firmware
+    # carries the same blobs and is present in the resolute archive.
+    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install linux-firmware
 fi
 
 ## Pre-install the fundamental packages
