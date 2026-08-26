@@ -587,8 +587,11 @@ RUN wget -O golang-go.deb '{{ BUILD_PUBLIC_URL }}/fips/trixie/{{ FIPS_VERSION }}
  && ln -sf /usr/lib/go-{{ FIPS_GOLANG_MAIN_VERSION }} /usr/local/go \
  && rm golang-go.deb golang-src.deb
 {%- else %}
-RUN eatmydata apt-get install -y golang-go \
- && ln -sf /usr/lib/go-{{ FIPS_GOLANG_MAIN_VERSION }} /usr/local/go
+# resolute: pin the toolchain rather than follow golang-go, which is go 1.26 here.
+# Naming it also keeps this arm independent of the FIPS_* variables, which are
+# undefined for resolute.
+RUN eatmydata apt-get install -y golang-1.24-go \
+ && ln -sf /usr/lib/go-1.24 /usr/local/go
 {%- endif %}
 
 # For building sonic-utilities
