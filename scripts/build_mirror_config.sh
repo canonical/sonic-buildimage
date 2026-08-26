@@ -9,7 +9,6 @@ export DISTRIBUTION=$3
 [[ -z $APT_RETRIES_COUNT ]] && APT_RETRIES_COUNT=20
 export APT_RETRIES_COUNT
 
-DEFAULT_MIRROR_URL_PREFIX=http://packages.trafficmanager.net
 MIRROR_VERSION_FILE=
 [[ "$MIRROR_SNAPSHOT" == "y" ]] && MIRROR_VERSION_FILE=files/build/versions/default/versions-mirror
 [ -f target/versions/default/versions-mirror ] && MIRROR_VERSION_FILE=target/versions/default/versions-mirror
@@ -45,26 +44,17 @@ if [ "$DISTRIBUTION" == "resolute" ]; then
 fi
 
 if [ "$MIRROR_SNAPSHOT" == y ]; then
-    if [ -f "$MIRROR_VERSION_FILE" ]; then
-        DEBIAN_TIMESTAMP=$(grep "^debian==" $MIRROR_VERSION_FILE | tail -n 1 | sed 's/.*==//')
-        DEBIAN_SECURITY_TIMESTAMP=$(grep "^debian-security==" $MIRROR_VERSION_FILE | tail -n 1 | sed 's/.*==//')
-    elif [ -z "$DEBIAN_TIMESTAMP" ] || [ -z "$DEBIAN_SECURITY_TIMESTAMP" ]; then
-        DEBIAN_TIMESTAMP=$(curl $DEFAULT_MIRROR_URL_PREFIX/debian-snapshot/debian/latest)
-        DEBIAN_SECURITY_TIMESTAMP=$(curl $DEFAULT_MIRROR_URL_PREFIX/debian-snapshot/debian-security/latest)
-    fi
+    # One tree holds resolute, -updates and -security, so one timestamp does. No
+    # "latest" endpoint exists, but any timestamp resolves, so pin to now.
+    [ -f "$MIRROR_VERSION_FILE" ] && UBUNTU_TIMESTAMP=$(grep "^ubuntu==" $MIRROR_VERSION_FILE | tail -n 1 | sed 's/.*==//')
+    [ -z "$UBUNTU_TIMESTAMP" ] && UBUNTU_TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 
-    DEFAULT_MIRROR_URLS=http://deb.debian.org/debian/,$BUILD_SNAPSHOT_URL/debian/$DEBIAN_TIMESTAMP/
-    DEFAULT_MIRROR_SECURITY_URLS=http://deb.debian.org/debian-security/,$BUILD_SNAPSHOT_URL/debian-security/$DEBIAN_SECURITY_TIMESTAMP/
-
-	if [ "$DISTRIBUTION" == "buster" ] || [ "$DISTRIBUTION" == "bullseye" ]; then
-		DEFAULT_MIRROR_URLS=http://archive.debian.org/debian/,$BUILD_SNAPSHOT_URL/debian/$DEBIAN_TIMESTAMP/
-	fi
+    DEFAULT_MIRROR_URLS=http://archive.ubuntu.com/ubuntu/,$BUILD_SNAPSHOT_URL/ubuntu/$UBUNTU_TIMESTAMP/
+    DEFAULT_MIRROR_SECURITY_URLS=http://security.ubuntu.com/ubuntu/,$BUILD_SNAPSHOT_URL/ubuntu/$UBUNTU_TIMESTAMP/
 
     mkdir -p target/versions/default
-    if [ ! -f target/versions/default/versions-mirror ]; then
-        echo "debian==$DEBIAN_TIMESTAMP" > target/versions/default/versions-mirror
-        echo "debian-security==$DEBIAN_SECURITY_TIMESTAMP" >> target/versions/default/versions-mirror
-    fi
+    grep -qs "^ubuntu==" target/versions/default/versions-mirror || \
+        echo "ubuntu==$UBUNTU_TIMESTAMP" >> target/versions/default/versions-mirror
 fi
 
 # Handle sources list

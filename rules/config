@@ -301,9 +301,9 @@ SECURE_UPGRADE_KERNEL_CAFILE ?= $(SECURE_UPGRADE_SIGNING_CERT)
 SECURE_UPGRADE_PROD_SIGNING_TOOL ?=
 SECURE_UPGRADE_PROD_TOOL_ARGS ?=
 
-# BUILD_SNAPSHOT_URL - Default debian snapshot mirror url
-# Mirror of https://snapshot.debian.org/archive
-BUILD_SNAPSHOT_URL ?= http://packages.trafficmanager.net/snapshot
+# BUILD_SNAPSHOT_URL - Default snapshot mirror url
+# Ubuntu's archive snapshot service, covering resolute
+BUILD_SNAPSHOT_URL ?= https://snapshot.ubuntu.com
 
 # BUILD_PUBLIC_URL - Default public mirror url
 BUILD_PUBLIC_URL ?= https://packages.trafficmanager.net/public

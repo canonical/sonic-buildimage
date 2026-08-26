@@ -24,8 +24,8 @@ generate_version_file()
 }
 
 if [ "$MIRROR_SNAPSHOT" == y ]; then
-    SNAPSHOT_TIMESTAMP=$(grep "^debian==" $TARGET/versions/default/versions-mirror | tail -n 1 | sed 's/.*==//')
-    MIRROR_URL=$BUILD_SNAPSHOT_URL/debian/$SNAPSHOT_TIMESTAMP
+    SNAPSHOT_TIMESTAMP=$(grep "^ubuntu==" $TARGET/versions/default/versions-mirror | tail -n 1 | sed 's/.*==//')
+    MIRROR_URL=$BUILD_SNAPSHOT_URL/ubuntu/$SNAPSHOT_TIMESTAMP
 else
     MIRROR_URL=http://archive.ubuntu.com/ubuntu
 fi
