@@ -24,10 +24,10 @@ generate_version_file()
 }
 
 if [ "$MIRROR_SNAPSHOT" == y ]; then
-    SNAPSHOT_TIMESTAMP=$(grep "^debian==" $TARGET/versions/default/versions-mirror | tail -n 1 | sed 's/.*==//')
-    MIRROR_URL=$BUILD_SNAPSHOT_URL/debian/$SNAPSHOT_TIMESTAMP
+    SNAPSHOT_TIMESTAMP=$(grep "^ubuntu==" $TARGET/versions/default/versions-mirror | tail -n 1 | sed 's/.*==//')
+    MIRROR_URL=$BUILD_SNAPSHOT_URL/ubuntu/$SNAPSHOT_TIMESTAMP
 else
-    MIRROR_URL=http://deb.debian.org/debian
+    MIRROR_URL=http://archive.ubuntu.com/ubuntu
 fi
 
 if [ "$ENABLE_VERSION_CONTROL_DEB" != "y" ] || [ ! -d files/build/versions/host-base-image ]; then
@@ -79,7 +79,7 @@ rm -rf $BASEIMAGE_TARBALLPATH $BASEIMAGE_TARBALL
 ARCHIEVES=$BASEIMAGE_TARBALLPATH/var/cache/apt/archives
 APTLIST=$BASEIMAGE_TARBALLPATH/var/lib/apt/lists
 TARGET_DEBOOTSTRAP=$BASEIMAGE_TARBALLPATH/debootstrap
-APTDEBIAN="$APTLIST/deb.debian.org_debian_dists_${DISTRO}_main_binary-${CONFIGURED_ARCH}_Packages"
+APTDEBIAN="$APTLIST/archive.ubuntu.com_ubuntu_dists_${DISTRO}_main_binary-${CONFIGURED_ARCH}_Packages"
 DEBPATHS=$TARGET_DEBOOTSTRAP/debpaths
 DEBOOTSTRAP_BASE=$TARGET_DEBOOTSTRAP/base
 DEBOOTSTRAP_REQUIRED=$TARGET_DEBOOTSTRAP/required
