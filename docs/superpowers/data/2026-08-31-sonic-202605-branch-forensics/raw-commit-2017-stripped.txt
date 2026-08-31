@@ -1,0 +1,13 @@
+tree 037ef2153f735d2489f714de2d5e19e70a675a89
+parent 437419c79eae23e671d4648a24aa2c45941fd9ed
+author Shuotian Cheng <shuche@microsoft.com> 1509137991 -0700
+committer GitHub <noreply@github.com> 1509137991 -0700
+
+[Broadcom]: Update Broadcom OpenNSL/SAI packages (#1090)
+
+Update OpenNSL to 3.2.3.3-2
+Update SAI to 3.0.3.2-10
+
+This commit fixes S6100 CPU high usage issue
+
+Signed-off-by: Shu0T1an ChenG <shuche@microsoft.com>

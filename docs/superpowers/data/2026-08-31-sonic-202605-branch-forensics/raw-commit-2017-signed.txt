@@ -1,0 +1,24 @@
+tree 037ef2153f735d2489f714de2d5e19e70a675a89
+parent 437419c79eae23e671d4648a24aa2c45941fd9ed
+author Shuotian Cheng <shuche@microsoft.com> 1509137991 -0700
+committer GitHub <noreply@github.com> 1509137991 -0700
+gpgsig -----BEGIN PGP SIGNATURE-----
+ 
+ wsBcBAABCAAQBQJZ855HCRBK7hj4Ov3rIwAAdHIIAHMFGQGK10dMii0jPdmjnA88
+ sEYXszbKXqQJ43zLM2BeDozvrOp+jA1OMTcl33yCCrSdTuAAa54A4+vA8ZeWdLKG
+ CdaRGFw5u9WHUgPThdv2KpMj0kv92w5sKSyKLq4knAqQkSKB3g2aeygHjllWmSzu
+ aEXfLz1Zc9IWOveFPnAs1szUitm9gimSYl2ucRaanYzMYQvpJ+koZiKGO0SwAdfO
+ blodPRP2nLIJ+23zrAtjehi+Q+y6LSVS4eIcBpqDLvQwmk+PKE4mw2yVClhr6tp/
+ 2zX6Fu3JA86ggmnKOAC8W24UUKg7dTDM1CrX5SdbT+pAaDJHKYTAp3/dRi+RPEw=
+ =GgBO
+ -----END PGP SIGNATURE-----
+ 
+
+[Broadcom]: Update Broadcom OpenNSL/SAI packages (#1090)
+
+Update OpenNSL to 3.2.3.3-2
+Update SAI to 3.0.3.2-10
+
+This commit fixes S6100 CPU high usage issue
+
+Signed-off-by: Shu0T1an ChenG <shuche@microsoft.com>

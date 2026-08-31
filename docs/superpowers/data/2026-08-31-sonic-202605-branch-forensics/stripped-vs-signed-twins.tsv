@@ -1,0 +1,4 @@
+era	stripped_sha	signed_sha	tree	same_tree	subject
+2017	437419c79e	437419c79e	b28d815a62928870e74102c1641213829bf8bd0f	yes	Update submodule pointer and sonic-slave for test dependency (#1084)
+2017	e2a863b60ab89a464215f567c00207510a3498d4	961a6669f7c896d0521b0a9bfc796330f12608fe	037ef2153f735d2489f714de2d5e19e70a675a89	yes	[Broadcom]: Update Broadcom OpenNSL/SAI packages (#1090)
+2026	7177dca054dea934b5a70cdb8f62897b0ab981ff	9c84048a4240ea5d358f74b0821d2d51bba9a3b5	1459cc1f916c3a84aec14cc483dec7b02e65f035	yes	[submodule] Update submodule sonic-dash-ha to the latest HEAD automatically (#28234)
