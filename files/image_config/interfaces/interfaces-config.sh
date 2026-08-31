@@ -1,5 +1,4 @@
 #!/bin/bash
-resolvconf_updates=true
 
 function wait_networking_service_done() {
     local -i _WDOG_CNT="1"
@@ -24,23 +23,9 @@ function wait_networking_service_done() {
     systemctl kill networking 2>&1
 }
 
-function resolvconf_updates_disable() {
-    resolvconf --updates-are-enabled
-    if [[ $? -ne 0 ]]; then
-        resolvconf_updates=false
-    fi
-    resolvconf --disable-updates
-}
-
-function resolvconf_updates_restore() {
-    if [[ $resolvconf_updates == true ]]; then
-        resolvconf --enable-updates
-    fi
-}
-
-# Do not run DNS configuration update during the shutdowning of the management interface. 
-# This operation is redundant as there will be an update after the start of the interface.
-resolvconf_updates_disable
+# Bringing the management interface down no longer needs DNS updates to be held
+# off: /etc/resolv.conf is only rewritten by resolv-config.service and by the
+# dhclient hook on a lease, neither of which runs while the interface is down.
 
 if [[ $(ifquery --running eth0) ]]; then
     wait_networking_service_done
@@ -100,10 +85,6 @@ fi
 for intf_pid in $(ls -1 /var/run/dhclient*.Ethernet*.pid 2> /dev/null); do
     [[ -f ${intf_pid} ]] && kill `cat ${intf_pid}` && rm -f ${intf_pid}
 done
-
-/usr/bin/resolv-config.sh cleanup
-# Restore DNS configuration update to the previous state.
-resolvconf_updates_restore
 
 # Read sysctl conf files again
 sysctl -p /etc/sysctl.d/90-dhcp6-systcl.conf

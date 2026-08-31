@@ -1,0 +1,9 @@
+# SONiC drives /usr/bin/rsyslog_plugin from omprog in /etc/rsyslog.d/*_events.conf to publish
+# sonic-events. The plugin runs under this profile (ix) and reaches the event bus through
+# libswsscommon, which reads the SONiC configuration and the database configuration. chown is
+# needed for the $FileOwner/$FileGroup rsyslog applies to the log files it creates.
+/usr/bin/rsyslog_plugin ix,
+capability chown,
+/etc/sonic/** r,
+/var/run/redis/** r,
+/usr/share/sonic/** r,

@@ -1,5 +1,10 @@
 # fips packages
 
+# resolute: the mirror publishes no fips/resolute/ tree, so every FIPS_*
+# version below resolves empty and the downloads 404.
+ifeq ($(BLDENV) $(INCLUDE_FIPS), resolute y)
+$(error INCLUDE_FIPS=y is not supported on resolute)
+endif
 
 ifeq ($(BLDENV), trixie)
 FIPS_VERSION = 1.8.0-24-gd744cf2-2
