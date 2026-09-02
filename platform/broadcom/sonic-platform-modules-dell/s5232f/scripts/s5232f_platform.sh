@@ -18,6 +18,7 @@ init_devnum() {
 sys_eeprom() {
     case $1 in
         "new_device")    echo 24c16 0x50 > /sys/bus/i2c/devices/i2c-${devnum}/$1
+                         chmod 0444 /sys/bus/i2c/devices/i2c-${devnum}/0-0050/eeprom
                          ;;
         "delete_device") echo 0x50 > /sys/bus/i2c/devices/i2c-${devnum}/$1
                          ;;
