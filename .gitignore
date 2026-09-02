@@ -51,6 +51,13 @@ platform/*/docker-*/*manifest*
 # Installer-related files and directories
 installer/x86_64/platforms/
 
+# Generated device lists (build_image.sh generate_device_list)
+installer/platforms/
+installer/platforms_asic
+
+# Rendered slave apt config
+sonic-slave*/files/
+
 # Misc. files
 asic_config_checksum
 files/Aboot/boot0
@@ -129,3 +136,11 @@ sources.list.*
 
 # Generated mirror configs
 apt-retries-count
+
+# Downloaded/extracted package sources and built binaries
+src/flashrom/flashrom-*/
+src/libyang3-py3/libyang-python/
+src/rdb-cli/librdb/
+src/sonic-eventd/eventdb
+src/sonic-bmpcfgd/build/
+src/sonic-bmpcfgd/*.egg-info
