@@ -142,5 +142,3 @@ src/flashrom/flashrom-*/
 src/libyang3-py3/libyang-python/
 src/rdb-cli/librdb/
 src/sonic-eventd/eventdb
-src/sonic-bmpcfgd/build/
-src/sonic-bmpcfgd/*.egg-info
