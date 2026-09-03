@@ -1,0 +1,4 @@
+# Raw human-input text, one row per prompt. Not committed: it is the verbatim
+# prompt corpus. Regenerate locally with ./mine-prompts.py when you need to
+# re-check a claim.
+prompts-dedup.tsv

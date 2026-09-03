@@ -1,0 +1,44 @@
+# Prompt corpus statistics
+
+project dir            : /home/sheldon-qi/.claude/projects/-home-sheldon-qi-sonic-buildimage
+top-level jsonl        : 75
+  of which recovered   : 52
+  native               : 23
+subagent subdirs       : 10 (56 jsonl)
+top-level sidechain    : 5820 user records dropped by step 1
+
+human inputs, raw            : 1014
+human inputs, (ts,text) dedup: 969
+human inputs, text dedup     : 747
+  from recovered files       : 511
+  from native files          : 236
+sessions carrying human input: 68
+active days                  : 32
+first / last timestamp       : 2026-07-02T04:20:32.499309Z / 2026-09-03T06:27:33.058Z
+
+total characters : 48140
+mean / median    : 64 / 28
+p90 / max        : 126 / 7157
+<=  10 chars     : 143 (19%)
+<=  30 chars     : 401 (53%)
+<= 100 chars     : 647 (86%)
+<= 300 chars     : 733 (98%)
+>= 300 chars     : 14 (1%)
+
+## Categories (mutually exclusive, first match wins, text-dedup basis)
+
+advance          :    9 (1%)
+option-pick      :    8 (1%)
+investigate      :   87 (11%)
+challenge        :   53 (7%)
+push-commit      :   44 (5%)
+minimal-diff     :   25 (3%)
+patch-style      :   17 (2%)
+orchestration    :   33 (4%)
+authorization    :   32 (4%)
+clean-rebuild    :   13 (1%)
+doc-style        :   13 (1%)
+review-people    :   18 (2%)
+unclassified     :  395 (52%)
+
+advance+option-pick occurrences on (ts,text) basis: 131
