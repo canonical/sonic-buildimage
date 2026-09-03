@@ -25,18 +25,6 @@ identical tree, so confirm with `git merge-base` before assuming a bad rebase.
   `BLDENV=resolute` is the default and only enabled build environment, with
   the retained trixie/bookworm paths disabled (`NOTRIXIE=1`, `NOBOOKWORM=1`).
 
-Resolute scope and known deviations (intentional; do not "fix" without a task
-that changes the decision):
-
-- Platform enablement is limited to `vs` (KVM boot + smoke tests pass) and
-  `broadcom` (`sonic-broadcom.bin` builds, incl. Dell Linux 7.0 kernel API
-  adaptations); other platforms are not enabled or validated on Resolute.
-- FIPS is unsupported: `INCLUDE_FIPS=y` is rejected on `BLDENV=resolute`
-  because the mirror publishes no `fips/resolute/` tree.
-- libnl3 uses injected API aliases instead of upstream's
-  `rtnl_route_get_nhid`; flashrom and sedutil were de-forked to stock Ubuntu
-  debs; runtime fixes such as direct `/etc/resolv.conf` rendering and the
-  rsyslogd AppArmor profile live on this branch.
 - Migration documentation lives only on the `202605_resolute_doc` branch
   (`docs/superpowers/`) and is authoritative for design, plans, status, and
   compatibility decisions; do not duplicate or edit it without an explicit
