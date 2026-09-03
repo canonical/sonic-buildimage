@@ -60,6 +60,9 @@ target first; never run destructive cleanup targets unless required.
   names, or clones cannot initialize the submodule. Non-upstream commits go
   to `canonical/<submodule>:202605_resolute` (never `sonic-net/`); push
   local-only commits there first and point the URL at `canonical/<submodule>`.
+  The state is not determined by the URL alone — a submodule can carry
+  Canonical commits, or commits pushed nowhere at all, while its URL still
+  names an upstream remote.
 - To pick up upstream changes in a forked submodule, rebase its
   `202605_resolute` branch onto the upstream branch (do not fast-forward over
   the resolute-specific commits), then bump the gitlink. After syncing this
