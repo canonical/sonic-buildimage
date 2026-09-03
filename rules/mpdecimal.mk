@@ -9,6 +9,5 @@ LIBMPDECIMAL = libmpdec2_$(MPDECIMAL_VERSION_FULL)_$(CONFIGURED_ARCH).deb
 $(LIBMPDECIMAL)_SRC_PATH = $(SRC_PATH)/mpdecimal
 # resolute: dropped from SONIC_MAKE_DEBS — zero consumers
 # SONIC_MAKE_DEBS += $(LIBMPDECIMAL)
-
-LIBMPDECIMAL_DEV = libmpdec-dev_$(MPDECIMAL_VERSION_FULL)_$(CONFIGURED_ARCH).deb
-$(eval $(call add_derived_package,$(LIBMPDECIMAL),$(LIBMPDECIMAL_DEV)))
+# LIBMPDECIMAL_DEV = libmpdec-dev_$(MPDECIMAL_VERSION_FULL)_$(CONFIGURED_ARCH).deb
+# $(eval $(call add_derived_package,$(LIBMPDECIMAL),$(LIBMPDECIMAL_DEV)))
