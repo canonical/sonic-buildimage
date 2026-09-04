@@ -1,0 +1,21 @@
+name: resolute-build-setup
+description: |
+  Idempotently install SONiC build prerequisites (docker-ce/buildx, jinjanator),
+  write rules/config.user, and print environment watermarks.
+  Runner assumptions: Ubuntu Resolute, passwordless sudo.
+runs:
+  using: composite
+  steps:
+    - name: Install prerequisites
+      shell: bash
+      run: bash ${{ github.action_path }}/install-prerequisites.sh
+    - name: Write build config
+      shell: bash
+      run: |
+        printf 'SONIC_BUILD_MEMORY = 24g\n' > rules/config.user
+        cat rules/config.user
+    - name: Disk watermark
+      shell: bash
+      run: |
+        df -h /
+        docker system df || true
