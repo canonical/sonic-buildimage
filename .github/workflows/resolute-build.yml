@@ -1,0 +1,99 @@
+name: resolute-build
+
+on:
+  merge_group:
+    branches: [202605_resolute]
+    types: [checks_requested]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Build ref (branch or tag)
+        type: string
+        default: 202605_resolute
+  push:
+    branches: [ci-workflow/*]
+
+concurrency:
+  group: resolute-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SONIC_BUILD_JOBS: "4"
+  SONIC_BUILD_RETRY_COUNT: "3"
+
+jobs:
+  build-vs:
+    runs-on: [self-hosted, resolute, amd64, large]
+    timeout-minutes: 720
+    steps:
+      - name: Checkout merge/pr ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 0
+          submodules: recursive
+      - name: Setup build prerequisites
+        uses: ./.github/actions/resolute-build-setup
+      - name: Build sonic-vs image
+        run: |
+          make init
+          make configure PLATFORM=vs
+          make target/sonic-vs.img.gz
+      - name: Upload soniC-VS image
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonic-vs-img
+          path: target/sonic-vs.img.gz
+          retention-days: 7
+          if-no-files-found: error
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          find target -name '*.log' -type f -print0 | tar --null -czf build-vs-logs.tgz --files-from=- 2>/dev/null || touch build-vs-logs.tgz
+          ls -la build-vs-logs.tgz
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-vs-failure-logs
+          path: build-vs-logs.tgz
+          retention-days: 7
+          if-no-files-found: ignore
+
+  build-broadcom:
+    runs-on: [self-hosted, resolute, amd64, large]
+    timeout-minutes: 720
+    steps:
+      - name: Checkout merge/pr ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 0
+          submodules: recursive
+      - name: Setup build prerequisites
+        uses: ./.github/actions/resolute-build-setup
+      - name: Build sonic-broadcom image
+        run: |
+          make init
+          make configure PLATFORM=broadcom
+          make target/sonic-broadcom.bin
+      - name: Upload sonic-broadcom image
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonic-broadcom-bin
+          path: target/sonic-broadcom.bin
+          retention-days: 7
+          if-no-files-found: error
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          find target -name '*.log' -type f -print0 | tar --null -czf build-brcm-logs.tgz --files-from=- 2>/dev/null || touch build-brcm-logs.tgz
+          ls -la build-brcm-logs.tgz
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-broadcom-failure-logs
+          path: build-brcm-logs.tgz
+          retention-days: 7
+          if-no-files-found: ignore
