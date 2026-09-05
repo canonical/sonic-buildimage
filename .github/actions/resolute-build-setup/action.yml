@@ -1,0 +1,72 @@
+name: resolute-build-setup
+description: |
+  Idempotently install SONiC build prerequisites (docker-ce/buildx, jinjanator),
+  write rules/config.user, and print environment watermarks.
+  Runner assumptions: Ubuntu Resolute, passwordless sudo.
+runs:
+  using: composite
+  steps:
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        set -eux
+        sudo modprobe overlay
+        install_docker_ce() {
+          sudo apt-get update -qq
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${codename} stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
+        }
+        if ! command -v docker >/dev/null 2>&1; then
+          set +e
+          install_docker_ce
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ]; then
+            echo "docker-ce official repo failed, falling back to Ubuntu archive docker.io"
+            sudo rm -f /etc/apt/sources.list.d/docker.list /etc/apt/keyrings/docker.gpg
+            sudo apt-get update -qq
+            sudo apt-get install -y docker.io docker-buildx
+          fi
+        elif ! docker buildx version >/dev/null 2>&1; then
+          echo 'docker present but buildx plugin missing; installing'
+          set +e
+          sudo apt-get update -qq
+          sudo apt-get install -y docker-buildx
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ] || ! docker buildx version >/dev/null 2>&1; then
+            echo 'Ubuntu docker-buildx unavailable; trying docker.com repo'
+            set +e
+            install_docker_ce
+            rc=$?
+            set -e
+            if [ $rc -ne 0 ]; then
+              echo 'WARN: docker-buildx-plugin install failed'
+              sudo rm -f /etc/apt/sources.list.d/docker.list /etc/apt/keyrings/docker.gpg
+              sudo apt-get update -qq || true
+            fi
+          fi
+        fi
+        sudo apt-get install -y make git jq python3-pip
+        pip3 install --user --quiet jinjanator || pip3 install --user --quiet --break-system-packages jinjanator
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        sudo gpasswd -a "$(id -un)" docker || true
+        sudo systemctl restart docker
+        sudo chmod a+rw /var/run/docker.sock
+        docker version --format 'client={{.Client.Version}} server={{.Server.Version}}'
+        docker buildx version || echo 'WARN: buildx plugin missing'
+        j2 --version 2>/dev/null || jinjanate --version 2>/dev/null || echo 'WARN: j2/jinjanate missing'
+        docker ps >/dev/null && echo 'docker socket OK'
+    - name: Write build config
+      shell: bash
+      run: |
+        printf 'SONIC_BUILD_MEMORY = 24g\n' > rules/config.user
+        cat rules/config.user
+    - name: Disk watermark
+      shell: bash
+      run: |
+        df -h /
+        docker system df || true
