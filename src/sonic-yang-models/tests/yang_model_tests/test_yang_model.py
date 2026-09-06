@@ -56,8 +56,8 @@ class Test_yang_models:
             'DecimalFractionExceed': ['Value', 'exceeds defined number', 'fraction digits'],
             'Bounds': ['Value', 'out of type', 'min/max bounds'],
             'ListKey': ['List instance is missing its key'],
-            'DateTime': ['Invalid date-and-time'],
-            'IPv4': ['Failed to convert IPv4 address'],
+            'DateTime': ['Unsatisfied pattern', r'\d{4}-\d{2}-\d{2}T'],
+            'IPv4': ['Unsatisfied pattern', r'25[0-5])\.){3}'],
         }
 
         self.ExceptionTests = { }

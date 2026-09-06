@@ -1099,11 +1099,11 @@ $(addprefix $(PYTHON_WHEELS_PATH)/, $(SONIC_PYTHON_WHEELS)) : $(PYTHON_WHEELS_PA
 ifneq ($(CROSS_BUILD_ENVIRON),y)
 		# Use pip instead of later setup.py to install dependencies into user home, but uninstall self
 		{ pip$($*_PYTHON_VERSION) install . && pip$($*_PYTHON_VERSION) uninstall --yes `python$($*_PYTHON_VERSION) setup.py --name`; } $(LOG)
-ifneq ($(filter bookworm trixie,$(BLDENV)),)
+ifneq ($(filter bookworm trixie resolute,$(BLDENV)),)
 		{ \
 		echo "Building Wheels package $@"; \
-		if case "$@" in *trixie*sonic_chassisd*) true;; *) false;; esac; then \
-		    echo "Skipping tests for sonic_chassisd on trixie ($@)"; \
+		if case "$@" in *trixie*sonic_chassisd*|*resolute*sonic_chassisd*) true;; *) false;; esac; then \
+		    echo "Skipping tests for sonic_chassisd on $(BLDENV) ($@)"; \
 		elif [ ! "$($*_TEST)" = "n" ] && [ ! "$(BUILD_SKIP_TEST)" = "y" ]; then \
 		    pip$($*_PYTHON_VERSION) install ".[testing]" && \
 		    pip$($*_PYTHON_VERSION) uninstall --yes `python$($*_PYTHON_VERSION) setup.py --name` && \
