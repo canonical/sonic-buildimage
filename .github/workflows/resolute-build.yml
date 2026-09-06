@@ -31,6 +31,7 @@ jobs:
         with:
           detached: true
           limit-access-to-actor: true
+        timeout-minutes: 10
       - name: Checkout merge/pr ref
         uses: actions/checkout@v4
         with:
@@ -74,6 +75,7 @@ jobs:
         with:
           detached: true
           limit-access-to-actor: true
+        timeout-minutes: 10
       - name: Checkout merge/pr ref
         uses: actions/checkout@v4
         with:
