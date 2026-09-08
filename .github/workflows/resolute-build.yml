@@ -24,14 +24,8 @@ env:
 jobs:
   build-vs:
     runs-on: [self-hosted, resolute, amd64, large]
-    timeout-minutes: 720
+    timeout-minutes: 1440 # 24 hours
     steps:
-      - name: Setup tmate session
-        uses: canonical/action-tmate@main
-        with:
-          detached: true
-          limit-access-to-actor: true
-        timeout-minutes: 10
       - name: Checkout merge/pr ref
         uses: actions/checkout@v4
         with:
@@ -65,17 +59,17 @@ jobs:
           path: build-vs-logs.tgz
           retention-days: 7
           if-no-files-found: ignore
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: canonical/action-tmate@main
+        with:
+          limit-access-to-actor: true
+        timeout-minutes: 600
 
   build-broadcom:
     runs-on: [self-hosted, resolute, amd64, large]
-    timeout-minutes: 720
+    timeout-minutes: 1440 # 24 hours
     steps:
-      - name: Setup tmate session
-        uses: canonical/action-tmate@main
-        with:
-          detached: true
-          limit-access-to-actor: true
-        timeout-minutes: 10
       - name: Checkout merge/pr ref
         uses: actions/checkout@v4
         with:
@@ -109,3 +103,9 @@ jobs:
           path: build-brcm-logs.tgz
           retention-days: 7
           if-no-files-found: ignore
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: canonical/action-tmate@main
+        with:
+          limit-access-to-actor: true
+        timeout-minutes: 600
