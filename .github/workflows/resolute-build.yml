@@ -1,6 +1,8 @@
 name: resolute-build
 
 on:
+  pull_request:
+    branches: [202605_resolute]
   merge_group:
     branches: [202605_resolute]
     types: [checks_requested]
