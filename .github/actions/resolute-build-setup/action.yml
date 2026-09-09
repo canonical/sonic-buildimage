@@ -13,7 +13,6 @@ runs:
       shell: bash
       run: |
         printf 'SONIC_BUILD_MEMORY = 24g\n' > rules/config.user
-        printf 'SONIC_CONFIG_USE_NATIVE_DOCKERD_FOR_BUILD = y\n' >> rules/config.user
         cat rules/config.user
     - name: Disk watermark
       shell: bash
