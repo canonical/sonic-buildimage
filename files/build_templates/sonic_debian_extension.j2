@@ -489,6 +489,9 @@ sudo cp $IMAGE_CONFIGS/rsyslog/rsyslog-container.conf.j2 $FILESYSTEM_ROOT_USR_SH
 j2 $IMAGE_CONFIGS/rsyslog/rsyslog.d/00-sonic.conf.j2 | sudo tee $FILESYSTEM_ROOT/etc/rsyslog.d/00-sonic.conf
 sudo cp $IMAGE_CONFIGS/rsyslog/rsyslog.d/*.conf $FILESYSTEM_ROOT/etc/rsyslog.d/
 sudo cp $IMAGE_CONFIGS/rsyslog/rsyslog.d/*.json $FILESYSTEM_ROOT/etc/rsyslog.d/
+# Ubuntu-only, and $IncludeConfig loads it next to 99-default.conf, duplicating every rule.
+# Remove only the installed copy: the /usr/share template and the ucf hashfile entry must stay.
+sudo rm -f $FILESYSTEM_ROOT/etc/rsyslog.d/50-default.conf
 echo "rsyslog-config.service" | sudo tee -a $GENERATED_SERVICE_FILE
 
 # Copy containercfgd configuration files

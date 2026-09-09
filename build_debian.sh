@@ -445,6 +445,11 @@ sudo sed -i '/^#.* en_US.* /s/^#//' $FILESYSTEM_ROOT/etc/locale.gen && \
 sudo LANG=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT update-locale "LANG=en_US.UTF-8"
 sudo LANG=C chroot $FILESYSTEM_ROOT bash -c "find /usr/share/i18n/locales/ ! -name 'en_US' -type f -exec rm -f {} +"
 
+# Ubuntu-only: chrony ucf-installs ubuntu-ntp-pools.sources into the sources.d directory that
+# SONiC's chrony.conf.j2 includes. Answering false makes chrony's own postinst drop it.
+echo 'chrony chrony/configure_ubuntu_pools_in_sourcesd boolean false' | \
+    sudo LANG=C chroot $FILESYSTEM_ROOT debconf-set-selections
+
 sudo LANG=C DEBIAN_FRONTEND=noninteractive chroot $FILESYSTEM_ROOT apt-get -y install \
     picocom \
     systemd \

@@ -92,6 +92,11 @@ RUN rm -rf /var/lib/apt/lists/*
 
 COPY ["etc/rsyslog.conf", "/etc/rsyslog.conf"]
 COPY ["etc/rsyslog.d/*", "/etc/rsyslog.d/"]
+
+# Ubuntu-only, and the rsyslog.conf above includes it, so each container also writes an
+# unrotated local /var/log/syslog. Remove only the installed copy, not the ucf state.
+RUN rm -f /etc/rsyslog.d/50-default.conf
+
 COPY ["root/.vimrc", "/root/.vimrc"]
 
 RUN ln /usr/bin/vim.tiny /usr/bin/vim
