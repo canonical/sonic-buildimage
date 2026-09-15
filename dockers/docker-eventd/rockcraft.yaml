@@ -98,6 +98,7 @@ parts:
       - libjansson4
       - python3-redis
       - python3-yaml
+      - python3-cffi-backend
       - libboost-serialization1.83.0
       - libhiredis1.1.0
       - libuuid1

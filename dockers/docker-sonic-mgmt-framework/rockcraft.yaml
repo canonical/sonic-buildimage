@@ -76,6 +76,7 @@ parts:
       - libjansson4
       - python3-redis
       - python3-yaml
+      - python3-cffi-backend
       - libxml2-16
       - libcurl4t64
       - libcjson1
