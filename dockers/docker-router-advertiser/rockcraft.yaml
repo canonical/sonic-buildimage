@@ -79,7 +79,7 @@ parts:
       - libjansson4
       - python3-redis
       - python3-yaml
-      - python3-cffi
+      - python3-cffi-backend
       - libpython3.14
       # SONiC deb runtime dependencies
       - libboost-serialization1.83.0
