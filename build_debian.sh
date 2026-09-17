@@ -146,6 +146,10 @@ sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install pigz
 ## However, 'dpkg -i' plus 'apt-get install -f' will ignore the recommended dependency. So
 ## we install busybox explicitly
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install busybox linux-base
+## Ubuntu's linux-base defaults link_in_boot=yes; keep the links in / like Debian so 'zip -r boot/' stores no copies.
+sudo tee $FILESYSTEM_ROOT/etc/kernel-img.conf > /dev/null <<EOF
+link_in_boot = no
+EOF
 echo '[INFO] Install SONiC linux kernel image'
 ## Note: duplicate apt-get command to ensure every line return zero
 ## resolute: Ubuntu linux-sonic ships kernel modules in a separate linux-modules deb (Debian bundled them in linux-image)
