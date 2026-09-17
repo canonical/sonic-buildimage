@@ -305,9 +305,8 @@ sudo LANG=C chroot $FILESYSTEM_ROOT usermod -aG redis $USERNAME
 
 if [[ $CONFIGURED_ARCH == amd64 ]]; then
     ## Pre-install hardware drivers
-    # Ubuntu has no firmware-linux-nonfree/firmware-intel-misc; linux-firmware
-    # carries the same blobs and is present in the resolute archive.
-    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install linux-firmware
+    # Ubuntu splits linux-firmware per vendor; these two match Debian's firmware-misc-nonfree + firmware-intel-misc.
+    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install linux-firmware-misc linux-firmware-intel-misc
 fi
 
 ## Pre-install the fundamental packages
