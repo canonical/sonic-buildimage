@@ -250,7 +250,31 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 由此，5.4 的问题也要重新表述：**不是「哪些推上游」，而是「先推哪个」**。66 个最终都该进上游，否则我们要永久背一个 fork；顺序由 fork 维护代价决定。
 
-### 5.2 实测的上游节奏
+### 5.2 实测：这件事已经在进行中，而且卡住了
+
+**本文最重要的一个事实，前几版完全没有意识到：jy5275 已经向 chisel-releases 提了 20 个 PR，覆盖 15 个包，全部落在本文的待办表内，零偏差。**
+
+| PR | 分支 | 包 | 开了多久 | 状态 |
+|---|---|---|--:|---|
+| #1104 | 26.04 | rsyslog + rsyslog-relp（12 文件） | 53 天 | open，5 条评审 |
+| #1109 | 26.04 | rsyslog-relp 及依赖 | — | 已关闭，与 #1104 重复 |
+| #1112 至 #1115 | 26.04 | libdaemon0、net-tools、python3-yaml、python3-redis | 51 天 | 全部 open |
+| #1116 至 #1119 | **26.10** | 同上四个 | 51 天 | 全部 open |
+| #1139 / #1140 | 26.04 / 26.10 | libpython3.14 | 40 天 | open |
+| #1163 至 #1171 | 26.04 | bridge-utils、pciutils、smartmontools、tcpdump、arping、ipmitool、radvd、python3-protobuf、python3-smbus | 20 天 | 全部 open |
+
+**19 个 open，1 个关闭，零合入。** 最早的已经等了 53 天。
+
+这改变了几件事：
+
+1. **5.3 的区间不再是推算，而是下限。** 我们已经在队列里 51 天而一个都没进去，说明「独占产能 11 周」那一行是空想。真实节奏更接近甚至差于 FIFO 那一行。
+2. **jy5275 已经在同步推 26.10。** 这印证了 4.4 提到的跨 release 转发规则确实适用——PR 数要乘以维护中的分支数，不是一个包一个 PR。
+3. **本文的待办表得到了独立验证。** 15 个包与我们的清单完全吻合，没有一个在表外，说明 2.2 的口径是对的。
+4. **重复提交已经发生过一次。** #1109 因与 #1104 撞车被关闭。51 个还没提的包在开工前必须先查上游有没有人在做——例如 `udev` 已有 PR #378 挂着。
+
+**所以轨道 B 的当务之急不是多提 PR，而是把已经提的 19 个推动合入。** 在积压清空之前继续投放只会加长队列。
+
+### 5.3 实测的上游节奏
 
 2026-09-21 用 GitHub API 取了 chisel-releases 最近 100 个已合入 PR 和当前全部 open PR：
 
@@ -273,7 +297,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 要把这些坐实，该测的是「ready-for-review 到首次评审」「作者响应时间」「批准到合入」以及被关闭未合入的那部分，本轮没测。
 
-### 5.3 轨道 B 要多久：一个区间，不是一个数
+### 5.4 轨道 B 要多久：一个区间，不是一个数
 
 上一版给了「21 个 PR = 2.6 个月」，那个算法假设我们独占全部产能且前面没有队列。两条都不成立：
 
@@ -287,7 +311,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 全部 66 个按同样算法是 35 到 55 周。
 
-### 5.4 上游推送的优先顺序
+### 5.5 上游推送的优先顺序
 
 既然 66 个最终都要推，问题就是顺序。按三个判据打分：
 
@@ -323,9 +347,32 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 还有两点：
 
 - **`util-linux` 不在这张表里**，因为它是给已有 SDF 补一个 slice（3.1），不是新写。它仍然应当第一个提交，用最小改动趟通流程。所以前 22 个加上它是 **23 个 PR**；若按 3.3 默认去掉 `net-tools` 和 `libdaemon0`，是 **21 个**。
-- **这个顺序还没有做依赖闭包。** `libpci3` 硬依赖 `pci.ids`，而后者排在 22 名之外——按「依赖先合入」的规则它得跟着提前。**开工前必须把这张表过一遍依赖图**，本文尚未做。
+#### 依赖闭包已完成
 
-### 5.5 fork 的真实成本
+对 66 个待办包做了完整的 `Depends` 闭包（只取第一候选，忽略 `Recommends`/`Suggests`），结果：
+
+- **闭包只多出 3 个包**，且全部不需要 SDF：`adduser` 和 `debconf` 只被 maintainer 脚本用到（chisel 不跑它们，skill 明确说可以丢依赖），`python3-async-timeout` 是 `python3-async-timeout | python3-supported-min` 的第一候选而 python3.14 满足后者。**所以 66 个就是完整集合。**
+- **待办内部有 22 条依赖边**，必须按叶子优先合入：
+
+```
+rsyslog        ← libestr0, libfastjson4        rsyslog-relp ← librelp0, rsyslog
+libpci3        ← pci.ids                        libsnmp40t64 ← libpci3, libsnmp-base
+snmp / snmpd   ← libsnmp-base, libsnmp40t64     pciutils     ← libpci3
+libpcap0.8t64  ← libibverbs1                    tcpdump      ← libpcap0.8t64
+arping         ← libnet9, libpcap0.8t64         ibverbs-providers ← libibverbs1
+libfreeipmi17  ← freeipmi-common                ipmitool     ← libfreeipmi17
+lsof           ← liblsof0                       libexplain51t64 ← lsof
+librrd8t64     ← libdbi1t64                     rrdtool      ← librrd8t64
+logrotate      ← libpopt0                       nvme-cli     ← libnvme1t64, uuid-runtime
+i2c-tools      ← libi2c0, udev                  python3-smbus ← libi2c0
+libgoogle-perftools4t64 ← libtcmalloc-minimal4t64
+```
+
+拓扑排序后（同层按 5.5 的分数降序）前十位是：`libpython3.14`、`udev`、`freeipmi-common`、`libfreeipmi17`、`uuid-runtime`、`xxd`、`python3-yaml`、`dmidecode`、`kmod`、`libpopt0`。
+
+**排序结果推翻了上面那张按分数排的表：`rsyslog` 从第 2 位掉到第 18 位**，因为它必须等 `libestr0` 和 `libfastjson4` 先合入；`rsyslog-relp` 掉到第 20 位。另有 9 个低分包（`libpopt0`、`net-tools`、`libprotobuf32t64`、`python3-redis` 等）被依赖关系提前。**实际提交顺序以拓扑序为准，分数只决定同层内部的先后。**
+
+### 5.6 fork 的真实成本
 
 上一版说「fork 边际成本接近零」，那是只算了 `override-build` 模板。完整成本是：
 
@@ -342,7 +389,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 「57 个包五个月没发 SRU」不等于「一个 release 周期内也不会发」。这个数据只覆盖了 resolute 发布至今，不能外推到整个生命周期。
 
-### 5.6 提交队列
+### 5.7 提交队列
 
 轨道 B 的调度是**维持恒定在途 PR 数**，不是分批投放：
 

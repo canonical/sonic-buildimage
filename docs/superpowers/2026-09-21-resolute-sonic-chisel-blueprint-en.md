@@ -251,7 +251,31 @@ The previous revision treated upstream merge as the single critical path. That w
 
 Section 5.4's question therefore changes: **not "which ones go upstream" but "which one goes first"**. All 66 belong upstream eventually, or we carry a fork forever; the order is set by what each costs to keep in the fork.
 
-### 5.2 The measured upstream rhythm
+### 5.2 Measured: this is already under way, and it is stalled
+
+**The single most important fact in this document, and one earlier revisions missed entirely: jy5275 has already opened 20 PRs against chisel-releases covering 15 packages, every one of which falls inside this document's backlog, with no divergence in either direction.**
+
+| PR | Branch | Packages | Age | State |
+|---|---|---|--:|---|
+| #1104 | 26.04 | rsyslog and rsyslog-relp (12 files) | 53 days | open, 5 reviews |
+| #1109 | 26.04 | rsyslog-relp and dependencies | — | closed as a duplicate of #1104 |
+| #1112-#1115 | 26.04 | libdaemon0, net-tools, python3-yaml, python3-redis | 51 days | all open |
+| #1116-#1119 | **26.10** | the same four | 51 days | all open |
+| #1139, #1140 | 26.04, 26.10 | libpython3.14 | 40 days | open |
+| #1163-#1171 | 26.04 | bridge-utils, pciutils, smartmontools, tcpdump, arping, ipmitool, radvd, python3-protobuf, python3-smbus | 20 days | all open |
+
+**Nineteen open, one closed, none merged.** The oldest has been waiting 53 days.
+
+That changes several things:
+
+1. **The range in 5.4 is no longer a projection but a floor.** We have been in the queue 51 days with nothing merged, so the "11 weeks with exclusive capacity" row is wishful. Reality is at or worse than the FIFO row.
+2. **jy5275 is already mirroring to 26.10.** That confirms the cross-release forward-porting rule of 4.4 applies in practice: PR count multiplies by the number of maintained branches rather than being one per package.
+3. **The backlog is independently validated.** All 15 packages match our list exactly, with none outside it, which confirms the criterion in 2.2.
+4. **Duplicate submission has already happened once.** #1109 was closed after colliding with #1104. Before submitting any of the 51 remaining packages, check whether someone upstream is already doing it: `udev` already has PR #378 open, for instance.
+
+**So the immediate priority on track B is not opening more PRs but getting the 19 already open to merge.** Adding to the queue before it drains only lengthens it.
+
+### 5.3 The measured upstream rhythm
 
 On 2026-09-21 the GitHub API gave the last 100 merged PRs on chisel-releases and every currently open one:
 
@@ -274,7 +298,7 @@ On 2026-09-21 the GitHub API gave the last 100 merged PRs on chisel-releases and
 
 Establishing these properly would mean measuring ready-for-review to first review, author response time, approval to merge, and the closed-unmerged population. This round did not.
 
-### 5.3 How long track B takes: a range, not a number
+### 5.4 How long track B takes: a range, not a number
 
 The previous revision gave "21 PRs, 2.6 months", assuming we get the branch's entire capacity with no queue ahead of us. Neither holds:
 
@@ -288,7 +312,7 @@ The previous revision gave "21 PRs, 2.6 months", assuming we get the branch's en
 
 All 66 on the same arithmetic is 35 to 55 weeks.
 
-### 5.4 The order in which to push upstream
+### 5.5 The order in which to push upstream
 
 Since all 66 go upstream eventually, the question is sequence. Three criteria, scored:
 
@@ -324,9 +348,32 @@ The top 22 by that score:
 Two further points:
 
 - **`util-linux` is not in this table**, because it adds a slice to an existing SDF (3.1) rather than writing a new one. It should still be submitted first, as the smallest change that proves the process. So the top 22 plus it is **23 PRs**, or **21** if the 3.3 default removes `net-tools` and `libdaemon0`.
-- **This order is not yet dependency-closed.** `libpci3` depends hard on `pci.ids`, which sits outside the top 22, so the leaves-first rule would pull it forward. **The table must be run through a dependency graph before work starts**, which this document has not done.
+#### The dependency closure is done
 
-### 5.5 What the fork actually costs
+A full `Depends` closure over the 66 backlog packages, taking only the first alternative and ignoring `Recommends` and `Suggests`:
+
+- **The closure adds only 3 packages**, none of which needs an SDF. `adduser` and `debconf` are used only by maintainer scripts, which chisel does not run and whose dependencies the skill says to drop, and `python3-async-timeout` is the first alternative of `python3-async-timeout | python3-supported-min`, which python3.14 satisfies. **So 66 is the complete set.**
+- **There are 22 dependency edges inside the backlog**, which must merge leaves-first:
+
+```
+rsyslog        <- libestr0, libfastjson4        rsyslog-relp <- librelp0, rsyslog
+libpci3        <- pci.ids                        libsnmp40t64 <- libpci3, libsnmp-base
+snmp / snmpd   <- libsnmp-base, libsnmp40t64     pciutils     <- libpci3
+libpcap0.8t64  <- libibverbs1                    tcpdump      <- libpcap0.8t64
+arping         <- libnet9, libpcap0.8t64         ibverbs-providers <- libibverbs1
+libfreeipmi17  <- freeipmi-common                ipmitool     <- libfreeipmi17
+lsof           <- liblsof0                       libexplain51t64 <- lsof
+librrd8t64     <- libdbi1t64                     rrdtool      <- librrd8t64
+logrotate      <- libpopt0                       nvme-cli     <- libnvme1t64, uuid-runtime
+i2c-tools      <- libi2c0, udev                  python3-smbus <- libi2c0
+libgoogle-perftools4t64 <- libtcmalloc-minimal4t64
+```
+
+Topologically sorted, with score breaking ties within a layer, the first ten are `libpython3.14`, `udev`, `freeipmi-common`, `libfreeipmi17`, `uuid-runtime`, `xxd`, `python3-yaml`, `dmidecode`, `kmod` and `libpopt0`.
+
+**The sort overturns the score table above: `rsyslog` falls from second place to eighteenth**, because `libestr0` and `libfastjson4` must merge first, and `rsyslog-relp` falls to twentieth. Nine low-scoring packages including `libpopt0`, `net-tools`, `libprotobuf32t64` and `python3-redis` are pulled forward by dependency. **The actual submission order is the topological one; the score only orders packages within a layer.**
+
+### 5.6 What the fork actually costs
 
 The previous revision claimed the fork's marginal cost is near zero, counting only the `override-build` template. The full cost is:
 
@@ -343,7 +390,7 @@ The previous revision claimed the fork's marginal cost is near zero, counting on
 
 "Fifty-seven packages went five months without an SRU" does not mean they will go a release lifetime without one. The data covers only from resolute's release to now and does not extrapolate.
 
-### 5.6 The submission queue
+### 5.7 The submission queue
 
 Track B is scheduled by **holding a constant number of PRs in flight**, not by releasing batches:
 
