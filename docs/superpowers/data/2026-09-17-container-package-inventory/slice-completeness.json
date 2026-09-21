@@ -1,0 +1,3379 @@
+{
+ "apt": {
+  "files": 191,
+  "uncovered": 178,
+  "doc_locale": 148,
+  "real": [
+   "/etc/cron.daily/apt-compat",
+   "/etc/logrotate.d/apt",
+   "/usr/bin/apt-cache",
+   "/usr/bin/apt-cdrom",
+   "/usr/lib/apt/apt-extracttemplates",
+   "/usr/lib/apt/apt-helper",
+   "/usr/lib/apt/apt.systemd.daily",
+   "/usr/lib/apt/methods/cdrom",
+   "/usr/lib/apt/methods/copy",
+   "/usr/lib/apt/methods/file",
+   "/usr/lib/apt/methods/mirror",
+   "/usr/lib/apt/methods/rred",
+   "/usr/lib/apt/solvers/dump",
+   "/usr/lib/dpkg/methods/apt/desc.apt",
+   "/usr/lib/dpkg/methods/apt/install",
+   "/usr/lib/dpkg/methods/apt/names",
+   "/usr/lib/dpkg/methods/apt/setup",
+   "/usr/lib/dpkg/methods/apt/update",
+   "/usr/lib/systemd/system/apt-daily-upgrade.service",
+   "/usr/lib/systemd/system/apt-daily-upgrade.timer",
+   "/usr/lib/systemd/system/apt-daily.service",
+   "/usr/lib/systemd/system/apt-daily.timer",
+   "/usr/lib/udev/rules.d/61-apt.rules",
+   "/usr/share/apt/default-sequoia.config",
+   "/usr/share/bug/apt/script",
+   "/usr/lib/apt/methods/mirror+copy",
+   "/usr/lib/apt/methods/mirror+file",
+   "/usr/lib/apt/methods/mirror+http",
+   "/usr/lib/apt/methods/mirror+https",
+   "/usr/lib/apt/planners/dump"
+  ],
+  "legal_unc": [],
+  "slices": 5,
+  "mutate": true,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "3.2.0"
+ },
+ "base-files": {
+  "files": 66,
+  "uncovered": 52,
+  "doc_locale": 11,
+  "real": [
+   "/etc/legal",
+   "/etc/profile.d/01-locale-fix.sh",
+   "/etc/update-motd.d/00-header",
+   "/etc/update-motd.d/10-help-text",
+   "/etc/update-motd.d/50-motd-news",
+   "/usr/bin/locale-check",
+   "/usr/lib/systemd/system/motd-news.service",
+   "/usr/lib/systemd/system/motd-news.timer",
+   "/usr/share/base-files/dot.bashrc",
+   "/usr/share/base-files/dot.profile",
+   "/usr/share/base-files/dot.profile.md5sums",
+   "/usr/share/base-files/info.dir",
+   "/usr/share/base-files/motd",
+   "/usr/share/base-files/networks",
+   "/usr/share/base-files/profile",
+   "/usr/share/base-files/profile.md5sums",
+   "/usr/share/common-licenses/Apache-2.0",
+   "/usr/share/common-licenses/Artistic",
+   "/usr/share/common-licenses/BSD",
+   "/usr/share/common-licenses/CC0-1.0",
+   "/usr/share/common-licenses/GFDL-1.2",
+   "/usr/share/common-licenses/GFDL-1.3",
+   "/usr/share/common-licenses/GPL-1",
+   "/usr/share/common-licenses/GPL-2",
+   "/usr/share/common-licenses/GPL-3",
+   "/usr/share/common-licenses/LGPL-2",
+   "/usr/share/common-licenses/LGPL-2.1",
+   "/usr/share/common-licenses/LGPL-3",
+   "/usr/share/common-licenses/MPL-1.1",
+   "/usr/share/common-licenses/MPL-2.0",
+   "/usr/share/dot.bashrc",
+   "/usr/share/dot.profile",
+   "/usr/share/dot.profile.md5sums",
+   "/usr/share/info.dir",
+   "/usr/share/motd",
+   "/usr/share/networks",
+   "/usr/share/profile",
+   "/usr/share/profile.md5sums",
+   "/usr/share/common-licenses/GFDL",
+   "/usr/share/common-licenses/GPL",
+   "/usr/share/common-licenses/LGPL"
+  ],
+  "legal_unc": [],
+  "slices": 10,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "14ubuntu6.2"
+ },
+ "base-passwd": {
+  "files": 18,
+  "uncovered": 15,
+  "doc_locale": 14,
+  "real": [
+   "/usr/sbin/update-passwd"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": true,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst"
+  ],
+  "version": "3.6.8"
+ },
+ "binutils": {
+  "files": 41,
+  "uncovered": 36,
+  "doc_locale": 9,
+  "real": [
+   "/etc/gprofng.rc",
+   "/usr/bin/gprofng",
+   "/usr/bin/gprofng-archive",
+   "/usr/bin/gprofng-collect-app",
+   "/usr/bin/gprofng-display-html",
+   "/usr/bin/gprofng-display-src",
+   "/usr/bin/gprofng-display-text",
+   "/usr/bin/gprofng-gmon",
+   "/usr/share/bug/binutils/presubj",
+   "/usr/bin/addr2line",
+   "/usr/bin/c++filt",
+   "/usr/bin/elfedit",
+   "/usr/bin/gp-archive",
+   "/usr/bin/gp-collect-app",
+   "/usr/bin/gp-display-html",
+   "/usr/bin/gp-display-src",
+   "/usr/bin/gp-display-text",
+   "/usr/bin/gprof",
+   "/usr/bin/nm",
+   "/usr/bin/objcopy",
+   "/usr/bin/objdump",
+   "/usr/bin/ranlib",
+   "/usr/bin/readelf",
+   "/usr/bin/size",
+   "/usr/bin/strings",
+   "/usr/bin/strip",
+   "/usr/lib/compat-ld/ld"
+  ],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "preinst"
+  ],
+  "version": "2.46-3ubuntu2"
+ },
+ "binutils-common": {
+  "files": 29,
+  "uncovered": 28,
+  "doc_locale": 28,
+  "real": [],
+  "legal_unc": [],
+  "slices": 1,
+  "mutate": false,
+  "maint": [],
+  "version": "2.46-3ubuntu2"
+ },
+ "binutils-x86-64-linux-gnu": {
+  "files": 177,
+  "uncovered": 30,
+  "doc_locale": 18,
+  "real": [
+   "/usr/bin/x86_64-linux-gnu-addr2line",
+   "/usr/bin/x86_64-linux-gnu-c++filt",
+   "/usr/bin/x86_64-linux-gnu-elfedit",
+   "/usr/bin/x86_64-linux-gnu-gprof",
+   "/usr/bin/x86_64-linux-gnu-nm",
+   "/usr/bin/x86_64-linux-gnu-objcopy",
+   "/usr/bin/x86_64-linux-gnu-objdump",
+   "/usr/bin/x86_64-linux-gnu-ranlib",
+   "/usr/bin/x86_64-linux-gnu-readelf",
+   "/usr/bin/x86_64-linux-gnu-size",
+   "/usr/bin/x86_64-linux-gnu-strings",
+   "/usr/bin/x86_64-linux-gnu-strip"
+  ],
+  "legal_unc": [],
+  "slices": 11,
+  "mutate": false,
+  "maint": [],
+  "version": "2.46-3ubuntu2"
+ },
+ "ca-certificates": {
+  "files": 138,
+  "uncovered": 15,
+  "doc_locale": 15,
+  "real": [],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": true,
+  "maint": [
+   "postinst",
+   "postrm",
+   "prerm"
+  ],
+  "version": "20260601~26.04.1"
+ },
+ "coreutils": {
+  "files": 2,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 70,
+  "mutate": false,
+  "maint": [],
+  "version": "9.5-1ubuntu2+0.0.0~ubuntu25"
+ },
+ "cpp-15-x86-64-linux-gnu": {
+  "files": 5,
+  "uncovered": 3,
+  "doc_locale": 2,
+  "real": [
+   "/usr/bin/x86_64-linux-gnu-cpp-15"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "15.2.0-16ubuntu1"
+ },
+ "cpp-x86-64-linux-gnu": {
+  "files": 5,
+  "uncovered": 4,
+  "doc_locale": 3,
+  "real": [
+   "/usr/bin/x86_64-linux-gnu-cpp"
+  ],
+  "legal_unc": [],
+  "slices": 1,
+  "mutate": false,
+  "maint": [],
+  "version": "4:15.2.0-5ubuntu1"
+ },
+ "cron": {
+  "files": 25,
+  "uncovered": 20,
+  "doc_locale": 14,
+  "real": [
+   "/etc/init.d/cron",
+   "/etc/supercat/spcrc-crontab",
+   "/etc/supercat/spcrc-crontab-light",
+   "/usr/lib/systemd/system/cron.service",
+   "/usr/share/bug/cron/control",
+   "/usr/share/bug/cron/script"
+  ],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "3.0pl1-200ubuntu1"
+ },
+ "curl": {
+  "files": 10,
+  "uncovered": 8,
+  "doc_locale": 7,
+  "real": [
+   "/usr/bin/wcurl"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "8.18.0-1ubuntu2.5"
+ },
+ "dash": {
+  "files": 11,
+  "uncovered": 8,
+  "doc_locale": 7,
+  "real": [
+   "/usr/share/debianutils/shells.d/dash"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "0.5.12-12ubuntu3"
+ },
+ "debianutils": {
+  "files": 70,
+  "uncovered": 59,
+  "doc_locale": 59,
+  "real": [],
+  "legal_unc": [],
+  "slices": 13,
+  "mutate": true,
+  "maint": [
+   "postinst",
+   "postrm",
+   "prerm"
+  ],
+  "version": "5.23.2build1"
+ },
+ "diffutils": {
+  "files": 12,
+  "uncovered": 7,
+  "doc_locale": 7,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "1:3.12-1ubuntu0.1"
+ },
+ "dpkg": {
+  "files": 152,
+  "uncovered": 88,
+  "doc_locale": 80,
+  "real": [
+   "/etc/alternatives/README",
+   "/etc/cron.daily/dpkg",
+   "/etc/logrotate.d/alternatives",
+   "/etc/logrotate.d/dpkg",
+   "/usr/lib/systemd/system/dpkg-db-backup.service",
+   "/usr/lib/systemd/system/dpkg-db-backup.timer",
+   "/usr/share/doc/dpkg/AUTHORS",
+   "/usr/share/polkit-1/actions/org.dpkg.pkexec.update-alternatives.policy"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/dpkg/AUTHORS"
+  ],
+  "slices": 10,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "prerm"
+  ],
+  "version": "1.23.7ubuntu1"
+ },
+ "file": {
+  "files": 7,
+  "uncovered": 5,
+  "doc_locale": 3,
+  "real": [
+   "/usr/share/bug/file/control",
+   "/usr/share/bug/file/presubj"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:5.46-5build2"
+ },
+ "findutils": {
+  "files": 12,
+  "uncovered": 9,
+  "doc_locale": 9,
+  "real": [],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [],
+  "version": "4.10.0-3build2"
+ },
+ "fontconfig": {
+  "files": 26,
+  "uncovered": 16,
+  "doc_locale": 15,
+  "real": [
+   "/usr/share/apport/package-hooks/source_fontconfig.py"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "2.17.1-3ubuntu1"
+ },
+ "fontconfig-config": {
+  "files": 74,
+  "uncovered": 4,
+  "doc_locale": 2,
+  "real": [
+   "/etc/fonts/conf.d/README",
+   "/usr/share/fontconfig/conf.avail/48-guessfamily.conf"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "2.17.1-3ubuntu1"
+ },
+ "fonts-dejavu-core": {
+  "files": 28,
+  "uncovered": 7,
+  "doc_locale": 6,
+  "real": [
+   "/usr/share/doc/fonts-dejavu-core/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/fonts-dejavu-core/AUTHORS"
+  ],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "2.37-8build1"
+ },
+ "fonts-dejavu-mono": {
+  "files": 20,
+  "uncovered": 7,
+  "doc_locale": 6,
+  "real": [
+   "/usr/share/doc/fonts-dejavu-mono/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/fonts-dejavu-mono/AUTHORS"
+  ],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "2.37-8build1"
+ },
+ "gcc-15-base": {
+  "files": 4,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 1,
+  "mutate": false,
+  "maint": [],
+  "version": "15.2.0-16ubuntu1"
+ },
+ "gcc-16-base": {
+  "files": 4,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 1,
+  "mutate": false,
+  "maint": [],
+  "version": "16-20260322-1ubuntu1"
+ },
+ "gnu-coreutils": {
+  "files": 259,
+  "uncovered": 152,
+  "doc_locale": 152,
+  "real": [],
+  "legal_unc": [],
+  "slices": 70,
+  "mutate": false,
+  "maint": [],
+  "version": "9.7-3ubuntu2.1"
+ },
+ "gpgv": {
+  "files": 5,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.4.8-4ubuntu3.1"
+ },
+ "grep": {
+  "files": 17,
+  "uncovered": 12,
+  "doc_locale": 11,
+  "real": [
+   "/usr/share/doc/grep/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/grep/AUTHORS"
+  ],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "3.12-1"
+ },
+ "gzip": {
+  "files": 34,
+  "uncovered": 19,
+  "doc_locale": 19,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "preinst"
+  ],
+  "version": "1.14-1~exp2ubuntu1.1"
+ },
+ "hostname": {
+  "files": 12,
+  "uncovered": 6,
+  "doc_locale": 6,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.25build1"
+ },
+ "init-system-helpers": {
+  "files": 16,
+  "uncovered": 10,
+  "doc_locale": 9,
+  "real": [
+   "/usr/share/bug/init-system-helpers/control"
+  ],
+  "legal_unc": [],
+  "slices": 9,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "1.69"
+ },
+ "iproute2": {
+  "files": 190,
+  "uncovered": 156,
+  "doc_locale": 154,
+  "real": [
+   "/usr/bin/netshaper",
+   "/usr/sbin/dpll"
+  ],
+  "legal_unc": [],
+  "slices": 8,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "6.19.0-1ubuntu1.1"
+ },
+ "iptables": {
+  "files": 200,
+  "uncovered": 45,
+  "doc_locale": 45,
+  "real": [],
+  "legal_unc": [],
+  "slices": 6,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "1.8.11-2ubuntu3"
+ },
+ "iputils-ping": {
+  "files": 9,
+  "uncovered": 7,
+  "doc_locale": 5,
+  "real": [
+   "/usr/bin/ping4",
+   "/usr/bin/ping6"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "3:20250605-1ubuntu1"
+ },
+ "jq": {
+  "files": 7,
+  "uncovered": 5,
+  "doc_locale": 4,
+  "real": [
+   "/usr/share/doc/jq/AUTHORS.gz"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/jq/AUTHORS.gz"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.8.1-4ubuntu2"
+ },
+ "less": {
+  "files": 16,
+  "uncovered": 12,
+  "doc_locale": 9,
+  "real": [
+   "/usr/bin/lesspipe",
+   "/usr/lib/mime/packages/less",
+   "/usr/bin/lessfile"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "preinst",
+   "prerm"
+  ],
+  "version": "668-1build1"
+ },
+ "libacl1": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.3.2-2"
+ },
+ "libapt-pkg7.0": {
+  "files": 49,
+  "uncovered": 46,
+  "doc_locale": 46,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.2.0"
+ },
+ "libasan8": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "16-20260322-1ubuntu1"
+ },
+ "libatomic1": {
+  "files": 3,
+  "uncovered": 0,
+  "doc_locale": 0,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "16-20260322-1ubuntu1"
+ },
+ "libattr1": {
+  "files": 6,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "1:2.5.2-4ubuntu0.1"
+ },
+ "libaudit-common": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:4.1.2-1ubuntu0.1"
+ },
+ "libaudit1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:4.1.2-1ubuntu0.1"
+ },
+ "libbinutils": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.46-3ubuntu2"
+ },
+ "libblkid1": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.41.3-3ubuntu2.2"
+ },
+ "libboost-filesystem1.83.0": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.83.0-5ubuntu5"
+ },
+ "libboost-log1.83.0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.83.0-5ubuntu5"
+ },
+ "libboost-program-options1.83.0": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.83.0-5ubuntu5"
+ },
+ "libboost-serialization1.83.0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.83.0-5ubuntu5"
+ },
+ "libboost-thread1.83.0": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.83.0-5ubuntu5"
+ },
+ "libbpf1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:1.6.3-1ubuntu1"
+ },
+ "libbrotli1": {
+  "files": 9,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.2.0-3build1"
+ },
+ "libbsd0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.12.2-2build2"
+ },
+ "libbz2-1.0": {
+  "files": 5,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.0.8-6ubuntu0.1"
+ },
+ "libc-bin": {
+  "files": 35,
+  "uncovered": 16,
+  "doc_locale": 4,
+  "real": [
+   "/etc/bindresvport.blacklist",
+   "/etc/gai.conf",
+   "/etc/ld.so.conf",
+   "/etc/ld.so.conf.d/libc.conf",
+   "/usr/bin/ldd",
+   "/usr/bin/localedef",
+   "/usr/bin/pldd",
+   "/usr/bin/tzselect",
+   "/usr/bin/zdump",
+   "/usr/sbin/iconvconfig",
+   "/usr/sbin/zic",
+   "/usr/bin/ld.so"
+  ],
+  "legal_unc": [],
+  "slices": 7,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "2.43-2ubuntu2.4"
+ },
+ "libc6": {
+  "files": 39,
+  "uncovered": 6,
+  "doc_locale": 6,
+  "real": [],
+  "legal_unc": [],
+  "slices": 6,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst"
+  ],
+  "version": "2.43-2ubuntu2.4"
+ },
+ "libc6-dev": {
+  "files": 522,
+  "uncovered": 4,
+  "doc_locale": 3,
+  "real": [
+   "/usr/share/gdb/auto-load/lib/x86_64-linux-gnu/libc.so.6-gdb.py"
+  ],
+  "legal_unc": [],
+  "slices": 11,
+  "mutate": false,
+  "maint": [],
+  "version": "2.43-2ubuntu2.4"
+ },
+ "libcairo2": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.18.4-3"
+ },
+ "libcap-ng0": {
+  "files": 6,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.8.5-4build5"
+ },
+ "libcap2": {
+  "files": 6,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:2.75-10ubuntu2"
+ },
+ "libcap2-bin": {
+  "files": 12,
+  "uncovered": 7,
+  "doc_locale": 7,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:2.75-10ubuntu2"
+ },
+ "libcares2": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.34.6-1"
+ },
+ "libcjson1": {
+  "files": 6,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.7.19-2"
+ },
+ "libcom-err2": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.47.2-3ubuntu4"
+ },
+ "libcrypt1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:4.5.1-1"
+ },
+ "libctf0": {
+  "files": 3,
+  "uncovered": 0,
+  "doc_locale": 0,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.46-3ubuntu2"
+ },
+ "libcurl4t64": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "8.18.0-1ubuntu2.5"
+ },
+ "libdatrie1": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.2.14-1"
+ },
+ "libdb5.3t64": {
+  "files": 5,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "5.3.28+dfsg2-10ubuntu1"
+ },
+ "libdbus-1-3": {
+  "files": 7,
+  "uncovered": 4,
+  "doc_locale": 3,
+  "real": [
+   "/usr/share/doc/libdbus-1-3/AUTHORS.gz"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libdbus-1-3/AUTHORS.gz"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.16.2-2ubuntu4"
+ },
+ "libedit2": {
+  "files": 8,
+  "uncovered": 5,
+  "doc_locale": 5,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.1-20251016-1"
+ },
+ "libelf1t64": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.194-4"
+ },
+ "libevent-2.1-7t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.1.12-stable-10ubuntu0.1"
+ },
+ "libevent-core-2.1-7t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.1.12-stable-10ubuntu0.1"
+ },
+ "libevent-pthreads-2.1-7t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.1.12-stable-10ubuntu0.1"
+ },
+ "libexpat1": {
+  "files": 7,
+  "uncovered": 2,
+  "doc_locale": 1,
+  "real": [
+   "/usr/share/doc/libexpat1/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libexpat1/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.7.4-1"
+ },
+ "libffi8": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.5.2-4"
+ },
+ "libfontconfig1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.17.1-3ubuntu1"
+ },
+ "libfreetype6": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.14.2+dfsg-1ubuntu0.1"
+ },
+ "libfribidi0": {
+  "files": 8,
+  "uncovered": 5,
+  "doc_locale": 5,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.0.16-5"
+ },
+ "libgcc-15-dev": {
+  "files": 195,
+  "uncovered": 25,
+  "doc_locale": 0,
+  "real": [
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libasan.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libasan_preinit.o",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libatomic.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libbacktrace.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libgcc_eh.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libgcov.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libgomp.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libhwasan.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libitm.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/liblsan.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/liblsan_preinit.o",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libquadmath.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libssp_nonshared.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libtsan.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libtsan_preinit.o",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libubsan.a",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libasan.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libatomic.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libgomp.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libhwasan.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libitm.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/liblsan.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libquadmath.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libtsan.so",
+   "/usr/lib/gcc/x86_64-linux-gnu/15/libubsan.so"
+  ],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [],
+  "version": "15.2.0-16ubuntu1"
+ },
+ "libgcc-s1": {
+  "files": 3,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "16-20260322-1ubuntu1"
+ },
+ "libgcrypt20": {
+  "files": 9,
+  "uncovered": 6,
+  "doc_locale": 4,
+  "real": [
+   "/usr/share/doc/libgcrypt20/AUTHORS.gz",
+   "/usr/share/libgcrypt20/clean-up-unmanaged-libraries"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libgcrypt20/AUTHORS.gz"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "1.12.0-2ubuntu1.1"
+ },
+ "libgdbm-compat4t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.26-1build1"
+ },
+ "libgdbm6t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.26-1build1"
+ },
+ "libglib2.0-0t64": {
+  "files": 19,
+  "uncovered": 5,
+  "doc_locale": 5,
+  "real": [],
+  "legal_unc": [],
+  "slices": 7,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst"
+  ],
+  "version": "2.88.0-1"
+ },
+ "libgmp10": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2:6.3.0+dfsg-5ubuntu2"
+ },
+ "libgnutls30t64": {
+  "files": 10,
+  "uncovered": 7,
+  "doc_locale": 5,
+  "real": [
+   "/etc/gnutls/config",
+   "/usr/share/doc/libgnutls30t64/AUTHORS.gz"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libgnutls30t64/AUTHORS.gz"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.8.12-2ubuntu1.1"
+ },
+ "libgomp1": {
+  "files": 3,
+  "uncovered": 0,
+  "doc_locale": 0,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "16-20260322-1ubuntu1"
+ },
+ "libgpg-error0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.58-2"
+ },
+ "libgraphite2-3": {
+  "files": 5,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.3.14-11ubuntu1.1"
+ },
+ "libgssapi-krb5-2": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "1.22.1-2ubuntu4.1"
+ },
+ "libharfbuzz0b": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "12.3.2-2"
+ },
+ "libhiredis1.1.0": {
+  "files": 6,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.2.0-6ubuntu4"
+ },
+ "libhogweed6t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.10.2-1"
+ },
+ "libicu78": {
+  "files": 15,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "78.2-2ubuntu1"
+ },
+ "libidn2-0": {
+  "files": 8,
+  "uncovered": 5,
+  "doc_locale": 4,
+  "real": [
+   "/usr/share/doc/libidn2-0/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libidn2-0/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.3.8-4build1"
+ },
+ "libip4tc2": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.8.11-2ubuntu3"
+ },
+ "libip6tc2": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.8.11-2ubuntu3"
+ },
+ "libisl23": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 1,
+  "real": [
+   "/usr/share/gdb/auto-load/usr/lib/x86_64-linux-gnu/libisl.so.23.4.0-gdb.py"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.27-1build1"
+ },
+ "libjansson4": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.14-2build4"
+ },
+ "libjemalloc2": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "5.3.0-4"
+ },
+ "libjq1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.8.1-4ubuntu2"
+ },
+ "libjson-c5": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.18+ds-3"
+ },
+ "libk5crypto3": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.22.1-2ubuntu4.1"
+ },
+ "libkeyutils1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.6.3-6ubuntu3"
+ },
+ "libkmod2": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "34.2-2ubuntu2"
+ },
+ "libkrb5-3": {
+  "files": 9,
+  "uncovered": 5,
+  "doc_locale": 5,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.22.1-2ubuntu4.1"
+ },
+ "libkrb5support0": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.22.1-2ubuntu4.1"
+ },
+ "libldap-common": {
+  "files": 5,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.6.10+dfsg-1ubuntu5"
+ },
+ "libldap2": {
+  "files": 7,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.6.10+dfsg-1ubuntu5"
+ },
+ "libllvm21": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:21.1.8-6ubuntu1"
+ },
+ "liblz4-1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.10.0-8"
+ },
+ "liblzf1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.6-4build1"
+ },
+ "liblzma5": {
+  "files": 7,
+  "uncovered": 4,
+  "doc_locale": 3,
+  "real": [
+   "/usr/share/doc/liblzma5/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/liblzma5/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "5.8.3-1"
+ },
+ "libmagic-mgc": {
+  "files": 6,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:5.46-5build2"
+ },
+ "libmagic1t64": {
+  "files": 11,
+  "uncovered": 5,
+  "doc_locale": 3,
+  "real": [
+   "/usr/share/bug/libmagic1t64/control",
+   "/usr/share/bug/libmagic1t64/presubj"
+  ],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [],
+  "version": "1:5.46-5build2"
+ },
+ "libmd0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.1.0-2build4"
+ },
+ "libmnl0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.0.5-3build1"
+ },
+ "libmount1": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.41.3-3ubuntu2.2"
+ },
+ "libmpc3": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.3.1-3"
+ },
+ "libmpfr6": {
+  "files": 9,
+  "uncovered": 6,
+  "doc_locale": 5,
+  "real": [
+   "/usr/share/doc/libmpfr6/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libmpfr6/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "4.2.2-3"
+ },
+ "libncursesw6": {
+  "files": 9,
+  "uncovered": 0,
+  "doc_locale": 0,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "6.6+20251231-1"
+ },
+ "libnetfilter-conntrack3": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.1.1-1"
+ },
+ "libnettle8t64": {
+  "files": 7,
+  "uncovered": 4,
+  "doc_locale": 4,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.10.2-1"
+ },
+ "libnfnetlink0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.0.2-3build1"
+ },
+ "libnftnl11": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.3.1-1"
+ },
+ "libnghttp2-14": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 2,
+  "real": [
+   "/usr/share/doc/libnghttp2-14/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libnghttp2-14/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.68.0-2ubuntu0.2"
+ },
+ "libnorm1t64": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.5.9+dfsg-4"
+ },
+ "libonig5": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "6.9.10-1build1"
+ },
+ "libp11-kit0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.26.2-2"
+ },
+ "libpam-modules": {
+  "files": 61,
+  "uncovered": 4,
+  "doc_locale": 4,
+  "real": [],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst"
+  ],
+  "version": "1.7.0-5ubuntu3.2"
+ },
+ "libpam-modules-bin": {
+  "files": 13,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "prerm"
+  ],
+  "version": "1.7.0-5ubuntu3.2"
+ },
+ "libpam-runtime": {
+  "files": 87,
+  "uncovered": 73,
+  "doc_locale": 71,
+  "real": [
+   "/usr/sbin/pam-auth-update",
+   "/usr/sbin/pam_getenv"
+  ],
+  "legal_unc": [],
+  "slices": 5,
+  "mutate": true,
+  "maint": [
+   "postinst",
+   "postrm",
+   "prerm"
+  ],
+  "version": "1.7.0-5ubuntu3.2"
+ },
+ "libpam0g": {
+  "files": 13,
+  "uncovered": 6,
+  "doc_locale": 6,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "1.7.0-5ubuntu3.2"
+ },
+ "libpango-1.0-0": {
+  "files": 7,
+  "uncovered": 4,
+  "doc_locale": 4,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.57.0-1"
+ },
+ "libpangocairo-1.0-0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.57.0-1"
+ },
+ "libpangoft2-1.0-0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.57.0-1"
+ },
+ "libpcre2-8-0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "10.46-1build1"
+ },
+ "libpcsclite1": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 1,
+  "real": [
+   "/usr/lib/x86_64-linux-gnu/libpcsclite_real.so.1"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.4.1-1"
+ },
+ "libperl5.40": {
+  "files": 397,
+  "uncovered": 5,
+  "doc_locale": 4,
+  "real": [
+   "/usr/lib/x86_64-linux-gnu/perl/debian-config-data-5.40.1/README"
+  ],
+  "legal_unc": [],
+  "slices": 34,
+  "mutate": false,
+  "maint": [],
+  "version": "5.40.1-7ubuntu0.3"
+ },
+ "libpgm-5.3-0t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "5.3.128~dfsg-2.1build2"
+ },
+ "libpixman-1-0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.46.4-1"
+ },
+ "libpng16-16t64": {
+  "files": 10,
+  "uncovered": 7,
+  "doc_locale": 7,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.6.57-1"
+ },
+ "libproc2-0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2:4.0.4-9ubuntu1"
+ },
+ "libpsl5t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.21.2-1.1build2"
+ },
+ "libpython3-stdlib": {
+  "files": 3,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 32,
+  "mutate": false,
+  "maint": [],
+  "version": "3.14.3-0ubuntu2"
+ },
+ "libpython3.14-minimal": {
+  "files": 312,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "prerm"
+  ],
+  "version": "3.14.4-1ubuntu0.2"
+ },
+ "libpython3.14-stdlib": {
+  "files": 380,
+  "uncovered": 4,
+  "doc_locale": 1,
+  "real": [
+   "/usr/lib/python3.14/EXTERNALLY-MANAGED",
+   "/usr/lib/python3.14/LICENSE.txt",
+   "/usr/lib/python3.14/build-details_x86_64-linux-gnu.json"
+  ],
+  "legal_unc": [],
+  "slices": 33,
+  "mutate": false,
+  "maint": [
+   "prerm"
+  ],
+  "version": "3.14.4-1ubuntu0.2"
+ },
+ "libreadline8t64": {
+  "files": 10,
+  "uncovered": 5,
+  "doc_locale": 5,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postrm",
+   "preinst"
+  ],
+  "version": "8.3-4"
+ },
+ "librtmp1": {
+  "files": 3,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.4+20151223.gitfa8646d.1-3"
+ },
+ "libsasl2-2": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.1.28+dfsg1-9ubuntu3"
+ },
+ "libsasl2-modules-db": {
+  "files": 5,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.1.28+dfsg1-9ubuntu3"
+ },
+ "libseccomp2": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.6.0-2ubuntu5"
+ },
+ "libselinux1": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 1,
+  "real": [
+   "/usr/libexec/libselinux/selinux_compile_fcontexts"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "3.9-4build1"
+ },
+ "libsemanage-common": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.9-1build1"
+ },
+ "libsemanage2": {
+  "files": 3,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.9-1build1"
+ },
+ "libsensors-config": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 1,
+  "real": [
+   "/etc/sensors.d/.placeholder"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:3.6.2-2build1"
+ },
+ "libsepol2": {
+  "files": 3,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.9-2"
+ },
+ "libsframe3": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.46-3ubuntu2"
+ },
+ "libsmartcols1": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.41.3-3ubuntu2.2"
+ },
+ "libsodium23": {
+  "files": 7,
+  "uncovered": 4,
+  "doc_locale": 3,
+  "real": [
+   "/usr/share/doc/libsodium23/AUTHORS.gz"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libsodium23/AUTHORS.gz"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.0.18-2"
+ },
+ "libsqlite3-0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.46.1-9ubuntu0.3"
+ },
+ "libssh2-1t64": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 2,
+  "real": [
+   "/usr/share/doc/libssh2-1t64/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libssh2-1t64/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.11.1-1ubuntu0.26.04.4"
+ },
+ "libssl3t64": {
+  "files": 9,
+  "uncovered": 4,
+  "doc_locale": 3,
+  "real": [
+   "/usr/lib/x86_64-linux-gnu/engines-3/padlock.so"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.5.5-1ubuntu3.5"
+ },
+ "libstdc++6": {
+  "files": 8,
+  "uncovered": 5,
+  "doc_locale": 0,
+  "real": [
+   "/usr/share/gcc/python/libstdcxx/__init__.py",
+   "/usr/share/gcc/python/libstdcxx/v6/__init__.py",
+   "/usr/share/gcc/python/libstdcxx/v6/printers.py",
+   "/usr/share/gcc/python/libstdcxx/v6/xmethods.py",
+   "/usr/share/gdb/auto-load/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35-gdb.py"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "prerm"
+  ],
+  "version": "16-20260322-1ubuntu1"
+ },
+ "libsystemd-shared": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "preinst"
+  ],
+  "version": "259.5-0ubuntu3.4"
+ },
+ "libsystemd0": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "259.5-0ubuntu3.4"
+ },
+ "libtasn1-6": {
+  "files": 7,
+  "uncovered": 4,
+  "doc_locale": 3,
+  "real": [
+   "/usr/share/doc/libtasn1-6/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libtasn1-6/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "4.21.0-2"
+ },
+ "libthai-data": {
+  "files": 3,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.1.30-1"
+ },
+ "libthai0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.1.30-1"
+ },
+ "libtinfo6": {
+  "files": 6,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "6.6+20251231-1"
+ },
+ "libtirpc-common": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.3.7-0.1"
+ },
+ "libtirpc3t64": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postrm",
+   "preinst"
+  ],
+  "version": "1.3.7-0.1"
+ },
+ "libubsan1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "16-20260322-1ubuntu1"
+ },
+ "libudev1": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "259.5-0ubuntu3.4"
+ },
+ "libunistring5": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.3-2build1"
+ },
+ "libunwind8": {
+  "files": 10,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.8.3-0ubuntu1"
+ },
+ "libuuid1": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.41.3-3ubuntu2.2"
+ },
+ "libwrap0": {
+  "files": 10,
+  "uncovered": 7,
+  "doc_locale": 7,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": true,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "7.6.q-36build2"
+ },
+ "libx11-6": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2:1.8.13-1"
+ },
+ "libx11-data": {
+  "files": 194,
+  "uncovered": 3,
+  "doc_locale": 3,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "2:1.8.13-1"
+ },
+ "libxau6": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:1.0.11-1build2"
+ },
+ "libxcb-render0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.17.0-2ubuntu1"
+ },
+ "libxcb-shm0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.17.0-2ubuntu1"
+ },
+ "libxcb1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.17.0-2ubuntu1"
+ },
+ "libxdmcp6": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:1.1.5-2"
+ },
+ "libxext6": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2:1.3.4-1build3"
+ },
+ "libxml2-16": {
+  "files": 8,
+  "uncovered": 5,
+  "doc_locale": 5,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.15.2+dfsg-0.1ubuntu0.1"
+ },
+ "libxrender1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:0.9.12-1build1"
+ },
+ "libxtables12": {
+  "files": 5,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.8.11-2ubuntu3"
+ },
+ "libxxhash0": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.8.3-2build1"
+ },
+ "libyaml-0-2": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "0.2.5-2build3"
+ },
+ "libzmq5": {
+  "files": 6,
+  "uncovered": 3,
+  "doc_locale": 2,
+  "real": [
+   "/usr/share/doc/libzmq5/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/libzmq5/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "4.3.5-1build3"
+ },
+ "libzstd1": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.5.7+dfsg-3"
+ },
+ "linux-libc-dev": {
+  "files": 1041,
+  "uncovered": 123,
+  "doc_locale": 1,
+  "real": [
+   "/usr/include/cxl/features.h",
+   "/usr/include/drm/amdgpu_drm.h",
+   "/usr/include/drm/amdxdna_accel.h",
+   "/usr/include/drm/armada_drm.h",
+   "/usr/include/drm/asahi_drm.h",
+   "/usr/include/drm/drm.h",
+   "/usr/include/drm/drm_fourcc.h",
+   "/usr/include/drm/drm_mode.h",
+   "/usr/include/drm/drm_sarea.h",
+   "/usr/include/drm/ethosu_accel.h",
+   "/usr/include/drm/etnaviv_drm.h",
+   "/usr/include/drm/exynos_drm.h",
+   "/usr/include/drm/habanalabs_accel.h",
+   "/usr/include/drm/i915_drm.h",
+   "/usr/include/drm/ivpu_accel.h",
+   "/usr/include/drm/lima_drm.h",
+   "/usr/include/drm/msm_drm.h",
+   "/usr/include/drm/nouveau_drm.h",
+   "/usr/include/drm/nova_drm.h",
+   "/usr/include/drm/omap_drm.h",
+   "/usr/include/drm/panfrost_drm.h",
+   "/usr/include/drm/panthor_drm.h",
+   "/usr/include/drm/pvr_drm.h",
+   "/usr/include/drm/qaic_accel.h",
+   "/usr/include/drm/qxl_drm.h",
+   "/usr/include/drm/radeon_drm.h",
+   "/usr/include/drm/rocket_accel.h",
+   "/usr/include/drm/tegra_drm.h",
+   "/usr/include/drm/v3d_drm.h",
+   "/usr/include/drm/vc4_drm.h",
+   "/usr/include/drm/vgem_drm.h",
+   "/usr/include/drm/virtgpu_drm.h",
+   "/usr/include/drm/vmwgfx_drm.h",
+   "/usr/include/drm/xe_drm.h",
+   "/usr/include/fwctl/cxl.h",
+   "/usr/include/fwctl/fwctl.h",
+   "/usr/include/fwctl/mlx5.h",
+   "/usr/include/fwctl/pds.h",
+   "/usr/include/misc/amd-apml.h",
+   "/usr/include/misc/fastrpc.h",
+   "/usr/include/misc/mrvl_cn10k_dpi.h",
+   "/usr/include/misc/ocxl.h",
+   "/usr/include/misc/pvpanic.h",
+   "/usr/include/misc/uacce/hisi_qm.h",
+   "/usr/include/misc/uacce/uacce.h",
+   "/usr/include/misc/xilinx_sdfec.h",
+   "/usr/include/mtd/inftl-user.h",
+   "/usr/include/mtd/mtd-abi.h",
+   "/usr/include/mtd/mtd-user.h",
+   "/usr/include/mtd/nftl-user.h",
+   "/usr/include/mtd/ubi-user.h",
+   "/usr/include/rdma/bnxt_re-abi.h",
+   "/usr/include/rdma/cxgb4-abi.h",
+   "/usr/include/rdma/efa-abi.h",
+   "/usr/include/rdma/erdma-abi.h",
+   "/usr/include/rdma/hfi/hfi1_ioctl.h",
+   "/usr/include/rdma/hfi/hfi1_user.h",
+   "/usr/include/rdma/hns-abi.h",
+   "/usr/include/rdma/ib_user_ioctl_cmds.h",
+   "/usr/include/rdma/ib_user_ioctl_verbs.h",
+   "/usr/include/rdma/ib_user_mad.h",
+   "/usr/include/rdma/ib_user_sa.h",
+   "/usr/include/rdma/ib_user_verbs.h",
+   "/usr/include/rdma/ionic-abi.h",
+   "/usr/include/rdma/irdma-abi.h",
+   "/usr/include/rdma/mana-abi.h",
+   "/usr/include/rdma/mlx4-abi.h",
+   "/usr/include/rdma/mlx5-abi.h",
+   "/usr/include/rdma/mlx5_user_ioctl_cmds.h",
+   "/usr/include/rdma/mlx5_user_ioctl_verbs.h",
+   "/usr/include/rdma/mthca-abi.h",
+   "/usr/include/rdma/ocrdma-abi.h",
+   "/usr/include/rdma/qedr-abi.h",
+   "/usr/include/rdma/rdma_netlink.h",
+   "/usr/include/rdma/rdma_user_cm.h",
+   "/usr/include/rdma/rdma_user_ioctl.h",
+   "/usr/include/rdma/rdma_user_ioctl_cmds.h",
+   "/usr/include/rdma/rdma_user_rxe.h",
+   "/usr/include/rdma/rvt-abi.h",
+   "/usr/include/rdma/siw-abi.h",
+   "/usr/include/rdma/vmw_pvrdma-abi.h",
+   "/usr/include/regulator/regulator.h",
+   "/usr/include/scsi/fc/fc_els.h",
+   "/usr/include/scsi/fc/fc_fs.h",
+   "/usr/include/scsi/fc/fc_gs.h",
+   "/usr/include/scsi/fc/fc_ns.h",
+   "/usr/include/scsi/scsi_bsg_fc.h",
+   "/usr/include/scsi/scsi_bsg_mpi3mr.h",
+   "/usr/include/scsi/scsi_bsg_ufs.h",
+   "/usr/include/scsi/scsi_netlink.h",
+   "/usr/include/scsi/scsi_netlink_fc.h",
+   "/usr/include/sound/asequencer.h",
+   "/usr/include/sound/asoc.h",
+   "/usr/include/sound/asound.h",
+   "/usr/include/sound/asound_fm.h",
+   "/usr/include/sound/compress_offload.h",
+   "/usr/include/sound/compress_params.h",
+   "/usr/include/sound/emu10k1.h",
+   "/usr/include/sound/fcp.h",
+   "/usr/include/sound/firewire.h",
+   "/usr/include/sound/hdsp.h",
+   "/usr/include/sound/hdspm.h",
+   "/usr/include/sound/intel/avs/tokens.h",
+   "/usr/include/sound/sb16_csp.h",
+   "/usr/include/sound/scarlett2.h",
+   "/usr/include/sound/sfnt_info.h",
+   "/usr/include/sound/skl-tplg-interface.h",
+   "/usr/include/sound/snd_ar_tokens.h",
+   "/usr/include/sound/snd_sst_tokens.h",
+   "/usr/include/sound/sof/abi.h",
+   "/usr/include/sound/sof/fw.h",
+   "/usr/include/sound/sof/header.h",
+   "/usr/include/sound/sof/tokens.h",
+   "/usr/include/sound/tlv.h",
+   "/usr/include/sound/usb_stream.h",
+   "/usr/include/video/edid.h",
+   "/usr/include/video/sisfb.h",
+   "/usr/include/video/uvesafb.h",
+   "/usr/include/xen/evtchn.h",
+   "/usr/include/xen/gntalloc.h",
+   "/usr/include/xen/gntdev.h",
+   "/usr/include/xen/privcmd.h"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "7.0.0-31.31"
+ },
+ "login": {
+  "files": 21,
+  "uncovered": 17,
+  "doc_locale": 16,
+  "real": [
+   "/etc/pam.d/remote"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "1:4.16.0-2+really2.41.3-3ubuntu2.2"
+ },
+ "logsave": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.47.2-3ubuntu4"
+ },
+ "mawk": {
+  "files": 18,
+  "uncovered": 16,
+  "doc_locale": 16,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "1.3.4.20260129-1"
+ },
+ "media-types": {
+  "files": 4,
+  "uncovered": 2,
+  "doc_locale": 1,
+  "real": [
+   "/usr/share/bug/media-types/presubj"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "14.0.0build1"
+ },
+ "mount": {
+  "files": 24,
+  "uncovered": 18,
+  "doc_locale": 18,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "2.41.3-3ubuntu2.2"
+ },
+ "ncurses-base": {
+  "files": 54,
+  "uncovered": 5,
+  "doc_locale": 4,
+  "real": [
+   "/etc/terminfo/README"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "6.6+20251231-1"
+ },
+ "ncurses-bin": {
+  "files": 27,
+  "uncovered": 16,
+  "doc_locale": 16,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "6.6+20251231-1"
+ },
+ "netbase": {
+  "files": 6,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "6.5build1"
+ },
+ "openssl": {
+  "files": 379,
+  "uncovered": 371,
+  "doc_locale": 368,
+  "real": [
+   "/usr/lib/ssl/misc/CA.pl",
+   "/usr/lib/ssl/misc/tsget.pl",
+   "/usr/lib/ssl/misc/tsget"
+  ],
+  "legal_unc": [],
+  "slices": 5,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "3.5.5-1ubuntu3.5"
+ },
+ "openssl-provider-legacy": {
+  "files": 3,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "3.5.5-1ubuntu3.5"
+ },
+ "passwd": {
+  "files": 368,
+  "uncovered": 336,
+  "doc_locale": 336,
+  "real": [],
+  "legal_unc": [],
+  "slices": 12,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "1:4.17.4-2ubuntu3"
+ },
+ "perl": {
+  "files": 63,
+  "uncovered": 33,
+  "doc_locale": 32,
+  "real": [
+   "/usr/bin/perlthanks link to ./usr/bin/perlbug"
+  ],
+  "legal_unc": [],
+  "slices": 9,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "5.40.1-7ubuntu0.3"
+ },
+ "perl-base": {
+  "files": 624,
+  "uncovered": 7,
+  "doc_locale": 5,
+  "real": [
+   "/usr/bin/perl5.40.1 link to ./usr/bin/perl",
+   "/usr/share/doc/perl/AUTHORS.gz"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/perl/AUTHORS.gz"
+  ],
+  "slices": 4,
+  "mutate": false,
+  "maint": [],
+  "version": "5.40.1-7ubuntu0.3"
+ },
+ "perl-modules-5.40": {
+  "files": 1336,
+  "uncovered": 2,
+  "doc_locale": 2,
+  "real": [],
+  "legal_unc": [],
+  "slices": 56,
+  "mutate": false,
+  "maint": [],
+  "version": "5.40.1-7ubuntu0.3"
+ },
+ "procps": {
+  "files": 170,
+  "uncovered": 142,
+  "doc_locale": 139,
+  "real": [
+   "/etc/init.d/procps",
+   "/etc/sysctl.d/README.sysctl",
+   "/usr/share/bug/procps/presubj"
+  ],
+  "legal_unc": [],
+  "slices": 5,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "2:4.0.4-9ubuntu1"
+ },
+ "python3": {
+  "files": 18,
+  "uncovered": 14,
+  "doc_locale": 10,
+  "real": [
+   "/usr/lib/valgrind/python3.supp",
+   "/usr/share/python3/python.mk",
+   "/usr/share/python3/runtime.d/public_modules.rtinstall",
+   "/usr/share/python3/runtime.d/public_modules.rtremove"
+  ],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "3.14.3-0ubuntu2"
+ },
+ "python3-minimal": {
+  "files": 18,
+  "uncovered": 6,
+  "doc_locale": 6,
+  "real": [],
+  "legal_unc": [],
+  "slices": 5,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "3.14.3-0ubuntu2"
+ },
+ "python3-pip": {
+  "files": 684,
+  "uncovered": 249,
+  "doc_locale": 249,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "25.1.1+dfsg-1ubuntu2"
+ },
+ "python3-pkg-resources": {
+  "files": 68,
+  "uncovered": 48,
+  "doc_locale": 2,
+  "real": [
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco/text/Lorem ipsum.txt",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco/text/__init__.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco/text/layouts.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco/text/show-newlines.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco/text/strip-prefix.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco/text/to-dvorak.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco/text/to-qwerty.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco.text-3.12.1.dist-info/INSTALLER",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco.text-3.12.1.dist-info/METADATA",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco.text-3.12.1.dist-info/REQUESTED",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco.text-3.12.1.dist-info/WHEEL",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/jaraco.text-3.12.1.dist-info/top_level.txt",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/__init__.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/_elffile.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/_manylinux.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/_musllinux.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/_parser.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/_structures.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/_tokenizer.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/licenses/__init__.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/licenses/_spdx.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/markers.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/metadata.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/py.typed",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/requirements.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/specifiers.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/tags.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/utils.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging/version.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging-24.2.dist-info/INSTALLER",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging-24.2.dist-info/METADATA",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging-24.2.dist-info/REQUESTED",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/packaging-24.2.dist-info/WHEEL",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/__init__.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/__main__.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/android.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/api.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/macos.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/py.typed",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/unix.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/version.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs/windows.py",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs-4.2.2.dist-info/INSTALLER",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs-4.2.2.dist-info/METADATA",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs-4.2.2.dist-info/REQUESTED",
+   "/usr/lib/python3/dist-packages/setuptools/_vendor/platformdirs-4.2.2.dist-info/WHEEL"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "78.1.1-0.1build1"
+ },
+ "python3-setuptools": {
+  "files": 414,
+  "uncovered": 9,
+  "doc_locale": 8,
+  "real": [
+   "/usr/lib/python3/dist-packages/distutils-precedence.pth"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "78.1.1-0.1build1"
+ },
+ "python3-wheel": {
+  "files": 20,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "0.46.3-2"
+ },
+ "python3.14": {
+  "files": 17,
+  "uncovered": 13,
+  "doc_locale": 13,
+  "real": [],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "3.14.4-1ubuntu0.2"
+ },
+ "python3.14-minimal": {
+  "files": 8,
+  "uncovered": 6,
+  "doc_locale": 4,
+  "real": [
+   "/usr/lib/binfmt.d/python3.14.conf",
+   "/usr/share/binfmts/python3.14"
+  ],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "3.14.4-1ubuntu0.2"
+ },
+ "readline-common": {
+  "files": 8,
+  "uncovered": 6,
+  "doc_locale": 6,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "8.3-4"
+ },
+ "redis-server": {
+  "files": 13,
+  "uncovered": 8,
+  "doc_locale": 5,
+  "real": [
+   "/etc/default/redis-server",
+   "/etc/init.d/redis-server",
+   "/etc/logrotate.d/redis-server"
+  ],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "5:8.0.5-1"
+ },
+ "redis-tools": {
+  "files": 16,
+  "uncovered": 11,
+  "doc_locale": 11,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "5:8.0.5-1"
+ },
+ "sed": {
+  "files": 12,
+  "uncovered": 10,
+  "doc_locale": 9,
+  "real": [
+   "/usr/share/doc/sed/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/sed/AUTHORS"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "4.9-2ubuntu1"
+ },
+ "sensible-utils": {
+  "files": 29,
+  "uncovered": 22,
+  "doc_locale": 22,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "0.0.26build1"
+ },
+ "shared-mime-info": {
+  "files": 17,
+  "uncovered": 11,
+  "doc_locale": 11,
+  "real": [],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "2.4-5build3"
+ },
+ "systemd": {
+  "files": 909,
+  "uncovered": 356,
+  "doc_locale": 335,
+  "real": [
+   "/usr/lib/pcrlock.d/770-nvpcr-separator.pcrlock",
+   "/usr/lib/systemd/network/80-auto-link-local.network.example",
+   "/usr/lib/systemd/network/80-wifi-ap.network.example",
+   "/usr/lib/systemd/network/80-wifi-station.network.example",
+   "/usr/lib/systemd/network/89-ethernet.network.example",
+   "/usr/lib/systemd/system/system-systemd\\\\x2dmute\\\\x2dconsole.slice",
+   "/usr/share/apport/package-hooks/systemd.py",
+   "/usr/share/bug/systemd/control",
+   "/usr/share/bug/systemd/presubj",
+   "/usr/share/bug/systemd/script",
+   "/usr/share/factory/etc/issue",
+   "/usr/share/factory/etc/locale.conf",
+   "/usr/share/factory/etc/nsswitch.conf",
+   "/usr/share/factory/etc/pam.d/other",
+   "/usr/share/factory/etc/pam.d/system-auth",
+   "/usr/share/factory/etc/vconsole.conf",
+   "/usr/share/polkit-1/rules.d/10-systemd-logind-root-ignore-inhibitors.rules.example",
+   "/etc/profile.d/70-systemd-shell-extra.sh",
+   "/etc/profile.d/80-systemd-osc-context.sh",
+   "/etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf",
+   "/etc/systemd/system-generators/systemd-gpt-auto-generator"
+  ],
+  "legal_unc": [],
+  "slices": 32,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst",
+   "prerm"
+  ],
+  "version": "259.5-0ubuntu3.4"
+ },
+ "sysvinit-utils": {
+  "files": 14,
+  "uncovered": 5,
+  "doc_locale": 5,
+  "real": [],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [],
+  "version": "3.15-5ubuntu1"
+ },
+ "tar": {
+  "files": 14,
+  "uncovered": 9,
+  "doc_locale": 7,
+  "real": [
+   "/usr/lib/mime/packages/tar",
+   "/usr/share/doc/tar/AUTHORS"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/tar/AUTHORS"
+  ],
+  "slices": 5,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "1.35+dfsg-4ubuntu0.4"
+ },
+ "tzdata": {
+  "files": 499,
+  "uncovered": 5,
+  "doc_locale": 4,
+  "real": [
+   "/usr/share/zoneinfo/America/Coyhaique"
+  ],
+  "legal_unc": [],
+  "slices": 14,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "2026c-0ubuntu0.26.04.1"
+ },
+ "ubuntu-keyring": {
+  "files": 9,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [
+   "postinst"
+  ],
+  "version": "2023.11.28.1build1"
+ },
+ "ucf": {
+  "files": 16,
+  "uncovered": 11,
+  "doc_locale": 10,
+  "real": [
+   "/usr/share/ucf/ucf_library.sh"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "preinst"
+  ],
+  "version": "3.0052ubuntu1"
+ },
+ "util-linux": {
+  "files": 234,
+  "uncovered": 171,
+  "doc_locale": 168,
+  "real": [
+   "/usr/bin/logger",
+   "/usr/share/doc/util-linux/AUTHORS.gz",
+   "/usr/share/util-linux/logcheck/ignore.d.server/util-linux"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/util-linux/AUTHORS.gz"
+  ],
+  "slices": 24,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm",
+   "prerm"
+  ],
+  "version": "2.41.3-3ubuntu2.2"
+ },
+ "vim-common": {
+  "files": 52,
+  "uncovered": 49,
+  "doc_locale": 40,
+  "real": [
+   "/usr/bin/helpztags",
+   "/usr/lib/mime/packages/vim-common",
+   "/usr/share/icons/hicolor/48x48/apps/gvim.png",
+   "/usr/share/icons/hicolor/scalable/apps/gvim.svg",
+   "/usr/share/icons/locolor/16x16/apps/gvim.png",
+   "/usr/share/icons/locolor/32x32/apps/gvim.png",
+   "/usr/share/vim/vim91/doc/sponsor.txt",
+   "/usr/share/vim/vim91/doc/uganda.txt",
+   "/usr/share/vim/vim91/doc/version9.txt"
+  ],
+  "legal_unc": [],
+  "slices": 4,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "postrm"
+  ],
+  "version": "2:9.1.2141-1ubuntu4.9"
+ },
+ "vim-tiny": {
+  "files": 10,
+  "uncovered": 7,
+  "doc_locale": 2,
+  "real": [
+   "/usr/share/bug/vim-tiny/presubj",
+   "/usr/share/bug/vim-tiny/script",
+   "/usr/share/vim/vim91/doc/README.Debian",
+   "/usr/share/vim/vim91/doc/help.txt",
+   "/usr/share/vim/vim91/doc/tags"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [
+   "postinst",
+   "prerm"
+  ],
+  "version": "2:9.1.2141-1ubuntu4.9"
+ },
+ "wget": {
+  "files": 10,
+  "uncovered": 8,
+  "doc_locale": 6,
+  "real": [
+   "/etc/wgetrc",
+   "/usr/share/doc/wget/AUTHORS.gz"
+  ],
+  "legal_unc": [
+   "/usr/share/doc/wget/AUTHORS.gz"
+  ],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1.25.0-2ubuntu4.4"
+ },
+ "zlib1g": {
+  "files": 4,
+  "uncovered": 1,
+  "doc_locale": 1,
+  "real": [],
+  "legal_unc": [],
+  "slices": 2,
+  "mutate": false,
+  "maint": [],
+  "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.1"
+ },
+ "zlib1g-dev": {
+  "files": 30,
+  "uncovered": 25,
+  "doc_locale": 24,
+  "real": [
+   "/usr/lib/x86_64-linux-gnu/pkgconfig/zlib.pc"
+  ],
+  "legal_unc": [],
+  "slices": 3,
+  "mutate": false,
+  "maint": [],
+  "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.1"
+ }
+}

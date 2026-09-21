@@ -1,0 +1,2347 @@
+{
+ "image": "docker-dash-engine.gz",
+ "n_layers": 2,
+ "debs": {
+  "adduser": {
+   "Version": "3.118ubuntu2",
+   "Architecture": "all",
+   "Installed-Size": "624",
+   "Priority": "important",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "passwd, debconf (>= 0.5) | debconf-2.0"
+  },
+  "apt": {
+   "Version": "2.0.10",
+   "Architecture": "amd64",
+   "Installed-Size": "4192",
+   "Priority": "important",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "adduser, gpgv | gpgv2 | gpgv1, libapt-pkg6.0 (>= 2.0.10), ubuntu-keyring, libc6 (>= 2.15), libgcc-s1 (>= 3.0), libgnutls30 (>= 3.6.12), libseccomp2 (>= 2.4.2), libstdc++6 (>= 9), libsystemd0"
+  },
+  "base-files": {
+   "Version": "11ubuntu5.8",
+   "Architecture": "amd64",
+   "Installed-Size": "392",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "libc6 (>= 2.3.4), libcrypt1 (>= 1:4.4.10-10ubuntu3)"
+  },
+  "base-passwd": {
+   "Version": "3.5.47",
+   "Architecture": "amd64",
+   "Installed-Size": "233",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "libc6 (>= 2.8), libdebconfclient0 (>= 0.145)"
+  },
+  "bash": {
+   "Version": "5.0-6ubuntu1.2",
+   "Architecture": "amd64",
+   "Installed-Size": "1660",
+   "Priority": "required",
+   "Section": "shells",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "base-files (>= 2.1.12), debianutils (>= 2.15)"
+  },
+  "binutils": {
+   "Version": "2.34-6ubuntu1.11",
+   "Architecture": "amd64",
+   "Installed-Size": "109",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "",
+   "Depends": "binutils-common (= 2.34-6ubuntu1.11), libbinutils (= 2.34-6ubuntu1.11), binutils-x86-64-linux-gnu (= 2.34-6ubuntu1.11)"
+  },
+  "binutils-common": {
+   "Version": "2.34-6ubuntu1.11",
+   "Architecture": "amd64",
+   "Installed-Size": "424",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "binutils",
+   "Depends": ""
+  },
+  "binutils-x86-64-linux-gnu": {
+   "Version": "2.34-6ubuntu1.11",
+   "Architecture": "amd64",
+   "Installed-Size": "9840",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "binutils",
+   "Depends": "binutils-common (= 2.34-6ubuntu1.11), libbinutils (= 2.34-6ubuntu1.11), libc6 (>= 2.27), libctf-nobfd0 (>= 2.33.50), libctf0 (>= 2.33.50), libgcc-s1 (>= 3.0), libstdc++6 (>= 5.2), zlib1g (>= 1:1.1.4)"
+  },
+  "bsdutils": {
+   "Version": "1:2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "304",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "util-linux (2.34-0.1ubuntu9.6)",
+   "Depends": ""
+  },
+  "build-essential": {
+   "Version": "12.8ubuntu1.1",
+   "Architecture": "amd64",
+   "Installed-Size": "21",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6-dev | libc-dev, gcc (>= 4:9.2), g++ (>= 4:9.2), make, dpkg-dev (>= 1.17.11)"
+  },
+  "bzip2": {
+   "Version": "1.0.8-2",
+   "Architecture": "amd64",
+   "Installed-Size": "195",
+   "Priority": "important",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libbz2-1.0 (= 1.0.8-2), libc6 (>= 2.14)"
+  },
+  "ca-certificates": {
+   "Version": "20240203~20.04.1",
+   "Architecture": "all",
+   "Installed-Size": "399",
+   "Priority": "standard",
+   "Section": "misc",
+   "Essential": "",
+   "Source": "",
+   "Depends": "openssl (>= 1.1.1), debconf (>= 0.5) | debconf-2.0"
+  },
+  "coreutils": {
+   "Version": "8.30-3ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "7196",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": ""
+  },
+  "cpp": {
+   "Version": "4:9.3.0-1ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "64",
+   "Priority": "optional",
+   "Section": "interpreters",
+   "Essential": "",
+   "Source": "gcc-defaults (1.185.1ubuntu2)",
+   "Depends": "cpp-9 (>= 9.3.0-3~)"
+  },
+  "cpp-9": {
+   "Version": "9.4.0-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "26238",
+   "Priority": "optional",
+   "Section": "interpreters",
+   "Essential": "",
+   "Source": "gcc-9",
+   "Depends": "gcc-9-base (= 9.4.0-1ubuntu1~20.04.2), libc6 (>= 2.14), libgmp10 (>= 2:5.0.1~), libisl22 (>= 0.15), libmpc3, libmpfr6 (>= 3.1.3), zlib1g (>= 1:1.1.4)"
+  },
+  "cron": {
+   "Version": "3.0pl1-136ubuntu1",
+   "Architecture": "amd64",
+   "Installed-Size": "262",
+   "Priority": "important",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.7), libpam0g (>= 0.99.7.1), libselinux1 (>= 2.0.82), debianutils (>= 1.7), sensible-utils, adduser, lsb-base (>= 3.0-10), libpam-runtime (>= 1.0.1-11)"
+  },
+  "dash": {
+   "Version": "0.5.10.2-6",
+   "Architecture": "amd64",
+   "Installed-Size": "212",
+   "Priority": "required",
+   "Section": "shells",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "debianutils (>= 2.15), dpkg (>= 1.19.1), debconf (>= 0.5) | debconf-2.0"
+  },
+  "debconf": {
+   "Version": "1.5.73",
+   "Architecture": "all",
+   "Installed-Size": "520",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": ""
+  },
+  "debianutils": {
+   "Version": "4.9.1",
+   "Architecture": "amd64",
+   "Installed-Size": "230",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": ""
+  },
+  "diffutils": {
+   "Version": "1:3.7-3",
+   "Architecture": "amd64",
+   "Installed-Size": "532",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": ""
+  },
+  "dirmngr": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "918",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "adduser, gpgconf (= 2.2.19-3ubuntu2.5), lsb-base (>= 3.2-13), init-system-helpers (>= 1.52), libassuan0 (>= 2.5.0), libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgnutls30 (>= 3.6.12), libgpg-error0 (>= 1.35), libksba8 (>= 1.3.4), libldap-2.4-2 (>= 2.4.7), libnpth0 (>= 0.90)"
+  },
+  "dpkg": {
+   "Version": "1.19.7ubuntu3.2",
+   "Architecture": "amd64",
+   "Installed-Size": "6741",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "tar (>= 1.28-1)"
+  },
+  "dpkg-dev": {
+   "Version": "1.19.7ubuntu3.2",
+   "Architecture": "all",
+   "Installed-Size": "2075",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "dpkg",
+   "Depends": "perl:any, libdpkg-perl (= 1.19.7ubuntu3.2), tar (>= 1.28-1), bzip2, xz-utils, patch (>= 2.7), make, binutils"
+  },
+  "e2fsprogs": {
+   "Version": "1.45.5-2ubuntu1.2",
+   "Architecture": "amd64",
+   "Installed-Size": "1492",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "logsave"
+  },
+  "fakeroot": {
+   "Version": "1.24-1",
+   "Architecture": "amd64",
+   "Installed-Size": "227",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libfakeroot (>= 1.24-1), libc6 (>= 2.15)"
+  },
+  "fdisk": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "506",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "util-linux",
+   "Depends": "libc6 (>= 2.14), libfdisk1 (>= 2.33), libmount1 (>= 2.24.2), libncursesw6 (>= 6), libsmartcols1 (>= 2.28~rc1), libtinfo6 (>= 6)"
+  },
+  "file": {
+   "Version": "1:5.38-4",
+   "Architecture": "amd64",
+   "Installed-Size": "86",
+   "Priority": "standard",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.4), libmagic1 (= 1:5.38-4)"
+  },
+  "findutils": {
+   "Version": "4.7.0-1ubuntu1",
+   "Architecture": "amd64",
+   "Installed-Size": "668",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": ""
+  },
+  "g++": {
+   "Version": "4:9.3.0-1ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "16",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "gcc-defaults (1.185.1ubuntu2)",
+   "Depends": "cpp (= 4:9.3.0-1ubuntu2), gcc (= 4:9.3.0-1ubuntu2), g++-9 (>= 9.3.0-3~), gcc-9 (>= 9.3.0-3~)"
+  },
+  "g++-9": {
+   "Version": "9.4.0-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "28016",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "gcc-9",
+   "Depends": "gcc-9-base (= 9.4.0-1ubuntu1~20.04.2), gcc-9 (= 9.4.0-1ubuntu1~20.04.2), libstdc++-9-dev (= 9.4.0-1ubuntu1~20.04.2), libc6 (>= 2.14), libgmp10 (>= 2:5.0.1~), libisl22 (>= 0.15), libmpc3, libmpfr6 (>= 3.1.3), zlib1g (>= 1:1.1.4)"
+  },
+  "gcc": {
+   "Version": "4:9.3.0-1ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "50",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "gcc-defaults (1.185.1ubuntu2)",
+   "Depends": "cpp (= 4:9.3.0-1ubuntu2), gcc-9 (>= 9.3.0-3~)"
+  },
+  "gcc-10-base": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "271",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": ""
+  },
+  "gcc-9": {
+   "Version": "9.4.0-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "29840",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "",
+   "Depends": "cpp-9 (= 9.4.0-1ubuntu1~20.04.2), gcc-9-base (= 9.4.0-1ubuntu1~20.04.2), libcc1-0 (>= 9.4.0-1ubuntu1~20.04.2), binutils (>= 2.34), libgcc-9-dev (= 9.4.0-1ubuntu1~20.04.2), libc6 (>= 2.15), libgcc-s1 (>= 3.0), libgmp10 (>= 2:5.0.1~), libisl22 (>= 0.15), libmpc3, libmpfr6 (>= 3.1.3), libstdc++6 (>= 5), zlib1g (>= 1:1.1.4)"
+  },
+  "gcc-9-base": {
+   "Version": "9.4.0-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "265",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-9",
+   "Depends": ""
+  },
+  "gnupg": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "all",
+   "Installed-Size": "413",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "dirmngr (<< 2.2.19-3ubuntu2.5.1~), dirmngr (>= 2.2.19-3ubuntu2.5), gnupg-l10n (= 2.2.19-3ubuntu2.5), gnupg-utils (<< 2.2.19-3ubuntu2.5.1~), gnupg-utils (>= 2.2.19-3ubuntu2.5), gpg (<< 2.2.19-3ubuntu2.5.1~), gpg (>= 2.2.19-3ubuntu2.5), gpg-agent (<< 2.2.19-3ubuntu2.5.1~), gpg-agent (>= 2.2.19-3ubuntu2.5), gpg-wks-client (<< 2.2.19-3ubuntu2.5.1~), gpg-wks-client (>= 2.2.19-3ubuntu2.5), gpg-wks-server (<< 2.2.19-3ubuntu2.5.1~), gpg-wks-server (>= 2.2.19-3ubuntu2.5), gpgsm (<< 2.2.19-3ubuntu2.5.1~), gpgsm (>= 2.2.19-3ubuntu2.5), gpgv (<< 2.2.19-3ubuntu2.5.1~), gpgv (>= 2.2.19-3ubuntu2.5)"
+  },
+  "gnupg-l10n": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "all",
+   "Installed-Size": "380",
+   "Priority": "optional",
+   "Section": "localization",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": ""
+  },
+  "gnupg-utils": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "1554",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "libassuan0 (>= 2.5.0), libbz2-1.0, libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35), libksba8 (>= 1.3.4), libreadline8 (>= 6.0), zlib1g (>= 1:1.1.4)"
+  },
+  "gpg": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "1135",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "gpgconf (= 2.2.19-3ubuntu2.5), libassuan0 (>= 2.5.0), libbz2-1.0, libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35), libreadline8 (>= 6.0), libsqlite3-0 (>= 3.7.15), zlib1g (>= 1:1.1.4)"
+  },
+  "gpg-agent": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "911",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "gpgconf (= 2.2.19-3ubuntu2.5), pinentry-curses | pinentry, init-system-helpers (>= 1.52), libassuan0 (>= 2.5.1), libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35), libnpth0 (>= 0.90)"
+  },
+  "gpg-wks-client": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "275",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "dirmngr (= 2.2.19-3ubuntu2.5), gpg (= 2.2.19-3ubuntu2.5), gpg-agent (= 2.2.19-3ubuntu2.5), libassuan0 (>= 2.5.0), libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35)"
+  },
+  "gpg-wks-server": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "255",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "gpg (= 2.2.19-3ubuntu2.5), gpg-agent (= 2.2.19-3ubuntu2.5), libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35)"
+  },
+  "gpgconf": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "409",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "libassuan0 (>= 2.5.0), libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35), libreadline8 (>= 6.0)"
+  },
+  "gpgsm": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "568",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "gpgconf (= 2.2.19-3ubuntu2.5), libassuan0 (>= 2.5.0), libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35), libksba8 (>= 1.3.4), libreadline8 (>= 6.0)"
+  },
+  "gpgv": {
+   "Version": "2.2.19-3ubuntu2.5",
+   "Architecture": "amd64",
+   "Installed-Size": "499",
+   "Priority": "important",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "gnupg2",
+   "Depends": "libbz2-1.0, libc6 (>= 2.25), libgcrypt20 (>= 1.8.0), libgpg-error0 (>= 1.35), zlib1g (>= 1:1.1.4)"
+  },
+  "grep": {
+   "Version": "3.4-1",
+   "Architecture": "amd64",
+   "Installed-Size": "496",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "dpkg (>= 1.15.4) | install-info"
+  },
+  "gzip": {
+   "Version": "1.10-0ubuntu4.1",
+   "Architecture": "amd64",
+   "Installed-Size": "245",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "dpkg (>= 1.15.4) | install-info"
+  },
+  "hostname": {
+   "Version": "3.23",
+   "Architecture": "amd64",
+   "Installed-Size": "54",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": ""
+  },
+  "init-system-helpers": {
+   "Version": "1.57",
+   "Architecture": "all",
+   "Installed-Size": "133",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "perl-base (>= 5.20.1-3)"
+  },
+  "libacl1": {
+   "Version": "2.2.53-6",
+   "Architecture": "amd64",
+   "Installed-Size": "70",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "acl",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libalgorithm-diff-perl": {
+   "Version": "1.19.03-2",
+   "Architecture": "all",
+   "Installed-Size": "106",
+   "Priority": "optional",
+   "Section": "perl",
+   "Essential": "",
+   "Source": "",
+   "Depends": "perl"
+  },
+  "libalgorithm-diff-xs-perl": {
+   "Version": "0.04-6",
+   "Architecture": "amd64",
+   "Installed-Size": "46",
+   "Priority": "optional",
+   "Section": "perl",
+   "Essential": "",
+   "Source": "",
+   "Depends": "perl (>= 5.30.0-8), perlapi-5.30.0, libc6 (>= 2.14), libalgorithm-diff-perl"
+  },
+  "libalgorithm-merge-perl": {
+   "Version": "0.08-3",
+   "Architecture": "all",
+   "Installed-Size": "42",
+   "Priority": "optional",
+   "Section": "perl",
+   "Essential": "",
+   "Source": "",
+   "Depends": "perl, libalgorithm-diff-perl"
+  },
+  "libapt-pkg6.0": {
+   "Version": "2.0.10",
+   "Architecture": "amd64",
+   "Installed-Size": "3328",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "apt",
+   "Depends": "libbz2-1.0, libc6 (>= 2.27), libgcc-s1 (>= 3.0), libgcrypt20 (>= 1.8.0), liblz4-1 (>= 0.0~r127), liblzma5 (>= 5.1.1alpha+20120614), libstdc++6 (>= 9), libsystemd0 (>= 221), libudev1 (>= 183), libzstd1 (>= 1.3.2), zlib1g (>= 1:1.2.2.3)"
+  },
+  "libasan5": {
+   "Version": "9.4.0-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "14965",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-9",
+   "Depends": "gcc-9-base (= 9.4.0-1ubuntu1~20.04.2), libc6 (>= 2.23), libgcc-s1"
+  },
+  "libasn1-8-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "795",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libc6 (>= 2.14), libcom-err2 (>= 1.43.9), libroken18-heimdal (>= 1.4.0+git20110226)"
+  },
+  "libassuan0": {
+   "Version": "2.5.3-7ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "105",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libassuan",
+   "Depends": "libc6 (>= 2.15), libgpg-error0 (>= 1.17)"
+  },
+  "libatomic1": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "45",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.14)"
+  },
+  "libattr1": {
+   "Version": "1:2.4.48-5",
+   "Architecture": "amd64",
+   "Installed-Size": "57",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "attr",
+   "Depends": "libc6 (>= 2.4)"
+  },
+  "libaudit-common": {
+   "Version": "1:2.8.5-2ubuntu6",
+   "Architecture": "all",
+   "Installed-Size": "24",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "audit",
+   "Depends": ""
+  },
+  "libaudit1": {
+   "Version": "1:2.8.5-2ubuntu6",
+   "Architecture": "amd64",
+   "Installed-Size": "157",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "audit",
+   "Depends": "libaudit-common (>= 1:2.8.5-2ubuntu6), libc6 (>= 2.14), libcap-ng0 (>= 0.7.9)"
+  },
+  "libavl1": {
+   "Version": "0.3.5-4",
+   "Architecture": "amd64",
+   "Installed-Size": "26",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libavl",
+   "Depends": "libc6 (>= 2.4)"
+  },
+  "libbinutils": {
+   "Version": "2.34-6ubuntu1.11",
+   "Architecture": "amd64",
+   "Installed-Size": "2696",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "binutils",
+   "Depends": "libc6 (>= 2.14), zlib1g (>= 1:1.2.0), binutils-common (= 2.34-6ubuntu1.11)"
+  },
+  "libblkid1": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "440",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "util-linux",
+   "Depends": "libc6 (>= 2.25)"
+  },
+  "libboost-filesystem1.71.0": {
+   "Version": "1.71.0-6ubuntu6",
+   "Architecture": "amd64",
+   "Installed-Size": "2074",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "boost1.71",
+   "Depends": "libc6 (>= 2.14), libgcc-s1 (>= 3.0), libstdc++6 (>= 5.2)"
+  },
+  "libboost-program-options1.71.0": {
+   "Version": "1.71.0-6ubuntu6",
+   "Architecture": "amd64",
+   "Installed-Size": "2526",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "boost1.71",
+   "Depends": "libc6 (>= 2.14), libgcc-s1 (>= 3.0), libstdc++6 (>= 5.2)"
+  },
+  "libboost-system1.71.0": {
+   "Version": "1.71.0-6ubuntu6",
+   "Architecture": "amd64",
+   "Installed-Size": "1973",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "boost1.71",
+   "Depends": ""
+  },
+  "libboost-thread1.71.0": {
+   "Version": "1.71.0-6ubuntu6",
+   "Architecture": "amd64",
+   "Installed-Size": "2130",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "boost1.71",
+   "Depends": "libc6 (>= 2.14), libgcc-s1 (>= 3.0), libstdc++6 (>= 9)"
+  },
+  "libbz2-1.0": {
+   "Version": "1.0.8-2",
+   "Architecture": "amd64",
+   "Installed-Size": "99",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "bzip2",
+   "Depends": "libc6 (>= 2.4)"
+  },
+  "libc-bin": {
+   "Version": "2.31-0ubuntu9.17",
+   "Architecture": "amd64",
+   "Installed-Size": "3714",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "yes",
+   "Source": "glibc",
+   "Depends": "libc6 (>> 2.31), libc6 (<< 2.32)"
+  },
+  "libc-dev-bin": {
+   "Version": "2.31-0ubuntu9.18",
+   "Architecture": "amd64",
+   "Installed-Size": "443",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "glibc",
+   "Depends": "libc6 (>> 2.31), libc6 (<< 2.32)"
+  },
+  "libc6": {
+   "Version": "2.31-0ubuntu9.18",
+   "Architecture": "amd64",
+   "Installed-Size": "13239",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "glibc",
+   "Depends": "libgcc-s1, libcrypt1 (>= 1:4.4.10-10ubuntu4)"
+  },
+  "libc6-dev": {
+   "Version": "2.31-0ubuntu9.18",
+   "Architecture": "amd64",
+   "Installed-Size": "19081",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "glibc",
+   "Depends": "libc6 (= 2.31-0ubuntu9.18), libc-dev-bin (= 2.31-0ubuntu9.18), linux-libc-dev, libcrypt-dev"
+  },
+  "libcap-ng0": {
+   "Version": "0.7.9-2.1build1",
+   "Architecture": "amd64",
+   "Installed-Size": "45",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libcap-ng",
+   "Depends": "libc6 (>= 2.8)"
+  },
+  "libcc1-0": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "156",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.15), libgcc-s1 (>= 3.0), libstdc++6 (>= 5.2)"
+  },
+  "libcom-err2": {
+   "Version": "1.45.5-2ubuntu1.2",
+   "Architecture": "amd64",
+   "Installed-Size": "101",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "e2fsprogs",
+   "Depends": "libc6 (>= 2.17)"
+  },
+  "libcrypt-dev": {
+   "Version": "1:4.4.10-10ubuntu4",
+   "Architecture": "amd64",
+   "Installed-Size": "321",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "libxcrypt",
+   "Depends": "libcrypt1 (= 1:4.4.10-10ubuntu4)"
+  },
+  "libcrypt1": {
+   "Version": "1:4.4.10-10ubuntu4",
+   "Architecture": "amd64",
+   "Installed-Size": "226",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libxcrypt",
+   "Depends": "libc6 (>= 2.25)"
+  },
+  "libctf-nobfd0": {
+   "Version": "2.34-6ubuntu1.11",
+   "Architecture": "amd64",
+   "Installed-Size": "199",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "binutils",
+   "Depends": "libc6 (>= 2.14), zlib1g (>= 1:1.2.0)"
+  },
+  "libctf0": {
+   "Version": "2.34-6ubuntu1.11",
+   "Architecture": "amd64",
+   "Installed-Size": "130",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "binutils",
+   "Depends": "libbinutils (= 2.34-6ubuntu1.11), libc6 (>= 2.14), zlib1g (>= 1:1.2.0)"
+  },
+  "libdb5.3": {
+   "Version": "5.3.28+dfsg1-0.6ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "1749",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "db5.3",
+   "Depends": "libc6 (>= 2.17)"
+  },
+  "libdebconfclient0": {
+   "Version": "0.251ubuntu1",
+   "Architecture": "amd64",
+   "Installed-Size": "74",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "cdebconf",
+   "Depends": "libc6 (>= 2.4)"
+  },
+  "libdpkg-perl": {
+   "Version": "1.19.7ubuntu3.2",
+   "Architecture": "all",
+   "Installed-Size": "2180",
+   "Priority": "optional",
+   "Section": "perl",
+   "Essential": "",
+   "Source": "dpkg",
+   "Depends": "perl:any, dpkg (>= 1.18.11)"
+  },
+  "libestr0": {
+   "Version": "0.1.10-2.1",
+   "Architecture": "amd64",
+   "Installed-Size": "30",
+   "Priority": "extra",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libestr",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libev4": {
+   "Version": "1:4.31-1",
+   "Architecture": "amd64",
+   "Installed-Size": "90",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libev",
+   "Depends": "libc6 (>= 2.17)"
+  },
+  "libexpat1": {
+   "Version": "2.2.9-1ubuntu0.8",
+   "Architecture": "amd64",
+   "Installed-Size": "403",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "expat",
+   "Depends": "libc6 (>= 2.25)"
+  },
+  "libexpat1-dev": {
+   "Version": "2.2.9-1ubuntu0.8",
+   "Architecture": "amd64",
+   "Installed-Size": "857",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "expat",
+   "Depends": "libexpat1 (= 2.2.9-1ubuntu0.8), libc6-dev | libc-dev"
+  },
+  "libext2fs2": {
+   "Version": "1.45.5-2ubuntu1.2",
+   "Architecture": "amd64",
+   "Installed-Size": "541",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "e2fsprogs",
+   "Depends": "libc6 (>= 2.28)"
+  },
+  "libfakeroot": {
+   "Version": "1.24-1",
+   "Architecture": "amd64",
+   "Installed-Size": "157",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "fakeroot",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libfastjson4": {
+   "Version": "0.99.8-2",
+   "Architecture": "amd64",
+   "Installed-Size": "61",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libfastjson",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libfdisk1": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "549",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "util-linux",
+   "Depends": "libblkid1 (>= 2.24.2), libc6 (>= 2.25), libuuid1 (>= 2.16)"
+  },
+  "libffi7": {
+   "Version": "3.3-4",
+   "Architecture": "amd64",
+   "Installed-Size": "65",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libffi",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libfile-fcntllock-perl": {
+   "Version": "0.22-3build4",
+   "Architecture": "amd64",
+   "Installed-Size": "127",
+   "Priority": "optional",
+   "Section": "perl",
+   "Essential": "",
+   "Source": "",
+   "Depends": "perl (>= 5.30.0-7), perlapi-5.30.0, libc6 (>= 2.28)"
+  },
+  "libgcc-9-dev": {
+   "Version": "9.4.0-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "13887",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "gcc-9",
+   "Depends": "gcc-9-base (= 9.4.0-1ubuntu1~20.04.2), libgcc-s1 (>= 9.4.0-1ubuntu1~20.04.2), libgomp1 (>= 9.4.0-1ubuntu1~20.04.2), libitm1 (>= 9.4.0-1ubuntu1~20.04.2), libatomic1 (>= 9.4.0-1ubuntu1~20.04.2), libasan5 (>= 9.4.0-1ubuntu1~20.04.2), liblsan0 (>= 9.4.0-1ubuntu1~20.04.2), libtsan0 (>= 9.4.0-1ubuntu1~20.04.2), libubsan1 (>= 9.4.0-1ubuntu1~20.04.2), libquadmath0 (>= 9.4.0-1ubuntu1~20.04.2)"
+  },
+  "libgcc-s1": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "120",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.14)"
+  },
+  "libgcrypt20": {
+   "Version": "1.8.5-5ubuntu1.1",
+   "Architecture": "amd64",
+   "Installed-Size": "1224",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.15), libgpg-error0 (>= 1.25)"
+  },
+  "libgdbm-compat4": {
+   "Version": "1.18.1-5",
+   "Architecture": "amd64",
+   "Installed-Size": "40",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gdbm",
+   "Depends": "libc6 (>= 2.14), libgdbm6 (>= 1.16)"
+  },
+  "libgdbm6": {
+   "Version": "1.18.1-5",
+   "Architecture": "amd64",
+   "Installed-Size": "87",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gdbm",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libgmp10": {
+   "Version": "2:6.2.0+dfsg-4ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "567",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gmp",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libgnutls30": {
+   "Version": "3.6.13-2ubuntu1.12",
+   "Architecture": "amd64",
+   "Installed-Size": "2192",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gnutls28",
+   "Depends": "libgmp10 (>= 2:6.0.0), libc6 (>= 2.25), libhogweed5, libidn2-0 (>= 2.0.0), libnettle7, libp11-kit0 (>= 0.23.18.1), libtasn1-6 (>= 4.14), libunistring2 (>= 0.9.7)"
+  },
+  "libgomp1": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "286",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.17)"
+  },
+  "libgpg-error0": {
+   "Version": "1.37-1",
+   "Architecture": "amd64",
+   "Installed-Size": "176",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libgpg-error",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libgssapi3-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "325",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libasn1-8-heimdal (>= 1.4.0+git20110226), libc6 (>= 2.14), libcom-err2 (>= 1.43.9), libhcrypto4-heimdal (>= 1.4.0+git20110226), libheimntlm0-heimdal (>= 1.4.0+git20110226), libkrb5-26-heimdal (>= 1.6~git20131117), libroken18-heimdal (>= 1.7~git20150920)"
+  },
+  "libhashkit-dev": {
+   "Version": "1.0.18-4.2ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "144",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "libmemcached",
+   "Depends": "libhashkit2 (= 1.0.18-4.2ubuntu2)"
+  },
+  "libhashkit2": {
+   "Version": "1.0.18-4.2ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "97",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libmemcached",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libhcrypto4-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "275",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libasn1-8-heimdal (>= 1.4.0+git20110226), libc6 (>= 2.14), libheimbase1-heimdal (>= 1.4.0+git20110226), libroken18-heimdal (>= 1.7~git20150920)"
+  },
+  "libheimbase1-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "114",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libheimntlm0-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "86",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libc6 (>= 2.4), libhcrypto4-heimdal (>= 1.4.0+git20110226), libkrb5-26-heimdal (>= 1.4.0+git20110226), libroken18-heimdal (>= 1.7~git20150920), libwind0-heimdal (>= 1.4.0+git20110226)"
+  },
+  "libhogweed5": {
+   "Version": "3.5.1+really3.5.1-2ubuntu0.2",
+   "Architecture": "amd64",
+   "Installed-Size": "237",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "nettle",
+   "Depends": "libc6 (>= 2.14), libgmp10 (>= 2:6.0.0), libnettle7 (= 3.5.1+really3.5.1-2ubuntu0.2)"
+  },
+  "libhx509-5-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "361",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libasn1-8-heimdal (>= 1.4.0+git20110226), libc6 (>= 2.14), libcom-err2 (>= 1.43.9), libhcrypto4-heimdal (>= 1.4.0+git20110226), libheimbase1-heimdal (>= 1.6~git20131117), libroken18-heimdal (>= 1.7~git20150920), libwind0-heimdal (>= 1.4.0+git20110226)"
+  },
+  "libidn2-0": {
+   "Version": "2.2.0-2",
+   "Architecture": "amd64",
+   "Installed-Size": "216",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libidn2",
+   "Depends": "libc6 (>= 2.14), libunistring2 (>= 0.9.7)"
+  },
+  "libisl22": {
+   "Version": "0.22.1-1",
+   "Architecture": "amd64",
+   "Installed-Size": "1926",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "isl",
+   "Depends": "libc6 (>= 2.14), libgmp10"
+  },
+  "libitm1": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "115",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.14)"
+  },
+  "libjsoncpp1": {
+   "Version": "1.7.4-3.1ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "241",
+   "Priority": "extra",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libjsoncpp",
+   "Depends": "libc6 (>= 2.14), libgcc-s1 (>= 3.0), libstdc++6 (>= 9)"
+  },
+  "libkrb5-26-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "666",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libasn1-8-heimdal (>= 1.6~git20131117), libc6 (>= 2.15), libcom-err2 (>= 1.43.9), libcrypt1 (>= 1:4.1.0), libhcrypto4-heimdal (>= 1.7~git20161112), libheimbase1-heimdal (>= 1.6~git20131117), libhx509-5-heimdal (>= 1.4.0+git20110226), libroken18-heimdal (>= 1.7~git20160418), libsqlite3-0 (>= 3.5.9), libwind0-heimdal (>= 1.6~git20120311)"
+  },
+  "libksba8": {
+   "Version": "1.3.5-2ubuntu0.20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "267",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libksba",
+   "Depends": "libc6 (>= 2.14), libgpg-error0 (>= 1.14)"
+  },
+  "libldap-2.4-2": {
+   "Version": "2.4.49+dfsg-2ubuntu1.10",
+   "Architecture": "amd64",
+   "Installed-Size": "523",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "openldap",
+   "Depends": "libc6 (>= 2.28), libgnutls30 (>= 3.6.12), libgssapi3-heimdal (>= 1.4.0+git20110226), libsasl2-2 (>= 2.1.27+dfsg), libldap-common"
+  },
+  "libldap-common": {
+   "Version": "2.4.49+dfsg-2ubuntu1.10",
+   "Architecture": "all",
+   "Installed-Size": "102",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "openldap",
+   "Depends": ""
+  },
+  "liblocale-gettext-perl": {
+   "Version": "1.07-4",
+   "Architecture": "amd64",
+   "Installed-Size": "54",
+   "Priority": "required",
+   "Section": "perl",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.2.5)"
+  },
+  "liblsan0": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "3222",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.17), libgcc-s1 (>= 3.3)"
+  },
+  "liblz4-1": {
+   "Version": "1.9.2-2ubuntu0.20.04.1",
+   "Architecture": "amd64",
+   "Installed-Size": "149",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "lz4",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "liblzma5": {
+   "Version": "5.2.4-1ubuntu1.1",
+   "Architecture": "amd64",
+   "Installed-Size": "267",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "xz-utils",
+   "Depends": "libc6 (>= 2.17)"
+  },
+  "libmagic-mgc": {
+   "Version": "1:5.38-4",
+   "Architecture": "amd64",
+   "Installed-Size": "5723",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "file",
+   "Depends": ""
+  },
+  "libmagic1": {
+   "Version": "1:5.38-4",
+   "Architecture": "amd64",
+   "Installed-Size": "220",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "file",
+   "Depends": "libbz2-1.0, libc6 (>= 2.15), liblzma5 (>= 5.1.1alpha+20120614), zlib1g (>= 1:1.1.4), libmagic-mgc (= 1:5.38-4)"
+  },
+  "libmemcached-dev": {
+   "Version": "1.0.18-4.2ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "915",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "libmemcached",
+   "Depends": "libhashkit-dev (= 1.0.18-4.2ubuntu2), libmemcached11 (= 1.0.18-4.2ubuntu2), libmemcachedutil2 (= 1.0.18-4.2ubuntu2), libsasl2-dev"
+  },
+  "libmemcached11": {
+   "Version": "1.0.18-4.2ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "247",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libmemcached",
+   "Depends": "libc6 (>= 2.16), libgcc-s1 (>= 3.0), libsasl2-2 (>= 2.1.27+dfsg), libstdc++6 (>= 4.1.1)"
+  },
+  "libmemcachedutil2": {
+   "Version": "1.0.18-4.2ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "60",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libmemcached",
+   "Depends": "libc6 (>= 2.4), libmemcached11, libstdc++6 (>= 4.1.1)"
+  },
+  "libmount1": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "482",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "util-linux",
+   "Depends": "libblkid1 (>= 2.17.2), libc6 (>= 2.25), libselinux1 (>= 2.6-3~)"
+  },
+  "libmpc3": {
+   "Version": "1.1.0-1",
+   "Architecture": "amd64",
+   "Installed-Size": "110",
+   "Priority": "extra",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "mpclib3",
+   "Depends": "libc6 (>= 2.4), libgmp10, libmpfr6 (>= 4.0.0)"
+  },
+  "libmpdec2": {
+   "Version": "2.4.2-3",
+   "Architecture": "amd64",
+   "Installed-Size": "243",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "mpdecimal",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libmpfr6": {
+   "Version": "4.0.2-1",
+   "Architecture": "amd64",
+   "Installed-Size": "1096",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "mpfr4",
+   "Depends": "libc6 (>= 2.14), libgmp10"
+  },
+  "libncurses6": {
+   "Version": "6.2-0ubuntu2.1",
+   "Architecture": "amd64",
+   "Installed-Size": "337",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "ncurses",
+   "Depends": "libtinfo6 (= 6.2-0ubuntu2.1), libc6 (>= 2.14)"
+  },
+  "libncursesw6": {
+   "Version": "6.2-0ubuntu2.1",
+   "Architecture": "amd64",
+   "Installed-Size": "418",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "ncurses",
+   "Depends": "libtinfo6 (= 6.2-0ubuntu2.1), libc6 (>= 2.14)"
+  },
+  "libnettle7": {
+   "Version": "3.5.1+really3.5.1-2ubuntu0.2",
+   "Architecture": "amd64",
+   "Installed-Size": "396",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "nettle",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libnpth0": {
+   "Version": "1.6-1",
+   "Architecture": "amd64",
+   "Installed-Size": "36",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "npth",
+   "Depends": "libc6 (>= 2.17)"
+  },
+  "libp11-kit0": {
+   "Version": "0.23.20-1ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "1271",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "p11-kit",
+   "Depends": "libc6 (>= 2.26), libffi7 (>= 3.3~20180313)"
+  },
+  "libpam-modules": {
+   "Version": "1.3.1-5ubuntu4.7",
+   "Architecture": "amd64",
+   "Installed-Size": "1166",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "pam",
+   "Depends": ""
+  },
+  "libpam-modules-bin": {
+   "Version": "1.3.1-5ubuntu4.7",
+   "Architecture": "amd64",
+   "Installed-Size": "339",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "pam",
+   "Depends": "libaudit1 (>= 1:2.2.1), libc6 (>= 2.14), libcrypt1 (>= 1:4.1.0), libpam0g (>= 0.99.7.1), libselinux1 (>= 1.32)"
+  },
+  "libpam-runtime": {
+   "Version": "1.3.1-5ubuntu4.7",
+   "Architecture": "all",
+   "Installed-Size": "304",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "pam",
+   "Depends": "debconf (>= 0.5) | debconf-2.0, debconf (>= 1.5.19) | cdebconf, libpam-modules (>= 1.0.1-6)"
+  },
+  "libpam0g": {
+   "Version": "1.3.1-5ubuntu4.7",
+   "Architecture": "amd64",
+   "Installed-Size": "231",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "pam",
+   "Depends": "libaudit1 (>= 1:2.2.1), libc6 (>= 2.14), debconf (>= 0.5) | debconf-2.0"
+  },
+  "libpcap0.8": {
+   "Version": "1.9.1-3ubuntu1.20.04.1",
+   "Architecture": "amd64",
+   "Installed-Size": "345",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libpcap",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libpcre2-8-0": {
+   "Version": "10.34-7ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "596",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "pcre2",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libpcre3": {
+   "Version": "2:8.39-12ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "671",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "pcre3",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libperl5.30": {
+   "Version": "5.30.0-9ubuntu0.5",
+   "Architecture": "amd64",
+   "Installed-Size": "27090",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "perl",
+   "Depends": "libbz2-1.0, libc6 (>= 2.29), libcrypt1 (>= 1:4.1.0), libdb5.3, libgdbm-compat4 (>= 1.18-3), libgdbm6 (>= 1.18-3), zlib1g (>= 1:1.2.2.3), perl-modules-5.30 (>= 5.30.0-9ubuntu0.5)"
+  },
+  "libpopt0": {
+   "Version": "1.16-14",
+   "Architecture": "amd64",
+   "Installed-Size": "120",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "popt",
+   "Depends": "libc6 (>= 2.27)"
+  },
+  "libprocps8": {
+   "Version": "2:3.3.16-1ubuntu2.4",
+   "Architecture": "amd64",
+   "Installed-Size": "128",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "procps",
+   "Depends": "libc6 (>= 2.14), libsystemd0 (>= 209)"
+  },
+  "libprotobuf-c1": {
+   "Version": "1.3.3-1ubuntu0.3",
+   "Architecture": "amd64",
+   "Installed-Size": "59",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "protobuf-c",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libpython3-dev": {
+   "Version": "3.8.2-0ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "48",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "python3-defaults",
+   "Depends": "libpython3.8-dev (>= 3.8.2-1~)"
+  },
+  "libpython3-stdlib": {
+   "Version": "3.8.2-0ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "38",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3-defaults",
+   "Depends": "libpython3.8-stdlib (>= 3.8.2-1~)"
+  },
+  "libpython3.8": {
+   "Version": "3.8.10-0ubuntu1~20.04.18",
+   "Architecture": "amd64",
+   "Installed-Size": "5403",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "python3.8",
+   "Depends": "libpython3.8-stdlib (= 3.8.10-0ubuntu1~20.04.18), libc6 (>= 2.29), libexpat1 (>= 2.1~beta3), zlib1g (>= 1:1.2.0)"
+  },
+  "libpython3.8-dev": {
+   "Version": "3.8.10-0ubuntu1~20.04.18",
+   "Architecture": "amd64",
+   "Installed-Size": "19560",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "python3.8",
+   "Depends": "libpython3.8-stdlib (= 3.8.10-0ubuntu1~20.04.18), libpython3.8 (= 3.8.10-0ubuntu1~20.04.18), libexpat1-dev"
+  },
+  "libpython3.8-minimal": {
+   "Version": "3.8.10-0ubuntu1~20.04.18",
+   "Architecture": "amd64",
+   "Installed-Size": "4812",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3.8",
+   "Depends": "libc6 (>= 2.4), libssl1.1 (>= 1.1.1)"
+  },
+  "libpython3.8-stdlib": {
+   "Version": "3.8.10-0ubuntu1~20.04.18",
+   "Architecture": "amd64",
+   "Installed-Size": "7900",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3.8",
+   "Depends": "libpython3.8-minimal (= 3.8.10-0ubuntu1~20.04.18), mime-support, libbz2-1.0, libc6 (>= 2.28), libcrypt1 (>= 1:4.1.0), libdb5.3, libffi7 (>= 3.3~20180313), liblzma5 (>= 5.1.1alpha+20120614), libmpdec2, libncursesw6 (>= 6), libreadline8 (>= 7.0~beta), libsqlite3-0 (>= 3.7.15), libtinfo6 (>= 6), libuuid1 (>= 2.20.1)"
+  },
+  "libquadmath0": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "304",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.23)"
+  },
+  "libreadline8": {
+   "Version": "8.0-4",
+   "Architecture": "amd64",
+   "Installed-Size": "441",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "readline",
+   "Depends": "readline-common, libc6 (>= 2.15), libtinfo6 (>= 6)"
+  },
+  "libroken18-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "145",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libc6 (>= 2.16), libcrypt1 (>= 1:4.1.0)"
+  },
+  "libsasl2-2": {
+   "Version": "2.1.27+dfsg-2ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "152",
+   "Priority": "standard",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "cyrus-sasl2",
+   "Depends": "libsasl2-modules-db (>= 2.1.27+dfsg-2ubuntu0.1), libc6 (>= 2.15)"
+  },
+  "libsasl2-dev": {
+   "Version": "2.1.27+dfsg-2ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "874",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "cyrus-sasl2",
+   "Depends": "libc6-dev, libsasl2-2 (= 2.1.27+dfsg-2ubuntu0.1)"
+  },
+  "libsasl2-modules-db": {
+   "Version": "2.1.27+dfsg-2ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "66",
+   "Priority": "standard",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "cyrus-sasl2",
+   "Depends": "libc6 (>= 2.14), libdb5.3"
+  },
+  "libseccomp2": {
+   "Version": "2.5.1-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "152",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libseccomp",
+   "Depends": "libc6 (>= 2.4)"
+  },
+  "libselinux1": {
+   "Version": "3.0-1build2",
+   "Architecture": "amd64",
+   "Installed-Size": "202",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libselinux",
+   "Depends": "libc6 (>= 2.30), libpcre2-8-0 (>= 10.22)"
+  },
+  "libsemanage-common": {
+   "Version": "3.0-1build2",
+   "Architecture": "all",
+   "Installed-Size": "36",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libsemanage",
+   "Depends": ""
+  },
+  "libsemanage1": {
+   "Version": "3.0-1build2",
+   "Architecture": "amd64",
+   "Installed-Size": "305",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libsemanage",
+   "Depends": "libsemanage-common (= 3.0-1build2), libaudit1 (>= 1:2.2.1), libbz2-1.0, libc6 (>= 2.14), libselinux1 (>= 3.0), libsepol1 (>= 3.0)"
+  },
+  "libsepol1": {
+   "Version": "3.0-1ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "734",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libsepol",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libsmartcols1": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "338",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "util-linux",
+   "Depends": "libc6 (>= 2.25)"
+  },
+  "libsqlite3-0": {
+   "Version": "3.31.1-4ubuntu0.7",
+   "Architecture": "amd64",
+   "Installed-Size": "1323",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "sqlite3",
+   "Depends": "libc6 (>= 2.29)"
+  },
+  "libss2": {
+   "Version": "1.45.5-2ubuntu1.2",
+   "Architecture": "amd64",
+   "Installed-Size": "109",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "e2fsprogs",
+   "Depends": "libcom-err2, libc6 (>= 2.17)"
+  },
+  "libssl-dev": {
+   "Version": "1.1.1f-1ubuntu2.24",
+   "Architecture": "amd64",
+   "Installed-Size": "7831",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "openssl",
+   "Depends": "libssl1.1 (= 1.1.1f-1ubuntu2.24)"
+  },
+  "libssl1.1": {
+   "Version": "1.1.1f-1ubuntu2.24",
+   "Architecture": "amd64",
+   "Installed-Size": "4034",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "openssl",
+   "Depends": "libc6 (>= 2.25), debconf (>= 0.5) | debconf-2.0"
+  },
+  "libstdc++-9-dev": {
+   "Version": "9.4.0-1ubuntu1~20.04.2",
+   "Architecture": "amd64",
+   "Installed-Size": "17645",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "gcc-9",
+   "Depends": "gcc-9-base (= 9.4.0-1ubuntu1~20.04.2), libgcc-9-dev (= 9.4.0-1ubuntu1~20.04.2), libstdc++6 (>= 9.4.0-1ubuntu1~20.04.2), libc6-dev (>= 2.13-0ubuntu6)"
+  },
+  "libstdc++6": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "2440",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.23), libgcc-s1 (>= 4.2)"
+  },
+  "libsystemd0": {
+   "Version": "245.4-4ubuntu3.24",
+   "Architecture": "amd64",
+   "Installed-Size": "879",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "systemd",
+   "Depends": ""
+  },
+  "libtasn1-6": {
+   "Version": "4.16.0-2ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "125",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libtinfo6": {
+   "Version": "6.2-0ubuntu2.1",
+   "Architecture": "amd64",
+   "Installed-Size": "537",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "ncurses",
+   "Depends": "libc6 (>= 2.16)"
+  },
+  "libtsan0": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "9012",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.23), libgcc-s1 (>= 3.3)"
+  },
+  "libubsan1": {
+   "Version": "10.5.0-1ubuntu1~20.04",
+   "Architecture": "amd64",
+   "Installed-Size": "3015",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "gcc-10",
+   "Depends": "gcc-10-base (= 10.5.0-1ubuntu1~20.04), libc6 (>= 2.17), libgcc-s1 (>= 3.3), libstdc++6 (>= 4.1.1)"
+  },
+  "libudev1": {
+   "Version": "245.4-4ubuntu3.24",
+   "Architecture": "amd64",
+   "Installed-Size": "341",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "systemd",
+   "Depends": "libc6 (>= 2.30)"
+  },
+  "libunistring2": {
+   "Version": "0.9.10-2",
+   "Architecture": "amd64",
+   "Installed-Size": "1582",
+   "Priority": "important",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libunistring",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libuuid1": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "123",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "util-linux",
+   "Depends": "libc6 (>= 2.25)"
+  },
+  "libwind0-heimdal": {
+   "Version": "7.7.0+dfsg-1ubuntu1.4",
+   "Architecture": "amd64",
+   "Installed-Size": "206",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "heimdal",
+   "Depends": "libc6 (>= 2.14), libcom-err2 (>= 1.43.9), libroken18-heimdal (>= 1.4.0+git20110226)"
+  },
+  "libxxhash0": {
+   "Version": "0.7.3-1",
+   "Architecture": "amd64",
+   "Installed-Size": "52",
+   "Priority": "optional",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "xxhash",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "libzstd1": {
+   "Version": "1.4.4+dfsg-3ubuntu0.1",
+   "Architecture": "amd64",
+   "Installed-Size": "700",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "libzstd",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "linux-libc-dev": {
+   "Version": "5.4.0-216.236",
+   "Architecture": "amd64",
+   "Installed-Size": "6332",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "linux",
+   "Depends": ""
+  },
+  "login": {
+   "Version": "1:4.8.1-1ubuntu5.20.04.5",
+   "Architecture": "amd64",
+   "Installed-Size": "932",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "yes",
+   "Source": "shadow",
+   "Depends": ""
+  },
+  "logrotate": {
+   "Version": "3.14.0-4ubuntu3",
+   "Architecture": "amd64",
+   "Installed-Size": "143",
+   "Priority": "important",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libacl1 (>= 2.2.51-8), libc6 (>= 2.27), libpopt0 (>= 1.14), libselinux1 (>= 1.32), cron | anacron | cron-daemon | systemd-sysv"
+  },
+  "logsave": {
+   "Version": "1.45.5-2ubuntu1.2",
+   "Architecture": "amd64",
+   "Installed-Size": "93",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "e2fsprogs",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "lsb-base": {
+   "Version": "11.1.0ubuntu2",
+   "Architecture": "all",
+   "Installed-Size": "58",
+   "Priority": "required",
+   "Section": "misc",
+   "Essential": "",
+   "Source": "lsb",
+   "Depends": ""
+  },
+  "make": {
+   "Version": "4.2.1-1.2",
+   "Architecture": "amd64",
+   "Installed-Size": "384",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "make-dfsg",
+   "Depends": "libc6 (>= 2.27)"
+  },
+  "mawk": {
+   "Version": "1.3.4.20200120-2",
+   "Architecture": "amd64",
+   "Installed-Size": "233",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.29)"
+  },
+  "mime-support": {
+   "Version": "3.64ubuntu1",
+   "Architecture": "all",
+   "Installed-Size": "114",
+   "Priority": "standard",
+   "Section": "net",
+   "Essential": "",
+   "Source": "",
+   "Depends": ""
+  },
+  "mount": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "434",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "util-linux",
+   "Depends": "util-linux (>= 2.30.1-0ubuntu4~)"
+  },
+  "ncurses-base": {
+   "Version": "6.2-0ubuntu2.1",
+   "Architecture": "all",
+   "Installed-Size": "381",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "ncurses",
+   "Depends": ""
+  },
+  "ncurses-bin": {
+   "Version": "6.2-0ubuntu2.1",
+   "Architecture": "amd64",
+   "Installed-Size": "642",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "ncurses",
+   "Depends": ""
+  },
+  "net-tools": {
+   "Version": "1.60+git20180626.aebd88e-1ubuntu1.3",
+   "Architecture": "amd64",
+   "Installed-Size": "836",
+   "Priority": "important",
+   "Section": "net",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.14), libselinux1 (>= 1.32)"
+  },
+  "netbase": {
+   "Version": "6.1",
+   "Architecture": "all",
+   "Installed-Size": "43",
+   "Priority": "important",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": ""
+  },
+  "openssl": {
+   "Version": "1.1.1f-1ubuntu2.24",
+   "Architecture": "amd64",
+   "Installed-Size": "1257",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.15), libssl1.1 (>= 1.1.1)"
+  },
+  "passwd": {
+   "Version": "1:4.8.1-1ubuntu5.20.04.5",
+   "Architecture": "amd64",
+   "Installed-Size": "2669",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "shadow",
+   "Depends": "libaudit1 (>= 1:2.2.1), libc6 (>= 2.14), libcrypt1 (>= 1:4.1.0), libpam0g (>= 0.99.7.1), libselinux1 (>= 2.1.9), libsemanage1 (>= 2.0.3), libpam-modules"
+  },
+  "patch": {
+   "Version": "2.7.6-6",
+   "Architecture": "amd64",
+   "Installed-Size": "232",
+   "Priority": "optional",
+   "Section": "vcs",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.17)"
+  },
+  "perl": {
+   "Version": "5.30.0-9ubuntu0.5",
+   "Architecture": "amd64",
+   "Installed-Size": "746",
+   "Priority": "standard",
+   "Section": "perl",
+   "Essential": "",
+   "Source": "",
+   "Depends": "perl-base (= 5.30.0-9ubuntu0.5), perl-modules-5.30 (>= 5.30.0-9ubuntu0.5), libperl5.30 (= 5.30.0-9ubuntu0.5)"
+  },
+  "perl-base": {
+   "Version": "5.30.0-9ubuntu0.5",
+   "Architecture": "amd64",
+   "Installed-Size": "10791",
+   "Priority": "required",
+   "Section": "perl",
+   "Essential": "yes",
+   "Source": "perl",
+   "Depends": ""
+  },
+  "perl-modules-5.30": {
+   "Version": "5.30.0-9ubuntu0.5",
+   "Architecture": "all",
+   "Installed-Size": "17230",
+   "Priority": "standard",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "perl",
+   "Depends": "perl-base (>= 5.30.0-1)"
+  },
+  "pinentry-curses": {
+   "Version": "1.1.0-3build1",
+   "Architecture": "amd64",
+   "Installed-Size": "100",
+   "Priority": "optional",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "pinentry",
+   "Depends": "libassuan0 (>= 2.1.0), libc6 (>= 2.14), libgpg-error0 (>= 1.16), libncursesw6 (>= 6), libtinfo6 (>= 6)"
+  },
+  "procps": {
+   "Version": "2:3.3.16-1ubuntu2.4",
+   "Architecture": "amd64",
+   "Installed-Size": "816",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.27), libncurses6 (>= 6), libncursesw6 (>= 6), libprocps8 (>= 2:3.3.16-1), libtinfo6 (>= 6), lsb-base (>= 3.0-10), init-system-helpers (>= 1.29~)"
+  },
+  "python-is-python3": {
+   "Version": "3.8.2-4",
+   "Architecture": "all",
+   "Installed-Size": "10",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "what-is-python (4)",
+   "Depends": "python3"
+  },
+  "python-pip-whl": {
+   "Version": "20.0.2-5ubuntu1.11",
+   "Architecture": "all",
+   "Installed-Size": "2262",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python-pip",
+   "Depends": "ca-certificates"
+  },
+  "python3": {
+   "Version": "3.8.2-0ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "189",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3-defaults",
+   "Depends": "python3.8 (>= 3.8.2-1~), libpython3-stdlib (= 3.8.2-0ubuntu2)"
+  },
+  "python3-dev": {
+   "Version": "3.8.2-0ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "11",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3-defaults",
+   "Depends": "python3 (= 3.8.2-0ubuntu2), libpython3-dev (= 3.8.2-0ubuntu2), python3.8-dev (>= 3.8.2-1~), python3-distutils (>= 3.8.2-1~)"
+  },
+  "python3-distutils": {
+   "Version": "3.8.10-0ubuntu1~20.04",
+   "Architecture": "all",
+   "Installed-Size": "1363",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3-stdlib-extensions",
+   "Depends": "python3:any (>= 3.8.2-0~), python3:any (<< 3.10), python3-lib2to3 (= 3.8.10-0ubuntu1~20.04)"
+  },
+  "python3-lib2to3": {
+   "Version": "3.8.10-0ubuntu1~20.04",
+   "Architecture": "all",
+   "Installed-Size": "702",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3-stdlib-extensions",
+   "Depends": "python3:any (>= 3.8.2-0~), python3:any (<< 3.10)"
+  },
+  "python3-minimal": {
+   "Version": "3.8.2-0ubuntu2",
+   "Architecture": "amd64",
+   "Installed-Size": "120",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3-defaults",
+   "Depends": "dpkg (>= 1.13.20)"
+  },
+  "python3-pip": {
+   "Version": "20.0.2-5ubuntu1.11",
+   "Architecture": "all",
+   "Installed-Size": "1025",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python-pip",
+   "Depends": "ca-certificates, python3-distutils, python3-setuptools, python3-wheel, python-pip-whl (= 20.0.2-5ubuntu1.11), python3:any"
+  },
+  "python3-pkg-resources": {
+   "Version": "45.2.0-1ubuntu0.3",
+   "Architecture": "all",
+   "Installed-Size": "568",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "setuptools",
+   "Depends": "python3:any"
+  },
+  "python3-setuptools": {
+   "Version": "45.2.0-1ubuntu0.3",
+   "Architecture": "all",
+   "Installed-Size": "1435",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "setuptools",
+   "Depends": "python3-pkg-resources (= 45.2.0-1ubuntu0.3), python3-distutils, python3:any"
+  },
+  "python3-wheel": {
+   "Version": "0.34.2-1ubuntu0.1",
+   "Architecture": "all",
+   "Installed-Size": "102",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "wheel",
+   "Depends": "python3:any"
+  },
+  "python3.8": {
+   "Version": "3.8.10-0ubuntu1~20.04.18",
+   "Architecture": "amd64",
+   "Installed-Size": "511",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "",
+   "Depends": "python3.8-minimal (= 3.8.10-0ubuntu1~20.04.18), libpython3.8-stdlib (= 3.8.10-0ubuntu1~20.04.18), mime-support"
+  },
+  "python3.8-dev": {
+   "Version": "3.8.10-0ubuntu1~20.04.18",
+   "Architecture": "amd64",
+   "Installed-Size": "516",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3.8",
+   "Depends": "python3.8 (= 3.8.10-0ubuntu1~20.04.18), libpython3.8-dev (= 3.8.10-0ubuntu1~20.04.18), libpython3.8 (= 3.8.10-0ubuntu1~20.04.18), libexpat1-dev, zlib1g-dev"
+  },
+  "python3.8-minimal": {
+   "Version": "3.8.10-0ubuntu1~20.04.18",
+   "Architecture": "amd64",
+   "Installed-Size": "5488",
+   "Priority": "optional",
+   "Section": "python",
+   "Essential": "",
+   "Source": "python3.8",
+   "Depends": "libpython3.8-minimal (= 3.8.10-0ubuntu1~20.04.18), libexpat1 (>= 2.1~beta3), zlib1g (>= 1:1.2.0)"
+  },
+  "readline-common": {
+   "Version": "8.0-4",
+   "Architecture": "all",
+   "Installed-Size": "79",
+   "Priority": "important",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "readline",
+   "Depends": "dpkg (>= 1.15.4) | install-info"
+  },
+  "rsyslog": {
+   "Version": "8.2001.0-1ubuntu1.3",
+   "Architecture": "amd64",
+   "Installed-Size": "1655",
+   "Priority": "important",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.27), libestr0 (>= 0.1.4), libfastjson4 (>= 0.99.7), libsystemd0 (>= 209), libuuid1 (>= 2.16), zlib1g (>= 1:1.1.4), adduser, ucf"
+  },
+  "sed": {
+   "Version": "4.7-1",
+   "Architecture": "amd64",
+   "Installed-Size": "336",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": ""
+  },
+  "sensible-utils": {
+   "Version": "0.0.12+nmu1",
+   "Architecture": "all",
+   "Installed-Size": "62",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": ""
+  },
+  "sonic-build-hooks": {
+   "Version": "1.0",
+   "Architecture": "all",
+   "Installed-Size": "",
+   "Priority": "optional",
+   "Section": "devel",
+   "Essential": "",
+   "Source": "",
+   "Depends": ""
+  },
+  "supervisor": {
+   "Version": "4.1.0-1ubuntu1",
+   "Architecture": "all",
+   "Installed-Size": "1643",
+   "Priority": "optional",
+   "Section": "admin",
+   "Essential": "",
+   "Source": "",
+   "Depends": "lsb-base, python3-pkg-resources, python3:any"
+  },
+  "sysvinit-utils": {
+   "Version": "2.96-2.1ubuntu1",
+   "Architecture": "amd64",
+   "Installed-Size": "74",
+   "Priority": "required",
+   "Section": "admin",
+   "Essential": "yes",
+   "Source": "sysvinit",
+   "Depends": "init-system-helpers (>= 1.25~), lsb-base (>= 11.0.0~), util-linux (>> 2.28-2~), libc6 (>= 2.14)"
+  },
+  "tar": {
+   "Version": "1.30+dfsg-7ubuntu0.20.04.4",
+   "Architecture": "amd64",
+   "Installed-Size": "884",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": ""
+  },
+  "tcpdump": {
+   "Version": "4.9.3-4ubuntu0.3",
+   "Architecture": "amd64",
+   "Installed-Size": "1088",
+   "Priority": "optional",
+   "Section": "net",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.14), libpcap0.8 (>= 1.5.1), libssl1.1 (>= 1.1.0), adduser"
+  },
+  "tzdata": {
+   "Version": "2025b-0ubuntu0.20.04.1",
+   "Architecture": "all",
+   "Installed-Size": "3995",
+   "Priority": "required",
+   "Section": "localization",
+   "Essential": "",
+   "Source": "",
+   "Depends": "debconf (>= 0.5) | debconf-2.0"
+  },
+  "ubuntu-keyring": {
+   "Version": "2020.02.11.4",
+   "Architecture": "all",
+   "Installed-Size": "46",
+   "Priority": "important",
+   "Section": "misc",
+   "Essential": "",
+   "Source": "",
+   "Depends": ""
+  },
+  "ucf": {
+   "Version": "3.0038+nmu1",
+   "Architecture": "all",
+   "Installed-Size": "188",
+   "Priority": "standard",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": "debconf (>= 1.5.19), coreutils (>= 5.91), sensible-utils"
+  },
+  "util-linux": {
+   "Version": "2.34-0.1ubuntu9.6",
+   "Architecture": "amd64",
+   "Installed-Size": "4543",
+   "Priority": "required",
+   "Section": "utils",
+   "Essential": "yes",
+   "Source": "",
+   "Depends": "login (>= 1:4.5-1.1~)"
+  },
+  "xz-utils": {
+   "Version": "5.2.4-1ubuntu1.1",
+   "Architecture": "amd64",
+   "Installed-Size": "348",
+   "Priority": "standard",
+   "Section": "utils",
+   "Essential": "",
+   "Source": "",
+   "Depends": "libc6 (>= 2.17), liblzma5 (>= 5.2.2)"
+  },
+  "zlib1g": {
+   "Version": "1:1.2.11.dfsg-2ubuntu1.5",
+   "Architecture": "amd64",
+   "Installed-Size": "164",
+   "Priority": "required",
+   "Section": "libs",
+   "Essential": "",
+   "Source": "zlib",
+   "Depends": "libc6 (>= 2.14)"
+  },
+  "zlib1g-dev": {
+   "Version": "1:1.2.11.dfsg-2ubuntu1.5",
+   "Architecture": "amd64",
+   "Installed-Size": "593",
+   "Priority": "optional",
+   "Section": "libdevel",
+   "Essential": "",
+   "Source": "zlib",
+   "Depends": "zlib1g (= 1:1.2.11.dfsg-2ubuntu1.5), libc6-dev | libc-dev"
+  }
+ },
+ "python": [
+  "usr/lib/python3/dist-packages/pip-20.0.2.egg-info",
+  "usr/lib/python3/dist-packages/setuptools-45.2.0.egg-info",
+  "usr/lib/python3/dist-packages/supervisor-4.1.0.egg-info",
+  "usr/lib/python3/dist-packages/wheel-0.34.2.egg-info",
+  "usr/local/lib/python3.8/dist-packages/supervisord_dependent_startup-1.4.0.dist-info",
+  "usr/local/lib/python3.8/dist-packages/toposort-1.10.dist-info",
+  "usr/local/lib/python3.8/site-packages/Cython-0.29.36.dist-info",
+  "usr/local/lib/python3.8/site-packages/cffi-1.17.1.dist-info",
+  "usr/local/lib/python3.8/site-packages/coverage-7.6.1.dist-info",
+  "usr/local/lib/python3.8/site-packages/grpcio-1.43.2.dist-info",
+  "usr/local/lib/python3.8/site-packages/nnpy-0.1.dist-info",
+  "usr/local/lib/python3.8/site-packages/ptf-0.9.1.dist-info",
+  "usr/local/lib/python3.8/site-packages/pycparser-2.23.dist-info",
+  "usr/local/lib/python3.8/site-packages/pypcap-1.3.0.dist-info",
+  "usr/local/lib/python3.8/site-packages/scapy-2.4.5.dist-info",
+  "usr/local/lib/python3.8/site-packages/six-1.16.0.dist-info",
+  "usr/local/lib/python3.8/site-packages/six-1.17.0.dist-info",
+  "usr/local/lib/python3.8/site-packages/thrift-0.13.0.dist-info",
+  "usr/local/lib/python3.8/site-packages/wheel-0.45.1.dist-info"
+ ]
+}
