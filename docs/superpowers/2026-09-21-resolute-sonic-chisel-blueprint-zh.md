@@ -101,7 +101,7 @@
 
 移植是**适配不是复制**：要核 usrmerge 路径、`t64` 改名、`essential:` 必须从列表改成 map（26.04 是 v3，列表形态直接解析报错）、以及 `.deb` 内容本身的增删。
 
-### 3.3 C 桶：已迁移容器实测缺的 SDF（10 项，去掉 B 桶后 7 项）
+### 3.3 C 桶：已迁移容器实测缺的 SDF（10 项，去掉 B 桶重叠后 9 项，再去掉两个存疑项后 7 项）
 
 这是 4 个配方的 `install-unchiselled-packages` 去重后，真正没有 SDF 的：
 
@@ -184,13 +184,26 @@
 - 提供测试证据和复现步骤。
 - 已有评审意见后**不要 force push**；更新用 merge 目标分支。
 
+**两条会改变 PR 预算和顺序的规则：**
+
+**跨 release 转发。** mason 的 write-slice 流程明写「all PRs must be forward-ported oldest -> newest across all maintained release branches」。若该规则确实适用，那么把 rsyslog 三件套从 24.04 直接搬到 26.04、跳过 25.10 的做法就不对，而且给老 release 上也存在的包新写 SDF 可能要在多个分支各开一个 PR。**65 至 67 这个 PR 数因此是下限，可能差出数倍。开工前必须与上游确认这条规则的适用范围**，并据此做一张「包 × release」的 PR 矩阵。
+
+**依赖必须先合入。** 一个包一个 PR，加上 chisel 解析 `essential:`，意味着依赖方的 PR 在被依赖方合入前无法针对目标分支验证。write-slice 流程要求叶子优先。所以批次内部还要排序：`librelp0` 先于 `rsyslog-relp`，`libpopt0` 先于 `logrotate`。**同批不等于同时**，需要一张 slice 依赖 DAG 来定合入顺序，或者走 stacked PR。
+
 ### 4.5 未合入时怎么消费
 
 上游评审没有承诺周期。若把「PR 合入」当唯一门槛，我们和下游都会空等——配方引用一个尚不存在于 release 仓库的 slice 名字会直接构建失败。
 
-`chisel cut --release` 接受本地目录路径，rockcraft 也支持指向自定义 chisel release。所以在 PR 合入前，下游配方可以指向**我们 chisel-releases fork 的分支**来使用尚未合入的 slice。合入后再把指向切回官方 release 并锁定 commit。
+rockcraft **没有**一个指向自定义 chisel release 的配置字段——`stage-packages` 只认上游 release。官方记录的做法（rockcraft 文档 how-to/chiselling/install-slice）是绕过 `stage-packages`：
 
-**这条路径必须在开工前打通**，否则整条供给线被上游节奏锁死。
+1. 用一个 part 把本地 `chisel-releases` 目录送进构建器（build-context）。
+2. 在 `override-build` 里手工跑 `chisel cut --release ./chisel-releases --root ... <pkg>_<slice>`。
+
+**这意味着中间态和终态的配方结构不同**：合入前该 slice 走 `override-build`，合入后才能挪回 `stage-packages`。每个包要改两次配方。
+
+两个必须知道的后果：**fork 必须是 `ubuntu-26.04` 的完整副本并持续 rebase**，否则其他 slice 的解析会跟着漂；**slice 名在评审中可能被要求改名**，届时按 fork 名字写的 `override-build` 会断，所以中间态的引用要集中、可一次性替换。
+
+**这条路径是批 0 的一部分，不是背景说明**：要在批 0 里真正打通一次（拿 `util-linux_logger` 走一遍 override-build 引用），并把步骤写进 `AGENTS.md`，否则整条供给线被上游节奏锁死。
 
 ---
 
@@ -198,28 +211,30 @@
 
 ### 5.1 验收分两级
 
-- **本地验收（我们能控制）**：SDF 通过 `check-slice.py`，`chisel cut` 可安装，chroot 功能测试通过，spread 测试写好，PR 已开。**达到这一级即可宣告该项完成并继续下一个。**
+- **本地验收（我们能控制）**：SDF 通过 `check-slice.py`，`chisel cut` 可安装，chroot 功能测试通过，**spread 测试实际跑过并通过**（不是写好就算——`spread` 必须在批 0 之前装上，否则这一条形同虚设），PR 已开且上游 CI 全绿（含 `validate-hints`）。**达到这一级即可宣告该项完成并继续下一个。**
 - **上游验收**：PR 合入，下游配方的 `install-unchiselled-packages` 里少掉对应条目。
 
 排期按本地验收计，上游合入单独跟踪。
 
 ### 5.2 批次
 
-| 批 | 内容 | 项数 | 说明 |
+| 批 | 包 | 项数 | 说明 |
 |---|---|--:|---|
-| 0 | `util-linux` 补 `logger` slice | 1 | **最先做**，用来趟通 CLA、CI 和评审流程，不要拿复杂包去趟这条路 |
-| 1 | rsyslog 三件套（含从 24.04 移植） | 3 | 有 24.04 参照，且每个容器都要用 |
-| 2 | `librelp0` + `libpython3.14` + 三个 python 包 | 5 | 卡住已迁移容器的其余部分 |
-| 3 | `radvd`，以及 `net-tools` / `libdaemon0`（若确认需要） | 1 至 3 | 见下方默认值 |
-| 4 | orchagent / nat / teamd / sflow / macsec / dash-ha 一族 | 约 16 | 顺带做掉 `libpci3`、`pci.ids`、`tcpdump` 等多容器共用包 |
-| 5 | fpm-frr | 约 9 | 含 `libpopt0` |
-| 6 | snmp、lldp | 约 5 | 共用 snmp 库 |
-| 7 | platform-monitor | 约 15 | **最重的一批**，`udev`、`rrdtool`、`smartmontools` 都带配置，放在手感练出来之后 |
-| 8 | dhcp-relay、sysmgr、syncd-brcm、gbsyncd-agera2/broncos/credo | 约 8 | 零散小包，不含 `gbsyncd-vs` |
+| 0 | `util-linux`（补 `logger` slice） | 1 | **最先做**，用最简单的改动趟通 CLA、CI 和评审。**批 0 的 PR 拿到上游第一轮反馈之前不要开批 1**，否则八个批次会带着同一类问题一起被打回 |
+| 1 | `rsyslog`、`libestr0`、`libfastjson4`、`rsyslog-relp`、`librelp0` | 5 | rsyslog 全家。前三个从 24.04 移植，后两个新写。`rsyslog-relp` 依赖 `librelp0`，必须同批否则 `essential:` 解析不了 |
+| 2 | `libpython3.14`、`python3-yaml`、`python3-redis`、`python3-cffi-backend` | 4 | 结构相似，可批量化 |
+| 3 | `radvd`，以及 `net-tools`、`libdaemon0`（若确认需要） | 1 至 3 | 见下方默认值 |
+| 4 | `arping`、`bridge-utils`、`conntrack`、`dmidecode`、`ifupdown`、`libibverbs1`、`libnet9`、`libpcap0.8t64`、`libpci3`、`libprotobuf32t64`、`ndisc6`、`ndppd`、`pci.ids`、`pciutils`、`python3-netifaces`、`python3-protobuf`、`tcpdump` | 17 | orchagent / nat / teamd / sflow / macsec / dash-ha 一族，顺带做掉多容器共用包 |
+| 5 | `cron-daemon-common`、`libgoogle-perftools4t64`、`liblsof0`、`libpcre2-posix3`、`libpopt0`、`libsnmp-base`、`libsnmp40t64`、`libtcmalloc-minimal4t64`、`logrotate`、`lsof` | 10 | fpm-frr。`libpopt0` 是 `logrotate` 的硬依赖，同批 |
+| 6 | `freeipmi-common`、`ipmitool`、`libfreeipmi17`、`snmp`、`snmpd` | 5 | snmp、lldp。snmp 库已在批 5 做掉 |
+| 7 | `ethtool`、`i2c-tools`、`libdbi1t64`、`libi2c0`、`libnvme1t64`、`librrd8t64`、`nvme-cli`、`psmisc`、`python3-bottle`、`python3-smbus`、`rrdtool`、`smartmontools`、`udev`、`uuid-runtime`、`xxd` | 15 | platform-monitor，**最重的一批**，`udev`、`rrdtool`、`smartmontools` 都带配置，放在手感练出来之后 |
+| 8 | `ibverbs-providers`、`kmod`、`libdbus-c++-1-0v5`、`libexplain51t64`、`libjsoncpp26`、`libprotobuf-lite32t64`、`lz4` | 7 | dhcp-relay、sysmgr、syncd-brcm、gbsyncd-agera2/broncos/credo。不含 `gbsyncd-vs` |
+
+批 0 至 3 合计 11 至 13 项（A 桶 1 + B 桶 3 + C 桶 7 至 9），批 4 至 8 合计 54 项，总计 65 至 67。包名按「第一个需要它的批次」归属，所以批 4 偏大。
 
 批 4 往后的数字是上界（3.4），下游配方写完后按 2.2 的已迁移口径重算，实际很可能显著更低。
 
-**`net-tools` 和 `libdaemon0` 给默认值**：Docker 侧证据是全仓库零运行期调用者。**默认取不需要，按不写排期**；若下游确认确有用途再补，代价是两个 SDF。不要停在这里等答复。
+**`net-tools` 和 `libdaemon0` 给默认值**：Docker 侧证据是全仓库零运行期**文本**调用者。**注意这个判据对共享库是无效的**——`libdaemon0` 是 `.so`，不会有人在脚本里写它的名字，正确判法是对 primed rootfs 做 ELF `DT_NEEDED` 闭包并查 `dlopen`。本轮没做这一步。**默认取不需要，按不写排期**；若下游确认确有用途再补，代价是两个 SDF。不要停在这里等答复。
 
 ---
 
@@ -234,24 +249,29 @@
 | 上界估计偏大 | 开放项，非风险 | 3.4 的 54 个是按 Docker 镜像推的，下游配方写完后按 2.2 口径重新确认 |
 | 带配置的包被上游打回返工 | 范围风险 | 约 18 个「带配置」SDF 需要实质性 spread 测试，评审要求可能高于预期。批次上把它们放在后面 |
 | 只在 amd64 验证 | **正确性风险** | 上游 CI 跨 6 架构，送审前按其他架构复核（2.1） |
+| 59 个包 chisel 根本管不了 | **边界风险，无人认领** | 53 个自建 + 6 个第三方，占 475 的 12%，是切片化的硬边界。是否改走 PPA、整包 stage、还是排除在外，属于第二部分或产品决策，但**必须有人拍板**，否则「全部 chisel 化」是做不到的 |
+| 上游评审无限期悬挂 | **确定会发生，需要止损规则** | fork 消费（4.5）只是权宜。应当约定：单个 PR 超过 N 周无反馈就升级到 Canonical 内部渠道；若整批超期，明确 fork 副本是否转为长期状态并承担其 rebase 成本。**现在没有 N，也没有负责人** |
 | 镜像基线新旧混合 | 数据风险 | vs 专属的 3 个镜像产于 2026-08-27，其余 09-17，base 层 09-03。批 4 开始前重跑扫描 |
 
 ### 6.2 工作量
 
 **粗估，用于排期讨论，不是承诺。**
 
-| 批 | 内容 | 估算 |
-|---|---|---|
-| 0 | 1 项补 slice + 首次 CLA 与流程摸索 | 2 人日 |
-| 1 | 3 项移植，需逐项核 v3 语法与包内容变化 | 2 人日 |
-| 2 至 3 | 6 至 8 项新写，其中 5 个 python 包结构相似可批量化 | 5 人日 |
-| 4 至 8 | 上界 54 项，约三分之二纯库、三分之一带配置 | 25 人日 |
-| **合计** | **65 至 67 项** | **约 34 人日 ≈ 7 人周** |
+| 批 | 内容 | 项数 | 估算 |
+|---|---|--:|---|
+| 0 | 补 slice + 首次 CLA + 打通 fork 消费路径 | 1 | 3 人日 |
+| 1 | rsyslog 全家，3 项移植 + 2 项新写，且有 `essential:` 依赖顺序 | 5 | 4 人日 |
+| 2 | 4 个 python 相关包，结构相似可批量化 | 4 | 2 人日 |
+| 3 | `radvd` ± 两个存疑项 | 1 至 3 | 1 人日 |
+| 4 至 8 | 上界 54 项 | 54 | 25 人日 |
+| **合计** | | **65 至 67 项** | **约 35 人日 ≈ 7 人周** |
+
+批 4 至 8 那 54 个包里只有 21 个 `lib*` 和 4 个 `python3-*`，**「三分之二是纯库」这个说法对这一段不成立**，其余是带配置或数据的工具（udev、snmpd、rrdtool、smartmontools、ipmitool、logrotate、tcpdump、ifupdown 等）。25 人日按「纯库快、工具慢」估的，实际分布比假设更偏向慢的一侧。
 
 三点说明：
 
 1. **只含编写时间**，不含上游评审往返。按一个包一个 PR 计是 65 至 67 个 PR。
-2. 批 4 往后是上界，重算后很可能显著更低。
+2. **排除项全部朝一个方向偏**：不含评审返工、不含跨 6 架构的 CI 失败修复、不含 18 个带配置 SDF 的 spread 测试调试。这三项都只会让数字变大。唯一朝下的因素是批 4 往后的上界重算，而那依赖第二部分的裁剪工作，本文范围之外。**因此 34 人日对人力是合理下限，对日历时间几乎肯定偏低。**
 3. 不含第二部分的任何工作。
 
 ---
@@ -281,7 +301,9 @@
 | build-only | 20 | 0 | 59 | 79 |
 | **合计** | **236** | **3** | **177** | **416** |
 
-**口径警告**：416 里有 79 个 build-only 和 13 个 pkg-mgmt，按定义永远不会进 `base: bare` 的 rock。剔掉后**可能进 rock 的是 324 个、已覆盖 206 个，约 64%**。正文用的是剔除后的口径。另外 **25.10 对我们零增量**，移植来源只剩 24.04 的 3 个包。
+**口径警告**：416 里有 79 个 build-only 和 13 个 pkg-mgmt，剔掉后**可能进 rock 的约 324 个、已覆盖约 206 个，约 64%**。正文用的是剔除后的口径。
+
+**但这个分类是启发式的，不是定义**。`chiselcov2.py` 按包名前缀和 section 判断，已知误伤两个：`gcc-16-base` 和 `libgcc-s1` 都出现在 33 个容器里却被判为 build-only（前缀撞上 `libgcc-`）。两者都已有 SDF，所以只影响分母不影响待办，但「按定义永远不会进 rock」这种说法站不住。**用这个数时按 ±5 的不确定度理解**，需要精确值就改用 ELF 闭包而不是名字前缀。另外 **25.10 对我们零增量**，移植来源只剩 24.04 的 3 个包。
 
 **已有 slice 拼不回整包，但缺的都不是运行期要的。** 把 236 个包的真实 `.deb` 与「该包所有 slice 的 `contents:` 并集」逐文件比对：8,575 个文件被覆盖，3,245 个是 man/doc/completion/locale（chisel 的政策性排除），**452 个真缺口**分布在 70 个包里。真缺口中 146 个是 `-dev`、109 个是 `/usr/share/bug` 之类、50 个是 setuptools 的 vendored 模块、34 个是 apt 内部工具。**只有一处与我们有关**：63 个未覆盖二进制里的 `logger`（属 `util-linux`），43 个容器侧脚本调用它，成了 2.1 的待办。
 
@@ -298,7 +320,7 @@
 |---|---|---|
 | 派生配置文件 | `mutate:` 用 Starlark 模仿 postinst（26.04 上 9 个 SDF 这么做） | 写新 SDF 时照做 |
 | alternatives 符号链接 | 显式 `symlink:` 条目 | 统一用 gawk 即可绕开 |
-| ldconfig / `ld.so.cache` | 只提供工具不生成缓存 | **基本无需处理**，见下 |
+| ldconfig / `ld.so.cache` | 只提供工具不生成缓存 | **每容器抽查一次**，见下 |
 | pycache / binfmt | 完全不管 | 可选优化 |
 
 **`ld.so.cache`**：`ld.so` 的内建回退搜索路径含 `/lib/x86_64-linux-gnu`、`/usr/lib/x86_64-linux-gnu`、`/lib`、`/usr/lib`，而 SONiC 自建库全装在 `/usr/lib/x86_64-linux-gnu`。宿主机上用 `--inhibit-cache` 模拟缺失后 `python3 -c "import ssl"` 照常工作。**但这个测试是在宿主机做的，不是在切出来的 rootfs 里，也没覆盖 53 个自建包和 6 个第三方二进制**，所以按「每容器抽查一次」对待，不要当成已关闭的议题。会踩的情形是库装在非默认目录并依赖 `ld.so.conf.d`。
@@ -312,7 +334,7 @@
 
 位于 `docs/superpowers/data/2026-09-17-container-package-inventory/`，采集于 2026-09-17。
 
-**⚠️ 该目录当前仍是 untracked，尚未入库。本文档如果单独提交，下面这张表会指向不存在的文件。** 提交时必须与文档一并纳入（约 2.5 MB）。
+该目录已随本文档在 `b7377c95c7` 一并入库（42 个文件，约 2.5 MB）。
 
 | 文件 | 内容 |
 |---|---|
@@ -338,6 +360,8 @@
 
 依赖闭包脚本（63 个种子展开到 215 个包，用于发现 `librelp0` 这类只作为依赖出现的缺口）本轮是临时写的，尚未纳入仓库。**这是 2.3 提到的待固化项。**
 
+**另外三处复现缺口，一并固化时解决**：`chiselcov2.py` 与 `slicecov.py` 写死了作者的 home 路径和 `/tmp` 中间态；`chiselcov2.py` 依赖一个预先生成的 `resolute-amd64.json`，而上面第 3 步没说它怎么来（是从 `Packages.xz` 解析出的 name→versions 映射）；归档快照没有记录 digest 或日期，所以今天重跑不保证得到同样的数字。**目前这套脚本是「作者机器上可复现」，不是「干净检出即可复现」。**
+
 
 ### 7.5 参考
 
@@ -351,6 +375,8 @@
 ## 8 · 第二部分待办：在 rock 里用 chisel
 
 本文不展开，但下面这些是本轮调研中已经得到结论的部分，**应当单独成文**，不要遗失。
+
+**⚠️ 本节数字锚定在 `202605_resolute_rock` 的 `3e81d8aa2f`（2026-09-18）。** 那个分支仍在密集提交，下面的 70 / 44 / 10 三个数字一次 rebase 就可能失效。接手时先重跑一遍再用，不要直接引用。另外依赖闭包脚本尚未纳入仓库（7.4），重算需要先把它补上。
 
 ### 8.1 立刻能做、不需要上游的优化
 

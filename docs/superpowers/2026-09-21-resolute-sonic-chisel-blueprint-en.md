@@ -101,7 +101,7 @@ The smallest change and the form of PR upstream accepts most readily. **Submit i
 
 Forward-porting is **adaptation, not copying**: check usrmerge paths, `t64` renames, the conversion of `essential:` from list to map (26.04 is v3, where the list form is an outright parse error), and changes in the `.deb` contents themselves.
 
-### 3.3 Bucket C: measured as missing on the migrated containers (10 items, 7 after bucket B)
+### 3.3 Bucket C: measured as missing on the migrated containers (10 items, 9 after removing the bucket B overlap, 7 after dropping the two disputed)
 
 Deduplicating the `install-unchiselled-packages` parts of the four recipes and keeping only what has no SDF:
 
@@ -184,13 +184,26 @@ A slice satisfying only the first is rejected upstream. That is why step 6 above
 - Provide testing evidence and reproduction steps.
 - Do **not** force push once review comments exist; update by merging the target branch.
 
+**Two rules that change both the PR budget and the ordering:**
+
+**Cross-release forward-porting.** The mason write-slice workflow states that "all PRs must be forward-ported oldest -> newest across all maintained release branches". If that applies, then moving the three rsyslog packages from 24.04 straight to 26.04 and skipping 25.10 is wrong, and a new SDF for a package that also exists on an older release may need a PR on each branch. **The 65 to 67 figure is therefore a floor and could be several times larger. Confirm the rule's scope with upstream before accepting it**, and build a package-by-release PR matrix from the answer.
+
+**Dependencies must merge first.** One package per PR, combined with chisel resolving `essential:`, means a dependent PR cannot validate against the target branch until its dependency has merged. The write-slice workflow requires leaves first. So batches need internal ordering: `librelp0` before `rsyslog-relp`, `libpopt0` before `logrotate`. **Same batch does not mean same time**; this needs a slice dependency DAG to fix merge order, or a stacked-PR procedure.
+
 ### 4.5 Consuming a slice before it merges
 
 Upstream review has no committed turnaround. Making "PR merged" the only gate idles both us and the downstream, since a recipe referencing a slice name that does not yet exist in the release repo simply fails to build.
 
-`chisel cut --release` accepts a local directory path and rockcraft can point at a custom chisel release, so before a PR merges the downstream recipe can reference **a branch of our chisel-releases fork**. After merge, point back at the official release and pin the commit.
+Rockcraft has **no** configuration field pointing at a custom chisel release; `stage-packages` only knows the upstream one. The documented approach (rockcraft how-to/chiselling/install-slice) bypasses `stage-packages` entirely:
 
-**That path must be working before work starts**, or the whole supply line is hostage to upstream cadence.
+1. A part sends the local `chisel-releases` directory into the builder as build context.
+2. `override-build` runs `chisel cut --release ./chisel-releases --root ... <pkg>_<slice>` by hand.
+
+**This means the interim and final recipe structures differ**: before merge the slice comes in through `override-build`, and only after merge can it move to `stage-packages`. Every package is edited twice.
+
+Two consequences to know: **the fork must be a complete copy of `ubuntu-26.04` and stay rebased**, or resolution of other slices drifts with it; and **a slice name may be changed during review**, at which point `override-build` references written against the fork name break, so interim references must be centralised and replaceable in one pass.
+
+**This path is part of batch 0, not background**: actually exercise it once in batch 0, taking `util-linux_logger` through an `override-build` reference, and write the steps into `AGENTS.md`. Otherwise the whole supply line is hostage to upstream cadence.
 
 ---
 
@@ -198,28 +211,30 @@ Upstream review has no committed turnaround. Making "PR merged" the only gate id
 
 ### 5.1 Acceptance has two levels
 
-- **Local acceptance, which we control**: the SDF passes `check-slice.py`, `chisel cut` installs it, the chroot functional test passes, the spread test is written, and the PR is open. **Reaching this level counts as done; move to the next item.**
+- **Local acceptance, which we control**: the SDF passes `check-slice.py`, `chisel cut` installs it, the chroot functional test passes, **the spread test has actually been run and passes** (not merely written — `spread` must be installed before batch 0 or this criterion is empty), and the PR is open with upstream CI green including `validate-hints`. **Reaching this level counts as done; move to the next item.**
 - **Upstream acceptance**: the PR merges and the entry disappears from the downstream recipe's `install-unchiselled-packages`.
 
 Schedule against local acceptance and track upstream merges separately.
 
 ### 5.2 Batches
 
-| Batch | Contents | Items | Notes |
+| Batch | Packages | Items | Notes |
 |---|---|--:|---|
-| 0 | Add a `logger` slice to `util-linux` | 1 | **First**, to clear CLA, CI and review. Do not learn that path on a complicated package |
-| 1 | The three rsyslog packages, forward-ported from 24.04 | 3 | 24.04 provides a reference, and every container needs them |
-| 2 | `librelp0`, `libpython3.14` and three python packages | 5 | The rest of what blocks the migrated containers |
+| 0 | `util-linux` (add a `logger` slice) | 1 | **First**, clearing CLA, CI and review with the smallest possible change. **Do not open batch 1 before batch 0's PR has had its first upstream response**, or all eight batches go out carrying the same class of problem |
+| 1 | `rsyslog`, `libestr0`, `libfastjson4`, `rsyslog-relp`, `librelp0` | 5 | The rsyslog family. The first three are forward-ports, the last two are new. `rsyslog-relp` depends on `librelp0`, so they must be in the same batch or `essential:` will not resolve |
+| 2 | `libpython3.14`, `python3-yaml`, `python3-redis`, `python3-cffi-backend` | 4 | Structurally similar, can be batched |
 | 3 | `radvd`, plus `net-tools` and `libdaemon0` if confirmed needed | 1 to 3 | See the default below |
-| 4 | The orchagent / nat / teamd / sflow / macsec / dash-ha family | ~16 | Also clears multi-container packages such as `libpci3`, `pci.ids` and `tcpdump` |
-| 5 | fpm-frr | ~9 | Includes `libpopt0` |
-| 6 | snmp, lldp | ~5 | Share the snmp libraries |
-| 7 | platform-monitor | ~15 | **The heaviest batch**; `udev`, `rrdtool` and `smartmontools` all carry configuration, so place it after fluency is built |
-| 8 | dhcp-relay, sysmgr, syncd-brcm, gbsyncd-agera2/broncos/credo | ~8 | Assorted small packages; `gbsyncd-vs` excluded |
+| 4 | `arping`, `bridge-utils`, `conntrack`, `dmidecode`, `ifupdown`, `libibverbs1`, `libnet9`, `libpcap0.8t64`, `libpci3`, `libprotobuf32t64`, `ndisc6`, `ndppd`, `pci.ids`, `pciutils`, `python3-netifaces`, `python3-protobuf`, `tcpdump` | 17 | The orchagent / nat / teamd / sflow / macsec / dash-ha family, which also clears the multi-container packages |
+| 5 | `cron-daemon-common`, `libgoogle-perftools4t64`, `liblsof0`, `libpcre2-posix3`, `libpopt0`, `libsnmp-base`, `libsnmp40t64`, `libtcmalloc-minimal4t64`, `logrotate`, `lsof` | 10 | fpm-frr. `libpopt0` is a hard dependency of `logrotate`, so same batch |
+| 6 | `freeipmi-common`, `ipmitool`, `libfreeipmi17`, `snmp`, `snmpd` | 5 | snmp and lldp. The snmp libraries are already done in batch 5 |
+| 7 | `ethtool`, `i2c-tools`, `libdbi1t64`, `libi2c0`, `libnvme1t64`, `librrd8t64`, `nvme-cli`, `psmisc`, `python3-bottle`, `python3-smbus`, `rrdtool`, `smartmontools`, `udev`, `uuid-runtime`, `xxd` | 15 | platform-monitor, **the heaviest batch**. `udev`, `rrdtool` and `smartmontools` all carry configuration, so place it after fluency is built |
+| 8 | `ibverbs-providers`, `kmod`, `libdbus-c++-1-0v5`, `libexplain51t64`, `libjsoncpp26`, `libprotobuf-lite32t64`, `lz4` | 7 | dhcp-relay, sysmgr, syncd-brcm, gbsyncd-agera2/broncos/credo. `gbsyncd-vs` excluded |
+
+Batches 0 to 3 total 11 to 13 items (bucket A 1, bucket B 3, bucket C 7 to 9); batches 4 to 8 total 54; 65 to 67 overall. Packages are assigned to the first batch that needs them, which is why batch 4 is large.
 
 From batch 4 on the figures are upper bounds (3.4). Recompute them against the migrated-container criterion of 2.2 once the downstream recipes exist; the real number is likely considerably lower.
 
-**`net-tools` and `libdaemon0` get a default**: the Docker-side evidence is that no runtime caller exists anywhere in the repository. **Default to not needed and plan on not writing them**; if the downstream identifies a real use, add them at a cost of two SDFs. Do not wait here for an answer.
+**`net-tools` and `libdaemon0` get a default**: the Docker-side evidence is that no **textual** runtime caller exists anywhere in the repository. **Note that this criterion is invalid for a shared library** — `libdaemon0` is a `.so` and nobody writes its name in a script. The correct method is an ELF `DT_NEEDED` closure over the primed rootfs plus a check for `dlopen`, which this round did not do. **Default to not needed and plan on not writing them**; if the downstream identifies a real use, add them at a cost of two SDFs. Do not wait here for an answer.
 
 ---
 
@@ -234,24 +249,29 @@ From batch 4 on the figures are upper bounds (3.4). Recompute them against the m
 | The upper bound is too large | An open item, not a risk | The 54 in 3.4 is derived from Docker images; reconfirm against 2.2 once the downstream recipes exist |
 | Configuration-carrying packages rejected or reworked upstream | Scope risk | About 18 SDFs need substantive spread tests and review expectations may exceed ours. The batching places them late |
 | Verified only on amd64 | **Correctness risk** | Upstream CI spans six architectures; recheck before submission (2.1) |
+| 59 packages chisel cannot touch at all | **A boundary risk with no owner** | The 53 self-built plus 6 third-party packages are 12% of 475 and form the hard edge of chiselling. Whether they move to a PPA, get staged whole, or stay out is a part-two or product decision, but **somebody has to make it**, or "chisel everything" is unreachable |
+| Upstream review hanging indefinitely | **A certainty needing a stop-loss rule** | Fork consumption (4.5) is only a stopgap. Agree that a PR with no response after N weeks escalates through Canonical's internal channels, and that if a whole batch overruns, the fork copy is explicitly declared long-lived and someone owns its rebase cost. **There is no N today and no owner** |
 | Mixed image baselines | Data risk | The three vs-only images date from 2026-08-27, the rest from 09-17, the base layer from 09-03. Rerun the scan before batch 4 |
 
 ### 6.2 Effort
 
 **Rough figures for scheduling discussion, not commitments.**
 
-| Batch | Contents | Estimate |
-|---|---|---|
-| 0 | 1 slice amendment plus first-time CLA and process | 2 person-days |
-| 1 | 3 forward-ports, each needing v3 syntax and content checks | 2 person-days |
-| 2 to 3 | 6 to 8 new SDFs, of which 5 python packages are structurally similar and can be batched | 5 person-days |
-| 4 to 8 | Upper bound of 54 items, about two thirds plain libraries | 25 person-days |
-| **Total** | **65 to 67 items** | **~34 person-days, about 7 person-weeks** |
+| Batch | Contents | Items | Estimate |
+|---|---|--:|---|
+| 0 | Slice amendment, first-time CLA, and proving the fork consumption path | 1 | 3 person-days |
+| 1 | The rsyslog family: 3 forward-ports plus 2 new, with an `essential:` ordering constraint | 5 | 4 person-days |
+| 2 | 4 python-related packages, structurally similar and batchable | 4 | 2 person-days |
+| 3 | `radvd` plus the two disputed items | 1 to 3 | 1 person-day |
+| 4 to 8 | Upper bound of 54 items | 54 | 25 person-days |
+| **Total** | | **65 to 67 items** | **~35 person-days, about 7 person-weeks** |
+
+Of those 54 packages in batches 4 to 8, only 21 are `lib*` and 4 are `python3-*`, so **"about two thirds plain libraries" does not hold for that stretch**. The rest carry configuration or data: udev, snmpd, rrdtool, smartmontools, ipmitool, logrotate, tcpdump, ifupdown and others. The 25 person-days assumed plain libraries are fast and tools are slow, and the actual mix leans further toward the slow side than the assumption.
 
 Three qualifications:
 
 1. **Authoring time only**, excluding upstream review round trips. At one package per PR that is 65 to 67 PRs.
-2. Batch 4 onward is an upper bound and will likely shrink once recomputed.
+2. **Every exclusion biases the same way**: no review rework, no fixing CI failures across six architectures, no debugging spread tests for the 18 configuration-carrying SDFs. All three only make the number larger. The single downward factor is recomputing the batch 4 upper bound, and that depends on part two's pruning, which is out of scope here. **So 35 person-days is a reasonable floor for effort and almost certainly low for calendar time.**
 3. It excludes all of part two.
 
 ---
@@ -281,7 +301,9 @@ The figures in the body come from three measurements. Only the definitions and c
 | build-only | 20 | 0 | 59 | 79 |
 | **Total** | **236** | **3** | **177** | **416** |
 
-**Denominator warning**: of those 416, 79 are build-only and 13 are pkg-mgmt, none of which can by definition appear in a `base: bare` rock. Excluding them, **324 packages could reach a rock and 206 are covered, about 64%**. The body uses the excluded denominator. Also, **25.10 adds nothing for us**; the only forward-port source is 24.04, for three packages.
+**Denominator warning**: of those 416, 79 are build-only and 13 are pkg-mgmt. Excluding them, **about 324 packages could reach a rock and about 206 are covered, roughly 64%**. The body uses the excluded denominator.
+
+**That classification is a heuristic, not a definition.** `chiselcov2.py` judges by name prefix and section, and two known cases are wrong: `gcc-16-base` and `libgcc-s1` both appear in 33 containers yet are labelled build-only because the prefix matches `libgcc-`. Both already have SDFs, so only the denominator is affected and not the backlog, but "by definition never reaches a rock" does not hold. **Read the figure with an uncertainty of about ±5**; an exact value needs an ELF closure rather than a name prefix. Also, **25.10 adds nothing for us**; the only forward-port source is 24.04, for three packages.
 
 **Existing slices cannot reassemble a whole package, but nothing missing is needed at runtime.** Comparing the real `.deb` of all 236 packages against the union of every slice's `contents:`: 8,575 files covered, 3,245 man/doc/completion/locale (a chisel-releases policy exclusion), and **452 real gaps** across 70 packages. Of the gaps, 146 are `-dev` files, 109 are things like `/usr/share/bug`, 50 are setuptools vendored modules and 34 are apt internals. **Only one matters to us**: `logger` among the 63 uncovered binaries, which belongs to `util-linux` and is called by 43 container-side scripts. That became the item in 2.1.
 
@@ -298,7 +320,7 @@ Four kinds of side effect, three with an established solution:
 |---|---|---|
 | Derived configuration files | A Starlark `mutate:` mimicking the postinst (nine SDFs on 26.04) | Follow the same practice |
 | Alternatives symlinks | Explicit `symlink:` entries | Standardising on gawk sidesteps it |
-| ldconfig and `ld.so.cache` | Ship the tool, do not generate the cache | **Largely nothing**, see below |
+| ldconfig and `ld.so.cache` | Ship the tool, do not generate the cache | **Spot check once per container**, see below |
 | pycache and binfmt | Not handled at all | Optional optimisation |
 
 **`ld.so.cache`**: the built-in fallback search path covers `/lib/x86_64-linux-gnu`, `/usr/lib/x86_64-linux-gnu`, `/lib` and `/usr/lib`, and every self-built SONiC library installs into `/usr/lib/x86_64-linux-gnu`. With `--inhibit-cache` simulating the missing cache, `python3 -c "import ssl"` still works. **But that test ran on the host rather than in a cut rootfs, and covered neither the 53 self-built packages nor the 6 third-party binaries**, so treat it as a per-container spot check rather than a closed question. The case that would break is a library in a non-default directory relying on an `ld.so.conf.d` entry.
@@ -312,7 +334,7 @@ Four kinds of side effect, three with an established solution:
 
 Under `docs/superpowers/data/2026-09-17-container-package-inventory/`, collected 2026-09-17.
 
-**⚠️ That directory is still untracked and has never been committed. If this document is committed on its own, the table below points at files that do not exist.** It must go in together with the document, about 2.5 MB.
+The directory was committed together with this document in `b7377c95c7` (42 files, about 2.5 MB).
 
 | File | Contents |
 |---|---|
@@ -338,6 +360,8 @@ The quickest way to check whether a package has an SDF on 26.04 is `ls slices/<p
 
 The dependency-closure script (63 seeds expanding to 215 packages, used to find gaps like `librelp0` that appear only as dependencies) was written ad hoc this round and is not yet in the repository. **This is the item 2.3 refers to.**
 
+**Three further reproduction gaps to close at the same time**: `chiselcov2.py` and `slicecov.py` hardcode the author's home paths and `/tmp` intermediate state; `chiselcov2.py` depends on a pre-generated `resolute-amd64.json` that step 3 above never explains (it is a name-to-versions map parsed out of the `Packages.xz` files); and no digest or date is recorded for the archive snapshot, so rerunning today is not guaranteed to reproduce the same figures. **As it stands this is reproducible on the author's machine, not from a clean checkout.**
+
 
 ### 7.5 References
 
@@ -351,6 +375,8 @@ The dependency-closure script (63 seeds expanding to 215 packages, used to find 
 ## 8 · Part two backlog: using chisel in rocks
 
 Not developed here, but the following conclusions were reached during this round and **deserve their own document**. Do not lose them.
+
+**⚠️ The figures in this section are anchored to `3e81d8aa2f` (2026-09-18) on `202605_resolute_rock`.** That branch is under active commit, so the 70 / 44 / 10 figures below can be invalidated by a single rebase. Recompute before relying on them, and note that the dependency-closure script is not yet in the repository (7.4), so recomputing needs that first.
 
 ### 8.1 Work available now with no upstream dependency
 
