@@ -17,8 +17,8 @@
 | How many must we write? | **65 to 67 items**: amend 1 existing SDF, forward-port 3 from 24.04, write 61 to 63 new ones |
 | Which are most urgent? | **10**, which block the four already-migrated containers. The other 54 are an **upper bound** for the 26 unmigrated ones, not a commitment |
 | Can work start now? | **Yes.** This part depends on no progress in the rock branch. The only gap is that `chisel` and `spread` are not installed on this machine |
-| Biggest risk? | Upstream review throughput, the only critical path. Only three things genuinely speed it up, see 5.3 |
-| How long | **2.6 months** if we upstream only the 21 packages that need it (5.4), against 8.1 for all 66. Set by upstream review throughput, since 26.04 merges 1.9 PRs a week against a backlog of 39. Authoring can be done by an AI and is not the constraint |
+| Biggest risk? | Not upstream review, since the fork keeps delivery unblocked. It is that **nobody owns the long-lived fork** and its cost (5.5) |
+| How long | **Two tracks** (5.1). Rock delivery does not wait for upstream merges, since the fork serves them, and is a matter of **weeks**. Upstream convergence is **11 to 32 weeks** for the first 22, or 35 to 55 for all 66, depending on the reviewer attention we obtain |
 
 ---
 
@@ -81,6 +81,8 @@ Two criteria, used together but kept distinct:
 ## 3 · The backlog
 
 Four tiers. 3.1 through 3.3 are measured; 3.4 is an upper-bound estimate.
+
+**This section is the authoring queue (track A), not the upstream queue.** All 66 are written into the fork, parallelisable by an AI, with no ordering. Which one goes upstream first is a separate matter, covered by 5.4's priority. The two tables are orthogonal: this one sorts by strength of evidence, 5.4 by cost of holding a package in the fork. **Assign work from here, schedule PRs from 5.4.**
 ### 3.1 Bucket A: add a slice to an existing SDF (1 item)
 
 | Package | What to add | Evidence |
@@ -123,7 +125,7 @@ Deduplicating the `install-unchiselled-packages` parts of the four recipes and k
 
 ### 3.4 Upper bound: the 26 unmigrated containers (about 54 items)
 
-Estimating from the Docker inventory, minus build-only and pkg-mgmt, the 26 unmigrated containers may need about 54 more SDFs (`radvd` is in 2.3 because router-advertiser is already migrated). The main entries by number of beneficiaries:
+Estimating from the Docker inventory, minus build-only and pkg-mgmt, the 26 unmigrated containers may need about 54 more SDFs (`radvd` is in 3.3 because router-advertiser is already migrated). The main entries by number of beneficiaries:
 
 | Tier | Packages |
 |---|---|
@@ -173,6 +175,7 @@ Repository layout comes from `AGENTS.md` on `ubuntu-26.04`: SDFs for ordinary de
 
 1. **The dependency tree must be built leaves-first** (Step 2). Resolve all transitive dependencies with `apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances <pkg>`, check which already have slices, and order the rest leaves-first. **This is exactly the dependency closure section 2.3 calls for; the skill already supplies the command, so use it rather than inventing one.**
 2. **Only `Depends:` counts.** Pulling in a `Recommends:` or `Suggests:` as a dependency is rejected by reviewers.
+2b. **Every query must be pinned to resolute.** `_deb-list.py` reads the suite from `chisel.yaml`, but `apt-cache depends` uses the host's apt sources. On a host running another Ubuntu release, both the dependency tree and the file listing come back wrong, and `check-slice.py` cannot detect it. Only upstream CI will. **This is the easiest trap in the three 24.04 forward-ports**: paths written from a 24.04 deb may not exist in the resolute package at all.
 3. **Existing slices are append-only.** Modify a published slice only for a bug, a missing dependency or an upstream packaging change, and never reorganise, rename or remove paths, because downstream consumers depend on the current layout. **Add a new slice when a slimmer variant is needed rather than carving one out of a published one.** Run `_check-diff.py --base <target-branch>` before committing a change; the `removed-slices` CI gate rejects accidental drops.
 4. **Two commits per package**: `feat(<pkg>): add <slice-list> slices` and `test(<pkg>): add integration tests`. Both must land before the work counts as done.
 
@@ -198,10 +201,12 @@ Tooling: `_scaffold-test.py` emits the skeleton, with a fresh rootfs per slice a
 ### 4.4 PR conventions
 
 - Sign the Canonical CLA. This blocks the first submission and **should be arranged before the first SDF is written**.
-- Use conventional commits, for example `feat(26.04): slice the librelp0 pkg`.
+- Use conventional commits. **The skill's two-commit convention is authoritative** (4.2 item 4): `feat(<pkg>): add <slice-list> slices` and `test(<pkg>): add integration tests`. Upstream history also contains branch-scoped subjects like `feat(26.04): ...`, but all 66 PRs must be consistent or review will send them back.
 - One package per PR, which eases review and rollback.
 - Provide testing evidence and reproduction steps.
 - Do **not** force push once review comments exist; update by merging the target branch.
+
+**This is in tension with the two-commit convention of 4.2 item 4 and must be settled before starting.** Post-review changes either append fixup commits, breaking the one-feat-one-test shape, or force push, which this rule forbids. Merging the target branch introduces merge commits, which many upstreams dislike when squashing. **Look at how the last few accepted PRs actually handled it** and follow that rather than inventing an answer.
 
 **Two rules that change both the PR budget and the ordering:**
 
@@ -220,15 +225,33 @@ Rockcraft has **no** configuration field pointing at a custom chisel release; `s
 
 **This means the interim and final recipe structures differ**: before merge the slice comes in through `override-build`, and only after merge can it move to `stage-packages`. Every package is edited twice.
 
+**The interim state is also more complex than that command suggests.** `chisel cut` resolves `essential:` against the whole release, so that command roots the slice's **entire transitive dependency set** into the same `--root`. If some of those dependencies already arrived through `stage-packages`, the same files are installed twice. This document has no answer for that conflict, **because the path has never been walked once**; it is a sketch, not a procedure. Batch 0 must actually run it and write down the result, or every fork-only package afterwards hits the same wall again.
+
 Two consequences to know: **the fork must be a complete copy of `ubuntu-26.04` and stay rebased**, or resolution of other slices drifts with it; and **a slice name may be changed during review**, at which point `override-build` references written against the fork name break, so interim references must be centralised and replaceable in one pass.
 
 **This path is part of batch 0, not background**: actually exercise it once in batch 0, taking `util-linux_logger` through an `override-build` reference, and write the steps into `AGENTS.md`. Otherwise the whole supply line is hostage to upstream cadence.
 
 ---
 
-## 5 · Scheduling: the bottleneck is upstream review, not authoring
+## 5 · Scheduling: two tracks, not one
 
-### 5.1 The measured upstream rhythm
+### 5.1 Correcting a framing error from the previous revision
+
+The previous revision treated upstream merge as the single critical path. That was wrong, and it contradicted section 4.5 of this same document. **Once the fork consumption path works, rocks can ship without waiting for any PR to merge.** There are really two independent tracks:
+
+| | Track A: rock delivery | Track B: upstream convergence |
+|---|---|---|
+| Goal | Containers run on sliced packages | Slices land in `canonical/chisel-releases` |
+| Critical path | Authoring SDFs (an AI can do it, days) plus proving the fork path in batch 0 | Upstream review throughput |
+| Order of magnitude | **Weeks** | **Months to years** |
+| What it blocks | Part two's rockification | Nothing in delivery; it only decides how long we carry a fork |
+| Done when | All 66 SDFs are usable from the fork | All 66 have merged upstream |
+
+**"Maintain a fork or wait 5.5 months" was a false choice.** The right answer is both: deliver from the fork now and push upstream asynchronously. The previous revision set them against each other by attaching track B's duration to track A.
+
+Section 5.4's question therefore changes: **not "which ones go upstream" but "which one goes first"**. All 66 belong upstream eventually, or we carry a fork forever; the order is set by what each costs to keep in the fork.
+
+### 5.2 The measured upstream rhythm
 
 On 2026-09-21 the GitHub API gave the last 100 merged PRs on chisel-releases and every currently open one:
 
@@ -236,127 +259,99 @@ On 2026-09-21 the GitHub API gave the last 100 merged PRs on chisel-releases and
 |---|---|
 | Merge latency | Median **3.7 days**, P75 16.4, P90 26.4, longest 64 |
 | Merge rate | 6.1 PRs/week across all branches; **only 1.9/week on `ubuntu-26.04`** |
-| Current backlog | 100+ open PRs, median age **46 days**, 61 older than 30 days, oldest 600 |
-| On 26.04 specifically | **39 open**, 89% sitting in `REVIEW_REQUIRED`, waiting on review rather than on the author |
-| PR shape | Median **2 files changed** (exactly an SDF plus a spread test); only 2 of 100 titles list more than one thing |
+| Current backlog | 100+ open, median age **46 days**, 61 older than 30, oldest 600 |
+| On 26.04 | **39 open**, 89% marked `REVIEW_REQUIRED` |
+| PR shape | Median **2 files changed** (an SDF and its spread test); 2 of 100 titles list more than one thing |
 | Contributor concentration | One person accounts for 48 of 100 |
 
-**PRs essentially never bundle multiple packages.** The large ones (61 files for `gcc`, 23 for `binutils`) are a single package across several architectures. So one package per PR is not our choice; it is the established upstream shape.
+**PRs essentially never bundle packages.** The large ones (61 files for `gcc`, 23 for `binutils`) are a single package across architectures. One package per PR is the established upstream shape, not our choice.
 
-### 5.2 The calendar time that follows
+**Read these numbers carefully, because they are weaker than they look:**
 
-Authoring is not the constraint. **The whole SDF workflow, authoring through testing through self-check, can already be run by an AI** — the chisel-slicer skill's ten steps are designed for exactly that, stopping at the commit with a human opening the PR. So capacity is set by how fast upstream can absorb:
+- `REVIEW_REQUIRED` only means "not yet approved", not "the author has nothing left to do". Failing CI, requested changes and draft status all produce it. Using it to argue the bottleneck sits on the review side is **an overreach**.
+- Merge latency covers only PRs that merged, so it excludes the stalled population entirely. That is survivorship bias, and the real submission-to-landing distribution is worse than 3.7 days.
+- 1.9 PRs/week is a historical **departure rate** limited by how many people contribute, not a ceiling on review capacity. Submitting more will not necessarily queue linearly against it.
 
-| Scenario | Weeks | Months |
-|---|--:|--:|
-| Clearing the existing 26.04 backlog of 39 | 21 | 4.8 |
-| Our 66 PRs with the branch's entire capacity | 35 | 8.1 |
-| Our 66 PRs with half of it | 69 | 16.2 |
+Establishing these properly would mean measuring ready-for-review to first review, author response time, approval to merge, and the closed-unmerged population. This round did not.
 
-**So this is a months-scale effort, not seven person-weeks.** The 35 person-days quoted earlier described authoring, which is the least scarce part of the problem.
+### 5.3 How long track B takes: a range, not a number
 
-### 5.3 The only three things that genuinely speed it up
+The previous revision gave "21 PRs, 2.6 months", assuming we get the branch's entire capacity with no queue ahead of us. Neither holds:
 
-In order of leverage:
-
-1. **Build contributor standing.** The measured gap is large: the top three authors see a median merge latency of **3.0 days**, while authors with one or two PRs see **18 days**, a factor of six. jy5275 already has 4 merged PRs, which is a starting position. **The first few PRs must be small and clean**, not merely to learn the process but because they set the speed of the following sixty.
-2. **Negotiate review capacity.** Thirty-nine open PRs, 89% awaiting review, and one person doing nearly half the merges together say that review is a scarce resource rather than an automatic service. Rather than dropping 66 PRs into the public queue, agree an arrangement first: a batched review window, a named reviewer, or us contributing review effort in return. **That conversation may be worth more than any technical optimisation here.**
-3. **Send fewer of them upstream.** Not all 66 have to go. **This is the only technical lever that directly shortens the critical path; the classification is in 5.4 and taking it cuts the path from eight months to between 1.6 and 2.6.**
-
-What does not help: hiring more SDF authors, splitting batches more finely, or opening more PRs in parallel. All of those accelerate the end that is already abundant.
-
-### 5.4 What must go upstream and where the fork suffices
-
-**The criterion is not size.** Measured, the 65 backlog packages come to 60 MB in total, of which documentation, man pages and locales are only 6%. The absolute size a slice saves is small, and "saves space" cannot justify 66 PRs on its own.
-
-The right question is: **what do we permanently lose by keeping a slice in the fork?** By the mechanism established in 4.5, fork-only means the recipe must use `override-build` plus `chisel cut --release` rather than `stage-packages`. **That cost scales with how many recipes reference it**, so the criterion is container count, with upstream appetite second, measured as how many archive packages depend on it (`rdep`), because that governs review friction.
-
-#### Tier 1: must go upstream (13)
-
-Present in ten or more containers, where fork-only complexity multiplies by container count.
-
-| Package | Containers | rdep | Size |
-|---|--:|--:|--:|
-| `python3-yaml` | 30 | 404 | 523 KB |
-| `libpython3.14` | 30 | 279 | 8054 KB |
-| `libpopt0` | 30 | 124 | — |
-| `rsyslog` | 30 | 49 | 1760 KB |
-| `net-tools` | 30 | 47 | — |
-| `python3-redis` | 30 | 26 | 1350 KB |
-| `libdaemon0` | 30 | 14 | — |
-| `libfastjson4` | 30 | 9 | 53 KB |
-| `libestr0` | 30 | 7 | 20 KB |
-| `python3-cffi-backend` | 30 | 7 | 216 KB |
-| `librelp0` | 30 | 4 | 96 KB |
-| `rsyslog-relp` | 30 | 0 | 67 KB |
-| `libprotobuf32t64` | 14 | 95 | 3092 KB |
-
-Note that `net-tools`, `libdaemon0` and `libpopt0` show 30 containers because they already sit in the base layer. If the 3.3 default stands and the first two are judged unnecessary, this tier drops to 11.
-
-#### Tier 2: worth going upstream (8)
-
-Few containers, but more than fifty archive packages depend on each. **Upstream wants these slices anyway, so review friction is lowest**, which trades someone else's motivation for our progress.
-
-| Package | Containers | rdep | Containers |
-|---|--:|--:|---|
-| `kmod` | 1 | **1279** | syncd-brcm |
-| `libpcap0.8t64` | 4 | 168 | dhcp-relay, orchagent, syncd-vs, gbsyncd-vs |
-| `libpci3` | 5 | 160 | fpm-frr, lldp, orchagent, platform-monitor, snmp |
-| `udev` | 1 | 85 | platform-monitor |
-| `libjsoncpp26` | 1 | 73 | dhcp-relay |
-| `libibverbs1` | 4 | 69 | dhcp-relay, orchagent, syncd-vs, gbsyncd-vs |
-| `psmisc` | 1 | 62 | platform-monitor |
-| `logrotate` | 1 | 55 | fpm-frr |
-
-`kmod` has 1279 dependents and still no SDF, an obvious gap upstream is likely to welcome.
-
-#### Tier 3: the fork suffices (45)
-
-One or two containers and `rdep` below 50. Typical cases are `radvd` (2), `ndisc6` (0), `ndppd` (0), `python3-smbus` (1) and `i2c-tools` (2): only SONiC uses them, so an upstream slice would have no other consumer.
-
-**The marginal cost of the fork approaches zero.** Once the `override-build` machinery exists, which batch 0 builds anyway, adding the tenth fork-only slice costs about what the forty-fifth does. So the long tail belongs there.
-
-#### The critical path under three cuts
-
-| Option | PRs | With the branch's full capacity |
+| Calculation | Result | What it assumes |
 |---|--:|---|
-| Tier 1 only | 13 | 7 weeks, **1.6 months** |
-| Tiers 1 and 2 | 21 | 11 weeks, **2.6 months** |
-| Everything | 66 | 35 weeks, 8.1 months |
+| 22 ÷ 1.9 | 11 weeks | We get all of 26.04's capacity and jump ahead of the 39 open PRs |
+| (39 + 22) ÷ 1.9 | **32 weeks** | Strict FIFO, with us behind the existing backlog |
+| 22 ÷ (1.9 ÷ 2) | 23 weeks | We get half the capacity |
 
-**The recommendation is tiers 1 and 2, 21 PRs.** Tier 1 is unavoidable and tier 2 is a favour that costs little while building the contributor standing of 5.3 item 1, and together they remove two thirds of the critical path. Tier 3 can be pushed later at any time, because **moving from fork to upstream is reversible and the other direction is not**, so sending less first carries no risk.
+**The real figure lies between 11 and 32 weeks, and it turns on something this document does not control: how much reviewer attention we obtain.** GitHub review is not FIFO, so 32 weeks is not a hard ceiling either, but quoting 11 as the expectation would be dishonest. **Any external commitment should carry the range rather than its lower bound.**
 
-This classification needs one product confirmation: whether **the cost of maintaining 45 fork-only slices indefinitely**, meaning continuous rebasing, `override-build` complexity in the recipes, and conflicts if upstream ever adds an SDF of the same name, **is lower than waiting an extra 5.5 months**. This document judges that it is, but that judgement can be overturned.
+All 66 on the same arithmetic is 35 to 55 weeks.
 
-### 5.5 A submission queue rather than batches
+### 5.4 The order in which to push upstream
 
-Because review is the bottleneck, the right discipline is **a constant number of PRs in flight**, not batched releases. Suggested:
+Since all 66 go upstream eventually, the question is sequence. Three criteria, scored:
+
+- **Cost of keeping it in the fork (heaviest weight).** When a package gets an SRU, the fork's SDF may need changes and retesting. Measured, only **9 of the 66** appear in `resolute-updates` or `resolute-security`. **Those nine are the most expensive to hold and should leave first.**
+- **Probability of being overtaken.** The more archive packages depend on it (`rdep`), the likelier upstream slices it themselves. Once upstream accepts a same-named SDF with a different decomposition, our fork version conflicts with it.
+- **Future migration cost.** Container count sets how many references change on the day a slice moves upstream. It is a one-off cost, so it carries the least weight.
+
+The top 22 by that score:
+
+| Priority | Package | churn | rdep | Containers | Main reason |
+|--:|---|---|--:|--:|---|
+| 1 | `libpython3.14` | security | 279 | 30 | High on all three |
+| 2 | `rsyslog` | security | 49 | 30 | Security updates and used everywhere |
+| 3 | `rsyslog-relp` | security | 0 | 30 | As above |
+| 4 | `udev` | security | 85 | 1 | Security updates, and upstream will likely slice it anyway |
+| 5 | `freeipmi-common` | security | 39 | 2 | Security updates |
+| 6 | `libfreeipmi17` | security | 24 | 2 | Security updates |
+| 7 | `uuid-runtime` | security | 16 | 1 | Security updates |
+| 8 | `xxd` | security | 3 | 1 | Security updates |
+| 9 | `python3-yaml` | — | 404 | 30 | Among the highest overtaking risk |
+| 10 | `dmidecode` | updates | 14 | 2 | Has updates |
+| 11 | `kmod` | — | **1279** | 1 | Highest overtaking risk |
+| 12 | `libpopt0` | — | 124 | 30 | |
+| 13 | `libpcap0.8t64` | — | 168 | 4 | |
+| 14 | `libpci3` | — | 160 | 5 | |
+| 15 | `net-tools` | — | 47 | 30 | Skipped if the 3.3 default stands |
+| 16 | `libprotobuf32t64` | — | 95 | 14 | |
+| 17 | `python3-redis` | — | 26 | 30 | |
+| 18-22 | `libdaemon0`, `libfastjson4`, `libestr0`, `python3-cffi-backend`, `librelp0` | — | low | 30 | High container count means high future migration cost |
+
+**The difference from the previous tiering needs stating plainly.** That revision put `freeipmi-common`, `libfreeipmi17`, `dmidecode`, `uuid-runtime` and `xxd` in "the fork suffices", and `libibverbs1`, `libjsoncpp26`, `psmisc` and `logrotate` in "worth upstreaming". Under these criteria both groups invert: the first five carry security updates and are therefore the most expensive to hold, while the last four have no churn and can wait. **The previous revision changed its criteria without regenerating its tiers, and this corrects that.**
+
+Two further points:
+
+- **`util-linux` is not in this table**, because it adds a slice to an existing SDF (3.1) rather than writing a new one. It should still be submitted first, as the smallest change that proves the process. So the top 22 plus it is **23 PRs**, or **21** if the 3.3 default removes `net-tools` and `libdaemon0`.
+- **This order is not yet dependency-closed.** `libpci3` depends hard on `pci.ids`, which sits outside the top 22, so the leaves-first rule would pull it forward. **The table must be run through a dependency graph before work starts**, which this document has not done.
+
+### 5.5 What the fork actually costs
+
+The previous revision claimed the fork's marginal cost is near zero, counting only the `override-build` template. The full cost is:
+
+| Item | Detail |
+|---|---|
+| Tracking upstream change | Fork SDFs name upstream slices in `essential:`, so a rename or re-decomposition upstream propagates to us |
+| Security updates | An SRU may change paths in the SDF and always requires retesting. This is where criterion one in 5.4 comes from |
+| Cross-architecture | Upstream CI spans six architectures; our fork has no equivalent |
+| Rebasing | The fork must be a complete copy of `ubuntu-26.04` and stay current |
+| Collision handling | Merging the day upstream accepts an SDF of the same name |
+| Eventual migration | Every slice that moves upstream means changing a recipe from `override-build` back to `stage-packages` |
+
+**This is not "nearly free"; it is an internal product that needs an owner**, a pinned revision, a CI matrix, an update SLA, a promotion policy and a collision procedure. This document sets no budget for any of it, **which part two must supply**.
+
+"Fifty-seven packages went five months without an SRU" does not mean they will go a release lifetime without one. The data covers only from resolute's release to now and does not extrapolate.
+
+### 5.6 The submission queue
+
+Track B is scheduled by **holding a constant number of PRs in flight**, not by releasing batches:
 
 - **Cap in-flight at 5 to 8.** More only ages in the queue and dilutes reviewer attention on us.
-- **Order by two constraints**: dependencies must merge first, since chisel resolves `essential:` and leaves-first is a hard requirement of the skill's Step 2; and prefer packages that unblock the most containers.
-- **Replace on merge**, keeping the pipeline full without overflowing it.
+- **Order by 5.4's priority, after running it through the dependency graph.** Note that being in the same group does not resolve a dependency: `librelp0` must **merge** before `rsyslog-relp` can validate against the target branch.
+- **Replace on merge.**
 
-The table below is therefore a **submission order**, not a work breakdown:
-
-| Batch | Packages | Items | Notes |
-|---|---|--:|---|
-| 0 | `util-linux` (add a `logger` slice) | 1 | **First**, clearing CLA, CI and review with the smallest possible change. **Do not open batch 1 before batch 0's PR has had its first upstream response**, or all eight batches go out carrying the same class of problem |
-| 1 | `rsyslog`, `libestr0`, `libfastjson4`, `rsyslog-relp`, `librelp0` | 5 | The rsyslog family. The first three are forward-ports, the last two are new. `rsyslog-relp` depends on `librelp0`, so they must be in the same batch or `essential:` will not resolve |
-| 2 | `libpython3.14`, `python3-yaml`, `python3-redis`, `python3-cffi-backend` | 4 | Structurally similar, can be batched |
-| 3 | `radvd`, plus `net-tools` and `libdaemon0` if confirmed needed | 1 to 3 | See the default below |
-| 4 | `arping`, `bridge-utils`, `conntrack`, `dmidecode`, `ifupdown`, `libibverbs1`, `libnet9`, `libpcap0.8t64`, `libpci3`, `libprotobuf32t64`, `ndisc6`, `ndppd`, `pci.ids`, `pciutils`, `python3-netifaces`, `python3-protobuf`, `tcpdump` | 17 | The orchagent / nat / teamd / sflow / macsec / dash-ha family, which also clears the multi-container packages |
-| 5 | `cron-daemon-common`, `libgoogle-perftools4t64`, `liblsof0`, `libpcre2-posix3`, `libpopt0`, `libsnmp-base`, `libsnmp40t64`, `libtcmalloc-minimal4t64`, `logrotate`, `lsof` | 10 | fpm-frr. `libpopt0` is a hard dependency of `logrotate`, so same batch |
-| 6 | `freeipmi-common`, `ipmitool`, `libfreeipmi17`, `snmp`, `snmpd` | 5 | snmp and lldp. The snmp libraries are already done in batch 5 |
-| 7 | `ethtool`, `i2c-tools`, `libdbi1t64`, `libi2c0`, `libnvme1t64`, `librrd8t64`, `nvme-cli`, `psmisc`, `python3-bottle`, `python3-smbus`, `rrdtool`, `smartmontools`, `udev`, `uuid-runtime`, `xxd` | 15 | platform-monitor, **the heaviest batch**. `udev`, `rrdtool` and `smartmontools` all carry configuration, so place it after fluency is built |
-| 8 | `ibverbs-providers`, `kmod`, `libdbus-c++-1-0v5`, `libexplain51t64`, `libjsoncpp26`, `libprotobuf-lite32t64`, `lz4` | 7 | dhcp-relay, sysmgr, syncd-brcm, gbsyncd-agera2/broncos/credo. `gbsyncd-vs` excluded |
-
-Positions 0 to 3 total 11 to 13 items (bucket A 1, bucket B 3, bucket C 7 to 9); batches 4 to 8 total 54; 65 to 67 overall. Packages are assigned to the first batch that needs them, which is why batch 4 is large.
-
-From batch 4 on the figures are upper bounds (3.4). Recompute them against the migrated-container criterion of 2.2 once the downstream recipes exist; the real number is likely considerably lower.
-
-**`net-tools` and `libdaemon0` get a default**: the Docker-side evidence is that no **textual** runtime caller exists anywhere in the repository. **Note that this criterion is invalid for a shared library** — `libdaemon0` is a `.so` and nobody writes its name in a script. The correct method is an ELF `DT_NEEDED` closure over the primed rootfs plus a check for `dlopen`, which this round did not do. **Default to not needed and plan on not writing them**; if the downstream identifies a real use, add them at a cost of two SDFs. Do not wait here for an answer.
-
----
+The backlog in section 3 is the **authoring queue** (track A: all 66, no ordering, parallelisable by an AI). This is the **upstream queue** (track B, ordered by 5.4). They are two different tables and should not be conflated.
 
 ## 6 · Risks and effort
 
@@ -364,14 +359,15 @@ From batch 4 on the figures are upper bounds (3.4). Recompute them against the m
 
 | Item | Nature | Response |
 |---|---|---|
-| Upstream review throughput | **The only critical path**, now measured (5.1) | 26.04 merges 1.9 PRs a week against a backlog of 39. The responses are in 5.3: build standing, negotiate review capacity, send fewer upstream. Two-level acceptance (4.5) and fork consumption stop us idling but do not make anything merge faster |
+| Upstream review throughput | A constraint on track B; **it does not block rock delivery** (5.1) | 26.04 merges 1.9 a week against a backlog of 39. Push in 5.4's order, heaviest fork cost first, and let the rest wait. Quote the 11-to-32-week range externally, never the lower bound |
+| **The long-lived fork has no owner** | **The principal risk** (5.5) | The fork is not free: tracking upstream change, security updates, cross-architecture coverage, rebasing, collision handling, eventual migration. It needs an owner, a pinned revision, a CI matrix and an update SLA. **None of those exist**, and once track A delivers, the fork becomes a production dependency |
 | The backlog is still hand-maintained | **Correctness risk** | It already missed `librelp0`. Turn the closure computation into a script wired into CI (2.3) |
 | The upper bound is too large | An open item, not a risk | The 54 in 3.4 is derived from Docker images; reconfirm against 2.2 once the downstream recipes exist |
 | Configuration-carrying packages rejected or reworked | Scope risk | About 18 SDFs need substantive spread tests. The skill requires data-only packages to be **installed together with a consumer and shown to be used by it**; checking that files exist counts as weak. The submission order places them late |
 | Verified only on amd64 | **Correctness risk** | Upstream CI spans six architectures; recheck before submission (2.1) |
 | 59 packages chisel cannot touch at all | **A boundary risk with no owner** | The 53 self-built plus 6 third-party packages are 12% of 475 and form the hard edge of chiselling. Whether they move to a PPA, get staged whole, or stay out is a part-two or product decision, but **somebody has to make it**, or "chisel everything" is unreachable |
 | An individual PR hanging indefinitely | **Already happening upstream**, not hypothetical | The oldest open PR is 600 days old and 61 are past 30 days. Stop-loss rule: **escalate through Canonical's internal channels once a PR passes P90, 26 days, with no response**; if the package is not on the critical path, move it to the long-lived fork instead of continuing to wait. There is no owner for this today |
-| Mixed image baselines | Data risk | The three vs-only images date from 2026-08-27, the rest from 09-17, the base layer from 09-03. Rerun the scan before batch 4 |
+| Mixed image baselines | Data risk | The three vs-only images date from 2026-08-27, the rest from 09-17, the base layer from 09-03. **Rerun the scan before relying on container distribution**, since that is what 5.4's migration-cost criterion reads |
 
 ### 6.2 Effort
 
@@ -379,7 +375,7 @@ From batch 4 on the figures are upper bounds (3.4). Recompute them against the m
 
 For an order of magnitude: taking one package from a `_deb-list.py --sdf` draft through to two landed commits is minutes of AI time. Configuration-carrying packages like `udev`, `snmpd` and `rrdtool` spend most of their cost on spread test design and are still hours rather than person-days. **Authoring all 66 is days of work, not weeks.**
 
-**The real schedule is in 5.2: eight to sixteen months, depending on how much upstream review capacity we obtain.** The two differ by two orders of magnitude, so any discussion of staffing should first answer the three questions in 5.3.
+**The real schedule is in 5.3 and it is a range: 11 to 32 weeks for the first 22.** But that is track B; rock delivery runs on track A and does not wait for it. The two differ from authoring time by two orders of magnitude, so settle which track is being discussed before discussing staffing.
 
 Only three things genuinely need a person, and none of them is authoring:
 
@@ -387,7 +383,7 @@ Only three things genuinely need a person, and none of them is authoring:
 |---|---|
 | Opening PRs and handling review comments | The skill stops at the commit: "the user opens the PR themselves" |
 | Negotiating review arrangements (5.3, item 2) | That is a relationship, not an engineering problem |
-| Deciding which packages need not go upstream (5.3, item 3) | It needs a product judgement: size benefit against the cost of maintaining a fork |
+| Budgeting and owning the fork (5.5) | It needs a product judgement: how much maintenance an internal chisel release product is worth |
 
 ---
 
