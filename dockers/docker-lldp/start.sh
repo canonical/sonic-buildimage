@@ -23,3 +23,14 @@ mkdir -p /var/sonic
 echo "# Config files managed by sonic-config-engine" > /var/sonic/config_status
 
 rm -f /var/run/lldpd.socket
+
+if pgrep -x pebble > /dev/null 2>&1; then
+    LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+    pebble add syslog-layer --combine $LAYER_FILE
+    pebble replan
+
+    pebble start lldpd
+    pebble start waitfor-lldp-ready
+    pebble start lldp-syncd
+    pebble start lldpmgrd
+fi
