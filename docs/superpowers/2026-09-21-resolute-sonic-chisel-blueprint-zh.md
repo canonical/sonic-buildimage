@@ -2,7 +2,7 @@
 
 **日期**：2026-09-21
 **范围**：**把 SONiC 容器用到的 Ubuntu 归档包切成 chisel slice**，产出送进上游 `canonical/chisel-releases` 的 `ubuntu-26.04` 分支
-**不含**：在 rock 里怎么用这些 slice。那是第二部分，见第 8 节的待办摘要
+**不含**：在 rock 里怎么用这些 slice。那是第二部分，见第 7 节的待办摘要
 **性质**：工作蓝图，用于分工、排期和验收。证据与测量口径在附录，正文只讲要做什么
 **有效期**：包清单与覆盖率采于 2026-09-17；下游 rock 分支事实截至 `3e81d8aa2f`（2026-09-18）
 
@@ -17,8 +17,8 @@
 | 我们要写多少个？ | **65 至 67 项**：补 1 个已有 SDF、从 24.04 移植 3 个、新写 61 至 63 个 |
 | 其中最紧的是哪些？ | **10 个**，卡住 4 个已迁移容器；另 54 个是 26 个待迁移容器的**上界估计**，不是承诺 |
 | 能立刻开工吗？ | **能。** 本部分不依赖 rock 分支的任何进展，缺的只是本机还没装 `chisel` 和 `spread` |
-| 最大的风险？ | 不是上游评审——fork 让交付不被它阻塞。真正的风险是**长期背一个 fork 的成本没人认领**（5.5） |
-| 要多久 | **两条轨道**（5.1）。rock 交付不等上游合入，写完 SDF 用 fork 消费即可，量级是**周**；上游收敛是 **11 至 32 周**（前 22 个）或 35 至 55 周（全部 66 个），取决于能拿到多少评审注意力 |
+| 最大的风险？ | 不是上游评审——fork 让交付不被它阻塞。真正的风险是**长期背一个 fork 的成本没人认领**（5.7） |
+| 要多久 | **两条轨道**（6.1）。rock 交付不等上游合入，写完 SDF 用 fork 消费即可，量级是**周**；上游收敛是 **11 至 32 周**（前 22 个）或 35 至 55 周（全部 66 个），取决于能拿到多少评审注意力 |
 
 ---
 
@@ -36,13 +36,103 @@
 
 **为什么这么切**：两者横着混在一起时，「我们改 `stage-packages`、他们管 `services:`」这种边界立不住——换一个 slice 会同时牵动配方的 `organize:`、`prime:` 过滤和整包清单，而那些属于配方作者。竖着切开之后，第一部分变成一条可以独立推进的供给线，第二部分按自己的节奏消费。
 
-**消费者是谁**：`202605_resolute_rock` 分支上已有 4 个容器迁到 rockcraft + pebble，走 `base: bare` 的 chisel distroless 路线。其中 `docker-database` 是唯一真正切过的，它的配方里有一个 part 直接叫 `install-unchiselled-packages`——**那就是本文待办的实证来源**，作者每遇到一个没有 slice 的包就往里加一行。第二部分的细节见第 8 节。
+**消费者是谁**：`202605_resolute_rock` 分支上已有 4 个容器迁到 rockcraft + pebble，走 `base: bare` 的 chisel distroless 路线。其中 `docker-database` 是唯一真正切过的，它的配方里有一个 part 直接叫 `install-unchiselled-packages`——**那就是本文待办的实证来源**，作者每遇到一个没有 slice 的包就往里加一行。第二部分的细节见第 7 节。
 
 ---
 
-## 2 · 作用域与口径
+## 2 · 三张图
 
-### 2.1 哪些包归 chisel 管
+### 2.1 容器继承链：为什么共享层的包要乘以 30
+
+```mermaid
+graph TD
+    B["docker-base-resolute<br/>188 包 · 242 MB<br/>Ubuntu 26.04 + supervisor/rsyslog/python3.14"]
+    C["docker-config-engine-resolute<br/>+22 包<br/>libswsscommon · libnl · libyang · sonic-db-cli"]
+    W["docker-swss-layer-resolute<br/>+9 包<br/>swss · libsairedis · libsaimetadata · libteam"]
+    L1["23 个叶子容器<br/>database · lldp · snmp · syncd-brcm<br/>platform-monitor(+63) · dhcp-relay(+32) …"]
+    L2["7 个叶子容器<br/>orchagent(+20) · fpm-frr(+21)<br/>teamd · nat · sflow · macsec · dash-ha"]
+    DE["docker-dash-engine<br/>外部 p4lang 镜像 · Ubuntu 20.04<br/>不在链上，范围外"]
+    B --> C --> W
+    C --> L1
+    W --> L2
+    DE -.->|无关系| B
+    style B fill:#e8f0fe,stroke:#4285f4
+    style C fill:#e8f0fe,stroke:#4285f4
+    style W fill:#e8f0fe,stroke:#4285f4
+    style DE fill:#f5f5f5,stroke:#999,stroke-dasharray: 4 4
+```
+
+蓝色三层不单独运行，但其中每个包被下游容器原样继承。**base 与 config-engine 的包出现在全部 30 个容器里**——共享层缺一个 SDF，就是 30 个 rock 同时缺。
+
+### 2.2 包的四类来源：chisel 只管得了其中两类
+
+```mermaid
+graph LR
+    A["30 个容器<br/>475 个 deb"]
+    A --> R1["ARCHIVE<br/>399"]
+    A --> R2["ARCHIVE 版本已滚<br/>17"]
+    A --> R3["SELF 自建<br/>53"]
+    A --> R4["THIRD-PARTY<br/>6"]
+    R1 --> S["chisel 作用域<br/>416 个"]
+    R2 --> S
+    R3 --> X["chisel 拉不到<br/>59 个 · 占 12%<br/>dpkg -x 整包解入"]
+    R4 --> X
+    S --> S1["26.04 已有 SDF<br/>236"]
+    S --> S2["仅 24.04 有<br/>3"]
+    S --> S3["都没有<br/>177"]
+    S1 --> Y["剔除 build-only 76<br/>与 pkg-mgmt 12 后<br/>可进 rock 328 个<br/>已覆盖 209 · 63.7%"]
+    S2 --> Z["待办 66 个"]
+    S3 --> Z
+    style S fill:#e6f4ea,stroke:#34a853
+    style X fill:#fce8e6,stroke:#ea4335
+    style Z fill:#fef7e0,stroke:#fbbc04
+```
+
+右下角橙色的 **66 个就是任务一的全部工作量**。红色 59 个是 chisel 的硬边界，谁来处理尚无定论（见 6.1）。
+
+### 2.3 待办内部的依赖：22 条边决定合入顺序
+
+chisel 解析 SDF 的 `essential:`，所以**被依赖方必须先合入**，否则依赖方无法针对目标分支验证。
+
+```mermaid
+graph BT
+    libestr0 --> rsyslog
+    libfastjson4 --> rsyslog
+    librelp0 --> rsyslogrelp["rsyslog-relp"]
+    rsyslog --> rsyslogrelp
+    pciids["pci.ids"] --> libpci3
+    libpci3 --> libsnmp40["libsnmp40t64"]
+    libsnmpbase["libsnmp-base"] --> libsnmp40
+    libpci3 --> pciutils
+    libsnmp40 --> snmp
+    libsnmp40 --> snmpd
+    libibverbs1 --> libpcap["libpcap0.8t64"]
+    libibverbs1 --> ibverbs["ibverbs-providers"]
+    libpcap --> tcpdump
+    libpcap --> arping
+    libnet9 --> arping
+    freeipmicommon["freeipmi-common"] --> libfreeipmi17
+    libfreeipmi17 --> ipmitool
+    liblsof0 --> lsof
+    lsof --> libexplain["libexplain51t64"]
+    libdbi1t64 --> librrd8t64
+    librrd8t64 --> rrdtool
+    libpopt0 --> logrotate
+    libnvme1t64 --> nvmecli["nvme-cli"]
+    uuidruntime["uuid-runtime"] --> nvmecli
+    libi2c0 --> i2ctools["i2c-tools"]
+    udev --> i2ctools
+    libi2c0 --> py3smbus["python3-smbus"]
+    libtcmalloc["libtcmalloc-minimal4t64"] --> libgoogleperf["libgoogle-perftools4t64"]
+```
+
+箭头指向「依赖它的包」，所以**箭尾先合入**。这张图推翻了单纯按优先级分数排的顺序：`rsyslog` 分数第 2 但要等 `libestr0` 和 `libfastjson4`，实际排到第 18 位。完整拓扑序见 5.4。
+
+---
+
+## 3 · 作用域与口径
+
+### 3.1 哪些包归 chisel 管
 
 30 个走 SONiC base 链的容器里，dpkg 记录的包分四类来源（明细口径见 7.1）：
 
@@ -59,7 +149,7 @@
 
 **架构边界：全部证据都是 amd64。** 归档索引取 `binary-amd64`，`ld.so` 结论基于 `/usr/lib/x86_64-linux-gnu`。上游 SDF 的 CI 跨 6 个架构验证，**送上游前必须按其他架构复核包内容与路径**，否则只在 amd64 验过的 SDF 可能过不了评审。
 
-### 2.2 待办从哪来
+### 3.2 待办从哪来
 
 两种口径，混用但要分清：
 
@@ -68,7 +158,7 @@
 
 `syncd-vs` / `gbsyncd-vs` 是例外：它们比父层多 128 个包、750 MB，源头是一条 `apt-get install` 混装了构建与运行依赖。不为那些连带包写 SDF，等配方作者从零列 `stage-packages` 时自然解决。
 
-### 2.3 待办必须做依赖闭包
+### 3.3 待办必须做依赖闭包
 
 `install-unchiselled-packages` 只列配方作者显式写下的包，不列传递依赖——整包安装时 apt 自己解析掉了。但我们要为其中某个包写 SDF 时，**chisel 解析的是 SDF 的 `essential:`，那就必须有被依赖包的 SDF**。
 
@@ -78,22 +168,48 @@
 
 ---
 
-## 3 · 待办清单
+## 4 · 任务一：在 fork 里写出 66 个 SDF
 
-分四档。3.1 到 3.3 是实测的，3.4 是上界估计。
+**交付物**：66 个 SDF 加 spread 测试，落在我们 chisel-releases fork 的 `ubuntu-26.04` 分支上。
+**完成标志**：每个包 `chisel cut` 可安装、chroot 功能测试通过、spread 测试实跑通过。
+**瓶颈**：无外部依赖。AI 可并行执行，量级是**周**。
+**阻塞谁**：阻塞第二部分的 rock 化。这是 rock 交付的关键路径。
 
-**本节是编写队列（轨道 A），不是上游队列。** 66 个都要写进 fork，AI 可并行，无先后。哪个先推上游是另一回事，见 5.4 的优先级。两张表正交：本节按「证据强度」分，5.4 按「fork 维护代价」排。**工作认领用本节，PR 排期用 5.4。**
-### 3.1 A 桶：给已有 SDF 补 slice（1 项）
+### 4.1 怎么写：用 chisel-slicer skill，不要另起一套
+
+`canonical/mason` 的 `chisel-slicer` skill 定义了完整的十步流程（校验 → 依赖树 → 逐包检查 → 对齐既有 slice → 设计 → 写 SDF → lint → spread 测试 → 对文档核验 → 双 commit），本机装在 `~/.claude/skills/chisel-releases/`。`ubuntu-26.04` 的 `AGENTS.md` 明确要求改 slice 必须用它。
+
+**格式约束、工具用法、slice 命名、测试深度分档、commit 规范一律以 skill 为准**，本文不复述。skill 更新时以它为唯一权威。
+
+**一条值得知道的性质：SDF 里没有版本号。** 694 个 SDF 只有 `package:`、`essential:`、`slices:` 三个顶层字段，没有任何版本约束。版本只存在于两处：`chisel.yaml` 钉住 suite（`resolute` / `-security` / `-updates`）和归档，而包名里的数字（`libpython3.14`、`libboost-serialization1.83.0`、`libsnmp40t64`）是 soname 不是约束。
+
+这有两个后果。好的一面：SDF 不会因为包发了 SRU 就失效，只要文件路径没变。坏的一面：**路径变了它会静默失效**——`chisel cut` 会报找不到文件，但没有任何版本元数据能提前告诉你。所以 7.2 说的 churn 判据才重要，也所以 fork 里的 SDF 需要跟着上游归档重测。
+
+**环境前置：本机目前没有 `chisel` 和 `spread`，开工前必须装上。** chisel 走 snap，spread 需要 lxd 或 docker backend。**两个都要，不能只装 chisel**——skill 要求 spread 测试实跑通过才能提交，只装 chisel 会让这条验收形同虚设。
+
+### 4.2 skill 之外、只属于我们的四条
+
+**一、所有查询必须钉在 resolute 上。** `_deb-list.py` 从 `chisel.yaml` 读 suite，但 `apt-cache depends` 用的是本机 apt 源。本机若是别的 Ubuntu 版本，依赖树和文件清单都会取错，而 `check-slice.py` 查不出这类错误，只有上游 CI 会。**3.2 节那三个从 24.04 移植的包最容易踩**：拿 24.04 的 deb 内容写出来的路径，在 resolute 里可能根本不存在。
+
+**二、依赖闭包已经算好，直接用。** 见 4.6，66 个就是完整集合，内部 22 条依赖边已列出。不需要每个包再重跑一遍 `apt-cache depends --recurse`。
+
+**三、`logrotate` 和 `cron-daemon-common` 的顺序。** skill 的常见退回理由之一是「为没被切片的工具提供配置文件是死重」。这两个包都在待办里，写 `logrotate` 的 SDF 时不要带上它给别的工具的 drop-in。
+
+**四、`util-linux` 是补 slice，不是新写。** 既有 slice 是 append-only，所以给它加一个 `logger` slice 是对的做法，不要去改它现有的任何一片。
+
+### 4.3 待办清单
+
+### 4.4 A 桶：给已有 SDF 补 slice（1 项）
 
 | 包 | 要补什么 | 依据 |
 |---|---|---|
-| `util-linux` | 加 `logger` slice，收 `/usr/bin/logger` | 43 个容器侧脚本调用；现有 SDF 未含（2.7 节） |
+| `util-linux` | 加 `logger` slice，收 `/usr/bin/logger` | 43 个容器侧脚本调用；现有 SDF 未含（7.1 节） |
 
 改动量最小、上游最容易接受，**建议作为第一个提交，用来打通 CLA、CI 和评审流程**。
 
 `mawk` 缺 `/usr/bin/awk` 也属同类，但配方统一用 `gawk_bins` 即可绕开，不必等上游，故不列为待办。待写的 `ndisc6` 缺 `/usr/bin/traceroute6`，写的时候带上即可。
 
-### 3.2 B 桶：从 24.04 移植（3 项）
+### 4.5 B 桶：从 24.04 移植（3 项）
 
 | 包 | 24.04 SDF 行数 | 依据 |
 |---|--:|---|
@@ -103,7 +219,7 @@
 
 移植是**适配不是复制**：要核 usrmerge 路径、`t64` 改名、`essential:` 必须从列表改成 map（26.04 是 v3，列表形态直接解析报错）、以及 `.deb` 内容本身的增删。
 
-### 3.3 C 桶：已迁移容器实测缺的 SDF（10 项，去掉 B 桶重叠后 9 项，再去掉两个存疑项后 7 项）
+### 4.6 C 桶：已迁移容器实测缺的 SDF（10 项，去掉 B 桶重叠后 9 项，再去掉两个存疑项后 7 项）
 
 这是 4 个配方的 `install-unchiselled-packages` 去重后，真正没有 SDF 的：
 
@@ -123,7 +239,7 @@
 
 清单目前是手工维护的表格，不是由工具生成的，**因此 2.3 和 2.4 的数字应当理解为下界**。 开工前应当把闭包计算固化成脚本并纳入 CI，让待办清单从依赖图生成——否则同类遗漏还会发生。
 
-### 3.4 上界估计：26 个待迁移容器（约 54 项）
+### 4.7 上界估计：26 个待迁移容器（约 54 项）
 
 按 Docker 镜像包清单推算，去掉 build-only 与 pkg-mgmt 之后，26 个待迁移容器可能还需要约 54 个 SDF（`radvd` 已归入 3.3，因为 router-advertiser 已迁移）。按受益容器数排序的主要项：
 
@@ -136,7 +252,7 @@
 | fpm-frr 专属（6） | `libgoogle-perftools4t64`、`libtcmalloc-minimal4t64`、`libpcre2-posix3`、`logrotate`、`libpopt0`（logrotate 的硬依赖）、`cron-daemon-common` |
 | 其余 | `snmp`、`snmpd`（snmp）；`libexplain51t64`、`libjsoncpp26`（dhcp-relay）；`kmod`、`lz4`（syncd-brcm）；`libdbus-c++-1-0v5`（sysmgr） |
 
-**这是上界，不是承诺。** noble 分支的经验显示，实际写配方时列出的运行依赖比 Docker 镜像装的少。每个容器写完配方后应按 2.2 的已迁移口径重新确认。
+**这是上界，不是承诺。** noble 分支的经验显示，实际写配方时列出的运行依赖比 Docker 镜像装的少。每个容器写完配方后应按 3.2 的已迁移口径重新确认。
 
 复杂度分布：约三分之二是纯库（`libs` + `copyright`，26.04 上 SDF 中位数 17 行）；其余三分之一带配置或数据文件，需要更细的 slice 划分和更实在的 spread 测试——`udev`、`snmpd`、`rrdtool`、`smartmontools`、`ipmitool`、`logrotate`、`radvd`、`tcpdump`、`ifupdown` 属于这一类。
 
@@ -146,111 +262,19 @@
 
 ---
 
-## 4 · SDF 编写与上游流程
-
-### 4.1 格式与仓库约束
-
-目标分支 `ubuntu-26.04`，`chisel.yaml` 为 **format v3**，需 chisel ≥ 1.4.0。三条会直接导致解析失败的硬约束：
-
-- `essential:` **必须是 map**，列表形态是解析错误。从 24.04 移植时这是最容易漏的一处。
-- `v3-essential:` 在 v3 分支上被拒绝，移植时要把它的条目折进 `essential:`。
-- `hint:` 限 40 字符，CI 的 `validate-hints` 检查名词短语风格（句首大写、无限定动词、无冠词、无尾标点）。
-
-仓库布局来自 `ubuntu-26.04` 的 `AGENTS.md`：普通 deb 的 SDF 放 `slices/`，`kind: bin` 的放 `bin-slices/`，spread 测试放 `tests/spread/`。
-
-### 4.2 本地工作流
-
-`AGENTS.md` 明确要求：创建、修改或测试 slice 定义时**必须**使用 canonical/mason 的 `chisel-slicer` skill。本机已装于 `~/.claude/skills/chisel-releases/`，流程是：
-
-1. `scripts/orientation <pkg>` —— 确认工作目录、目标分支、manifest 格式、可用工具。
-2. `scripts/deb-list.py <pkg> --sdf` —— 从真实 `.deb` 生成 SDF 草稿。
-3. 人工划分 slice，遵循 `bins` / `libs` / `config` / `data` 等约定名。
-4. `scripts/check-slice.py` —— 确定性静态检查（排除规则、排序、格式版本门控）。
-5. `scripts/try-cut` —— 验证可安装性。
-6. `scripts/scaffold-test.py` —— 生成 spread 测试骨架，然后填真实的功能验证。
-
-**环境前置：本机目前没有 `chisel` 和 `spread`，开工前必须装上。** chisel 走 snap，spread 需要 lxd 或 docker backend。
-
-**四条 skill 里明写、容易踩的约束：**
-
-1. **依赖树必须叶子优先**（Step 2）。用 `apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances <pkg>` 解全部传递依赖，查哪些已有 slice，把没有的按叶子优先排序。**这正是本文 2.3 说的「待办要做依赖闭包」，skill 已经把命令给出来了，照做即可，不必自己发明。**
-2. **只有 `Depends:` 算数。** 把 `Recommends:` 或 `Suggests:` 当依赖拉进来会被评审拒。
-2b. **所有查询必须钉在 resolute 上。** `_deb-list.py` 从 `chisel.yaml` 读 suite，但 `apt-cache depends` 用的是本机 apt 源。本机若是别的 Ubuntu 版本，依赖树和文件清单都会取错，而 `check-slice.py` 查不出这类错误——只有上游 CI 会。**从 24.04 移植那三个包时这是最容易踩的坑**：拿 24.04 的 deb 内容写出来的路径，在 resolute 的包里可能根本不存在。
-3. **既有 slice 是 append-only。** 只在有 bug、缺依赖或上游打包变更时才改已发布的 slice，绝不重组、改名或删路径——下游消费者依赖当前布局。**需要更瘦的变体就新增一个 slice，不要从已有的里面挖。** 改动前跑 `_check-diff.py --base <目标分支>`，`removed-slices` 这个 CI 门会拒绝误删。
-4. **每包两个 commit**：`feat(<pkg>): add <slice-list> slices` 和 `test(<pkg>): add integration tests`，两个都落地才算完。
-
-还有一条对我们特别相关的常见退回理由：**为一个没被切片的工具提供配置文件是死重**——比如 `logrotate` 没进 chisel-releases 时还塞一个它的 drop-in。我们的待办里 `logrotate` 和 `cron-daemon-common` 都在，顺序要对。
-
-### 4.3 测试要求（skill Step 8，比想象的严）
-
-**每个包都必须有 `tests/spread/integration/<pkg>/task.yaml`**，纯库和纯数据包也不例外——上游对 `ca-certificates`、`base-passwd`、`fontconfig` 都有。包的性质只决定测试**深度**，不决定文件是否存在。
-
-**测试不过不许 commit。** skill 原文：一个 `feat:` slice 和它的 `test:` 测试是同一个系列，测试做不出来就把 slice 留着不提交，绝不单独提交 slice。
-
-深度按包分四档：
-
-| 包型 | 要求 |
-|---|---|
-| 库（`libssl3`） | `.so` 存在且是合法 ELF，最浅一档也要有 task.yaml |
-| **纯数据**（证书库、locale、字体） | **必须连同消费者 slice 一起装，并证明消费者用到了数据**——TLS 客户端拿 CA bundle 验证、渲染器加载字体。只查文件存在算弱测试，会被打回 |
-| 简单工具（`grep`、`sed`） | `--version` 加一个代表性功能测试 |
-| 应用（`python3`、`nginx`） | 完整套件，读上游 test 目录，每个关键功能面至少一条 |
-
-工具链：`_scaffold-test.py` 生成骨架（每个 slice 一个新 rootfs、每个声明的二进制一条 chroot 行），`_check-test.py` 确定性地查覆盖——没测试或测试没碰到任何二进制会 `warn`，必须修掉才能提交。
-
-### 4.4 PR 规范
-
-- 签 Canonical CLA。这是第一次提交前的阻断项，**应当在动手写第一个 SDF 之前就办好**。
-- Conventional commits。**格式以 skill 的双 commit 约定为准**（4.2 第 4 条）：`feat(<pkg>): add <slice-list> slices` 和 `test(<pkg>): add integration tests`。上游历史里也有 `feat(26.04): ...` 这种以分支为 scope 的写法，但同一批 66 个 PR 必须统一，否则评审会要求返工。
-- 一个包一个 PR，便于评审和回滚。
-- 提供测试证据和复现步骤。
-- 已有评审意见后**不要 force push**；更新用 merge 目标分支。
-
-**这条与 4.2 第 4 条的双 commit 约定有张力，开工前要定死。** 评审后改动要么追加 fixup commit（破坏「一个 feat 一个 test」的两 commit 形态），要么 force push（这条规则禁止）。而 merge 目标分支会引入 merge commit，不少上游项目在 squash 时并不欢迎。**看一眼最近几个被接受的 PR 实际是怎么处理的**，照着做，不要自己发明。
-
-**两条会改变 PR 预算和顺序的规则：**
-
-**跨 release 转发。** mason 的 write-slice 流程明写「all PRs must be forward-ported oldest -> newest across all maintained release branches」。若该规则确实适用，那么把 rsyslog 三件套从 24.04 直接搬到 26.04、跳过 25.10 的做法就不对，而且给老 release 上也存在的包新写 SDF 可能要在多个分支各开一个 PR。**65 至 67 这个 PR 数因此是下限，可能差出数倍。开工前必须与上游确认这条规则的适用范围**，并据此做一张「包 × release」的 PR 矩阵。
-
-**依赖必须先合入。** 一个包一个 PR，加上 chisel 解析 `essential:`，意味着依赖方的 PR 在被依赖方合入前无法针对目标分支验证。write-slice 流程要求叶子优先。所以批次内部还要排序：`librelp0` 先于 `rsyslog-relp`，`libpopt0` 先于 `logrotate`。**同批不等于同时**，需要一张 slice 依赖 DAG 来定合入顺序，或者走 stacked PR。
-
-### 4.5 未合入时怎么消费
-
-上游评审没有承诺周期。若把「PR 合入」当唯一门槛，我们和下游都会空等——配方引用一个尚不存在于 release 仓库的 slice 名字会直接构建失败。
-
-rockcraft **没有**一个指向自定义 chisel release 的配置字段——`stage-packages` 只认上游 release。官方记录的做法（rockcraft 文档 how-to/chiselling/install-slice）是绕过 `stage-packages`：
-
-1. 用一个 part 把本地 `chisel-releases` 目录送进构建器（build-context）。
-2. 在 `override-build` 里手工跑 `chisel cut --release ./chisel-releases --root ... <pkg>_<slice>`。
-
-**这意味着中间态和终态的配方结构不同**：合入前该 slice 走 `override-build`，合入后才能挪回 `stage-packages`。每个包要改两次配方。
-
-**中间态比这条命令看起来复杂。** `chisel cut` 解析 `essential:` 是对整个 release 做的，所以那条命令会把该 slice 的**全部传递依赖**一并解进同一个 `--root`。如果这些依赖里有些已经通过 `stage-packages` 装过，就会出现同一批文件被装两遍。这个冲突怎么避免，本文没有答案，**因为这条路径一次都还没走过**——它现在是草图不是流程。批 0 必须真正跑通一次并把结果写下来，否则后面每个 fork-only 包都会重新撞一次。
-
-两个必须知道的后果：**fork 必须是 `ubuntu-26.04` 的完整副本并持续 rebase**，否则其他 slice 的解析会跟着漂；**slice 名在评审中可能被要求改名**，届时按 fork 名字写的 `override-build` 会断，所以中间态的引用要集中、可一次性替换。
-
-**这条路径是批 0 的一部分，不是背景说明**：要在批 0 里真正打通一次（拿 `util-linux_logger` 走一遍 override-build 引用），并把步骤写进 `AGENTS.md`，否则整条供给线被上游节奏锁死。
 
 ---
-## 5 · 排期：两条轨道，不是一条
 
-### 5.1 两条轨道
+## 5 · 任务二：把 SDF 推上游
 
-**fork 消费路径一旦打通，rock 就可以照常交付，不必等任何 PR 合入（4.5）。** 所以上游合入不在 rock 交付的关键路径上。这里是两条独立的轨道：
+**交付物**：66 个 SDF 合入 `canonical/chisel-releases` 的 `ubuntu-26.04`（以及其他维护中的 release 分支）。
+**完成标志**：配方可以把该包从 `override-build` 改回 `stage-packages`。
+**瓶颈**：上游评审吞吐，我们控制不了。量级是**月**。
+**阻塞谁**：不阻塞 rock 交付。它决定的是我们要背 fork 多久。
 
-| | 轨道 A：rock 交付 | 轨道 B：上游收敛 |
-|---|---|---|
-| 目标 | 容器能用切好的 slice 跑起来 | slice 进入 `canonical/chisel-releases` |
-| 关键路径 | 写 SDF（AI 可做，以天计）+ 批 0 打通 fork 机制 | 上游评审吞吐 |
-| 量级 | **周** | **月到年** |
-| 阻塞谁 | 阻塞第二部分的 rock 化 | 不阻塞交付，只决定我们背多久 fork |
-| 完成标志 | 66 个 SDF 在 fork 里可用 | 66 个 SDF 全部合入上游 |
+**这两个任务可以完全并行**，而且任务一不必等任务二的任何进展。把它们当成一件事会得出错误的排期。
 
-**「维护 fork 还是等上游合入」不是二选一**：现在用 fork 交付，同时异步往上游推。把轨道 B 的时长安在轨道 A 上会得出错误的排期。
-
-因此要问的不是「哪些推上游」，而是**「先推哪个」**。66 个最终都该进上游，否则要永久背一个 fork；顺序由 fork 维护代价决定，见 5.5。
-
-### 5.2 实测：这件事已经在进行中，而且卡住了
+### 5.1 现状：已提 19 个，零合入
 
 **jy5275 已经向 chisel-releases 提了 20 个 PR，覆盖 15 个包，全部落在本文的待办表内，零偏差。这件事不是待启动的提案，它正在进行。**
 
@@ -267,14 +291,14 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 这改变了几件事：
 
-1. **5.3 的区间不再是推算，而是下限。** 我们已经在队列里 51 天而一个都没进去，说明「独占产能 11 周」那一行是空想。真实节奏更接近甚至差于 FIFO 那一行。
+1. **4.3 的区间不再是推算，而是下限。** 我们已经在队列里 51 天而一个都没进去，说明「独占产能 11 周」那一行是空想。真实节奏更接近甚至差于 FIFO 那一行。
 2. **jy5275 已经在同步推 26.10。** 这印证了 4.4 提到的跨 release 转发规则确实适用——PR 数要乘以维护中的分支数，不是一个包一个 PR。
-3. **待办表得到独立验证。** 这 15 个包与第 3 节的清单完全吻合，没有一个在表外，说明 2.2 的口径是对的。
+3. **待办表得到独立验证。** 这 15 个包与3.3 的清单完全吻合，没有一个在表外，说明 2.2 的口径是对的。
 4. **重复提交已经发生过一次。** #1109 因与 #1104 撞车被关闭。51 个还没提的包在开工前必须先查上游有没有人在做——例如 `udev` 已有 PR #378 挂着。
 
 **所以轨道 B 的当务之急不是多提 PR，而是把已经提的 19 个推动合入。** 在积压清空之前继续投放只会加长队列。
 
-### 5.3 实测的上游节奏
+### 5.2 实测的上游节奏
 
 2026-09-21 用 GitHub API 取了 chisel-releases 最近 100 个已合入 PR 和当前全部 open PR：
 
@@ -297,7 +321,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 要把这些坐实，需要测「ready-for-review 到首次评审」「作者响应时间」「批准到合入」以及被关闭未合入的那部分。**这些数据尚未采集。**
 
-### 5.4 轨道 B 要多久：一个区间，不是一个数
+### 5.3 要多久：一个区间，不是一个数
 
 用合入速率倒算时有两个容易犯的假设：我们独占全部产能，且前面没有队列。两条都不成立，所以结果是区间而非单值：
 
@@ -311,7 +335,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 全部 66 个按同样算法是 35 到 55 周。
 
-### 5.5 上游推送的优先顺序
+### 5.4 推送顺序
 
 既然 66 个最终都要推，问题就是顺序。按三个判据打分：
 
@@ -337,7 +361,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 | 12 | `libpopt0` | — | 124 | 30 | |
 | 13 | `libpcap0.8t64` | — | 168 | 4 | |
 | 14 | `libpci3` | — | 160 | 5 | |
-| 15 | `net-tools` | — | 47 | 30 | 若按 3.3 默认判为不需要则跳过 |
+| 15 | `net-tools` | — | 47 | 30 | 若按 4.3 默认判为不需要则跳过 |
 | 16 | `libprotobuf32t64` | — | 95 | 14 | |
 | 17 | `python3-redis` | — | 26 | 30 | |
 | 18 至 22 | `libdaemon0`、`libfastjson4`、`libestr0`、`python3-cffi-backend`、`librelp0` | — | 低 | 30 | 容器数高，将来迁移成本大 |
@@ -346,7 +370,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 还有两点：
 
-- **`util-linux` 不在这张表里**，因为它是给已有 SDF 补一个 slice（3.1），不是新写。它仍然应当第一个提交，用最小改动趟通流程。所以前 22 个加上它是 **23 个 PR**；若按 3.3 默认去掉 `net-tools` 和 `libdaemon0`，是 **21 个**。
+- **`util-linux` 不在这张表里**，因为它是给已有 SDF 补一个 slice（3.1），不是新写。它仍然应当第一个提交，用最小改动趟通流程。所以前 22 个加上它是 **23 个 PR**；若按 4.3 默认去掉 `net-tools` 和 `libdaemon0`，是 **21 个**。
 #### 依赖闭包已完成
 
 对 66 个待办包做了完整的 `Depends` 闭包（只取第一候选，忽略 `Recommends`/`Suggests`），结果：
@@ -368,11 +392,39 @@ i2c-tools      ← libi2c0, udev                  python3-smbus ← libi2c0
 libgoogle-perftools4t64 ← libtcmalloc-minimal4t64
 ```
 
-拓扑排序后（同层按 5.5 的分数降序）前十位是：`libpython3.14`、`udev`、`freeipmi-common`、`libfreeipmi17`、`uuid-runtime`、`xxd`、`python3-yaml`、`dmidecode`、`kmod`、`libpopt0`。
+拓扑排序后（同层按 5.4 的分数降序）前十位是：`libpython3.14`、`udev`、`freeipmi-common`、`libfreeipmi17`、`uuid-runtime`、`xxd`、`python3-yaml`、`dmidecode`、`kmod`、`libpopt0`。
 
 **排序结果推翻了上面那张按分数排的表：`rsyslog` 从第 2 位掉到第 18 位**，因为它必须等 `libestr0` 和 `libfastjson4` 先合入；`rsyslog-relp` 掉到第 20 位。另有 9 个低分包（`libpopt0`、`net-tools`、`libprotobuf32t64`、`python3-redis` 等）被依赖关系提前。**实际提交顺序以拓扑序为准，分数只决定同层内部的先后。**
 
-### 5.6 fork 的真实成本
+### 5.5 提交队列
+
+轨道 B 的调度是**维持恒定在途 PR 数**，不是分批投放：
+
+- **在途上限 5 至 8 个。** 多了只会在队列里变老，还会稀释评审者对我们的注意力。
+- **顺序按 5.4 的优先级，但要先过依赖图。** 注意：同批不等于依赖已解决——`librelp0` 必须**先合入**，`rsyslog-relp` 才能针对目标分支验证。
+- **合入一个补一个。**
+
+第 3 节的待办清单是**编写队列**（轨道 A，全部 66 个，不分先后，AI 可并行），与这里的**上游队列**（轨道 B，按 5.4 排序）是两张表。不要混用。
+
+### 5.6 合入前配方怎么消费
+
+上游评审没有承诺周期。若把「PR 合入」当唯一门槛，我们和下游都会空等——配方引用一个尚不存在于 release 仓库的 slice 名字会直接构建失败。
+
+rockcraft **没有**一个指向自定义 chisel release 的配置字段——`stage-packages` 只认上游 release。官方记录的做法（rockcraft 文档 how-to/chiselling/install-slice）是绕过 `stage-packages`：
+
+1. 用一个 part 把本地 `chisel-releases` 目录送进构建器（build-context）。
+2. 在 `override-build` 里手工跑 `chisel cut --release ./chisel-releases --root ... <pkg>_<slice>`。
+
+**这意味着中间态和终态的配方结构不同**：合入前该 slice 走 `override-build`，合入后才能挪回 `stage-packages`。每个包要改两次配方。
+
+**中间态比这条命令看起来复杂。** `chisel cut` 解析 `essential:` 是对整个 release 做的，所以那条命令会把该 slice 的**全部传递依赖**一并解进同一个 `--root`。如果这些依赖里有些已经通过 `stage-packages` 装过，就会出现同一批文件被装两遍。这个冲突怎么避免，本文没有答案，**因为这条路径一次都还没走过**——它现在是草图不是流程。批 0 必须真正跑通一次并把结果写下来，否则后面每个 fork-only 包都会重新撞一次。
+
+两个必须知道的后果：**fork 必须是 `ubuntu-26.04` 的完整副本并持续 rebase**，否则其他 slice 的解析会跟着漂；**slice 名在评审中可能被要求改名**，届时按 fork 名字写的 `override-build` 会断，所以中间态的引用要集中、可一次性替换。
+
+**这条路径是批 0 的一部分，不是背景说明**：要在批 0 里真正打通一次（拿 `util-linux_logger` 走一遍 override-build 引用），并把步骤写进 `AGENTS.md`，否则整条供给线被上游节奏锁死。
+
+---
+### 5.7 fork 的代价，也就是任务二存在的理由
 
 **fork 的成本不止 `override-build` 模板那一次性投入**，完整清单是：
 
@@ -389,28 +441,18 @@ libgoogle-perftools4t64 ← libtcmalloc-minimal4t64
 
 「57 个包五个月没发 SRU」不等于「一个 release 周期内也不会发」。这个数据只覆盖了 resolute 发布至今，不能外推到整个生命周期。
 
-### 5.7 提交队列
-
-轨道 B 的调度是**维持恒定在途 PR 数**，不是分批投放：
-
-- **在途上限 5 至 8 个。** 多了只会在队列里变老，还会稀释评审者对我们的注意力。
-- **顺序按 5.4 的优先级，但要先过依赖图。** 注意：同批不等于依赖已解决——`librelp0` 必须**先合入**，`rsyslog-relp` 才能针对目标分支验证。
-- **合入一个补一个。**
-
-第 3 节的待办清单是**编写队列**（轨道 A，全部 66 个，不分先后，AI 可并行），与这里的**上游队列**（轨道 B，按 5.4 排序）是两张表。不要混用。
-
 ## 6 · 风险与工作量
 
 ### 6.1 风险
 
 | 项 | 性质 | 应对 |
 |---|---|---|
-| 上游评审吞吐 | 轨道 B 的进度约束，**不阻塞 rock 交付**（5.1） | 26.04 每周 1.9 个 PR、积压 39 个。按 5.4 的优先级先推 fork 维护代价最高的，其余慢慢来。对外承诺用 11 至 32 周的区间，不要取下限 |
-| **长期 fork 无人认领** | **最主要的风险**（5.5） | fork 不是零成本：跟踪上游变更、安全更新、跨架构、rebase、冲突处理、最终迁移。需要 owner、钉住的 revision、CI 矩阵、更新 SLA。**目前这些都没有**，而轨道 A 一旦交付，fork 就成了生产依赖 |
-| 待办清单仍是手工维护的 | **正确性风险** | 已知漏过 `librelp0`。把闭包计算固化成脚本纳入 CI（2.3） |
-| 上界估计偏大 | 开放项，非风险 | 3.4 的 54 个是按 Docker 镜像推的，下游配方写完后按 2.2 口径重新确认 |
+| 上游评审吞吐 | 轨道 B 的进度约束，**不阻塞 rock 交付**（6.1） | 26.04 每周 1.9 个 PR、积压 39 个。按 5.4 的优先级先推 fork 维护代价最高的，其余慢慢来。对外承诺用 11 至 32 周的区间，不要取下限 |
+| **长期 fork 无人认领** | **最主要的风险**（5.7） | fork 不是零成本：跟踪上游变更、安全更新、跨架构、rebase、冲突处理、最终迁移。需要 owner、钉住的 revision、CI 矩阵、更新 SLA。**目前这些都没有**，而轨道 A 一旦交付，fork 就成了生产依赖 |
+| 待办清单仍是手工维护的 | **正确性风险** | 已知漏过 `librelp0`。把闭包计算固化成脚本纳入 CI（3.3） |
+| 上界估计偏大 | 开放项，非风险 | 3.4 的 54 个是按 Docker 镜像推的，下游配方写完后按 3.2 口径重新确认 |
 | 带配置的包被打回返工 | 范围风险 | 约 18 个「带配置」SDF 需要实质性 spread 测试。skill 明确要求数据类包必须**连同消费者一起装并证明消费者用到了数据**，只查文件存在算弱测试。提交顺序上放在后面 |
-| 只在 amd64 验证 | **正确性风险** | 上游 CI 跨 6 架构，送审前按其他架构复核（2.1） |
+| 只在 amd64 验证 | **正确性风险** | 上游 CI 跨 6 架构，送审前按其他架构复核（3.1） |
 | 59 个包 chisel 根本管不了 | **边界风险，无人认领** | 53 个自建 + 6 个第三方，占 475 的 12%，是切片化的硬边界。是否改走 PPA、整包 stage、还是排除在外，属于第二部分或产品决策，但**必须有人拍板**，否则「全部 chisel 化」是做不到的 |
 | 单个 PR 无限期悬挂 | **已在上游发生**，不是假设 | 实测最老的 open PR 已 600 天，61 个超过 30 天。止损规则：**超过 P90（26 天）无反馈即升级**到 Canonical 内部渠道；若该包不在关键路径上，直接转入长期 fork 而不是继续等。现在没有负责人 |
 | 镜像基线新旧混合 | 数据风险 | vs 专属的 3 个镜像产于 2026-08-27，其余 09-17，base 层 09-03。**在开始处理第 3 档（fork）之前重跑一次扫描**，因为那批的归属判断最依赖容器分布数据 |
@@ -428,8 +470,8 @@ libgoogle-perftools4t64 ← libtcmalloc-minimal4t64
 | 事项 | 为什么必须是人 |
 |---|---|
 | 开 PR 与应对评审意见 | skill 明确止于 commit，「the user opens the PR themselves」 |
-| 与上游谈评审安排（5.3 第 2 条） | 这是关系不是工程 |
-| 给 fork 定预算和 owner（5.5） | 需要产品判断：一个内部 chisel release 产品要投多少维护力量 |
+| 与上游谈评审安排 | 这是关系不是工程。4.1 显示 19 个 PR 零合入，这件事比再提新 PR 有用 |
+| 给 fork 定预算和 owner（5.7） | 需要产品判断：一个内部 chisel release 产品要投多少维护力量 |
 
 ---
 
