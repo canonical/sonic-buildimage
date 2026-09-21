@@ -13,12 +13,12 @@
 | Question | Answer |
 |---|---|
 | How many packages are in play? | Of the 475 debs the containers use, **416** are in the Ubuntu resolute archive, which is chisel's scope. Another 53 are self-built and 6 are third-party binaries, which chisel cannot fetch |
-| How much has upstream already sliced? | Of the 324 packages that could reach a rock, **206 are covered, about 64%**. The heaviest base-layer packages are all in place |
+| How much has upstream already sliced? | Of the 328 packages that could reach a rock, **209 are covered, 63.7%**. The heaviest base-layer packages are all in place |
 | How many must we write? | **65 to 67 items**: amend 1 existing SDF, forward-port 3 from 24.04, write 61 to 63 new ones |
 | Which are most urgent? | **10**, which block the four already-migrated containers. The other 54 are an **upper bound** for the 26 unmigrated ones, not a commitment |
 | Can work start now? | **Yes.** This part depends on no progress in the rock branch. The only gap is that `chisel` and `spread` are not installed on this machine |
 | Biggest risk? | Upstream review latency, which we do not control. The response is two-level acceptance plus a fork consumption path, see 4.5 |
-| Effort | About **34 person-days**, excluding upstream review round trips |
+| Effort | About **35 person-days**, excluding upstream review round trips, with every exclusion biased upward |
 
 ---
 
@@ -295,15 +295,15 @@ The figures in the body come from three measurements. Only the definitions and c
 
 | Category | On 26.04 | Only on 24.04 | On none | Subtotal |
 |---|--:|--:|--:|--:|
-| runtime | 202 | 3 | 113 | 318 |
+| runtime | 205 | 3 | 114 | 322 |
 | perl | 4 | 0 | 2 | 6 |
-| pkg-mgmt | 10 | 0 | 3 | 13 |
-| build-only | 20 | 0 | 59 | 79 |
+| pkg-mgmt | 9 | 0 | 3 | 12 |
+| build-only | 18 | 0 | 58 | 76 |
 | **Total** | **236** | **3** | **177** | **416** |
 
-**Denominator warning**: of those 416, 79 are build-only and 13 are pkg-mgmt. Excluding them, **about 324 packages could reach a rock and about 206 are covered, roughly 64%**. The body uses the excluded denominator.
+**Denominator warning**: of those 416, 76 are build-only and 12 are pkg-mgmt. Excluding them, **328 packages could reach a rock and 209 are covered, 63.7%**. The body uses the excluded denominator.
 
-**That classification is a heuristic, not a definition.** `chiselcov2.py` judges by name prefix and section, and two known cases are wrong: `gcc-16-base` and `libgcc-s1` both appear in 33 containers yet are labelled build-only because the prefix matches `libgcc-`. Both already have SDFs, so only the denominator is affected and not the backlog, but "by definition never reaches a rock" does not hold. **Read the figure with an uncertainty of about ±5**; an exact value needs an ELF closure rather than a name prefix. Also, **25.10 adds nothing for us**; the only forward-port source is 24.04, for three packages.
+These figures have been rechecked and corrected. `chiselcov2.py` originally judged by name prefix and mislabelled four packages as build-only or pkg-mgmt: `gcc-16-base`, `libgcc-s1`, `rpcsvc-proto` and `libapt-pkg7.0`. The first two appear in 30 containers and are the runtime support libraries every C and C++ binary needs. The corrected criterion is not Section either, since `libasan8` and `libclang1-21` are also `libs` yet genuinely belong to build time; it is **container distribution**: a package appearing only in `syncd-vs` or `gbsyncd-vs` is toolchain leakage, and one appearing across several containers is real runtime. The correction moves coverage from 63.6% to 63.7%, almost nothing, but the denominator and the class counts should use the new values. Also, **25.10 adds nothing for us**; the only forward-port source is 24.04, for three packages.
 
 **Existing slices cannot reassemble a whole package, but nothing missing is needed at runtime.** Comparing the real `.deb` of all 236 packages against the union of every slice's `contents:`: 8,575 files covered, 3,245 man/doc/completion/locale (a chisel-releases policy exclusion), and **452 real gaps** across 70 packages. Of the gaps, 146 are `-dev` files, 109 are things like `/usr/share/bug`, 50 are setuptools vendored modules and 34 are apt internals. **Only one matters to us**: `logger` among the 63 uncovered binaries, which belongs to `util-linux` and is called by 43 container-side scripts. That became the item in 2.1.
 
