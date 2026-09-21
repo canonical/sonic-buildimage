@@ -18,7 +18,7 @@
 | Which are most urgent? | **10**, which block the four already-migrated containers. The other 54 are an **upper bound** for the 26 unmigrated ones, not a commitment |
 | Can work start now? | **Yes.** This part depends on no progress in the rock branch. The only gap is that `chisel` and `spread` are not installed on this machine |
 | Biggest risk? | Upstream review throughput, the only critical path. Only three things genuinely speed it up, see 5.3 |
-| How long | **Eight to sixteen months**, set by upstream review throughput (26.04 merges 1.9 PRs a week against a backlog of 39). Authoring itself can be done by an AI and is not the constraint |
+| How long | **2.6 months** if we upstream only the 21 packages that need it (5.4), against 8.1 for all 66. Set by upstream review throughput, since 26.04 merges 1.9 PRs a week against a backlog of 39. Authoring can be done by an AI and is not the constraint |
 
 ---
 
@@ -261,11 +261,74 @@ In order of leverage:
 
 1. **Build contributor standing.** The measured gap is large: the top three authors see a median merge latency of **3.0 days**, while authors with one or two PRs see **18 days**, a factor of six. jy5275 already has 4 merged PRs, which is a starting position. **The first few PRs must be small and clean**, not merely to learn the process but because they set the speed of the following sixty.
 2. **Negotiate review capacity.** Thirty-nine open PRs, 89% awaiting review, and one person doing nearly half the merges together say that review is a scarce resource rather than an automatic service. Rather than dropping 66 PRs into the public queue, agree an arrangement first: a batched review window, a named reviewer, or us contributing review effort in return. **That conversation may be worth more than any technical optimisation here.**
-3. **Send fewer of them upstream.** Not all 66 have to go. Low-value packages, those serving one container with little size benefit, can live in our fork indefinitely. **Separating "must be upstream" from "the fork is good enough" is the only technical lever that directly shortens the critical path.** That classification has not been done and should happen before work starts.
+3. **Send fewer of them upstream.** Not all 66 have to go. **This is the only technical lever that directly shortens the critical path; the classification is in 5.4 and taking it cuts the path from eight months to between 1.6 and 2.6.**
 
 What does not help: hiring more SDF authors, splitting batches more finely, or opening more PRs in parallel. All of those accelerate the end that is already abundant.
 
-### 5.4 A submission queue rather than batches
+### 5.4 What must go upstream and where the fork suffices
+
+**The criterion is not size.** Measured, the 65 backlog packages come to 60 MB in total, of which documentation, man pages and locales are only 6%. The absolute size a slice saves is small, and "saves space" cannot justify 66 PRs on its own.
+
+The right question is: **what do we permanently lose by keeping a slice in the fork?** By the mechanism established in 4.5, fork-only means the recipe must use `override-build` plus `chisel cut --release` rather than `stage-packages`. **That cost scales with how many recipes reference it**, so the criterion is container count, with upstream appetite second, measured as how many archive packages depend on it (`rdep`), because that governs review friction.
+
+#### Tier 1: must go upstream (13)
+
+Present in ten or more containers, where fork-only complexity multiplies by container count.
+
+| Package | Containers | rdep | Size |
+|---|--:|--:|--:|
+| `python3-yaml` | 30 | 404 | 523 KB |
+| `libpython3.14` | 30 | 279 | 8054 KB |
+| `libpopt0` | 30 | 124 | — |
+| `rsyslog` | 30 | 49 | 1760 KB |
+| `net-tools` | 30 | 47 | — |
+| `python3-redis` | 30 | 26 | 1350 KB |
+| `libdaemon0` | 30 | 14 | — |
+| `libfastjson4` | 30 | 9 | 53 KB |
+| `libestr0` | 30 | 7 | 20 KB |
+| `python3-cffi-backend` | 30 | 7 | 216 KB |
+| `librelp0` | 30 | 4 | 96 KB |
+| `rsyslog-relp` | 30 | 0 | 67 KB |
+| `libprotobuf32t64` | 14 | 95 | 3092 KB |
+
+Note that `net-tools`, `libdaemon0` and `libpopt0` show 30 containers because they already sit in the base layer. If the 3.3 default stands and the first two are judged unnecessary, this tier drops to 11.
+
+#### Tier 2: worth going upstream (8)
+
+Few containers, but more than fifty archive packages depend on each. **Upstream wants these slices anyway, so review friction is lowest**, which trades someone else's motivation for our progress.
+
+| Package | Containers | rdep | Containers |
+|---|--:|--:|---|
+| `kmod` | 1 | **1279** | syncd-brcm |
+| `libpcap0.8t64` | 4 | 168 | dhcp-relay, orchagent, syncd-vs, gbsyncd-vs |
+| `libpci3` | 5 | 160 | fpm-frr, lldp, orchagent, platform-monitor, snmp |
+| `udev` | 1 | 85 | platform-monitor |
+| `libjsoncpp26` | 1 | 73 | dhcp-relay |
+| `libibverbs1` | 4 | 69 | dhcp-relay, orchagent, syncd-vs, gbsyncd-vs |
+| `psmisc` | 1 | 62 | platform-monitor |
+| `logrotate` | 1 | 55 | fpm-frr |
+
+`kmod` has 1279 dependents and still no SDF, an obvious gap upstream is likely to welcome.
+
+#### Tier 3: the fork suffices (45)
+
+One or two containers and `rdep` below 50. Typical cases are `radvd` (2), `ndisc6` (0), `ndppd` (0), `python3-smbus` (1) and `i2c-tools` (2): only SONiC uses them, so an upstream slice would have no other consumer.
+
+**The marginal cost of the fork approaches zero.** Once the `override-build` machinery exists, which batch 0 builds anyway, adding the tenth fork-only slice costs about what the forty-fifth does. So the long tail belongs there.
+
+#### The critical path under three cuts
+
+| Option | PRs | With the branch's full capacity |
+|---|--:|---|
+| Tier 1 only | 13 | 7 weeks, **1.6 months** |
+| Tiers 1 and 2 | 21 | 11 weeks, **2.6 months** |
+| Everything | 66 | 35 weeks, 8.1 months |
+
+**The recommendation is tiers 1 and 2, 21 PRs.** Tier 1 is unavoidable and tier 2 is a favour that costs little while building the contributor standing of 5.3 item 1, and together they remove two thirds of the critical path. Tier 3 can be pushed later at any time, because **moving from fork to upstream is reversible and the other direction is not**, so sending less first carries no risk.
+
+This classification needs one product confirmation: whether **the cost of maintaining 45 fork-only slices indefinitely**, meaning continuous rebasing, `override-build` complexity in the recipes, and conflicts if upstream ever adds an SDF of the same name, **is lower than waiting an extra 5.5 months**. This document judges that it is, but that judgement can be overturned.
+
+### 5.5 A submission queue rather than batches
 
 Because review is the bottleneck, the right discipline is **a constant number of PRs in flight**, not batched releases. Suggested:
 
