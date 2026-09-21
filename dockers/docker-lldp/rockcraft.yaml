@@ -44,6 +44,7 @@ parts:
       craftctl default
 
       # Install SONiC debs (wildcard filenames)
+      dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
