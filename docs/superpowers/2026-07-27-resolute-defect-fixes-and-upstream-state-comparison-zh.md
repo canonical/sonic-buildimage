@@ -195,6 +195,41 @@ dhclient 会设置的同一组环境变量调用 `make_resolv_conf()` 来检验�
 除非用 `config dns nameserver add` 配一个，交换机将没有 nameserver；另外将来若执行
 `config load_minigraph`，静态地址会回来，因为 minigraph 里仍然声明着它。
 
+### 从零干净重建后的复验
+
+上面这些结论是在 `d605df6b` 那份镜像上取得的，而 rsyslog 的 AppArmor profile 当时还有一部分是运行时
+手改的。为了确认这些修复确实是构建产物而不是现场补丁，把 vs 和 broadcom 从零干净重建了一遍
+（清掉全部 target 与容器缓存），得到 `202605_resolute_sheldon.0-a1f696e4` 并重新装机。
+
+四处修复**全部随镜像内建生效**：`/etc/apparmor.d/local/usr.sbin.rsyslogd` 的 mtime 就是构建时刻，
+10 个 `rsyslog_plugin` 进程在跑，本次启动 0 条 plugin 拒绝、0 条 omprog 错误；`resolv-config` 为
+active (exited)，`sonic-resolv` 钩子在位而 Ubuntu 的 `resolved-enter`/`resolved` 不在；
+`libpam-radius-auth 1.4.1-1` 带 statistics 目录、`aaastatsd` 0 次 FileNotFoundError；
+`SAI_PORT_STAT_IF_IN_OCTETS` 8 秒内从 9007 涨到 9161。转发面不低于基线：BGP v4 137 / v6 74、
+217 条 ASIC 路由、内核 138/84、PortChannel200 LACP(A) Up、14/14 容器、`Services: Status: OK`
+（约 15 分钟收敛）。
+
+拿它和 `d605df6b` 基线做同样的归一化全状态对比，**只剩 8 处差异**，其中 7 处在意料之中：版本串、
+路由数 +1/+2 的漂移、基线那次 9 分钟尚未收敛的 Services、管理口改走 DHCP 带来的 `udp IPV4:68` 与
+`udp IPV6%eth0:546` 两个监听端口、以及 uptime。顺带更正本文一处数法：`monit summary` 只有 18 个服务
+（§2 提到的「41 项」用的是另一种计数方式，两者不可比），判据应当用
+`show system-health detail` 的 `Services: Status: OK`，而不是去数 `grep -c OK`。
+
+第 8 处是唯一的新发现，判定无害且不修：两条 `profile="hostname"` 的 AppArmor 拒绝，
+`operation="file_inherit"` 与 `operation="open"`，对象是 `/var/lib/dhcp/dhclient.eth0.leases`，
+`comm="hostname"`，属同一个 audit 事件，全库仅此 2 条（每次租约 BOUND 各 2 条，本例租期约 12 小时）。
+成因是 `dhclient-exit-hooks.d/sethostname` 里的 `hostname -s` 继承了 dhclient 打开的租约 fd，
+而 Ubuntu 的 `/etc/apparmor.d/hostname`（Canonical 2025，enforce；官方 Debian 镜像的 107 个 profile
+里没有它，只有 `usr.sbin.dhclient`）拒绝这次 fd 继承。这与 §3.2 的 rsyslogd 是同一类坑，
+但没有功能影响：`hostname -s` 走 `gethostname(2)`，根本不需要那个 fd；本实验室的租约不含
+host-name/domain-name 选项，钩子本身就是空操作；`hostname`、`/etc/hostname`、CONFIG_DB 三处读出来
+都是 `dut02`。即便 DHCP 真的下发 host-name，写 `/etc/hostname` 和 `/etc/hosts` 是由 shell
+（dhclient 自己的 profile，未 enforce）完成的，而 `hostname -F` 需要的 `file r /etc/hostname` 与
+`capability sys_admin` 该 profile 已经给了 —— 所以不需要加 `local/hostname` override，
+否则就要为零收益放开对 `/var/lib/dhcp/**` 的读权限。这条只在管理口走 DHCP 时才出现，
+静态 IP 的旧基线看不到。同理，实验室没有 DHCPv6 服务器，`dhclient -6` 会一直 `XMT: Solicit`，
+也是噪声。
+
 ---
 
 ## 6. 全状态对比：上游 sonic-net 对自建
