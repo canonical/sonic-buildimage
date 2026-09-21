@@ -95,6 +95,7 @@ parts:
       - base-passwd_data
       - bash_bins
       - procps_bins
+      - grep_bins
       - coreutils_bins
       - gawk_bins
       - redis-server_bins
