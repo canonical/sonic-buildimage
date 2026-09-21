@@ -17,8 +17,8 @@
 | How many must we write? | **65 to 67 items**: amend 1 existing SDF, forward-port 3 from 24.04, write 61 to 63 new ones |
 | Which are most urgent? | **10**, which block the four already-migrated containers. The other 54 are an **upper bound** for the 26 unmigrated ones, not a commitment |
 | Can work start now? | **Yes.** This part depends on no progress in the rock branch. The only gap is that `chisel` and `spread` are not installed on this machine |
-| Biggest risk? | Upstream review latency, which we do not control. The response is two-level acceptance plus a fork consumption path, see 4.5 |
-| Effort | About **35 person-days**, excluding upstream review round trips, with every exclusion biased upward |
+| Biggest risk? | Upstream review throughput, the only critical path. Only three things genuinely speed it up, see 5.3 |
+| How long | **Eight to sixteen months**, set by upstream review throughput (26.04 merges 1.9 PRs a week against a backlog of 39). Authoring itself can be done by an AI and is not the constraint |
 
 ---
 
@@ -169,12 +169,31 @@ Repository layout comes from `AGENTS.md` on `ubuntu-26.04`: SDFs for ordinary de
 
 **Environment prerequisite: this machine has neither `chisel` nor `spread`, and both must be installed before work starts.** chisel comes via snap; spread needs an lxd or docker backend.
 
-### 4.3 Both testing layers are required
+**Four constraints the skill states explicitly and which are easy to trip over:**
 
-- **Installability**: `chisel cut` succeeds, meaning the SDF parses, dependencies resolve and files extract.
-- **Functionality**: chroot into the cut rootfs and prove it actually works.
+1. **The dependency tree must be built leaves-first** (Step 2). Resolve all transitive dependencies with `apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances <pkg>`, check which already have slices, and order the rest leaves-first. **This is exactly the dependency closure section 2.3 calls for; the skill already supplies the command, so use it rather than inventing one.**
+2. **Only `Depends:` counts.** Pulling in a `Recommends:` or `Suggests:` as a dependency is rejected by reviewers.
+3. **Existing slices are append-only.** Modify a published slice only for a bug, a missing dependency or an upstream packaging change, and never reorganise, rename or remove paths, because downstream consumers depend on the current layout. **Add a new slice when a slimmer variant is needed rather than carving one out of a published one.** Run `_check-diff.py --base <target-branch>` before committing a change; the `removed-slices` CI gate rejects accidental drops.
+4. **Two commits per package**: `feat(<pkg>): add <slice-list> slices` and `test(<pkg>): add integration tests`. Both must land before the work counts as done.
 
-A slice satisfying only the first is rejected upstream. That is why step 6 above must be filled in rather than left as a skeleton.
+One common rejection reason is particularly relevant to us: **shipping a config file for a tool that is not itself sliced is dead weight**, for example a `logrotate` drop-in while `logrotate` is not in chisel-releases. Both `logrotate` and `cron-daemon-common` are on our backlog, so the ordering matters.
+
+### 4.3 Testing requirements (skill Step 8, stricter than expected)
+
+**Every package needs a `tests/spread/integration/<pkg>/task.yaml`**, pure-library and data-only packages included. Upstream ships one for `ca-certificates`, `base-passwd` and `fontconfig`. The nature of the package sets the test *depth*, never whether the file exists.
+
+**Tests block the commit.** In the skill's words, a `feat:` slice and its `test:` tests are one series; if tests are not feasible, leave the slice uncommitted rather than committing it alone.
+
+Depth falls in four tiers:
+
+| Package kind | Requirement |
+|---|---|
+| Library (`libssl3`) | The `.so` files exist and are valid ELF. Even the shallowest tier still has a task.yaml |
+| **Data-only** (certificate stores, locales, fonts) | **Install the slice together with a consumer slice and prove the consumer uses the data**: a TLS client verifying against the shipped CA bundle, a renderer loading the font. File-existence checks alone are weak and get rejected |
+| Simple utility (`grep`, `sed`) | `--version` plus one representative functional test |
+| Application (`python3`, `nginx`) | A thorough suite. Read the upstream test directory and give each key functional area at least one test |
+
+Tooling: `_scaffold-test.py` emits the skeleton, with a fresh rootfs per slice and a chroot line per declared binary, and `_check-test.py` checks coverage deterministically. It warns when there is no test, or a test that exercises no binaries, and those must be fixed before committing.
 
 ### 4.4 PR conventions
 
@@ -207,16 +226,54 @@ Two consequences to know: **the fork must be a complete copy of `ubuntu-26.04` a
 
 ---
 
-## 5 · Batching and acceptance
+## 5 · Scheduling: the bottleneck is upstream review, not authoring
 
-### 5.1 Acceptance has two levels
+### 5.1 The measured upstream rhythm
 
-- **Local acceptance, which we control**: the SDF passes `check-slice.py`, `chisel cut` installs it, the chroot functional test passes, **the spread test has actually been run and passes** (not merely written — `spread` must be installed before batch 0 or this criterion is empty), and the PR is open with upstream CI green including `validate-hints`. **Reaching this level counts as done; move to the next item.**
-- **Upstream acceptance**: the PR merges and the entry disappears from the downstream recipe's `install-unchiselled-packages`.
+On 2026-09-21 the GitHub API gave the last 100 merged PRs on chisel-releases and every currently open one:
 
-Schedule against local acceptance and track upstream merges separately.
+| Measure | Observed |
+|---|---|
+| Merge latency | Median **3.7 days**, P75 16.4, P90 26.4, longest 64 |
+| Merge rate | 6.1 PRs/week across all branches; **only 1.9/week on `ubuntu-26.04`** |
+| Current backlog | 100+ open PRs, median age **46 days**, 61 older than 30 days, oldest 600 |
+| On 26.04 specifically | **39 open**, 89% sitting in `REVIEW_REQUIRED`, waiting on review rather than on the author |
+| PR shape | Median **2 files changed** (exactly an SDF plus a spread test); only 2 of 100 titles list more than one thing |
+| Contributor concentration | One person accounts for 48 of 100 |
 
-### 5.2 Batches
+**PRs essentially never bundle multiple packages.** The large ones (61 files for `gcc`, 23 for `binutils`) are a single package across several architectures. So one package per PR is not our choice; it is the established upstream shape.
+
+### 5.2 The calendar time that follows
+
+Authoring is not the constraint. **The whole SDF workflow, authoring through testing through self-check, can already be run by an AI** — the chisel-slicer skill's ten steps are designed for exactly that, stopping at the commit with a human opening the PR. So capacity is set by how fast upstream can absorb:
+
+| Scenario | Weeks | Months |
+|---|--:|--:|
+| Clearing the existing 26.04 backlog of 39 | 21 | 4.8 |
+| Our 66 PRs with the branch's entire capacity | 35 | 8.1 |
+| Our 66 PRs with half of it | 69 | 16.2 |
+
+**So this is a months-scale effort, not seven person-weeks.** The 35 person-days quoted earlier described authoring, which is the least scarce part of the problem.
+
+### 5.3 The only three things that genuinely speed it up
+
+In order of leverage:
+
+1. **Build contributor standing.** The measured gap is large: the top three authors see a median merge latency of **3.0 days**, while authors with one or two PRs see **18 days**, a factor of six. jy5275 already has 4 merged PRs, which is a starting position. **The first few PRs must be small and clean**, not merely to learn the process but because they set the speed of the following sixty.
+2. **Negotiate review capacity.** Thirty-nine open PRs, 89% awaiting review, and one person doing nearly half the merges together say that review is a scarce resource rather than an automatic service. Rather than dropping 66 PRs into the public queue, agree an arrangement first: a batched review window, a named reviewer, or us contributing review effort in return. **That conversation may be worth more than any technical optimisation here.**
+3. **Send fewer of them upstream.** Not all 66 have to go. Low-value packages, those serving one container with little size benefit, can live in our fork indefinitely. **Separating "must be upstream" from "the fork is good enough" is the only technical lever that directly shortens the critical path.** That classification has not been done and should happen before work starts.
+
+What does not help: hiring more SDF authors, splitting batches more finely, or opening more PRs in parallel. All of those accelerate the end that is already abundant.
+
+### 5.4 A submission queue rather than batches
+
+Because review is the bottleneck, the right discipline is **a constant number of PRs in flight**, not batched releases. Suggested:
+
+- **Cap in-flight at 5 to 8.** More only ages in the queue and dilutes reviewer attention on us.
+- **Order by two constraints**: dependencies must merge first, since chisel resolves `essential:` and leaves-first is a hard requirement of the skill's Step 2; and prefer packages that unblock the most containers.
+- **Replace on merge**, keeping the pipeline full without overflowing it.
+
+The table below is therefore a **submission order**, not a work breakdown:
 
 | Batch | Packages | Items | Notes |
 |---|---|--:|---|
@@ -230,7 +287,7 @@ Schedule against local acceptance and track upstream merges separately.
 | 7 | `ethtool`, `i2c-tools`, `libdbi1t64`, `libi2c0`, `libnvme1t64`, `librrd8t64`, `nvme-cli`, `psmisc`, `python3-bottle`, `python3-smbus`, `rrdtool`, `smartmontools`, `udev`, `uuid-runtime`, `xxd` | 15 | platform-monitor, **the heaviest batch**. `udev`, `rrdtool` and `smartmontools` all carry configuration, so place it after fluency is built |
 | 8 | `ibverbs-providers`, `kmod`, `libdbus-c++-1-0v5`, `libexplain51t64`, `libjsoncpp26`, `libprotobuf-lite32t64`, `lz4` | 7 | dhcp-relay, sysmgr, syncd-brcm, gbsyncd-agera2/broncos/credo. `gbsyncd-vs` excluded |
 
-Batches 0 to 3 total 11 to 13 items (bucket A 1, bucket B 3, bucket C 7 to 9); batches 4 to 8 total 54; 65 to 67 overall. Packages are assigned to the first batch that needs them, which is why batch 4 is large.
+Positions 0 to 3 total 11 to 13 items (bucket A 1, bucket B 3, bucket C 7 to 9); batches 4 to 8 total 54; 65 to 67 overall. Packages are assigned to the first batch that needs them, which is why batch 4 is large.
 
 From batch 4 on the figures are upper bounds (3.4). Recompute them against the migrated-container criterion of 2.2 once the downstream recipes exist; the real number is likely considerably lower.
 
@@ -244,35 +301,30 @@ From batch 4 on the figures are upper bounds (3.4). Recompute them against the m
 
 | Item | Nature | Response |
 |---|---|---|
-| Upstream review latency | **The principal schedule risk** | Two-level acceptance (5.1) plus the fork consumption path (4.5). Batch 0 clears the process early on the simplest possible package |
+| Upstream review throughput | **The only critical path**, now measured (5.1) | 26.04 merges 1.9 PRs a week against a backlog of 39. The responses are in 5.3: build standing, negotiate review capacity, send fewer upstream. Two-level acceptance (4.5) and fork consumption stop us idling but do not make anything merge faster |
 | The backlog is still hand-maintained | **Correctness risk** | It already missed `librelp0`. Turn the closure computation into a script wired into CI (2.3) |
 | The upper bound is too large | An open item, not a risk | The 54 in 3.4 is derived from Docker images; reconfirm against 2.2 once the downstream recipes exist |
-| Configuration-carrying packages rejected or reworked upstream | Scope risk | About 18 SDFs need substantive spread tests and review expectations may exceed ours. The batching places them late |
+| Configuration-carrying packages rejected or reworked | Scope risk | About 18 SDFs need substantive spread tests. The skill requires data-only packages to be **installed together with a consumer and shown to be used by it**; checking that files exist counts as weak. The submission order places them late |
 | Verified only on amd64 | **Correctness risk** | Upstream CI spans six architectures; recheck before submission (2.1) |
 | 59 packages chisel cannot touch at all | **A boundary risk with no owner** | The 53 self-built plus 6 third-party packages are 12% of 475 and form the hard edge of chiselling. Whether they move to a PPA, get staged whole, or stay out is a part-two or product decision, but **somebody has to make it**, or "chisel everything" is unreachable |
-| Upstream review hanging indefinitely | **A certainty needing a stop-loss rule** | Fork consumption (4.5) is only a stopgap. Agree that a PR with no response after N weeks escalates through Canonical's internal channels, and that if a whole batch overruns, the fork copy is explicitly declared long-lived and someone owns its rebase cost. **There is no N today and no owner** |
+| An individual PR hanging indefinitely | **Already happening upstream**, not hypothetical | The oldest open PR is 600 days old and 61 are past 30 days. Stop-loss rule: **escalate through Canonical's internal channels once a PR passes P90, 26 days, with no response**; if the package is not on the critical path, move it to the long-lived fork instead of continuing to wait. There is no owner for this today |
 | Mixed image baselines | Data risk | The three vs-only images date from 2026-08-27, the rest from 09-17, the base layer from 09-03. Rerun the scan before batch 4 |
 
 ### 6.2 Effort
 
-**Rough figures for scheduling discussion, not commitments.**
+**Authoring is not the constraint.** The chisel-slicer skill's ten steps — validate, dependency tree, per-package inspection, match existing slices, design, write, lint, spread test, verify against docs, two commits — **can be run autonomously by an AI**, stopping at the commit with a human opening the PR. So "how many person-days" is the wrong question.
 
-| Batch | Contents | Items | Estimate |
-|---|---|--:|---|
-| 0 | Slice amendment, first-time CLA, and proving the fork consumption path | 1 | 3 person-days |
-| 1 | The rsyslog family: 3 forward-ports plus 2 new, with an `essential:` ordering constraint | 5 | 4 person-days |
-| 2 | 4 python-related packages, structurally similar and batchable | 4 | 2 person-days |
-| 3 | `radvd` plus the two disputed items | 1 to 3 | 1 person-day |
-| 4 to 8 | Upper bound of 54 items | 54 | 25 person-days |
-| **Total** | | **65 to 67 items** | **~35 person-days, about 7 person-weeks** |
+For an order of magnitude: taking one package from a `_deb-list.py --sdf` draft through to two landed commits is minutes of AI time. Configuration-carrying packages like `udev`, `snmpd` and `rrdtool` spend most of their cost on spread test design and are still hours rather than person-days. **Authoring all 66 is days of work, not weeks.**
 
-Of those 54 packages in batches 4 to 8, only 21 are `lib*` and 4 are `python3-*`, so **"about two thirds plain libraries" does not hold for that stretch**. The rest carry configuration or data: udev, snmpd, rrdtool, smartmontools, ipmitool, logrotate, tcpdump, ifupdown and others. The 25 person-days assumed plain libraries are fast and tools are slow, and the actual mix leans further toward the slow side than the assumption.
+**The real schedule is in 5.2: eight to sixteen months, depending on how much upstream review capacity we obtain.** The two differ by two orders of magnitude, so any discussion of staffing should first answer the three questions in 5.3.
 
-Three qualifications:
+Only three things genuinely need a person, and none of them is authoring:
 
-1. **Authoring time only**, excluding upstream review round trips. At one package per PR that is 65 to 67 PRs.
-2. **Every exclusion biases the same way**: no review rework, no fixing CI failures across six architectures, no debugging spread tests for the 18 configuration-carrying SDFs. All three only make the number larger. The single downward factor is recomputing the batch 4 upper bound, and that depends on part two's pruning, which is out of scope here. **So 35 person-days is a reasonable floor for effort and almost certainly low for calendar time.**
-3. It excludes all of part two.
+| Task | Why it must be human |
+|---|---|
+| Opening PRs and handling review comments | The skill stops at the commit: "the user opens the PR themselves" |
+| Negotiating review arrangements (5.3, item 2) | That is a relationship, not an engineering problem |
+| Deciding which packages need not go upstream (5.3, item 3) | It needs a product judgement: size benefit against the cost of maintaining a fork |
 
 ---
 
