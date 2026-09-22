@@ -69,12 +69,10 @@ graph TD
 ```mermaid
 graph LR
     A["30 个容器<br/>475 个 deb"]
-    A --> R1["ARCHIVE<br/>399"]
-    A --> R2["ARCHIVE 版本已滚<br/>17"]
+    A --> R1["ARCHIVE<br/>416"]
     A --> R3["SELF 自建<br/>53"]
     A --> R4["THIRD-PARTY<br/>6"]
     R1 --> S["chisel 作用域<br/>416 个"]
-    R2 --> S
     R3 --> X["chisel 拉不到<br/>59 个 · 占 12%<br/>dpkg -x 整包解入"]
     R4 --> X
     S --> S1["26.04 已有 SDF<br/>236"]
@@ -138,8 +136,7 @@ graph BT
 
 | 来源 | 数量 | 归不归我们 |
 |---|--:|---|
-| ARCHIVE（名字和版本都在 resolute 归档） | 399 | **归** |
-| ARCHIVE（版本已被 `-updates` 滚过） | 17 | **归**，SDF 照样适用 |
+| ARCHIVE（在 resolute 归档里） | 416 | **归** |
 | SELF（本仓库源构建） | 53 | 不归，chisel 归档里没有 |
 | THIRD-PARTY（下载的二进制 deb） | 6 | 不归，同上 |
 
@@ -487,10 +484,11 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 | 来源 | 数量 | 含义 |
 |---|--:|---|
-| ARCHIVE | 399 | 名字和版本都在归档，有 SDF 就能切 |
-| ARCHIVE（版本不同） | 17 | 装的版本已被 `-updates` 滚过，SDF 照样适用 |
+| ARCHIVE | 416 | 在归档里，有 SDF 就能切 |
 | SELF | 53 | 本仓库源构建，chisel 拉不到 |
 | THIRD-PARTY | 6 | `otelcol-contrib`（325 MB）、`saicredo-*` 四个、`sonic-build-hooks` |
+
+扫描时有 17 个包的安装版本与归档当前版本不同（`-updates` 滚过）。这不影响任何判断——**SDF 不带版本号**（见 4.1），所以它们与其余 ARCHIVE 包完全同等对待，不单列。
 
 **SDF 覆盖率**（对照 `ubuntu-26.04` @70d32b4 的 694 个 SDF，以及 25.10 / 24.04）：
 

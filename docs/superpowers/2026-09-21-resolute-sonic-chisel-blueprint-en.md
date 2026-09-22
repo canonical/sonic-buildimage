@@ -69,12 +69,10 @@ The three blue layers never run on their own, yet every package in them is inher
 ```mermaid
 graph LR
     A["30 containers<br/>475 debs"]
-    A --> R1["ARCHIVE<br/>399"]
-    A --> R2["ARCHIVE, version rolled<br/>17"]
+    A --> R1["ARCHIVE<br/>416"]
     A --> R3["SELF, built here<br/>53"]
     A --> R4["THIRD-PARTY<br/>6"]
     R1 --> S["Chisel scope<br/>416"]
-    R2 --> S
     R3 --> X["Chisel cannot fetch<br/>59 · 12%<br/>unpacked whole via dpkg -x"]
     R4 --> X
     S --> S1["Has an SDF on 26.04<br/>236"]
@@ -138,8 +136,7 @@ Across the 30 containers on the SONiC base chain, the packages dpkg records fall
 
 | Origin | Count | Ours? |
 |---|--:|---|
-| ARCHIVE (name and version both in the resolute archive) | 399 | **Yes** |
-| ARCHIVE (version superseded by `-updates`) | 17 | **Yes**, the SDF still applies |
+| ARCHIVE (present in the resolute archive) | 416 | **Yes** |
 | SELF (built from source here) | 53 | No, not in any chisel archive |
 | THIRD-PARTY (downloaded binary debs) | 6 | No, same reason |
 
@@ -487,10 +484,11 @@ The figures in the body come from three measurements. Only the definitions and c
 
 | Origin | Count | Meaning |
 |---|--:|---|
-| ARCHIVE | 399 | Name and version both in the archive; given an SDF, chisel can cut it |
-| ARCHIVE (version differs) | 17 | The installed version was superseded by `-updates`; the SDF still applies |
+| ARCHIVE | 416 | Present in the archive; given an SDF, chisel can cut it |
 | SELF | 53 | Built from source here; chisel cannot fetch it |
 | THIRD-PARTY | 6 | `otelcol-contrib` (325 MB), four `saicredo-*`, `sonic-build-hooks` |
+
+At scan time 17 packages had an installed version differing from what the archive currently offers, because `-updates` had moved. That changes nothing here: **SDFs carry no version numbers** (see 4.1), so those packages are treated exactly like the rest of the ARCHIVE set and are not listed separately.
 
 **SDF coverage** (against 694 SDFs on `ubuntu-26.04` @70d32b4, plus 25.10 and 24.04):
 
