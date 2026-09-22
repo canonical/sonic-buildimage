@@ -16,7 +16,7 @@
 | 上游已经切好多少？ | 可能进 rock 的 328 个包里**已覆盖 209 个，63.7%**。base 层最重的包已全部到位 |
 | 我们要写多少个？ | **65 至 67 项**：补 1 个已有 SDF、从 24.04 移植 3 个、新写 61 至 63 个 |
 | 其中最紧的是哪些？ | **10 个**，卡住 4 个已迁移容器；另 54 个是 26 个待迁移容器的**上界估计**，不是承诺 |
-| 能立刻开工吗？ | **能。** 本部分不依赖 rock 分支的任何进展，缺的只是本机还没装 `chisel` 和 `spread` |
+| 能立刻开工吗？ | **能。** 本部分不依赖 rock 分支的任何进展，只需先准备好 `chisel` 与 `spread` 工具环境 |
 | 最大的风险？ | 不是上游评审——fork 让交付不被它阻塞。fork 归属已定（jy5275/chisel-releases），但**围绕它的运维约定还没有**（5.7） |
 | 要多久 | **两条轨道**（6.1）。rock 交付不等上游合入，写完 SDF 用 fork 消费即可，量级是**周**；上游收敛是 **11 至 32 周**（前 22 个）或 35 至 55 周（全部 66 个），取决于能拿到多少评审注意力 |
 
@@ -174,7 +174,7 @@ graph BT
 
 ### 4.1 怎么写：用 chisel-slicer skill，不要另起一套
 
-`canonical/mason` 的 `chisel-slicer` skill 定义了完整的十步流程（校验 → 依赖树 → 逐包检查 → 对齐既有 slice → 设计 → 写 SDF → lint → spread 测试 → 对文档核验 → 双 commit），本机装在 `~/.claude/skills/chisel-releases/`。`ubuntu-26.04` 的 `AGENTS.md` 明确要求改 slice 必须用它。
+`canonical/mason` 的 `chisel-slicer` skill 定义了完整的十步流程（校验 → 依赖树 → 逐包检查 → 对齐既有 slice → 设计 → 写 SDF → lint → spread 测试 → 对文档核验 → 双 commit），按 `AGENTS.md` 的说明安装（`npx tessl i canonical/mason --skill chisel-slicer`）。`ubuntu-26.04` 的 `AGENTS.md` 明确要求改 slice 必须用它。
 
 **格式约束、工具用法、slice 命名、测试深度分档、commit 规范一律以 skill 为准**，本文不复述。skill 更新时以它为唯一权威。
 
@@ -182,11 +182,11 @@ graph BT
 
 这有两个后果。好的一面：SDF 不会因为包发了 SRU 就失效，只要文件路径没变。坏的一面：**路径变了它会静默失效**——`chisel cut` 会报找不到文件，但没有任何版本元数据能提前告诉你。所以 7.2 说的 churn 判据才重要，也所以 fork 里的 SDF 需要跟着上游归档重测。
 
-**环境前置：本机目前没有 `chisel` 和 `spread`，开工前必须装上。** chisel 走 snap，spread 需要 lxd 或 docker backend。**两个都要，不能只装 chisel**——skill 要求 spread 测试实跑通过才能提交，只装 chisel 会让这条验收形同虚设。
+**环境前置：`chisel` 与 `spread` 都要装。** chisel 走 snap，spread 需要 lxd 或 docker backend。**两个都要，不能只装 chisel**——skill 要求 spread 测试实跑通过才能提交，只装 chisel 会让这条验收形同虚设。
 
 ### 4.2 skill 之外、只属于我们的四条
 
-**一、所有查询必须钉在 resolute 上。** `_deb-list.py` 从 `chisel.yaml` 读 suite，但 `apt-cache depends` 用的是本机 apt 源。本机若是别的 Ubuntu 版本，依赖树和文件清单都会取错，而 `check-slice.py` 查不出这类错误，只有上游 CI 会。**3.2 节那三个从 24.04 移植的包最容易踩**：拿 24.04 的 deb 内容写出来的路径，在 resolute 里可能根本不存在。
+**一、所有查询必须钉在 resolute 上。** `_deb-list.py` 从 `chisel.yaml` 读 suite，但 `apt-cache depends` 读的是执行环境自身的 apt 源。若那台机器跑的是别的 Ubuntu 版本，依赖树和文件清单都会取错，而 `check-slice.py` 查不出这类错误，只有上游 CI 会。**3.2 节那三个从 24.04 移植的包最容易踩**：拿 24.04 的 deb 内容写出来的路径，在 resolute 里可能根本不存在。
 
 **二、依赖闭包已经算好，直接用。** 见 4.6，66 个就是完整集合，内部 22 条依赖边已列出。不需要每个包再重跑一遍 `apt-cache depends --recurse`。
 
@@ -498,6 +498,22 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 | 不进 rock（build-only、pkg-mgmt、perl） | 31 | 0 | 63 | 94 |
 | **合计** | **236** | **3** | **177** | **416** |
 
+### 从 177 到 66
+
+「都没有 SDF」的 177 个（加上 3 个仅 24.04 有的，共 180 个）与待办的 66 个之间差了 114 个，三步剥离：
+
+| | 数量 | 剩余 |
+|---|--:|--:|
+| 容器里无 26.04 SDF 的归档包 | | 180 |
+| 减：**不进 rock 的**（`-dev` 与编译器、apt/dpkg/pip 器材、perl） | −56 | 124 |
+| 减：**仅 syncd-vs / gbsyncd-vs 的工具链泄漏**（见 3.2 末尾） | −35 | 89 |
+| 减：**base 层里没有运行期消费者的** | −24 | 65 |
+| 加：`util-linux`（补 slice，它本身已有 SDF 故不在上表） | +1 | **66** |
+
+第三步那 24 个值得单列，因为它们是判断而非规则：`rsync`（base Dockerfile 注释自陈是层间拷贝用的构建期手段）、`net-tools`（唯一调用者在范围外的 dash-engine）、`adduser` 与 `login.defs`（只被 maintainer 脚本用到，而 chisel 不跑它们）、`e2fsprogs` 三件（容器内不做文件系统操作）、`rust-coreutils` 与 `coreutils-from-uutils`（26.04 的 `coreutils.yaml` 路由到 `coreutils-from-gnu`，这条分支不走）、以及 setuptools 与 wheel 的 10 个 vendored 依赖（rock 里不装 pip 工具链）。
+
+**这 24 个是本文最可能判错的地方。** 依据是脚本调用 grep 加反向依赖，不是 ELF 闭包——对共享库无效（见 5.4 对 `libdaemon0` 的说明）。真要收紧应当对切出来的 rootfs 做 `DT_NEEDED` 闭包。
+
 **口径警告**：416 里有 94 个不会进 rock（`-dev` 与编译器 76 个、apt/dpkg/pip 器材 12 个、perl 6 个），剔掉后**可能进 rock 的 328 个、已覆盖 209 个，63.7%**。正文用的是剔除后的口径。
 
 这组数字已复核修正。`chiselcov2.py` 原先按包名前缀判断，把 `gcc-16-base`、`libgcc-s1`、`rpcsvc-proto`、`libapt-pkg7.0` 四个误判成 build-only 或 pkg-mgmt——前两个出现在 30 个容器里，是每个 C/C++ 二进制都要的运行期支持库。改判依据不是 Section（`libasan8`、`libclang1-21` 的 Section 也写着 `libs`，但它们确属编译期），而是**容器分布**：只出现在 `syncd-vs` / `gbsyncd-vs` 的是工具链泄漏，出现在多个容器的是真运行期。修正后覆盖率从 63.6% 变到 63.7%，几乎不动，但分母和分类计数要用新的。另外 **25.10 对我们零增量**，移植来源只剩 24.04 的 3 个包。
@@ -522,7 +538,7 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 
 **`ld.so.cache`**：`ld.so` 的内建回退搜索路径含 `/lib/x86_64-linux-gnu`、`/usr/lib/x86_64-linux-gnu`、`/lib`、`/usr/lib`，而 SONiC 自建库全装在 `/usr/lib/x86_64-linux-gnu`。宿主机上用 `--inhibit-cache` 模拟缺失后 `python3 -c "import ssl"` 照常工作。**但这个测试是在宿主机做的，不是在切出来的 rootfs 里，也没覆盖 53 个自建包和 6 个第三方二进制**，所以按「每容器抽查一次」对待，不要当成已关闭的议题。会踩的情形是库装在非默认目录并依赖 `ld.so.conf.d`。
 
-**pycache**：任何 python deb 都不附带 `.pyc`，本机 624 个全是 postinst 现场生成的。切出来的 rootfs 没有字节码，解释器每次启动重新编译。这是性能问题不是正确性问题，在意就在构建步骤跑 `python3 -m compileall`。
+**pycache**：任何 python deb 都不附带 `.pyc`，一个装好的系统上那几百个全是 postinst 现场生成的。切出来的 rootfs 没有字节码，解释器每次启动重新编译。这是性能问题不是正确性问题，在意就在构建步骤跑 `python3 -m compileall`。
 
 **用户和组是唯一没有上游解法的一类**：694 个 SDF 里只有 `base-passwd` 碰 `/etc/passwd`，给的是静态的 18 用户 39 组。多个 SDF 注释挑明了这点，例如 `redis-tools.yaml`：*"depends on adduser ... however we don't support this currently"*。要求增加 `adduser` slice 的 issue（chisel-releases#549）自 2025-04 起一直开着。具体要建哪 5 个用户见 8.2。
 

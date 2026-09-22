@@ -16,7 +16,7 @@
 | How much has upstream already sliced? | Of the 328 packages that could reach a rock, **209 are covered, 63.7%**. The heaviest base-layer packages are all in place |
 | How many must we write? | **65 to 67 items**: amend 1 existing SDF, forward-port 3 from 24.04, write 61 to 63 new ones |
 | Which are most urgent? | **10**, which block the four already-migrated containers. The other 54 are an **upper bound** for the 26 unmigrated ones, not a commitment |
-| Can work start now? | **Yes.** This part depends on no progress in the rock branch. The only gap is that `chisel` and `spread` are not installed on this machine |
+| Can work start now? | **Yes.** This part depends on no progress in the rock branch; it only needs a working `chisel` and `spread` environment |
 | Biggest risk? | Not upstream review, since the fork keeps delivery unblocked. It is that the fork has an owner but **no operational agreement** around it (5.5) |
 | How long | **Two tracks** (5.1). Rock delivery does not wait for upstream merges, since the fork serves them, and is a matter of **weeks**. Upstream convergence is **11 to 32 weeks** for the first 22, or 35 to 55 for all 66, depending on the reviewer attention we obtain |
 
@@ -174,7 +174,7 @@ A closure script has been run (63 seeds expanding to 215 packages, see 7.4), but
 
 ### 4.1 How to author: use the chisel-slicer skill, do not invent a second process
 
-`canonical/mason`'s `chisel-slicer` skill defines the full ten-step workflow (validate, dependency tree, per-package inspection, match existing slices, design, write, lint, spread test, verify against docs, two commits). It is installed here at `~/.claude/skills/chisel-releases/`, and `AGENTS.md` on `ubuntu-26.04` requires using it for slice work.
+`canonical/mason`'s `chisel-slicer` skill defines the full ten-step workflow (validate, dependency tree, per-package inspection, match existing slices, design, write, lint, spread test, verify against docs, two commits). Install it as `AGENTS.md` on `ubuntu-26.04` describes (`npx tessl i canonical/mason --skill chisel-slicer`); that file requires using it for slice work.
 
 **Format constraints, tool usage, slice naming, testing depth and commit conventions all follow the skill**, which this document does not restate. When the skill changes, it is the single authority.
 
@@ -182,11 +182,11 @@ A closure script has been run (63 seeds expanding to 215 packages, see 7.4), but
 
 That cuts both ways. An SDF does not break merely because the package received an SRU, as long as the file paths held. But **if a path does change, it fails silently**: `chisel cut` reports a missing file and no version metadata warns you in advance. That is why the churn criterion in 5.4 matters, and why fork SDFs need retesting against the upstream archive.
 
-**Environment prerequisite: this machine has neither `chisel` nor `spread`, and both must be installed before work starts.** chisel via snap, spread needs an lxd or docker backend. **Both, not just chisel** — the skill requires a spread test that actually runs and passes before a commit, so installing only chisel leaves that criterion empty.
+**Environment prerequisite: both `chisel` and `spread` are needed.** chisel via snap, spread needs an lxd or docker backend. **Both, not just chisel** — the skill requires a spread test that actually runs and passes before a commit, so installing only chisel leaves that criterion empty.
 
 ### 4.2 The four things that are ours rather than the skill's
 
-**One, every query must be pinned to resolute.** `_deb-list.py` reads the suite from `chisel.yaml`, but `apt-cache depends` uses the host's apt sources. On a host running another Ubuntu release both the dependency tree and the file listing come back wrong, and `check-slice.py` cannot detect it; only upstream CI will. **The three 24.04 forward-ports in 5.5 are the likeliest place to trip**: paths written from a 24.04 deb may not exist in resolute at all.
+**One, every query must be pinned to resolute.** `_deb-list.py` reads the suite from `chisel.yaml`, but `apt-cache depends` reads whatever apt sources the executing environment has. If that machine runs a different Ubuntu release, both the dependency tree and the file listing come back wrong, and `check-slice.py` cannot detect it; only upstream CI will. **The three 24.04 forward-ports in 5.5 are the likeliest place to trip**: paths written from a 24.04 deb may not exist in resolute at all.
 
 **Two, the dependency closure is already computed, so use it.** See 4.6: 66 is the complete set and the 22 internal edges are listed. There is no need to rerun `apt-cache depends --recurse` per package.
 
@@ -498,6 +498,22 @@ At scan time 17 packages had an installed version differing from what the archiv
 | Never reaches a rock (build-only, pkg-mgmt, perl) | 31 | 0 | 63 | 94 |
 | **Total** | **236** | **3** | **177** | **416** |
 
+### From 177 to 66
+
+The 177 with no SDF anywhere (180 including the 3 that exist only on 24.04) and the 66-package backlog differ by 114. Three subtractions:
+
+| | Count | Remaining |
+|---|--:|--:|
+| Archive packages in the containers with no 26.04 SDF | | 180 |
+| Less: **never reaches a rock** (`-dev` and compilers, apt/dpkg/pip tooling, perl) | −56 | 124 |
+| Less: **toolchain leakage present only in syncd-vs and gbsyncd-vs** (see the end of 3.2) | −35 | 89 |
+| Less: **base-layer packages with no runtime consumer** | −24 | 65 |
+| Plus: `util-linux`, a slice addition, which has an SDF and so never appeared above | +1 | **66** |
+
+That third subtraction deserves itemising, because those 24 are judgements rather than rules: `rsync` (the base Dockerfile's own comment says it is there to copy changes between layers, a build-time device), `net-tools` (its only caller is in dash-engine, which is out of scope), `adduser` and `login.defs` (used only by maintainer scripts, which chisel does not run), the three `e2fsprogs` packages (containers perform no filesystem operations), `rust-coreutils` and `coreutils-from-uutils` (26.04's `coreutils.yaml` routes to `coreutils-from-gnu`, so that branch is never taken), and the ten vendored setuptools and wheel dependencies (rocks carry no pip toolchain).
+
+**Those 24 are the likeliest place this document is wrong.** The evidence is script-call grep plus reverse dependencies, not an ELF closure, which is invalid for shared libraries (see the note on `libdaemon0` in 5.4). Tightening this properly means running a `DT_NEEDED` closure over a cut rootfs.
+
 **Denominator warning**: 94 of the 416 never reach a rock (76 `-dev` and compilers, 12 apt/dpkg/pip tooling, 6 perl). Excluding them, **328 packages could reach a rock and 209 are covered, 63.7%**. The body uses the excluded denominator.
 
 These figures have been rechecked and corrected. `chiselcov2.py` originally judged by name prefix and mislabelled four packages as build-only or pkg-mgmt: `gcc-16-base`, `libgcc-s1`, `rpcsvc-proto` and `libapt-pkg7.0`. The first two appear in 30 containers and are the runtime support libraries every C and C++ binary needs. The corrected criterion is not Section either, since `libasan8` and `libclang1-21` are also `libs` yet genuinely belong to build time; it is **container distribution**: a package appearing only in `syncd-vs` or `gbsyncd-vs` is toolchain leakage, and one appearing across several containers is real runtime. The correction moves coverage from 63.6% to 63.7%, almost nothing, but the denominator and the class counts should use the new values. Also, **25.10 adds nothing for us**; the only forward-port source is 24.04, for three packages.
@@ -522,7 +538,7 @@ Four kinds of side effect, three with an established solution:
 
 **`ld.so.cache`**: the built-in fallback search path covers `/lib/x86_64-linux-gnu`, `/usr/lib/x86_64-linux-gnu`, `/lib` and `/usr/lib`, and every self-built SONiC library installs into `/usr/lib/x86_64-linux-gnu`. With `--inhibit-cache` simulating the missing cache, `python3 -c "import ssl"` still works. **But that test ran on the host rather than in a cut rootfs, and covered neither the 53 self-built packages nor the 6 third-party binaries**, so treat it as a per-container spot check rather than a closed question. The case that would break is a library in a non-default directory relying on an `ld.so.conf.d` entry.
 
-**pycache**: no python deb ships `.pyc`; all 624 on this host are generated by the postinst. A cut rootfs has no bytecode and the interpreter recompiles at every start. That is a performance matter, addressed if desired by `python3 -m compileall` as a build step.
+**pycache**: no python deb ships `.pyc`; on an installed system the several hundred present are all generated by the postinst. A cut rootfs has no bytecode and the interpreter recompiles at every start. That is a performance matter, addressed if desired by `python3 -m compileall` as a build step.
 
 **Users and groups are the one category with no upstream solution**: of 694 SDFs only `base-passwd` touches `/etc/passwd`, supplying a static 18 users and 39 groups. Several SDFs say so, for example `redis-tools.yaml`: *"depends on adduser ... however we don't support this currently"*. The issue requesting an `adduser` slice (chisel-releases#549) has been open since April 2025. Which five users to create is in 8.2.
 
