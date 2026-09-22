@@ -17,7 +17,7 @@
 | How many must we write? | **65 to 67 items**: amend 1 existing SDF, forward-port 3 from 24.04, write 61 to 63 new ones |
 | Which are most urgent? | **10**, which block the four already-migrated containers. The other 54 are an **upper bound** for the 26 unmigrated ones, not a commitment |
 | Can work start now? | **Yes.** This part depends on no progress in the rock branch. The only gap is that `chisel` and `spread` are not installed on this machine |
-| Biggest risk? | Not upstream review, since the fork keeps delivery unblocked. It is that **nobody owns the long-lived fork** and its cost (5.5) |
+| Biggest risk? | Not upstream review, since the fork keeps delivery unblocked. It is that the fork has an owner but **no operational agreement** around it (5.5) |
 | How long | **Two tracks** (5.1). Rock delivery does not wait for upstream merges, since the fork serves them, and is a matter of **weeks**. Upstream convergence is **11 to 32 weeks** for the first 22, or 35 to 55 for all 66, depending on the reviewer attention we obtain |
 
 ---
@@ -437,7 +437,9 @@ Two consequences to know: **the fork must be a complete copy of `ubuntu-26.04` a
 | Collision handling | Merging the day upstream accepts an SDF of the same name |
 | Eventual migration | Every slice that moves upstream means changing a recipe from `override-build` back to `stage-packages` |
 
-**This is not "nearly free"; it is an internal product that needs an owner**, a pinned revision, a CI matrix, an update SLA, a promotion policy and a collision procedure. This document sets no budget for any of it, **which part two must supply**.
+**This is not "nearly free"; it is an internal product that needs** a pinned revision, a CI matrix, an update SLA, a promotion policy and a collision procedure.
+
+**Ownership is settled**: use [github.com/jy5275/chisel-releases](https://github.com/jy5275/chisel-releases), a fork of `canonical/chisel-releases` that is actively pushed to and already carries integration branches such as `dev/docker-database`. The list above is the operational agreement it still needs, not a search for a different fork.
 
 "Fifty-seven packages went five months without an SRU" does not mean they will go a release lifetime without one. The data covers only from resolute's release to now and does not extrapolate.
 
@@ -448,12 +450,12 @@ Two consequences to know: **the fork must be a complete copy of `ubuntu-26.04` a
 | Item | Nature | Response |
 |---|---|---|
 | Upstream review throughput | A constraint on track B; **it does not block rock delivery** (5.1) | 26.04 merges 1.9 a week against a backlog of 39. Push in 5.4's order, heaviest fork cost first, and let the rest wait. Quote the 11-to-32-week range externally, never the lower bound |
-| **The long-lived fork has no owner** | **The principal risk** (5.5) | The fork is not free: tracking upstream change, security updates, cross-architecture coverage, rebasing, collision handling, eventual migration. It needs an owner, a pinned revision, a CI matrix and an update SLA. **None of those exist**, and once track A delivers, the fork becomes a production dependency |
+| Operational agreement for the fork | Owned, but unspecified (5.5) | The fork is `jy5275/chisel-releases`, so ownership is settled. It still needs a pinned revision, a CI matrix, an update SLA and a collision procedure, because once task one delivers it is a production dependency |
 | The backlog is still hand-maintained | **Correctness risk** | It already missed `librelp0`. Turn the closure computation into a script wired into CI (2.3) |
 | The upper bound is too large | An open item, not a risk | The 54 in 4.7 is derived from Docker images; reconfirm against 2.2 once the downstream recipes exist |
 | Configuration-carrying packages rejected or reworked | Scope risk | About 18 SDFs need substantive spread tests. The skill requires data-only packages to be **installed together with a consumer and shown to be used by it**; checking that files exist counts as weak. The submission order places them late |
 | Verified only on amd64 | **Correctness risk** | Upstream CI spans six architectures; recheck before submission (2.1) |
-| 59 packages chisel cannot touch at all | **A boundary risk with no owner** | The 53 self-built plus 6 third-party packages are 12% of 475 and form the hard edge of chiselling. Whether they move to a PPA, get staged whole, or stay out is a part-two or product decision, but **somebody has to make it**, or "chisel everything" is unreachable |
+| 59 packages chisel cannot touch | Outside this roadmap item | The 53 self-built plus 6 third-party are 12% of 475. Whether they move to a PPA or a superdistro is tracked elsewhere and is not handled here |
 | An individual PR hanging indefinitely | **Already happening upstream**, not hypothetical | The oldest open PR is 600 days old and 61 are past 30 days. Stop-loss rule: **escalate through Canonical's internal channels once a PR passes P90, 26 days, with no response**; if the package is not on the critical path, move it to the long-lived fork instead of continuing to wait. There is no owner for this today |
 | Mixed image baselines | Data risk | The three vs-only images date from 2026-08-27, the rest from 09-17, the base layer from 09-03. **Rerun the scan before relying on container distribution**, since that is what 5.4's migration-cost criterion reads |
 
@@ -471,7 +473,7 @@ Only three things genuinely need a person, and none of them is authoring:
 |---|---|
 | Opening PRs and handling review comments | The skill stops at the commit: "the user opens the PR themselves" |
 | Negotiating review arrangements (5.3, item 2) | That is a relationship, not an engineering problem |
-| Budgeting and owning the fork (5.5) | It needs a product judgement: how much maintenance an internal chisel release product is worth |
+| Setting the fork's operational agreement (5.5) | It needs a product judgement: how much to invest in a pinned revision, CI matrix and update SLA |
 
 ---
 
