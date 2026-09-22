@@ -7,6 +7,7 @@ rocklist=(
     "dockers/docker-eventd"
     "dockers/docker-router-advertiser"
     "dockers/docker-lldp"
+    "dockers/docker-snmp"
 )
 
 set -x
