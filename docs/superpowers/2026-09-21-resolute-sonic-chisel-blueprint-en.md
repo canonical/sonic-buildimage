@@ -78,7 +78,7 @@ graph LR
     S --> S1["Has an SDF on 26.04<br/>236"]
     S --> S2["Only on 24.04<br/>3"]
     S --> S3["On neither<br/>177"]
-    S1 --> Y["Excluding 76 build-only<br/>and 12 pkg-mgmt<br/>328 can reach a rock<br/>209 covered · 63.7%"]
+    S1 --> Y["Excluding the 94<br/>that never reach a rock<br/>328 can reach a rock<br/>209 covered · 63.7%"]
     S2 --> Z["Backlog: 66"]
     S3 --> Z
     style S fill:#e6f4ea,stroke:#34a853
@@ -151,7 +151,7 @@ Across the 30 containers on the SONiC base chain, the packages dpkg records fall
 Two criteria, used together but kept distinct:
 
 - **The four migrated containers**: read the recipe's `install-unchiselled-packages`. If the package already has an SDF on 26.04 it is not our problem (swapping it in is part two); if not, it goes on the backlog. This produces 3.3, and it is **measured**.
-- **The 26 unmigrated containers**: only the Docker image inventory is available. That estimate is **systematically too large**, because migration drops build-only packages, pkg-mgmt packages and the whole supervisord python dependency chain. It yields an **upper bound** for scheduling, not a commitment. This produces 3.4.
+- **The 26 unmigrated containers**: only the Docker image inventory is available. That estimate is **systematically too large**, because migration drops `-dev` packages, package-manager tooling and the whole supervisord python dependency chain. It yields an **upper bound** for scheduling, not a commitment. This produces 3.4.
 
 `syncd-vs` and `gbsyncd-vs` are an exception: they carry 128 packages and 750 MB above their parent because one `apt-get install` mixes build and runtime dependencies. No SDFs are written for that collateral; it resolves itself when the recipe author enumerates `stage-packages` from scratch.
 
@@ -196,7 +196,7 @@ That cuts both ways. An SDF does not break merely because the package received a
 
 ### 4.3 The backlog
 
-### 4.4 Bucket A: add a slice to an existing SDF (1 item)
+### 4.4 Amend one existing SDF (1 item)
 
 | Package | What to add | Evidence |
 |---|---|---|
@@ -206,7 +206,7 @@ The smallest change and the form of PR upstream accepts most readily. **Submit i
 
 `mawk`'s missing `/usr/bin/awk` is the same class of problem, but standardising recipes on `gawk_bins` sidesteps it without waiting for upstream, so it is not on the backlog. The backlog package `ndisc6` also needs `/usr/bin/traceroute6`, which is simply included when we author it.
 
-### 4.5 Bucket B: forward-port from 24.04 (3 items)
+### 4.5 Forward-port from 24.04 (3 items)
 
 | Package | 24.04 SDF lines | Evidence |
 |---|--:|---|
@@ -216,13 +216,13 @@ The smallest change and the form of PR upstream accepts most readily. **Submit i
 
 Forward-porting is **adaptation, not copying**: check usrmerge paths, `t64` renames, the conversion of `essential:` from list to map (26.04 is v3, where the list form is an outright parse error), and changes in the `.deb` contents themselves.
 
-### 4.6 Bucket C: measured as missing on the migrated containers (10 items, 9 after removing the bucket B overlap, 7 after dropping the two disputed)
+### 4.6 Measured as missing on the migrated containers (10 items)
 
-Deduplicating the `install-unchiselled-packages` parts of the four recipes and keeping only what has no SDF:
+Deduplicating the `install-unchiselled-packages` parts of the four recipes and keeping only what has no SDF. **`rsyslog` overlaps with 4.5, and `net-tools` and `libdaemon0` fall away under the default below, so the net figure for new SDFs is 7 to 9.**
 
 | Package | Appears in | Note |
 |---|---|---|
-| `rsyslog`, `rsyslog-relp` | all four | rsyslog is bucket B; `rsyslog-relp` is required, since the configuration really does carry `module(load="omrelp")` |
+| `rsyslog`, `rsyslog-relp` | all four | `rsyslog` is in 4.5; `rsyslog-relp` is required, since the configuration really does carry `module(load="omrelp")` |
 | `librelp0` | not in any recipe list | A hard dependency of `rsyslog-relp` (`Depends: librelp0 (>= 1.5.0)`). It never appears in the recipe lists because apt resolves it when the package is installed whole, but once we write an SDF for rsyslog-relp its `essential:` needs an SDF for librelp0 |
 | `libpython3.14` | database, router-advertiser | C extensions link against it |
 | `python3-yaml`, `python3-redis`, `python3-cffi-backend` | eventd, router-advertiser, mgmt-framework | python dependencies installed as debs |
@@ -230,7 +230,7 @@ Deduplicating the `install-unchiselled-packages` parts of the four recipes and k
 | `libdaemon0` | eventd, router-advertiser, mgmt-framework | **Questionable**: as above |
 | `radvd` | router-advertiser | Required |
 
-**These 10 are the most urgent tier**, because they block containers already in progress. If `net-tools` and `libdaemon0` turn out to be inherited, the bucket drops from 9 to 7.
+**These are the most urgent**, because they block containers already in progress. If `net-tools` and `libdaemon0` turn out to be inherited, the bucket drops from 9 to 7.
 
 **A methodological caution (not yet fully honoured here, see below)**: `install-unchiselled-packages` lists only what the recipe author wrote down explicitly, never the transitive dependencies, because apt resolves those when a package is installed whole. But when we write an SDF for one of those packages, chisel resolves the SDF's `essential:` instead, which requires an SDF for each dependency. `librelp0` fell through exactly that gap. **The backlog must be dependency-closed rather than hand-maintained.** Rechecking on that basis also restored `libpopt0` and `libprotobuf32t64` to 2.4. `python3-async-timeout` is an alternation dependency of `python3-redis` (`python3-async-timeout | python3-supported-min`) that python3.14 should already satisfy, so it is left off the list but must be confirmed when the SDF is written.
 
@@ -238,7 +238,7 @@ The list is currently a hand-maintained table rather than tool-generated, **so t
 
 ### 4.7 Upper bound: the 26 unmigrated containers (about 54 items)
 
-Estimating from the Docker inventory, minus build-only and pkg-mgmt, the 26 unmigrated containers may need about 54 more SDFs (`radvd` is in 4.3 because router-advertiser is already migrated). The main entries by number of beneficiaries:
+Estimating from the Docker inventory, minus the packages that never reach a rock, the 26 unmigrated containers may need about 54 more SDFs (`radvd` is in 4.3 because router-advertiser is already migrated). The main entries by number of beneficiaries:
 
 | Tier | Packages |
 |---|---|
@@ -495,12 +495,10 @@ At scan time 17 packages had an installed version differing from what the archiv
 | Category | On 26.04 | Only on 24.04 | On none | Subtotal |
 |---|--:|--:|--:|--:|
 | runtime | 205 | 3 | 114 | 322 |
-| perl | 4 | 0 | 2 | 6 |
-| pkg-mgmt | 9 | 0 | 3 | 12 |
-| build-only | 18 | 0 | 58 | 76 |
+| Never reaches a rock (build-only, pkg-mgmt, perl) | 31 | 0 | 63 | 94 |
 | **Total** | **236** | **3** | **177** | **416** |
 
-**Denominator warning**: of those 416, 76 are build-only and 12 are pkg-mgmt. Excluding them, **328 packages could reach a rock and 209 are covered, 63.7%**. The body uses the excluded denominator.
+**Denominator warning**: 94 of the 416 never reach a rock (76 `-dev` and compilers, 12 apt/dpkg/pip tooling, 6 perl). Excluding them, **328 packages could reach a rock and 209 are covered, 63.7%**. The body uses the excluded denominator.
 
 These figures have been rechecked and corrected. `chiselcov2.py` originally judged by name prefix and mislabelled four packages as build-only or pkg-mgmt: `gcc-16-base`, `libgcc-s1`, `rpcsvc-proto` and `libapt-pkg7.0`. The first two appear in 30 containers and are the runtime support libraries every C and C++ binary needs. The corrected criterion is not Section either, since `libasan8` and `libclang1-21` are also `libs` yet genuinely belong to build time; it is **container distribution**: a package appearing only in `syncd-vs` or `gbsyncd-vs` is toolchain leakage, and one appearing across several containers is real runtime. The correction moves coverage from 63.6% to 63.7%, almost nothing, but the denominator and the class counts should use the new values. Also, **25.10 adds nothing for us**; the only forward-port source is 24.04, for three packages.
 

@@ -78,7 +78,7 @@ graph LR
     S --> S1["26.04 已有 SDF<br/>236"]
     S --> S2["仅 24.04 有<br/>3"]
     S --> S3["都没有<br/>177"]
-    S1 --> Y["剔除 build-only 76<br/>与 pkg-mgmt 12 后<br/>可进 rock 328 个<br/>已覆盖 209 · 63.7%"]
+    S1 --> Y["剔除 94 个不进 rock 的<br/>可进 rock 328 个<br/>已覆盖 209 · 63.7%"]
     S2 --> Z["待办 66 个"]
     S3 --> Z
     style S fill:#e6f4ea,stroke:#34a853
@@ -151,7 +151,7 @@ graph BT
 两种口径，混用但要分清：
 
 - **4 个已迁移容器**：读配方的 `install-unchiselled-packages`。包在 26.04 上已有 SDF 就不用管（那是第二部分的换 slice 工作），没有就进待办。这是 3.3 的来源，**实测**。
-- **26 个待迁移容器**：只能用 Docker 镜像的包清单推。这个估计**系统性偏大**，因为迁移时会掉 build-only、pkg-mgmt 和整条 supervisord python 依赖链。得出的是**上界**，用于排期不是承诺。这是 3.4 的来源。
+- **26 个待迁移容器**：只能用 Docker 镜像的包清单推。这个估计**系统性偏大**，因为迁移时会掉 `-dev`、包管理器器材和整条 supervisord python 依赖链。得出的是**上界**，用于排期不是承诺。这是 3.4 的来源。
 
 `syncd-vs` / `gbsyncd-vs` 是例外：它们比父层多 128 个包、750 MB，源头是一条 `apt-get install` 混装了构建与运行依赖。不为那些连带包写 SDF，等配方作者从零列 `stage-packages` 时自然解决。
 
@@ -196,7 +196,7 @@ graph BT
 
 ### 4.3 待办清单
 
-### 4.4 A 桶：给已有 SDF 补 slice（1 项）
+### 4.4 补一个已有 SDF（1 项）
 
 | 包 | 要补什么 | 依据 |
 |---|---|---|
@@ -206,7 +206,7 @@ graph BT
 
 `mawk` 缺 `/usr/bin/awk` 也属同类，但配方统一用 `gawk_bins` 即可绕开，不必等上游，故不列为待办。待写的 `ndisc6` 缺 `/usr/bin/traceroute6`，写的时候带上即可。
 
-### 4.5 B 桶：从 24.04 移植（3 项）
+### 4.5 从 24.04 移植（3 项）
 
 | 包 | 24.04 SDF 行数 | 依据 |
 |---|--:|---|
@@ -216,13 +216,13 @@ graph BT
 
 移植是**适配不是复制**：要核 usrmerge 路径、`t64` 改名、`essential:` 必须从列表改成 map（26.04 是 v3，列表形态直接解析报错）、以及 `.deb` 内容本身的增删。
 
-### 4.6 C 桶：已迁移容器实测缺的 SDF（10 项，去掉 B 桶重叠后 9 项，再去掉两个存疑项后 7 项）
+### 4.6 已迁移容器实测缺的 SDF（10 项）
 
-这是 4 个配方的 `install-unchiselled-packages` 去重后，真正没有 SDF 的：
+这是 4 个配方的 `install-unchiselled-packages` 去重后，真正没有 SDF 的。**其中 `rsyslog` 与 4.5 重复，`net-tools` 和 `libdaemon0` 按下方默认值可去掉，所以新写的净数是 7 到 9 个。**
 
 | 包 | 出现在 | 备注 |
 |---|---|---|
-| `rsyslog`、`rsyslog-relp` | 全部 4 个 | rsyslog 见 B 桶；`rsyslog-relp` 必需，配置里真有 `module(load="omrelp")` |
+| `rsyslog`、`rsyslog-relp` | 全部 4 个 | `rsyslog` 见 4.5；`rsyslog-relp` 必需，配置里真有 `module(load="omrelp")` |
 | `librelp0` | 不在配方清单上 | `rsyslog-relp` 的硬依赖（`Depends: librelp0 (>= 1.5.0)`）。配方整包安装时 apt 自动解析所以没出现在清单里，但我们要为 rsyslog-relp 写 SDF，它的 `essential:` 就需要 `librelp0` 的 SDF |
 | `libpython3.14` | database、router-advertiser | C 扩展链接它 |
 | `python3-yaml`、`python3-redis`、`python3-cffi-backend` | eventd、router-advertiser、mgmt-framework | deb 装的 python 依赖 |
@@ -230,7 +230,7 @@ graph BT
 | `libdaemon0` | eventd、router-advertiser、mgmt-framework | **存疑**：同上 |
 | `radvd` | router-advertiser | 必需 |
 
-**这 10 个是当前最紧的一批**，因为它们卡住的是已经在做的容器。其中 `net-tools` 和 `libdaemon0` 要先确认是否真需要，可能直接从清单里去掉。
+**这批是当前最紧的**，因为它们卡住的是已经在做的容器。其中 `net-tools` 和 `libdaemon0` 要先确认是否真需要，可能直接从清单里去掉。
 
 **方法论提醒（本条自身尚未完全落实，见下）**：`install-unchiselled-packages` 只列配方作者显式写下的包，不列传递依赖——整包安装时 apt 自己解析掉了。但我们要为其中某个包写 SDF 时，chisel 解析的是 SDF 的 `essential:`，那就必须有被依赖包的 SDF。`librelp0` 就是这么漏掉的。**待办清单必须做依赖闭包，不能手工维护**。按这个口径复查一遍，另外补回了 2.4 的 `libpopt0` 与 `libprotobuf32t64`。`python3-async-timeout` 是 `python3-redis` 的可选依赖（`python3-async-timeout | python3-supported-min`），python3.14 下后者应已满足，暂不列入但写 SDF 时要确认。
 
@@ -238,7 +238,7 @@ graph BT
 
 ### 4.7 上界估计：26 个待迁移容器（约 54 项）
 
-按 Docker 镜像包清单推算，去掉 build-only 与 pkg-mgmt 之后，26 个待迁移容器可能还需要约 54 个 SDF（`radvd` 已归入 3.3，因为 router-advertiser 已迁移）。按受益容器数排序的主要项：
+按 Docker 镜像包清单推算，去掉不进 rock 的那批之后，26 个待迁移容器可能还需要约 54 个 SDF（`radvd` 已归入 3.3，因为 router-advertiser 已迁移）。按受益容器数排序的主要项：
 
 | 层级 | 包 |
 |---|---|
@@ -495,12 +495,10 @@ rockcraft **没有**一个指向自定义 chisel release 的配置字段——`s
 | 类别 | 26.04 已有 | 仅 24.04 有 | 都没有 | 小计 |
 |---|--:|--:|--:|--:|
 | runtime | 205 | 3 | 114 | 322 |
-| perl | 4 | 0 | 2 | 6 |
-| pkg-mgmt | 9 | 0 | 3 | 12 |
-| build-only | 18 | 0 | 58 | 76 |
+| 不进 rock（build-only、pkg-mgmt、perl） | 31 | 0 | 63 | 94 |
 | **合计** | **236** | **3** | **177** | **416** |
 
-**口径警告**：416 里有 76 个 build-only 和 12 个 pkg-mgmt，剔掉后**可能进 rock 的 328 个、已覆盖 209 个，63.7%**。正文用的是剔除后的口径。
+**口径警告**：416 里有 94 个不会进 rock（`-dev` 与编译器 76 个、apt/dpkg/pip 器材 12 个、perl 6 个），剔掉后**可能进 rock 的 328 个、已覆盖 209 个，63.7%**。正文用的是剔除后的口径。
 
 这组数字已复核修正。`chiselcov2.py` 原先按包名前缀判断，把 `gcc-16-base`、`libgcc-s1`、`rpcsvc-proto`、`libapt-pkg7.0` 四个误判成 build-only 或 pkg-mgmt——前两个出现在 30 个容器里，是每个 C/C++ 二进制都要的运行期支持库。改判依据不是 Section（`libasan8`、`libclang1-21` 的 Section 也写着 `libs`，但它们确属编译期），而是**容器分布**：只出现在 `syncd-vs` / `gbsyncd-vs` 的是工具链泄漏，出现在多个容器的是真运行期。修正后覆盖率从 63.6% 变到 63.7%，几乎不动，但分母和分类计数要用新的。另外 **25.10 对我们零增量**，移植来源只剩 24.04 的 3 个包。
 
