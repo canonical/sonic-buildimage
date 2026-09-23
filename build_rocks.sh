@@ -8,6 +8,7 @@ rocklist=(
     "dockers/docker-router-advertiser"
     "dockers/docker-lldp"
     "dockers/docker-snmp"
+    "dockers/docker-sonic-gnmi"
 )
 
 set -x
