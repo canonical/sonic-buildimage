@@ -3,6 +3,7 @@
 **Date**: 2026-09-22
 **Audience**: anyone who needs the picture in two minutes. Full evidence, per-package lists and operational detail are in the [work blueprint](2026-09-21-resolute-sonic-chisel-blueprint-en.md)
 **In one line**: slice the Ubuntu packages SONiC containers use. About 68 packages, batched by who needs them; authoring slices and merging them upstream are separate concerns and should not share a schedule.
+**Premise**: chiselling is a direction already set above this team. This document plans how, not whether.
 
 ---
 

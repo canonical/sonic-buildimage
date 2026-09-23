@@ -4,6 +4,7 @@
 **Scope**: **cutting the Ubuntu archive packages that SONiC containers use into chisel slices**, delivered upstream to the `ubuntu-26.04` branch of `canonical/chisel-releases`
 **Not covered**: how those slices get used inside rocks. That is part two, summarised in section 8
 **Nature**: a work blueprint for assignment, scheduling and acceptance. Evidence and measurement definitions are in the appendix; the body says only what to do
+**Premise**: chiselling is a direction already set above this team. This document plans how, not whether
 **Valid as of**: package inventory and coverage collected 2026-09-17; downstream rock branch facts at `3e81d8aa2f` (2026-09-18)
 
 ---
