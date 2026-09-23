@@ -91,6 +91,18 @@ parts:
       - libxxhash0
       - libpython3.14
 
+    prime:
+      # Exclude unnecessary artifacts that `source: .` dumps at the rock root
+      - -files
+      - -envs
+      - -python-debs
+      - -vcache
+      - -base_image_files
+      - -buildinfo
+      - -Dockerfile*
+      - -supervisord.conf
+      - -critical_processes
+
     override-prime: |
       craftctl default
 

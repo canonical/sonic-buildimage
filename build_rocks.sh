@@ -19,7 +19,10 @@ do
     mkdir -p $rockitem/debs $rockitem/files $rockitem/python-wheels
 
     cp target/debs/resolute/*.deb            $rockitem/debs/
-    cp -r target/files/resolute/*            $rockitem/files/
+    # Note: target/files/resolute/ mixes host-side and container-scoped files
+    # (host_script.sh etc.). ONIE recovery ISOs and *.log build logs are
+    # host/install artifacts, never container content — keep them out.
+    rsync -a --exclude='*.iso' --exclude='*.log' target/files/resolute/ $rockitem/files/
     cp target/python-wheels/resolute/*.whl   $rockitem/python-wheels/
     cp dockers/docker-base-resolute/etc/rsyslog.conf $rockitem/files/
     echo "export IMAGE_VERSION=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse HEAD)" > $rockitem/envs
