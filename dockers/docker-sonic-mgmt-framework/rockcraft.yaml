@@ -84,6 +84,7 @@ parts:
       - libhiredis1.1.0
       - libuuid1
       - libxxhash0
+      - libpython3.14
 
     override-prime: |
       craftctl default
