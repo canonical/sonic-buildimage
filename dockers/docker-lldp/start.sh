@@ -11,6 +11,10 @@ if [ "${RUNTIME_OWNER}" == "" ]; then
     RUNTIME_OWNER="kube"
 fi
 
+if [ -f /usr/share/sonic/templates/envs ]; then
+    source /usr/share/sonic/templates/envs
+fi
+
 CTR_SCRIPT="/usr/share/sonic/scripts/container_startup.py"
 if test -f ${CTR_SCRIPT}
 then

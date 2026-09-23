@@ -108,6 +108,7 @@ parts:
 
       cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
       cp ${CRAFT_PROJECT_DIR}/manifest.json manifest.json
+      cp ${CRAFT_PROJECT_DIR}/envs usr/share/sonic/templates/
 
   install-python:
     plugin: python
