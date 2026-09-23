@@ -10,6 +10,10 @@ if pgrep -x pebble > /dev/null 2>&1; then
     pebble replan
 fi
 
+if [ -f /usr/share/sonic/templates/envs ]; then
+    source /usr/share/sonic/templates/envs
+fi
+
 CTR_SCRIPT="/usr/share/sonic/scripts/container_startup.py"
 if test -f ${CTR_SCRIPT}
 then
