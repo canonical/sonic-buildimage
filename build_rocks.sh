@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Finish `make SONIC_BUILD_JOBS=4 target/sonic-vs.img.gz` first
+# Finish `make target/sonic-vs.img.gz` first
 rocklist=(
     "dockers/docker-database"
     "dockers/docker-sonic-mgmt-framework"
@@ -9,6 +9,7 @@ rocklist=(
     "dockers/docker-lldp"
     "dockers/docker-snmp"
     "dockers/docker-sonic-gnmi"
+    "dockers/docker-teamd"
 )
 
 set -x
