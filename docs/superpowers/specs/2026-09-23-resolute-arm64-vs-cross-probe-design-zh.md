@@ -89,11 +89,13 @@ BLDENV=resolute CROSS_BLDENV=1 make configure PLATFORM=vs PLATFORM_ARCH=arm64
 
 目标是一轮跑完拿到完整失败清单,而不是"失败—修—再跑"的串行发现。
 
-`-k`(keep-going)无法穿透到容器内:外层 `make` 的 `MAKEFLAGS` 不在 `DOCKER_RUN` 的 `-e` 列表里,而容器内是一次全新的 `$(MAKE) -f slave.mk` 调用。做法是:
+`MAKEFLAGS` 不会穿透到容器内:它不在 `DOCKER_RUN` 的 `-e` 列表里,而容器内是一次全新的 `$(MAKE) -f slave.mk` 调用。但构建系统自己留了一条注入通道:`Makefile:15` 把用户传入的 `SONIC_BUILD_VARS` 并入 `SONIC_OVERRIDE_BUILD_VARS`,该变量被导出并在 `Makefile.work:673` 拼到容器内那层 make 的命令行尾部。GNU make 允许标志出现在命令行任意位置,因此:
 
-1. 用 `make -n` 干跑,抓出 `Makefile.work:575` 的 `SONIC_BUILD_INSTRUCTION` 实际展开的完整命令行(含 `PLATFORM` / `PLATFORM_ARCH` / `CROSS_BUILD_ENVIRON` / `TARGET_BOOTLOADER` 等全部变量)。
-2. 用 `make ... sonic-slave-bash`(`Makefile.work:736`)进容器。
-3. 在容器内执行同一条命令行,插入 `-k`,目标 `target/sonic-vs.bin`。
+```
+SONIC_BUILD_VARS="-k"
+```
+
+即可把 `-k` 送进容器内那层 `make -f slave.mk`,无需进 `sonic-slave-bash` 手工重建命令行。
 
 全程留日志。构建并发按 `SONIC_CONFIG_BUILD_JOBS` 现有设置,不为探路调参。
 

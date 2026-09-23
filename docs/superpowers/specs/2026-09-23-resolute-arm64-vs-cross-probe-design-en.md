@@ -89,11 +89,13 @@ Pass criterion: the image builds and `aarch64-linux-gnu-gcc --version` runs insi
 
 The aim is one pass that yields the complete failure list, rather than serial fail-fix-rerun discovery.
 
-`-k` (keep-going) does not cross the container boundary: the outer make's `MAKEFLAGS` is not in the `DOCKER_RUN` `-e` list, and the container starts a fresh `$(MAKE) -f slave.mk` invocation. The approach is therefore:
+`MAKEFLAGS` does not cross the container boundary: it is not in the `DOCKER_RUN` `-e` list, and the container starts a fresh `$(MAKE) -f slave.mk` invocation. The build system does provide an injection channel, though: `Makefile:15` folds a user-supplied `SONIC_BUILD_VARS` into `SONIC_OVERRIDE_BUILD_VARS`, which is exported and spliced onto the tail of the in-container make command line at `Makefile.work:673`. GNU make accepts flags anywhere on a command line, so:
 
-1. Dry-run with `make -n` and capture the fully expanded `SONIC_BUILD_INSTRUCTION` command line from `Makefile.work:575`, including every variable it passes (`PLATFORM`, `PLATFORM_ARCH`, `CROSS_BUILD_ENVIRON`, `TARGET_BOOTLOADER`, and the rest).
-2. Enter the container via `make ... sonic-slave-bash` (`Makefile.work:736`).
-3. Run that same command line inside the container with `-k` inserted, targeting `target/sonic-vs.bin`.
+```
+SONIC_BUILD_VARS="-k"
+```
+
+delivers `-k` to the in-container `make -f slave.mk`, with no need to enter `sonic-slave-bash` and reconstruct the command line by hand.
 
 Keep logs throughout. Build concurrency stays at the existing `SONIC_CONFIG_BUILD_JOBS` setting; the probe does not tune it.
 
