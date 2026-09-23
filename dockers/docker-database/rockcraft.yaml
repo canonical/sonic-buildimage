@@ -44,23 +44,36 @@ parts:
   setup-database:
     plugin: dump
     source: .
+    build-packages:
+      - apt-utils
     override-build: |
         craftctl default
 
-        # Install SONiC debs
-        dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libdashapi_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
+        # Build a local flat apt repo from the staged SONiC debs, then let apt
+        # resolve the full dependency closure of the SONiC debs by package name.
+        # This replaces hand-enumerating each deb AND its dependencies in the
+        # Dockerfile/stage-packages; apt figures out the transitive deps itself.
+        (cd debs && apt-ftparchive packages . > Packages)
+        echo "deb [trusted=yes] file:$(pwd)/debs ./" > /etc/apt/sources.list.d/sonic-local.list
+        apt-get update
+
+        # Resolve the closure and fetch the transitive (Ubuntu) dependencies.
+        # NOTE: --download-only does not copy file://-sourced debs into the
+        # archives dir, so the SONiC debs themselves are extracted below
+        # straight from debs/.
+        rm -rf /tmp/sonic-debs && mkdir -p /tmp/sonic-debs
+        apt-get install --yes --no-install-recommends --download-only \
+            -o Dir::Cache::archives=/tmp/sonic-debs \
+            socat libswsscommon libyang3 python3-libyang python3-swsscommon \
+            sonic-db-cli sonic-eventd libdashapi \
+            libnl-3-200 libnl-route-3-200 libnl-genl-3-200 libnl-nf-3-200 libnl-cli-3-200
+
+        # Extract the SONiC debs themselves
+        for p in socat libswsscommon libyang3 python3-libyang python3-swsscommon sonic-db-cli sonic-eventd libdashapi libnl-3-200 libnl-route-3-200 libnl-genl-3-200 libnl-nf-3-200 libnl-cli-3-200; do
+            dpkg -x debs/${p}_*.deb ${CRAFT_PART_INSTALL}
+        done
+        # Extract the Ubuntu dependencies apt resolved
+        for deb in /tmp/sonic-debs/*.deb; do dpkg -x "$deb" ${CRAFT_PART_INSTALL}; done
 
         # Clean up deb/wheel source files from install tree
         rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels ${CRAFT_PART_INSTALL}/python-debs
