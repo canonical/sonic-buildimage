@@ -86,8 +86,6 @@ parts:
       - net-tools
       - jq
       - libzmq5
-      - libwrap0
-      - libatomic1
       - libdaemon0
       - libdbus-1-3
       - libjansson4
@@ -97,12 +95,9 @@ parts:
       # SONiC deb runtime dependencies
       - libboost-serialization1.83.0
       - libhiredis1.1.0
-      - libuuid1
       - libxxhash0
       - libpython3.14
       # lldpd runtime dependencies
-      - libbsd0
-      - libcap2
       - libevent-2.1-7t64
       - libreadline8t64
       - libsnmp40t64

@@ -92,7 +92,6 @@ parts:
       - jq
       - libzmq5
       - libwrap0
-      - libatomic1
       - libdaemon0
       - libdbus-1-3
       - libjansson4
@@ -101,7 +100,6 @@ parts:
       - python3-cffi-backend
       - libboost-serialization1.83.0
       - libhiredis1.1.0
-      - libuuid1
       - libxxhash0
 
     override-prime: |
