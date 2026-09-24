@@ -10,6 +10,7 @@ rocklist=(
     "dockers/docker-snmp"
     "dockers/docker-sonic-gnmi"
     "dockers/docker-teamd"
+    "dockers/docker-platform-monitor"
 )
 
 set -x
