@@ -11,6 +11,11 @@ rocklist=(
     "dockers/docker-sonic-gnmi"
     "dockers/docker-teamd"
     "dockers/docker-platform-monitor"
+    "dockers/docker-macsec"
+    "dockers/docker-iccpd"
+    "dockers/docker-sflow"
+    "dockers/docker-nat"
+    "dockers/docker-fpm-frr"
 )
 
 set -x
@@ -21,9 +26,7 @@ do
     mkdir -p $rockitem/debs $rockitem/files $rockitem/python-wheels
 
     cp target/debs/resolute/*.deb            $rockitem/debs/
-    # Note: target/files/resolute/ mixes host-side and container-scoped files
-    # (host_script.sh etc.). ONIE recovery ISOs and *.log build logs are
-    # host/install artifacts, never container content — keep them out.
+    # Note: ONIE recovery *.iso and *.log are host/install artifacts — keep them out
     rsync -a --exclude='*.iso' --exclude='*.log' target/files/resolute/ $rockitem/files/
     cp target/python-wheels/resolute/*.whl   $rockitem/python-wheels/
     cp dockers/docker-base-resolute/etc/rsyslog.conf $rockitem/files/
