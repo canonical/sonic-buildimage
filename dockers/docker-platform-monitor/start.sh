@@ -14,8 +14,6 @@ PLATFORM_ENV_CONF_FILE="/usr/share/sonic/platform/platform_env.conf"
 HAVE_SENSORS_CONF=0
 HAVE_FANCONTROL_CONF=0
 IS_MODULAR_CHASSIS=0
-# Default use python3 version
-SONIC_PLATFORM_API_PYTHON_VERSION=3
 
 if [ -e /usr/share/sonic/hwsku/pmon_daemon_control.json ];
 then
@@ -108,7 +106,7 @@ if [ -e $PLATFORM_ENV_CONF_FILE ]; then
     fi
 fi
 
-confvar="{\"HAVE_SENSORS_CONF\":$HAVE_SENSORS_CONF, \"HAVE_FANCONTROL_CONF\":$HAVE_FANCONTROL_CONF, \"API_VERSION\":$SONIC_PLATFORM_API_PYTHON_VERSION, \"IS_MODULAR_CHASSIS\":$IS_MODULAR_CHASSIS, \"IS_SWITCH_BMC\":$IS_SWITCH_BMC}"
+confvar="{\"HAVE_SENSORS_CONF\":$HAVE_SENSORS_CONF, \"HAVE_FANCONTROL_CONF\":$HAVE_FANCONTROL_CONF, \"IS_MODULAR_CHASSIS\":$IS_MODULAR_CHASSIS, \"IS_SWITCH_BMC\":$IS_SWITCH_BMC}"
 
 LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
 pebble add syslog-layer --combine $LAYER_FILE
