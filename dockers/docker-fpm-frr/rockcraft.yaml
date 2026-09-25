@@ -1,0 +1,181 @@
+name: docker-fpm-frr
+summary: SONiC fpm-frr container
+description: A rock for SONiC fpm-frr container
+version: "1.0.0"
+
+base: ubuntu@26.04
+build-base: ubuntu@26.04
+license: Apache-2.0
+
+platforms:
+  amd64:
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  start:
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+
+parts:
+  setup-fpm-frr:
+    plugin: dump
+    source: .
+    override-build: |
+      craftctl default
+
+      # Install SONiC debs (wildcard filenames)
+      dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libsairedis_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libsaimetadata_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libteam5_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libteamdctl0_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnexthopgroup_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libdashapi_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/swss_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/frr_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/frr-snmp_*.deb ${CRAFT_PART_INSTALL}
+
+      # Dockerfile COPY frr -> /usr/share/sonic/templates (contents)
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/sonic/templates
+      cp -a ${CRAFT_PART_INSTALL}/frr/. ${CRAFT_PART_INSTALL}/usr/share/sonic/templates/
+      rm -rf ${CRAFT_PART_INSTALL}/frr
+
+      # Clean up deb/wheel source files
+      rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
+
+    organize:
+      start.sh: usr/bin/start.sh
+      pebble-layer.j2: usr/share/sonic/templates/pebble-layer.j2
+      snmp.conf: etc/snmp/frr.conf
+      TS: usr/bin/TS
+      TSA: usr/bin/TSA
+      TSB: usr/bin/TSB
+      TSC: usr/bin/TSC
+      zsocket.sh: usr/bin/zsocket.sh
+      files/syslog-layer.yaml: usr/share/sonic/templates/syslog-layer.yaml
+      files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
+      files/readiness_probe.sh: usr/bin/readiness_probe.sh
+      files/container_startup.py: usr/share/sonic/scripts/container_startup.py
+
+    stage-packages:
+      # Base runtime packages (inherited from config-engine layer)
+      - rsyslog
+      - rsyslog-relp
+      - python3
+      - redis-tools
+      - iproute2
+      - net-tools
+      - jq
+      - libzmq5
+      - libwrap0
+      - libdaemon0
+      - libdbus-1-3
+      - libjansson4
+      - python3-redis
+      - python3-yaml
+      - python3-cffi-backend
+      # SONiC deb runtime dependencies
+      - libboost-serialization1.83.0
+      - libhiredis1.1.0
+      - libxxhash0
+      - libpython3.14
+      # swss-layer inherited runtime dependencies
+      - iputils-ping
+      - libprotobuf32t64
+      # frr-specific runtime dependencies
+      - logrotate
+      - libgoogle-perftools4t64
+      - libjson-c5
+      - libpcre2-posix3
+      - libreadline8t64
+      - libsnmp40t64
+
+    prime:
+      # Exclude unnecessary artifacts that `source: .` dumps at the rock root
+      - -files
+      - -envs
+      - -python-debs
+      - -vcache
+      - -base_image_files
+      - -buildinfo
+      - -docker_init.sh
+      - -Dockerfile*
+      - -vtysh.conf
+
+    override-prime: |
+      craftctl default
+
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
+      cp ${CRAFT_PROJECT_DIR}/manifest.json manifest.json
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # config-engine inherited SONiC wheels
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # bgp wheels
+      - ./python-wheels/sonic_bgpcfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_frr_mgmt_framework-1.0-py3-none-any.whl
+      # common pip packages
+      - jinjanator
+      - click
+      - pyangbind==0.8.7
+      - lxml
+    stage-packages:
+      - python3-venv
+    override-prime: |
+      craftctl default
+
+      # The python plugin installs the frr-mgmt-framework wheel data_files at
+      # ${sys.prefix}/sonic/frrcfgd (= /sonic/frrcfgd). FRR expects them at
+      # /usr/local/sonic/frrcfgd (pip3 default in the Docker path). Must run in
+      # this part's prime (after staging) rather than setup-fpm-frr's.
+      if [ -d sonic/frrcfgd ]; then
+          mkdir -p usr/local/sonic
+          mv sonic/frrcfgd usr/local/sonic/frrcfgd
+          rmdir sonic 2>/dev/null || true
+      fi
+
+      # Normalize console-script shebangs. pip --user with PYTHONUSERBASE bakes
+      # the build-time interpreter path (…/parts/install-python/install/…) into
+      # the shebang; retarget any python shebang to the rock's own interpreter.
+      for script in $(find bin usr/bin -maxdepth 1 -type f 2>/dev/null); do
+          if head -n1 "$script" 2>/dev/null | grep -q '^#!.*python3'; then
+              sed -i '1s|^#!.*|#!/usr/bin/python3|' "$script"
+          fi
+      done
+
+  add-user:
+    plugin: nil
+    after: [setup-fpm-frr]
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY -g 300 frr
+      groupadd -R $CRAFT_OVERLAY -r frrvty
+      useradd -R $CRAFT_OVERLAY -u 300 -g 300 -G frrvty -M -s /bin/false frr
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+    prime:
+      - etc/passwd
+      - etc/group
