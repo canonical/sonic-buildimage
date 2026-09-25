@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-# SONiC platform-monitor rock init (pebble path). Preserves the runtime logic of
-# docker_init.j2 (platform detection, sonic_platform wheel install, sensors/fancontrol
-# setup) and replaces the supervisord.conf rendering with a dynamic pebble layer.
+# SONiC pmon rock init. This script is rock-only: rockcraft.yaml's `start` service is 
+# its only consumer - no supervisord/Dockerfile path shares this script. Preserves 
+# runtime logic of docker_init.j2 and replaces supervisord.conf rendering with a 
+# dynamic pebble layer.
 
 SENSORS_CONF_FILE="/usr/share/sonic/platform/sensors.conf"
 FANCONTROL_CONF_FILE="/usr/share/sonic/platform/fancontrol"
@@ -29,9 +30,7 @@ if [ "${RUNTIME_OWNER}" == "" ]; then
     RUNTIME_OWNER="kube"
 fi
 
-if [ -f /usr/share/sonic/templates/envs ]; then
-    source /usr/share/sonic/templates/envs
-fi
+source /usr/share/sonic/templates/envs
 
 CTR_SCRIPT="/usr/share/sonic/scripts/container_startup.py"
 if test -f ${CTR_SCRIPT}
@@ -68,35 +67,8 @@ if [ $? -ne 0 ]; then
     fi
 fi
 
-# Platform-specific setup. The Dockerfile path renders these at build time from
-# CONFIGURED_PLATFORM; the rock is platform-agnostic, so detect at runtime.
-PLATFORM=$(sonic-cfggen -d -v 'DEVICE_METADATA["localhost"]["platform"]' 2>/dev/null || true)
-
-# Mellanox: dynamic sensors.conf setup from hw-management
-case "$PLATFORM" in
-    *mlnx*|*mellanox*|*nvidia*)
-        HW_MGMT_SENSORS_CONF="/var/run/hw-management/config/lm_sensors_config"
-        SONIC_SENSORS_CONF="/usr/share/sonic/platform/sensors.conf"
-        if [ ! -e "$SONIC_SENSORS_CONF" ]; then
-            if [ -e "$HW_MGMT_SENSORS_CONF" ]; then
-                ln -s "$HW_MGMT_SENSORS_CONF" "$SONIC_SENSORS_CONF"
-                if [ ! -e "$SONIC_SENSORS_CONF" ]; then
-                    echo "Error: Failed to create symlink for sensors.conf, 'sensors' command will print raw sensors data"
-                fi
-            else
-                echo "Error: sensors.conf file not found in hw-management"
-            fi
-        fi
-
-        SENSORS_CONF_PATH_GETTER="/usr/share/sonic/platform/get_sensors_conf_path"
-        if [ -e $SENSORS_CONF_PATH_GETTER ]; then
-            SENSORS_CONF_FILE=$($SENSORS_CONF_PATH_GETTER 2>&1)
-        fi
-        ;;
-    *bluefield*|*nvda_bf*)
-        mount -t debugfs none /sys/kernel/debug 2>/dev/null || true
-        ;;
-esac
+# Platform-specific build-time branches (mellanox/aspeed/nvidia-bluefield) are out of
+# scope for this branch (vs/broadcom only), so no runtime platform branch is needed.
 
 if [ -e $SENSORS_CONF_FILE ]; then
     HAVE_SENSORS_CONF=1
@@ -138,33 +110,31 @@ fi
 
 confvar="{\"HAVE_SENSORS_CONF\":$HAVE_SENSORS_CONF, \"HAVE_FANCONTROL_CONF\":$HAVE_FANCONTROL_CONF, \"API_VERSION\":$SONIC_PLATFORM_API_PYTHON_VERSION, \"IS_MODULAR_CHASSIS\":$IS_MODULAR_CHASSIS, \"IS_SWITCH_BMC\":$IS_SWITCH_BMC}"
 
-if pgrep -x pebble > /dev/null 2>&1; then
-    LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
-    pebble add syslog-layer --combine $LAYER_FILE
-    pebble replan
+LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+pebble add syslog-layer --combine $LAYER_FILE
+pebble replan
 
-    # Render the daemon layer from the same template conditions supervisord used,
-    # then inject it as a dynamic pebble layer.
-    PEBBLE_LAYER_TEMPLATE="/usr/share/sonic/templates/pebble-layer.j2"
-    if [ -e $PMON_DAEMON_CONTROL_FILE ]; then
-        sonic-cfggen -d -j $PMON_DAEMON_CONTROL_FILE -a "$confvar" -t $PEBBLE_LAYER_TEMPLATE > /tmp/pmon-layer.yaml
-    else
-        sonic-cfggen -d -a "$confvar" -t $PEBBLE_LAYER_TEMPLATE > /tmp/pmon-layer.yaml
-    fi
-    pebble add pmon-layer --combine /tmp/pmon-layer.yaml
-    pebble replan
-
-    # delay is a one-shot gate (advanced/warm reboot); start it and wait until it
-    # exits before bringing up the daemons that depended on "delay:exited".
-    if pebble services delay 2>/dev/null | grep -q '^delay '; then
-        pebble start delay
-        while pebble services delay 2>/dev/null | grep -q '^delay.*active'; do sleep 1; done
-    fi
-
-    # Start each daemon that was rendered into the layer, in original priority order.
-    for svc in bmcctld chassisd chassis_db_init lm-sensors fancontrol ledd xcvrd ycabled psud syseepromd thermalctld pcied sensormond stormond; do
-        if pebble services "$svc" 2>/dev/null | grep -q "^$svc "; then
-            pebble start "$svc" || true
-        fi
-    done
+# Render the daemon layer from the same template conditions supervisord used,
+# then inject it as a dynamic pebble layer.
+PEBBLE_LAYER_TEMPLATE="/usr/share/sonic/templates/pebble-layer.j2"
+if [ -e $PMON_DAEMON_CONTROL_FILE ]; then
+    sonic-cfggen -d -j $PMON_DAEMON_CONTROL_FILE -a "$confvar" -t $PEBBLE_LAYER_TEMPLATE > /tmp/pmon-layer.yaml
+else
+    sonic-cfggen -d -a "$confvar" -t $PEBBLE_LAYER_TEMPLATE > /tmp/pmon-layer.yaml
 fi
+pebble add pmon-layer --combine /tmp/pmon-layer.yaml
+pebble replan
+
+# delay is a one-shot gate (advanced/warm reboot); start it and wait until it
+# exits before bringing up the daemons that depended on "delay:exited".
+if pebble services delay 2>/dev/null | grep -q '^delay '; then
+    pebble start delay
+    while pebble services delay 2>/dev/null | grep -q '^delay.*active'; do sleep 1; done
+fi
+
+# Start each daemon that was rendered into the layer, in original priority order.
+for svc in bmcctld chassisd chassis_db_init lm-sensors fancontrol ledd xcvrd ycabled psud syseepromd thermalctld pcied sensormond stormond; do
+    if pebble services "$svc" 2>/dev/null | grep -q "^$svc "; then
+        pebble start "$svc" || true
+    fi
+done
