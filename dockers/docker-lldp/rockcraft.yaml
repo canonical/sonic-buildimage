@@ -1,0 +1,144 @@
+name: docker-lldp
+summary: SONiC lldp container
+description: A rock for SONiC lldp container
+version: "1.0.0"
+
+base: ubuntu@26.04
+build-base: ubuntu@26.04
+license: Apache-2.0
+
+platforms:
+  amd64:
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  start:
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+  lldpd:
+    command: /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0
+    override: replace
+  waitfor-lldp-ready:
+    command: /usr/bin/waitfor_lldp_ready.sh
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+  lldp-syncd:
+    command: python3 -m lldp_syncd
+    override: replace
+  lldpmgrd:
+    command: /usr/bin/lldpmgrd
+    override: replace
+
+parts:
+  setup-lldp:
+    plugin: dump
+    source: .
+    override-build: |
+      craftctl default
+
+      # Install SONiC debs (wildcard filenames)
+      dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/lldpd_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
+
+      # The project lldpd default config (organize below) overwrites the deb's copy
+      rm -f ${CRAFT_PART_INSTALL}/etc/default/lldpd
+
+      # Clean up deb/wheel source files
+      rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
+
+    organize:
+      start.sh: usr/bin/start.sh
+      lldpmgrd: usr/bin/lldpmgrd
+      waitfor_lldp_ready.sh: usr/bin/waitfor_lldp_ready.sh
+      lldpd.conf.j2: usr/share/sonic/templates/lldpd.conf.j2
+      lldpdSysDescr.conf.j2: usr/share/sonic/templates/lldpdSysDescr.conf.j2
+      lldpd: etc/default/lldpd
+      files/syslog-layer.yaml: usr/share/sonic/templates/syslog-layer.yaml
+      files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
+      files/readiness_probe.sh: usr/bin/readiness_probe.sh
+      files/container_startup.py: usr/share/sonic/scripts/container_startup.py
+
+    stage-packages:
+      # Base runtime packages (inherited from config-engine layer)
+      - rsyslog
+      - rsyslog-relp
+      - python3
+      - redis-tools
+      - iproute2
+      - net-tools
+      - jq
+      - libzmq5
+      - libdaemon0
+      - libdbus-1-3
+      - libjansson4
+      - python3-redis
+      - python3-yaml
+      - python3-cffi-backend
+      # SONiC deb runtime dependencies
+      - libboost-serialization1.83.0
+      - libhiredis1.1.0
+      - libxxhash0
+      - libpython3.14
+      # lldpd runtime dependencies
+      - libevent-2.1-7t64
+      - libreadline8t64
+      - libsnmp40t64
+      - libxml2-16
+
+    override-prime: |
+      craftctl default
+
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
+      cp ${CRAFT_PROJECT_DIR}/manifest.json manifest.json
+      cp ${CRAFT_PROJECT_DIR}/envs usr/share/sonic/templates/
+
+  install-python:
+    plugin: python
+    source: .
+    python-packages:
+      # config-engine inherited SONiC wheels
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # container-specific SONiC wheels
+      - ./python-wheels/sonic_d-2.0.0-py3-none-any.whl
+      # common pip packages
+      - jinjanator
+      - click
+      - pyangbind==0.8.7
+      - lxml
+    stage-packages:
+      - python3-venv
+
+  add-user:
+    plugin: nil
+    after: [setup-lldp]
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+
+      groupadd -R $CRAFT_OVERLAY _lldpd
+      useradd -R $CRAFT_OVERLAY -M -r --system -g _lldpd _lldpd
+    prime:
+      - etc/passwd
+      - etc/group

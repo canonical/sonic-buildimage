@@ -1,0 +1,154 @@
+services:
+{% if IS_SWITCH_BMC == 1 %}
+  bmcctld:
+    override: replace
+    command: /usr/bin/bmcctld
+    on-success: ignore
+{% endif %}
+
+{% if delay_non_critical_daemon %}
+  delay:
+    override: replace
+    command: python3 /usr/bin/delay.py
+    on-success: ignore
+    on-failure: ignore
+{% endif %}
+
+{% if not skip_chassisd and (IS_MODULAR_CHASSIS == 1 or is_smartswitch) %}
+  chassisd:
+    override: replace
+    command: /usr/bin/chassisd
+    on-success: ignore
+{% endif %}
+
+{% if not skip_chassis_db_init %}
+  chassis_db_init:
+    override: replace
+    command: /usr/bin/chassis_db_init
+    on-success: ignore
+    on-failure: ignore
+{% endif %}
+
+{% if not skip_sensors and HAVE_SENSORS_CONF == 1 %}
+  lm-sensors:
+    override: replace
+    command: /usr/bin/lm-sensors.sh
+    on-success: ignore
+    on-failure: ignore
+{% endif %}
+
+{% if not skip_fancontrol and HAVE_FANCONTROL_CONF == 1 %}
+  fancontrol:
+    override: replace
+    command: /usr/sbin/fancontrol
+    on-success: ignore
+{% endif %}
+
+{% if not skip_ledd %}
+  ledd:
+    override: replace
+    command: python3 /usr/bin/ledd
+    on-success: ignore
+{% endif %}
+
+{% if not skip_xcvrd %}
+{% set xcvrd_base_command = "python3 /usr/bin/xcvrd" %}
+{% set xcvrd_options = "" -%}
+{% if skip_xcvrd_cmis_mgr %}
+{%- set xcvrd_options = xcvrd_options + " --skip_cmis_mgr" %}
+{% endif -%}
+{% if enable_xcvrd_sff_mgr %}
+{%- set xcvrd_options = xcvrd_options + " --enable_sff_mgr" %}
+{% endif -%}
+{% if xcvrd and xcvrd.dom_temperature_poll_interval %}
+{%- set xcvrd_options = xcvrd_options + " --dom_temperature_poll_interval " + xcvrd.dom_temperature_poll_interval|string %}
+{% endif -%}
+{% if xcvrd and xcvrd.dom_update_interval %}
+{%- set xcvrd_options = xcvrd_options + " --dom_update_interval " + xcvrd.dom_update_interval|string %}
+{% endif -%}
+{% if delay_xcvrd %}
+{% set xcvrd_command = "bash -c \"sleep 30 && " ~ xcvrd_base_command ~ xcvrd_options ~ "\"" %}
+{% else %}
+{% set xcvrd_command = xcvrd_base_command ~ xcvrd_options %}
+{% endif %}
+  xcvrd:
+    override: replace
+    command: {{ xcvrd_command }}
+    on-success: ignore
+{% endif %}
+
+{% if DEVICE_METADATA and 'subtype' in DEVICE_METADATA['localhost'] and DEVICE_METADATA['localhost']['subtype'] == 'DualToR' %}
+{% if not skip_ycabled %}
+{% if delay_ycabled %}
+{% set ycabled_command = "bash -c \"sleep 30 && nice -n -20 python3 /usr/bin/ycabled\"" %}
+{% else %}
+{% set ycabled_command = "nice -n -20 python3 /usr/bin/ycabled" %}
+{% endif %}
+  ycabled:
+    override: replace
+    command: {{ ycabled_command }}
+    on-success: ignore
+{% endif %}
+{% endif %}
+
+{% if not skip_psud %}
+  psud:
+    override: replace
+    command: python3 /usr/bin/psud
+    on-success: ignore
+{% endif %}
+
+{% if not skip_syseepromd %}
+  syseepromd:
+    override: replace
+    command: python3 /usr/bin/syseepromd
+    on-success: ignore
+{% endif %}
+
+{% if not skip_thermalctld %}
+{% set thermalctld_base_command = "python3 /usr/bin/thermalctld" %}
+{% set thermalctld_options = "" -%}
+{% if thermalctld is defined %}
+{% if thermalctld.thermal_monitor_initial_interval is defined and thermalctld.thermal_monitor_initial_interval is not none %}
+{%- set thermalctld_options = thermalctld_options + " --thermal-monitor-initial-interval " + thermalctld.thermal_monitor_initial_interval|string %}
+{% endif -%}
+{% if thermalctld.thermal_monitor_update_interval is defined and thermalctld.thermal_monitor_update_interval is not none %}
+{%- set thermalctld_options = thermalctld_options + " --thermal-monitor-update-interval " + thermalctld.thermal_monitor_update_interval|string %}
+{% endif -%}
+{% if thermalctld.thermal_monitor_update_elapsed_threshold is defined and thermalctld.thermal_monitor_update_elapsed_threshold is not none %}
+{%- set thermalctld_options = thermalctld_options + " --thermal-monitor-update-elapsed-threshold " + thermalctld.thermal_monitor_update_elapsed_threshold|string %}
+{% endif -%}
+{% if thermalctld.enable_liquid_cooling %}
+{%- set thermalctld_options = thermalctld_options + " --enable_liquid_cooling" %}
+{% endif -%}
+{% if thermalctld.liquid_cooling_update_interval %}
+{%- set thermalctld_options = thermalctld_options ~ " --liquid_cooling_update_interval " ~ thermalctld.liquid_cooling_update_interval %}
+{% endif -%}
+{% endif -%}
+{% set thermalctld_command = thermalctld_base_command ~ thermalctld_options %}
+  thermalctld:
+    override: replace
+    command: {{ thermalctld_command }}
+    on-success: ignore
+{% endif %}
+
+{% if not skip_pcied %}
+  pcied:
+    override: replace
+    command: /usr/bin/pcied
+    on-success: ignore
+{% endif %}
+
+{% if include_sensormond %}
+  sensormond:
+    override: replace
+    command: /usr/bin/sensormond
+    on-success: ignore
+{% endif %}
+
+{% if not skip_stormond %}
+  stormond:
+    override: replace
+    command: /usr/bin/stormond
+    on-success: ignore
+{% endif %}

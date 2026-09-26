@@ -1,0 +1,96 @@
+services:
+  mgmtd:
+    override: replace
+    command: /usr/lib/frr/mgmtd -A 127.0.0.1 -P 0
+  zebra:
+    override: replace
+    command: /usr/lib/frr/zebra -A 127.0.0.1 -s 90000000 -M dplane_fpm_sonic -M snmp --asic-offload=notify_on_offload
+  zsocket:
+    override: replace
+    command: /usr/bin/zsocket.sh
+    on-success: ignore
+    on-failure: ignore
+  staticd:
+    override: replace
+    command: /usr/lib/frr/staticd -A 127.0.0.1 -P 0
+{% if DEVICE_METADATA.localhost.frr_mgmt_framework_config is defined and DEVICE_METADATA.localhost.frr_mgmt_framework_config == "true" %}
+  bfdd:
+    override: replace
+    command: /usr/lib/frr/bfdd -A 127.0.0.1 -P 0
+    kill-delay: 0s
+{% endif %}
+  bgpd:
+    override: replace
+{% if FEATURE is defined and
+      (FEATURE.frr_bmp is defined and FEATURE.frr_bmp.state is defined and FEATURE.frr_bmp.state == "enabled") or
+      (FEATURE.bmp is defined and FEATURE.bmp.state is defined and FEATURE.bmp.state == "enabled") %}
+    command: /usr/lib/frr/bgpd -A 127.0.0.1 -P 0 -M snmp -M bmp
+{% else %}
+    command: /usr/lib/frr/bgpd -A 127.0.0.1 -P 0 -M snmp
+{% endif %}
+    kill-delay: 0s
+{% if DEVICE_METADATA.localhost.frr_mgmt_framework_config is defined and DEVICE_METADATA.localhost.frr_mgmt_framework_config == "true" %}
+  ospfd:
+    override: replace
+    command: /usr/lib/frr/ospfd -A 127.0.0.1 -P 0 -M snmp
+    kill-delay: 0s
+  pimd:
+    override: replace
+    command: /usr/lib/frr/pimd -A 127.0.0.1 -P 0
+    kill-delay: 0s
+{% endif %}
+  fpmsyncd:
+    override: replace
+    command: fpmsyncd
+{% if DEVICE_METADATA.localhost.frr_mgmt_framework_config is defined and DEVICE_METADATA.localhost.frr_mgmt_framework_config == "true" %}
+  frrcfgd:
+    override: replace
+    command: /usr/bin/frrcfgd
+{% else %}
+  bgpcfgd:
+    override: replace
+    command: /usr/bin/bgpcfgd
+{% endif %}
+{% if DEVICE_METADATA.localhost.switch_type is defined and DEVICE_METADATA.localhost.switch_type == "chassis-packet" %}
+  staticroutebfd:
+    override: replace
+    command: /usr/bin/staticroutebfd
+    on-failure: restart
+{% endif %}
+{% if DEVICE_METADATA.localhost.frr_mgmt_framework_config is defined and DEVICE_METADATA.localhost.frr_mgmt_framework_config == "true" %}
+{% else %}
+  bgpmon:
+    override: replace
+    command: /usr/bin/bgpmon
+    on-failure: restart
+{% endif %}
+{% if SYSTEM_DEFAULTS is defined and SYSTEM_DEFAULTS.software_bfd is defined and SYSTEM_DEFAULTS.software_bfd.status is defined and SYSTEM_DEFAULTS.software_bfd.status == "enabled" %}
+  bfdmon:
+    override: replace
+    command: /usr/bin/bfdmon
+    on-failure: restart
+{% endif %}
+{% if DEVICE_METADATA.localhost.docker_routing_config_mode is defined and (DEVICE_METADATA.localhost.docker_routing_config_mode == "unified" or DEVICE_METADATA.localhost.docker_routing_config_mode == "split-unified") %}
+  vtysh_b:
+    override: replace
+    command: /usr/bin/vtysh -b
+    on-success: ignore
+    on-failure: ignore
+{% endif %}
+{% if WARM_RESTART is defined and WARM_RESTART.bgp is defined and WARM_RESTART.bgp.bgp_eoiu is defined and WARM_RESTART.bgp.bgp_eoiu == "true" %}
+  bgp_eoiu_marker:
+    override: replace
+    command: /usr/bin/bgp_eoiu_marker.py
+    on-success: ignore
+    on-failure: ignore
+{% endif %}
+{% if DEVICE_METADATA.localhost.frr_mgmt_framework_config is defined and DEVICE_METADATA.localhost.frr_mgmt_framework_config == "true" %}
+  pathd:
+    override: replace
+    command: /usr/lib/frr/pathd -A 127.0.0.1 -P 0
+    kill-delay: 0s
+{% endif %}
+  sharpd:
+    override: replace
+    command: /usr/lib/frr/sharpd -A 127.0.0.1 -P 0
+    kill-delay: 0s

@@ -2,7 +2,7 @@
 DPATH       := $($(DOCKER_PLATFORM_MONITOR)_PATH)
 DEP_FILES   := $(SONIC_COMMON_FILES_LIST) rules/docker-platform-monitor.mk rules/docker-platform-monitor.dep   
 DEP_FILES   += $(SONIC_COMMON_BASE_FILES_LIST)
-DEP_FILES   += $(shell git ls-files $(DPATH))
+DEP_FILES   += $(filter-out $(DPATH)/rockcraft.yaml $(DPATH)/pebble-layer.j2,$(shell git ls-files $(DPATH)))
 
 $(DOCKER_PLATFORM_MONITOR)_CACHE_MODE  := GIT_CONTENT_SHA 
 $(DOCKER_PLATFORM_MONITOR)_DEP_FLAGS   := $(SONIC_COMMON_FLAGS_LIST)

@@ -1,0 +1,17 @@
+Description: Install systemd unit under /usr/lib/systemd/system for usr-merge
+ The default SYSTEMDDIR points at /lib/systemd/system, which on a usr-merged
+ base is a symlink to /usr/lib/systemd/system. Installing into the raw
+ /lib path produces a non-usr-merge deb whose dpkg -x extraction clobbers the
+ /lib symlink in rock builds.
+Origin: vendor
+Forwarded: no
+Author: Canonical
+Last-Update: 2026-09-26
+
+--- a/src/Linux/Makefile
++++ b/src/Linux/Makefile
+@@ -60,3 +60,3 @@
+ MODDIR     ?= /etc/hsflowd/modules
+-SYSTEMDDIR ?= /lib/systemd/system
++SYSTEMDDIR ?= /usr/lib/systemd/system
+ DBUSDIR    ?= /etc/dbus-1/system.d

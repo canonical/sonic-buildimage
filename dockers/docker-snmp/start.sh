@@ -5,6 +5,10 @@ if [ "${RUNTIME_OWNER}" == "" ]; then
     RUNTIME_OWNER="kube"
 fi
 
+if [ -f /usr/share/sonic/templates/envs ]; then
+    source /usr/share/sonic/templates/envs
+fi
+
 CTR_SCRIPT="/usr/share/sonic/scripts/container_startup.py"
 if test -f ${CTR_SCRIPT}
 then
@@ -27,3 +31,12 @@ sonic-cfggen $SONIC_CFGGEN_ARGS
 
 mkdir -p /var/sonic
 echo "# Config files managed by sonic-config-engine" > /var/sonic/config_status
+
+if pgrep -x pebble > /dev/null 2>&1; then
+    LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+    pebble add syslog-layer --combine $LAYER_FILE
+    pebble replan
+
+    pebble start snmpd
+    pebble start snmp-subagent
+fi

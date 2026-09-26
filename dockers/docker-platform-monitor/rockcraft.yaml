@@ -1,0 +1,181 @@
+name: docker-platform-monitor
+summary: SONiC platform-monitor container
+description: A rock for SONiC platform-monitor container
+version: "1.0.0"
+
+base: ubuntu@26.04
+build-base: ubuntu@26.04
+license: Apache-2.0
+
+platforms:
+  amd64:
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  start:
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+
+parts:
+  setup-pmon:
+    plugin: dump
+    source: .
+    override-build: |
+      # The rsyslog stage-package ships a default /etc/rsyslog.conf; drop it so the
+      # source tree's pmon-specific rsyslog.conf copy does not clash on hardlink.
+      rm -f ${CRAFT_PART_INSTALL}/etc/rsyslog.conf
+      craftctl default
+
+      # Install SONiC debs (wildcard filenames)
+      dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libsensors5_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/lm-sensors_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/fancontrol_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sensord_*.deb ${CRAFT_PART_INSTALL}
+
+      # Clean up source files
+      rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
+
+    organize:
+      start.sh: usr/bin/start.sh
+      pebble-layer.j2: usr/share/sonic/templates/pebble-layer.j2
+      docker-pmon.supervisord.conf.j2: usr/share/sonic/templates/docker-pmon.supervisord.conf.j2
+      delay.py: usr/bin/delay.py
+      lm-sensors.sh: usr/bin/lm-sensors.sh
+      ssd_tools/SmartCmd: usr/bin/SmartCmd
+      ssd_tools/iSmart: usr/bin/iSmart
+      files/syslog-layer.yaml: usr/share/sonic/templates/syslog-layer.yaml
+      files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
+      files/readiness_probe.sh: usr/bin/readiness_probe.sh
+      files/container_startup.py: usr/share/sonic/scripts/container_startup.py
+
+    stage-packages:
+      # Base runtime packages (inherited from config-engine layer)
+      - rsyslog
+      - rsyslog-relp
+      - python3
+      - redis-tools
+      - iproute2
+      - net-tools
+      - jq
+      - libzmq5
+      - libwrap0
+      - libdaemon0
+      - libdbus-1-3
+      - libjansson4
+      - python3-redis
+      - python3-yaml
+      - python3-cffi-backend
+      # SONiC deb runtime dependencies
+      - libboost-serialization1.83.0
+      - libhiredis1.1.0
+      - libxxhash0
+      - libpython3.14
+      # pmon-specific runtime packages
+      - ipmitool
+      - rrdtool
+      - python3-smbus
+      - dmidecode
+      - i2c-tools
+      - psmisc
+      - python3-netifaces
+      - iputils-ping
+      - pciutils
+      - nvme-cli
+      - ethtool
+      - xxd
+      - python3-bottle
+      - smartmontools
+
+    prime:
+      # Exclude unnecessary artifacts that `source: .` dumps at the rock root
+      - -files
+      - -envs
+      - -python-debs
+      - -vcache
+      - -base_image_files
+      - -buildinfo
+      - -Dockerfile*
+      - -docker_init.j2
+      - -critical_processes
+
+    override-prime: |
+      craftctl default
+
+      cp ${CRAFT_PROJECT_DIR}/etc/rsyslog.conf etc/rsyslog.conf
+      cp ${CRAFT_PROJECT_DIR}/manifest.json manifest.json
+      cp ${CRAFT_PROJECT_DIR}/envs usr/share/sonic/templates/
+
+  install-python:
+    plugin: python
+    source: .
+    build-packages:
+      - python3-dev
+      - gcc
+      - g++
+      - make
+    python-packages:
+      # config-engine inherited SONiC wheels
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # pmon daemon wheels
+      - ./python-wheels/sonic_platform_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_ledd-1.1-py3-none-any.whl
+      - ./python-wheels/sonic_pcied-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_psud-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_syseepromd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_thermalctld-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_sensormond-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_xcvrd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_ycabled-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_chassisd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_stormond-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_bmcctld-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_platform_pddf_common-1.0-py3-none-any.whl
+      # common pip packages (config-engine)
+      - jinjanator
+      - click
+      - pyangbind==0.8.7
+      - lxml
+      # pmon-specific pip packages
+      - grpcio==1.71.0
+      - grpcio-tools==1.71.0
+      - thrift==0.13.0
+      - requests
+      - python-dateutil==2.9.0.post0
+      - libpci
+      - psutil
+      - blkinfo
+      - smbus2
+    stage-packages:
+      - python3-venv
+
+  add-user:
+    plugin: nil
+    after: [setup-pmon]
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+    prime:
+      - etc/passwd
+      - etc/group
