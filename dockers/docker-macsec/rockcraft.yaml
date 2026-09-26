@@ -54,18 +54,6 @@ parts:
       dpkg -x debs/swss_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/wpasupplicant_*.deb ${CRAFT_PART_INSTALL}
 
-      # Relocate legacy /sbin and /lib content (usr-merged base symlinks to usr/)
-      [ -d ${CRAFT_PART_INSTALL}/sbin ] && {
-          mkdir -p ${CRAFT_PART_INSTALL}/usr/sbin
-          cp -a ${CRAFT_PART_INSTALL}/sbin/. ${CRAFT_PART_INSTALL}/usr/sbin/
-          rm -rf ${CRAFT_PART_INSTALL}/sbin
-      }
-      [ -d ${CRAFT_PART_INSTALL}/lib ] && {
-          mkdir -p ${CRAFT_PART_INSTALL}/usr/lib
-          cp -a ${CRAFT_PART_INSTALL}/lib/. ${CRAFT_PART_INSTALL}/usr/lib/
-          rm -rf ${CRAFT_PART_INSTALL}/lib
-      }
-
       # Clean up deb/wheel source files
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
