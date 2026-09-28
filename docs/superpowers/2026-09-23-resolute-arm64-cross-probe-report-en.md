@@ -18,7 +18,7 @@ The question was not "can an arm64 vs image be built" but **"does arm64 SONiC ju
 - Past the frontier the probe reached, a static scan finds **at least 8 more cross-only build-dependency gaps and one structural Python conflict**, and none of them has reached the Docker layer yet. The failures surface one per pass, with no end in sight.
 - Speed is a secondary argument: building the arm64 rootfs alone took 47 minutes, almost all of it under qemu (`mkinitramfs` spawns one emulated process per shell call). A native build runs that step at full speed.
 
-What the probe did **not** verify is whether a native build actually reaches a `.bin`. §6 lists what the native path is expected to need, but no native run backs it.
+The probe itself did not run a native build. A native build has since produced and booted `sonic-vs.bin`; see the [native build report](2026-09-28-resolute-arm64-native-build-report-en.md).
 
 ## 1. How far it got
 
@@ -125,7 +125,9 @@ Before any SONiC fixes, three things are prerequisites:
 
 After that come the 19 class A items (9 of them already worked around in the probe, §7, one of those — G3-8 — only by forcing the install), the ≥8 dependency gaps in §3.3, and the Python dual-architecture conflict. The Python conflict is a design problem rather than a missing package: the cross slave has to hold amd64 Python to run build tools and arm64 Python headers and extensions to link against, and Debian packaging will not co-install `python3-dev` for both.
 
-## 6. What the native path is expected to need (unverified)
+## 6. What the native path is expected to need
+
+The native build confirmed the first three items below and needed two more changes (the pmon SSD tools and initramfs); see the [native build report](2026-09-28-resolute-arm64-native-build-report-en.md).
 
 Measured before the probe and not exercised by it:
 
