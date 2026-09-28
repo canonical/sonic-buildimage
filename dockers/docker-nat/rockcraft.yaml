@@ -140,11 +140,6 @@ parts:
       - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
       - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
       - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
-      # common pip packages
-      - jinjanator
-      - click
-      - pyangbind==0.8.7
-      - lxml
     stage-packages:
       - python3-venv
 
