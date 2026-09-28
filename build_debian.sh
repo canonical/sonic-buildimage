@@ -311,6 +311,9 @@ if [[ $CONFIGURED_ARCH == amd64 ]]; then
     ## Pre-install hardware drivers
     # Ubuntu splits linux-firmware per vendor; these two match Debian's firmware-misc-nonfree + firmware-intel-misc.
     sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install linux-firmware-misc linux-firmware-intel-misc
+else
+    # The firmware splits above Break initramfs-tools << 0.142ubuntu8 and so pull in Ubuntu's; do the same here, or the initrd ships no busybox.
+    sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install initramfs-tools busybox-initramfs
 fi
 
 ## Pre-install the fundamental packages
