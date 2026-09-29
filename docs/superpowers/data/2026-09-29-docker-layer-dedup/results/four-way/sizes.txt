@@ -1,0 +1,4 @@
+D: dockerfs.tar.gz 1035.8 MB | .bin 1676.6 MB | docker dir 3386 MB | SONiC-OS used 4009 MB | img.gz 1693.0 MB | files with nlink>1: 338
+DH: dockerfs.tar.gz 748.0 MB | .bin 1388.9 MB | docker dir 2456 MB | SONiC-OS used 3079 MB | img.gz 1404.6 MB | files with nlink>1: 23924
+R: dockerfs.tar.gz 1865.2 MB | .bin 2506.0 MB | docker dir 5739 MB | SONiC-OS used 6362 MB | img.gz 2524.0 MB | files with nlink>1: 460
+RH: dockerfs.tar.gz 960.9 MB | .bin 1601.8 MB | docker dir 3136 MB | SONiC-OS used 3758 MB | img.gz 1618.0 MB | files with nlink>1: 80342

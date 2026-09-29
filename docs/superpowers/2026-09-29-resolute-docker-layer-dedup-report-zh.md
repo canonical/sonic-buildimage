@@ -3,9 +3,9 @@
 - 日期：2026-09-29
 - 测量的镜像（均为 amd64）：
   - resolute broadcom：2026-09-17 增量构建、PR #14 CI 构建（`c05f0e016`）、2026-08-23 从零构建（`2957b9e3`）
-  - resolute vs：2026-08-27 构建
+  - resolute vs：2026-08-23 从零构建（`2957b9e3`）和 2026-08-27 构建
   - 官方上游 202605 broadcom：Azure 构建 20260928.6（`6aec5bee6`，build id 1232715）
-  - rock 分支的 vs 镜像 `sonic-vs-rock-260929.img.gz`（`202605_resolute_rock.0-dirty-20260926.010724`）
+  - **同一 commit 的 Dockerfile 版与 rock 版 vs 镜像**，都在本地从 `test/rock-merge-resolute` `43f0cf6558` 构建，镜像版本 `test_rock-merge-resolute.0-43f0cf65`。这个 commit 是把 `canonical/202605_resolute` `d2f9ae8502` 合并进 `canonical/202605_resolute_rock` `1d187fd351`。
 - 改动：本地分支 `feat/dockerfs-hardlink`，在 `d2f9ae8502` 之上一个签名提交 `6dc4a02257`，未推送
 - 工具与原始结果：[data/2026-09-29-docker-layer-dedup/](data/2026-09-29-docker-layer-dedup/)
 - 本文为中文版；英文版为唯一事实来源（`-en.md`）
@@ -13,18 +13,29 @@
 ## 0. 结论
 
 - **SONiC 的 docker 镜像并没有压成单层。** 每个 Dockerfile 在父镜像之上加一层，共享的父层 overlay2 只存一份（§1）。
-- **重复来自兄弟镜像。** 没有共同父层的镜像，各自往自己的层里装同样的文件，例如 syncd 与 gbsyncd、protobuf 和 SAI 库。
+- **重复来自兄弟镜像。** 没有共同父层的镜像，各自往自己的层里装同样的文件。
   - resolute broadcom：重复 242 MB，占全部层内容的 12%。
-  - resolute vs：968 MB，29%，大头是 syncd-vs 和 gbsyncd-vs 带着同一套工具链。
+  - resolute vs：969 MB，29%，大头是 syncd-vs 和 gbsyncd-vs 带着同一套工具链。
   - 官方上游 broadcom：241 MB，11.8%。上游有同样的问题，量级也一样（§2）。
-  - rock 版 vs：3266 MB，57%（§5）。
+  - rock 版 vs：3126 MB，55.5%（§5）。
 - **代价在哪里。** gzip 做不了跨文件去重，所以重复部分在 `.bin` 里占压缩后的大小，装机后在盘上占完整大小。
 - **修法不需要抽公共父镜像。** 在打包 `dockerfs.tar.gz` 之前对 `overlay2/*/diff` 跑一遍 util-linux `hardlink`，`build_debian.sh` 里加一行即可（§3）。
-- **已在 vs 上端到端验证**，方法是重新打包现成镜像，没有重新构建（§4）：
-  - `dockerfs.tar.gz` 1025.6 → 742.1 MB，装机后 docker 目录 3356 → 2442 MB。
-  - ONIE 装机、启动、copy-up 隔离、`docker save` digest、`restart swss`、`config reload`、`docker rmi` 的表现都与未改动的镜像一致。
-- **rock 版 vs 原地重打包：** `img.gz` 3523.7 → 2596.0 MB（−26%）；加 `hardlink -t` 为 2412.3 MB（−32%）。尚未做启动测试（§5）。
-- **mtime 限制了能链接多少。** `hardlink` 默认要求 mtime 也相同才合并。把构建期产生的 mtime 钳制到 `SOURCE_DATE_EPOCH`，剩下的几乎都能收回来。这就是可复现构建的角度（§6）。
+  - 上游已有一个可选开关，也会对 docker 目录做硬链接：`BUILD_REDUCE_IMAGE_SIZE`，默认 `n`。它的合并规则不看 mode、属主、扩展属性和 mtime，而且打开后还会顺带改动别的东西（§3）。
+- **vs 上同一 commit 的四相对比**（§5）：Dockerfile 版和 rock 版，各自分链接与不链接两种，全部来自 `43f0cf6558`，全部走 ONIE 装机。
+
+  | | Dockerfile | Dockerfile + 链接 | rock | rock + 链接 |
+  |---|---|---|---|---|
+  | `.bin` | 1676.6 MB | 1388.9 MB | 2506.0 MB | 1601.8 MB |
+  | 装机后 docker 目录 | 3386 MB | 2456 MB | 5739 MB | 3136 MB |
+
+  - 链接把 rock 版相对 Dockerfile 版多出的部分，在 `.bin` 里从 829 MB 降到 213 MB，在盘上从 2353 MB 降到 680 MB。
+  - 链接后的 rock 版比现在不链接的 Dockerfile 版还小。
+  - 四个镜像启动后状态相同，检查项全部一致。
+- **装好的系统上，rock 镜像无法 `docker save`**（§6）。这和链接无关，问题在两者出现之前就存在。
+  - 镜像装进 host rootfs 之后，构建的清理钩子会删掉所有 `__pycache__` 目录，docker 层里的也不例外。
+  - 原始 tar 里带 `.pyc` 的层，于是和它的 tar-split 记录对不上了。
+  - 受影响的是全部 13 个 rock，外加一个 Dockerfile 镜像 `docker-gnmi-watchdog`。
+- **mtime 限制了能链接多少。** `hardlink` 默认要求 mtime 也相同才合并。在 rock 版上，把构建期的 mtime 钳制到 `SOURCE_DATE_EPOCH`，还能再多链接 462 MB（§7）。
 
 ## 1. 镜像是怎么存的
 
@@ -53,8 +64,8 @@
 | resolute broadcom，PR #14 CI 构建 | 1986 MB | 227 MB（11.4%） | 19 MB |
 | resolute broadcom，2026-08-23 从零 | 1989 MB | 226 MB（11.3%） | 1.5 MB |
 | **官方上游 202605 broadcom** | 2043 MB | **241 MB（11.8%）** | 3.6 MB |
-| resolute vs，2026-08-27 | 3367 MB | **968 MB（28.7%）** | 未测 |
-| rock 版 vs，2026-09-26 | 5711 MB | **3266 MB（57.2%）** | 2.0 MB |
+| resolute vs，Dockerfile，`43f0cf6558` | 3388 MB | **969 MB（28.6%）** | 19.3 MB |
+| resolute vs，rock，`43f0cf6558` | 5632 MB | **3126 MB（55.5%）** | 29.7 MB |
 
 重复的字节是什么（2026-09-17 broadcom）：
 
@@ -74,9 +85,9 @@
 | 7.2 MB | ×5 | `libsairedis.so` |
 | 6.3 MB | ×5 | `/usr/share/misc/pci.ids` |
 
-上游的清单一样，另外还有约 22 份 buildinfo 的 `copyrights.tar.gz`。vs 上 968 MB 里有 770 MB 来自 docker-syncd-vs 和 docker-gbsyncd-vs，两者都带着 LLVM 21、clang、gcc 的 `cc1` 和 gRPC 静态库。
+上游的清单一样，另外还有约 22 份 buildinfo 的 `copyrights.tar.gz`。vs 上 969 MB 里有 771 MB 来自 docker-syncd-vs 和 docker-gbsyncd-vs，两者都带着 LLVM 21、clang、gcc 的 `cc1` 和 gRPC 静态库。
 
-**被遮蔽字节反映版本是否钉住。** 09-17 构建里，`docker-base-resolute` 用的是 09-03 的缓存，config-engine 是 09-17 构建的。其间 apt 升级了 `libc6` 和 `python3.14`，于是 base 层里的旧副本仍存储在新副本之下。CI 构建在一次运行之内也有同样的漂移（19 MB）。上游钉住了 deb 版本，只有 3.6 MB。
+**被遮蔽字节反映版本是否钉住。** 09-17 构建里，`docker-base-resolute` 用的是 09-03 的缓存，config-engine 是 09-17 构建的。其间 apt 升级了 `libc6` 和 `python3.14`，于是 base 层里的旧副本仍存储在新副本之下。CI 构建在一次运行之内也有同样的漂移（19 MB）。上游钉住了 deb 版本（§7），只有 3.6 MB。
 
 **各形态下的代价**，以 09-17 broadcom 构建为例：
 
@@ -95,11 +106,11 @@ sudo bash -c "hardlink --respect-xattrs $FILESYSTEM_ROOT/${DOCKERFS_PATH}var/lib
 
 - **tar。** GNU tar 把同一 inode 的第二个及以后的名字写成链接条目，ONIE 里的 busybox tar 解包时会还原成链接。
 - **overlayfs。** 下层对容器只读。容器里的写、`chmod` 或 `rm` 会把文件 copy-up 到该容器自己的 upper 目录，共享的 inode 不受影响。
-- **`docker save`** 从各层的 diff 目录重新生成层 tar，所以层 digest 不变。
+- **`docker save`** 按每层的 tar-split 记录重建层 tar，文件内容按路径去读。链接既不改路径也不改内容，所以层 digest 不变。
 - **`docker rmi`** 删的是层目录。一个文件只要还被别的层链接着，inode 就保留。
 - **合并规则。** `hardlink` 只合并内容、mode、属主以及（加 `--respect-xattrs` 时）扩展属性都相同的文件。默认还要求 mtime 相同，`-t` 去掉 mtime 检查。
-  - 测过的两套层里都没有 `.pyc` 文件，所以 `-t` 不会让字节码缓存失效。
-  - 但它确实会让一些文件报告的 mtime 与构建时的不同。
+  - 构建出来的镜像，docker 层里没有 `.pyc` 文件：host-image 的清理步骤把它们删了（§6）。因此 `-t` 不可能让层里的字节码缓存变得过期。
+  - 但 `-t` 确实会让一些文件报告的 mtime 与构建时的不同。
 
 省下多少：
 
@@ -109,9 +120,29 @@ sudo bash -c "hardlink --respect-xattrs $FILESYSTEM_ROOT/${DOCKERFS_PATH}var/lib
 | resolute broadcom 09-17 | `dockerfs.tar.gz` | 555 MB | 493 MB（重复全部链接时 486 MB） |
 | 官方 202605 broadcom | `dockerfs.tar.gz`，重复全部链接 | 593 MB | 507 MB |
 | resolute vs 08-23 | `dockerfs.tar.gz` / 装机后 docker 目录 | 1025.6 / 3356 MB | 742.1 / 2442 MB（§4） |
-| rock 版 vs 09-26 | `dockerfs.tar.gz`，默认 / `-t` | 1877 MB | 948 / 765 MB（§5） |
+| resolute vs Dockerfile `43f0cf6558` | `dockerfs.tar.gz` / 装机后 docker 目录 | 1035.8 / 3386 MB | 748.0 / 2456 MB（§5） |
+| resolute vs rock `43f0cf6558` | `dockerfs.tar.gz` / 装机后 docker 目录 | 1865.2 / 5739 MB | 960.9 / 3136 MB（§5） |
 
-broadcom 的 242 MB 重复里，默认模式链接了 214 MB；官方镜像 241 MB 里链接了 202 MB。其余内容相同但 mtime 不同（§6）。
+broadcom 的 242 MB 重复里，默认模式链接了 214 MB；官方镜像 241 MB 里链接了 202 MB。其余内容相同但 mtime 不同（§7）。
+
+**上游的可选开关：`BUILD_REDUCE_IMAGE_SIZE`。** 上游 PR #16729（2023）加入了 `scripts/build-optimize-fs-size.py`。`rules/config:394` 把这个开关默认设为 `n`。设为 `y` 时，`build_debian.sh:924-932` 会带 `--hardlinks var/lib/docker` 调用这个脚本。它和上面的改动有几处不同：
+
+- **合并规则。** 它按「文件名 + md5」分组，不看 mode、属主、扩展属性和 mtime。每链接一个文件，就把被链接文件的 mode、属主和 mtime 设到共享的 inode 上，所以最终每个名字的元数据都取决于最后链进来的那个文件。在 `43f0cf6558` 的镜像上模拟：
+
+  | | 上游规则能链接 | mode 或属主会被改掉的路径 |
+  |---|---|---|
+  | Dockerfile | 960.3 MB | 59 个（例如 `versions-*` 文件的权限 644 与 666、Python 文件的属组 0 与 50） |
+  | rock | 3119.5 MB | 123 个 |
+
+  扩展属性没有测量。
+- **范围。** 它遍历整个 `var/lib/docker`，而不只是各层的 `diff` 目录。
+- **附带改动。** 同一个开关还会：
+  - 从 host rootfs 和每一层里删除 `usr/share/doc`、`usr/share/man` 和 `usr/share/common-licenses`；
+  - 把 `dockerfs.tar.gz` 改用 pzstd 压缩（`build_debian.sh:955-956`）；
+  - 在 host 上跳过安装 `sonic-rsyslog-plugin`（`sonic_debian_extension.j2:404`）；
+  - 对 Aboot 镜像，还会删除非 Arista 的平台目录、部分内核模块和固件。
+
+`hardlink --respect-xattrs` 只链接可以互换的文件，除此之外什么都不改。要拿到同样的收益，它是更安全的做法。
 
 ## 4. vs 上的端到端检查
 
@@ -155,54 +186,97 @@ broadcom 的 242 MB 重复里，默认模式链接了 214 MB；官方镜像 241 
 - 剩下的文件里有 4,098 个曾与被删文件共用 inode，内容全部保持原样。
 - 其余文件都没有变化。之后 `config reload` 恢复出相同的端口、路由和 BGP 邻居。
 
-## 5. rock 版 vs 镜像
+## 5. 同一 commit 的四相对比：Dockerfile 或 rock，链接或不链接
 
-`sonic-vs-rock-260929.img.gz` 包含 28 个镜像：14 个用 rockcraft 打包，14 个仍由 Dockerfile 构建。rock 镜像按 history 里的 `umoci` 和 entrypoint 为 `/usr/bin/pebble` 识别，分别是：
+**构建。** 同一份 `43f0cf6558` 的检出（`PLATFORM=vs`、`INCLUDE_ICCPD=n`）产出了两个基础镜像：
 
-> database、eventd、fpm-frr、iccpd、lldp、macsec、nat、platform-monitor、router-advertiser、sflow、snmp、sonic-gnmi、sonic-mgmt-framework、teamd
+1. `make target/sonic-vs.img.gz` 用 Dockerfile 构建全部镜像。这一轮的 `sonic-vs.bin` 和 `sonic-vs.img.gz` 留作 **Dockerfile** 版。
+2. `build_rocks.sh` 用 rockcraft 打出 rock 镜像，写回同样的 `target/docker-*.gz`。实际跑的是一份本地副本（`build_rocks-local.patch`），改了两处，都不影响镜像内容：
+   - 每次 pack 之后执行 `rockcraft clean`，否则每个 LXD 构建实例都会在盘上留一整套根文件系统。
+   - 不打 `docker-iccpd`。`INCLUDE_ICCPD=n` 时两个版本都不装它。
+3. 再执行一次 `make target/sonic-vs.img.gz`，只重建了根文件系统和镜像本身，得到 **rock** 版。没有任何 rock 镜像被 Dockerfile 重新构建覆盖。
 
-**层的形态。** 一个 rock 有五层：
+两个链接版由 `repack-bin.sh` 生成。两个不链接版用的就是构建自带的 `img.gz`。链接版用和 §4 相同的 `build_kvm_image.sh` 副本走了同样的 ONIE 装机。
 
-- L0：`ubuntu:26.04` 基础层，100 MB，13 个 rock 共用。
+**镜像集合。** 两个版本都带同样的 27 个镜像。rock 版里其中 13 个是 rock，entrypoint 都是 `pebble enter`，history 里都有 `umoci`：
+
+> database、eventd、fpm-frr、lldp、macsec、nat、platform-monitor、router-advertiser、sflow、snmp、sonic-gnmi、sonic-mgmt-framework、teamd
+
+**rock 的层形态。** 每个 rock 有五层：
+
+- L0：`ubuntu:26.04` 基础层，101 MB，12 个 rock 共用。
 - L1：`/.rock/metadata.yaml`。
-- L2：一个装下所有 part 的胖层，117–327 MB。
+- L2：一个装下所有 part 的层，126–336 MB。
 - L3：pebble 的 layer YAML。
 - L4：又一个 `metadata.yaml`。
 
-docker-database 只有三层，也不用共享基础层；它自己带了 62 MB 的基础层内容。
+docker-database 只有三层，带着自己的 185 MB 基础层。rock 之间、rock 与 Dockerfile 链之间都没有父子关系。每个 L2 层都 stage 了自己的一整套运行时，而 Dockerfile 镜像是从 config-engine 和 swss-layer 各拿一份。rock 版 3.1 GB 重复里约有 2.1 GB 落在 13 个 rock 自己的层里。
 
-**为什么重复这么高。** rock 之间没有父子关系。每个胖层都 stage 了自己完整的运行时，而 Dockerfile 镜像是从 config-engine 和 swss-layer 各拿一份。3266 MB 重复里有 2286 MB 在 rock 胖层中。有 105 MB 的内容（整套 python3.14、swsscommon、redis-tools）在使用共享基础层的全部 13 个胖层里各有一份。
+**大小**（`measure.sh`）。
 
-**混用不一致。** 一个镜像里并行跑着两套打包模式：
+| | Dockerfile | Dockerfile + 链接 | rock | rock + 链接 |
+|---|---|---|---|---|
+| `dockerfs.tar.gz` | 1035.8 MB | 748.0 MB（−27.8%） | 1865.2 MB | 960.9 MB（−48.5%） |
+| `sonic-vs.bin` | 1676.6 MB | 1388.9 MB（−17.2%） | 2506.0 MB | 1601.8 MB（−36.1%） |
+| 装机后 docker 目录 | 3386 MB | 2456 MB（−27.5%） | 5739 MB | 3136 MB（−45.4%） |
+| SONiC-OS 分区已用 | 4009 MB | 3079 MB | 6362 MB | 3758 MB |
+| `sonic-vs.img.gz` | 1693.0 MB | 1404.6 MB（−17.0%） | 2524.0 MB | 1618.0 MB（−35.9%） |
 
-- 两条互相不能共享层的基础链；
-- 两套进程管理器，rock 里用 pebble，其余用 supervisord。
+**链接对 rock 额外开销的影响：**
 
-**原地重打包**（`repack-img.sh`：在挂载的 SONiC-OS 分区上跑 hardlink，`fstrim`，转回 qcow2，gzip）。基线是未改动的盘走同样的转换加 gzip 流程。
+| rock 减 Dockerfile | 未链接 | 链接后 |
+|---|---|---|
+| `.bin` | +829.4 MB | +212.9 MB |
+| 装机后 docker 目录 | +2353 MB | +680 MB |
 
-| | 未改动 | `hardlink` 默认 | `hardlink -t` |
-|---|---|---|---|
-| `img.gz` | 3523.7 MB | 2596.0 MB（−26%） | 2412.3 MB（−32%） |
-| 折合 `dockerfs.tar.gz` | 1877 MB | 948 MB | 765 MB |
-| 盘上 docker 目录 | 5842 MB | 3133 MB | 2511 MB |
+- 两个版本去重后的独有内容只差 87 MB（2506.2 对 2419.5 MB）。
+- 链接后剩下的 680 MB，大部分是默认模式因为 mtime 不同而没有链接的重复内容：rock 版有 548 MB，Dockerfile 版只有 29 MB（§7）。
+- 其余是目录项：每个 rock 层都带一整棵目录树，而目录不能链接。
 
-这个镜像无论改前改后都还没启动过。
+**行为。** 四个镜像跑的是同一套 `hlcheck.sh` 和 `hlcheck2.sh`（`results/four-way/`）：
 
-**硬链接后 rock 对比 Dockerfile。** 链接能抹掉两种打包模式之间的大部分差距，但前提是 mtime 一致：
+| 检查项 | 四个镜像 |
+|---|---|
+| 容器 | 相同的 14 个在跑 |
+| ASIC_DB | 33 个 PORT、69 个 ROUTE_ENTRY；PORT_TABLE 里 32 个端口，PortInitDone 已置位 |
+| BGP | 配置了 32 个邻居 |
+| 失败单元 | `system-health` 和 `watchdog-control` |
+| Copy-up | 两个链接版里 `pci.ids` 是一个 inode、5 个链接，两个不链接版里是 5 个独立 inode。在 swss 里追加内容只改了 swss 那份 |
+| `docker save` | docker-orchagent（8 层）和 docker-syncd-vs（6 层）在四个镜像上都与 `diff_ids` 一致。docker-fpm-frr 在两个 Dockerfile 版上一致，在两个 rock 版上以同样的方式失败（§6） |
+| `restart swss`，然后 `config reload` | 14 个容器全部恢复，33 个端口 |
+| `docker rmi` 六个未启用的镜像 | Dockerfile：删除 2,730 个层文件。Dockerfile + 链接：其中 2,074 个是链接，剩下的文件里有 4,044 个曾与被删文件共用 inode。rock：删除 15,015 个（macsec、nat、sflow 是 rock）。rock + 链接：其中 12,338 个是链接，33,899 个曾共用 inode。四个版本里其余文件都没有变化，`config reload` 恢复出相同的端口、路由和邻居 |
 
-| docker 目录 | 未链接 | 默认 | `-t` |
-|---|---|---|---|
-| 纯 Dockerfile 的 vs（08-27） | 3366 MB | 2436 MB | 2397 MB |
-| rock 版 vs（09-26） | 5843 MB | 3133 MB | 2511 MB |
+每一对之间，syslog ERR 行只差几条是否出现取决于时序的消息：reload 期间 rsyslog 经 RELP 往宿主转发失败、`fdbsyncd` 的 netlink 读取错误，以及 `mgmtd` 的锁。这些消息在不链接镜像的运行里同样会出现。
 
-用 `-t` 时两者只差 114 MB：
+## 6. 发现：host-image 的 `.pyc` 清理让 `docker save` 失效
 
-- 45 MB 是真实的内容差异：rock 镜像多了 iccpd，而且新了一个月。
-- 约 56 MB 是目录开销：rock 镜像多了 13,700 个目录，因为每个胖层都带一整棵目录树，而目录不能硬链接。
+`src/sonic-build-hooks/scripts/post_run_cleanup:30` 会执行 `find / | grep -E "__pycache__" | xargs rm -rf`。host image 通过 `scripts/collect_host_image_version_files.sh:26` 在 chroot 里运行这个钩子。`build_debian.sh` 里的顺序是：
 
-用默认模式时两者差 700 MB，几乎全是 pip 在不同时间装进各个 rock 的 site-packages 的 Python 包。
+| 步骤 | 行号 |
+|---|---|
+| `sonic_debian_extension.sh` 把所有 docker 镜像 load 进 rootfs 的 `/var/lib/docker` | 693 |
+| `collect_host_image_version_files.sh` 运行 `post_run_cleanup` | 862 |
+| 打包 `dockerfs.tar.gz` | 954 |
 
-## 6. mtime 与可复现构建
+所以这次清理也会删掉每个已 load 层里的每个 `__pycache__`。这就是测过的镜像层里都没有 `.pyc` 的原因。
+
+**对 `docker save` 的影响。** docker 为每一层保存一份原始 tar 的 tar-split 记录。`docker save` 按这份记录回放，并从挂载的层里读取每个文件的内容。原始 tar 里有 `.pyc` 的层，这些文件现在不存在了，于是 save 中止，报 `open …/merged/usr/lib/python3.14/__pycache__/…pyc: no such file or directory`。根据 `dockerfs.tar.gz` 里的 tar-split 记录统计出的受影响镜像：
+
+| 版本 | 层 tar 里记录了、却被构建删掉的 `.pyc` 所在镜像 |
+|---|---|
+| Dockerfile | `docker-gnmi-watchdog`（349 个文件） |
+| rock | 全部 13 个 rock（每个 462–1,412 个文件）以及 `docker-gnmi-watchdog` |
+
+- 失败是在两个 rock 版上对 docker-fpm-frr 实际观察到的，与链接无关。
+- 其他镜像是根据同样缺失的文件推断出来的，没有实际运行。
+- 需要重建原始层 tar 的其他操作也会受影响，例如 `docker push`。
+- rock 容器启动时还会把 Python 标准库重新编译到各自的可写层里。启动一次后，有 11 个容器层里出现了这样的 `.pyc`。
+
+以下任一改动都能修复：
+- host-image 的清理跳过 `/var/lib/docker`；
+- 让层 tar 不再带 `__pycache__`，例如在每个 rock 的 `override-prime` 里删掉它。
+
+## 7. mtime 与可复现构建
 
 内容相同的文件过不了默认的 mtime 检查，原因有两个：
 
@@ -216,7 +290,8 @@ docker-database 只有三层，也不用共享基础层；它自己带了 62 MB 
 | resolute broadcom 09-17 | 214 MB | 226 MB | 242 MB |
 | resolute broadcom 08-23 从零 | — | 224.8 MB | 225.6 MB |
 | 官方 202605 broadcom（版本已钉） | 202 MB | 239 MB | 240 MB |
-| rock 版 vs 09-26 | 2669 MB | 3260 MB | 3266 MB |
+| resolute vs Dockerfile `43f0cf6558` | 939.9 MB | 955.1 MB | 968.4 MB |
+| resolute vs rock `43f0cf6558` | 2576.9 MB | 3039.2 MB | 3125.3 MB |
 
 钳制要在哪里做：
 
@@ -225,14 +300,16 @@ docker-database 只有三层，也不用共享基础层；它自己带了 62 MB 
   - `slave.mk` 没有把它传给 `docker build`。
 - **rock：在 `override-prime` 里。** 在那里把所有晚于 `SOURCE_DATE_EPOCH` 的文件 touch 一遍，就能覆盖占 rock 差距大头的 pip 安装包。
 
-钉版本：上游有 `versions-deb-trixie` 文件和 `MIRROR_SNAPSHOT`，resolute 两样都没有。Ubuntu 上对应的做法是 snapshot.ubuntu.com，它把所有 apt 操作固定到同一个时间点。
+**钉版本。**
+- **上游。** 官方流水线（`.azure-pipelines/azure-pipelines-Official.yml:24`）用 `SONIC_VERSION_CONTROL_COMPONENTS=deb,py2,py3,web` 构建。`rules/config:332-334` 据此把 `MIRROR_SNAPSHOT` 设为 `y`，所有 apt 操作都读同一个归档快照。
+- **resolute。** `rules/config:306` 已经把 `BUILD_SNAPSHOT_URL` 指向 snapshot.ubuntu.com。但本地构建和 `.github/workflows/resolute-build.yml` 都没有在 `SONIC_VERSION_CONTROL_COMPONENTS` 里包含 `deb`，所以 `MIRROR_SNAPSHOT` 仍是 `n`，apt 读的是实时归档。快照这条路在 resolute 上能否端到端走通，还没有测过。
 
 钳制和钉版本不是硬链接改动的前提。它们能提高收益，并让结果不再取决于各个镜像碰巧在什么时候构建。
 
-## 7. 未完成
+## 8. 未完成
 
 - 硬链接改动是本地提交，还没开 PR。
-- rock 镜像还没启动过，链接与否都没有。
-- 还没有用 rock 分支合并当前 `202605_resolute` 构建出 vs 镜像，所以它也还没有 A/B。
-- 导出时钳制和 `override-prime` 钳制只做了模拟测量（`report2.py`），都没实现。
+- `hardlink -t` 只做了模拟测量，没有启动过用 `-t` 链接的镜像。
+- 导出时钳制和 `override-prime` 钳制只做了模拟测量（`mtime_report.py`），都没实现。
+- `.pyc` 清理的问题（§6）没有修。`docker save` 只对 docker-fpm-frr 实际运行过。
 - broadcom 的数字来自对镜像的分析。没有把链接后的 broadcom 镜像装到硬件或 VM 上。

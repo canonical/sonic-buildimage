@@ -1,0 +1,162 @@
+
+### settled after (s) / uptime
+321
+ 15:04:34 up 5 min,  0 users,  load average: 0.37, 0.34, 0.17
+
+### image version
+test_rock-merge-resolute.0-43f0cf65
+
+### running containers
+bgp	docker-fpm-frr:latest	Up
+database	docker-database:latest	Up
+eventd	docker-eventd:latest	Up
+gbsyncd	docker-gbsyncd-vs:latest	Up
+gnmi	docker-sonic-gnmi:latest	Up
+lldp	docker-lldp:latest	Up
+mgmt-framework	docker-sonic-mgmt-framework:latest	Up
+pmon	docker-platform-monitor:latest	Up
+radv	docker-router-advertiser:latest	Up
+snmp	docker-snmp:latest	Up
+swss	docker-orchagent:latest	Up
+syncd	docker-syncd-vs:latest	Up
+sysmgr	docker-sysmgr:latest	Up
+teamd	docker-teamd:latest	Up
+
+### feature state
+Feature         State            AutoRestart
+--------------  ---------------  --------------
+bgp             enabled          enabled
+database        always_enabled   always_enabled
+dhcp_relay      disabled         enabled
+eventd          enabled          enabled
+gbsyncd         enabled          enabled
+gnmi            enabled          enabled
+lldp            enabled          enabled
+macsec          disabled         enabled
+mgmt-framework  enabled          enabled
+mux             always_disabled  enabled
+nat             disabled         enabled
+otel            disabled         enabled
+pmon            enabled          enabled
+radv            enabled          enabled
+sflow           disabled         enabled
+snmp            enabled          enabled
+swss            enabled          enabled
+syncd           enabled          enabled
+teamd           enabled          enabled
+
+### failed units
+system-health.service    loaded failed failed SONiC system health monitor
+watchdog-control.service loaded failed failed watchdog control service
+
+### ports / routes in ASIC_DB
+33
+69
+
+### PORT_TABLE / PortInitDone
+32
+lanes
+0
+
+### interfaces (head)
+  Interface            Lanes    Speed    MTU    FEC           Alias    Vlan    Oper    Admin    Type    Asym PFC
+-----------  ---------------  -------  -----  -----  --------------  ------  ------  -------  ------  ----------
+  Ethernet0      25,26,27,28      40G   9100    N/A    fortyGigE0/0  routed      up       up     N/A         N/A
+  Ethernet4      29,30,31,32      40G   9100    N/A    fortyGigE0/4  routed      up       up     N/A         N/A
+  Ethernet8      33,34,35,36      40G   9100    N/A    fortyGigE0/8  routed      up       up     N/A         N/A
+
+### bgp summary (tail)
+10.0.0.61      4  64015          0          0         0      0       0  never      Active          ARISTA15T0
+10.0.0.63      4  64016          0          0         0      0       0  never      Active          ARISTA16T0
+
+Total number of neighbors 32
+
+### hardlinked files in layers
+180312
+
+### docker du (MB)
+9060
+
+### copy-up: shared pci.ids before
+swss a2f5f6bd6355
+bgp a2f5f6bd6355
+lldp a2f5f6bd6355
+pmon a2f5f6bd6355
+snmp a2f5f6bd6355
+      5 655404 5
+
+### copy-up: append in swss only
+swss MUTATED
+bgp d class
+lldp d class
+pmon d class
+snmp d class
+      5 d class
+      1 MUTATED
+
+### docker save integrity
+docker-orchagent layers 8 match
+docker-syncd-vs layers 6 match
+Error response from daemon: open /var/lib/docker/overlay2/2676eeba70789623542fcdcb4ed6c9c78f8a6912a49304739b4f809ec616a04a/merged/usr/lib/python3.14/__pycache__/__future__.cpython-314.pyc: no such file or directory
+tar: This does not look like a tar archive
+tar: Exiting with failure status due to previous errors
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/s/manifest.json'
+
+### rmi docker-gbsyncd-vs (shares inodes with syncd-vs)
+Error response from daemon: conflict: unable to remove repository reference "docker-gbsyncd-vs:test_rock-merge-resolute.0-43f0cf65" (must force) - container 08de97dc85d5 is using its referenced image 62f8fb25f72f
+Untagged: docker-gbsyncd-vs:latest
+071ca6fb7631
+478a5dc1ffa4
+
+### restart swss (also restarts syncd)
+bgp database eventd gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+33
+
+### config reload
+reload rc=0
+bgp database eventd gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+33
+system-health.service    loaded failed failed SONiC system health monitor
+watchdog-control.service loaded failed failed watchdog control service
+
+### syslog ERR lines (normalised)
+      3 ERR syncd#syncd: message repeated 31 times: [ :- getStats: NULL pointer function argument]
+      3 ERR syncd#syncd: :- getStats: NULL pointer function argument
+      3 ERR swss#orchagent: :- initBufferConstants: Failed to get Maximum memory size, rv:-15
+      2 ERR teamd#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR sysmgr#sysmgr#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR syncd#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR swss#fdbsyncd: :- readData: netlink reports an error=-25 on reading a netlink socket
+      2 ERR radv#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR pmon#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR pmon#chassis_db_init: Failed to load chassis due to ModuleNotFoundError("No module named 'sonic_platform'")
+      2 ERR gnmi#telemetry: :- getDbInfo: Failed to find CHASSIS_STATE_DB database in : key
+      2 ERR gnmi#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR gnmi#dialout_client_cli: :- getDbInfo: Failed to find CHASSIS_STATE_DB database in : key
+      2 ERR database#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR bgp#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      1 ERR teamd#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR sysmgr#sysmgr#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR syncd#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR swss#rsyslogd: librelp error 10008 forwarding to server 127.0.0.1:2514 - suspending  [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR rsyslogd: imrelp: error 'error when receiving data, session broken', object  'lstn 2514: conn to clt 127.0.0.1/127.0.0.1' - input may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      1 ERR rasdaemon: Can't get traces from ras:memory_failure_event
+      1 ERR rasdaemon: Can't get traces from cxl:memory_module
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_poison
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_overflow
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_memory_sparing
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_generic_event
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_general_media
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_dram
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_aer_uncorrectable_error
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_aer_correctable_error
+      1 ERR radv#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR pmon#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR gnmi#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR eventd#rsyslogd: librelp error 10008 forwarding to server 127.0.0.1:2514 - suspending  [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR database#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR bgp#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+
+### DONE

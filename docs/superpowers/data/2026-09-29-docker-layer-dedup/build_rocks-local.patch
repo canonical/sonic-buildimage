@@ -1,0 +1,18 @@
+--- a/build_rocks.sh
++++ b/build_rocks.sh
+@@ -12,7 +12,6 @@
+     "dockers/docker-teamd"
+     "dockers/docker-platform-monitor"
+     "dockers/docker-macsec"
+-    "dockers/docker-iccpd"
+     "dockers/docker-sflow"
+     "dockers/docker-nat"
+     "dockers/docker-fpm-frr"
+@@ -39,6 +38,7 @@
+     rockcraft clean
+     rockcraft pack
+     sudo rockcraft.skopeo --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:latest
++    rockcraft clean
+     rm -r ./debs/ ./files/ ./python-wheels/ envs ${rockfullname}
+ 
+     popd

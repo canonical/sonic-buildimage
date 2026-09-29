@@ -1,27 +1,31 @@
 #!/bin/bash
-# Boot-test helper for installed sonic-vs disks.
-#   vmtest.sh inject DISK RAW SCRIPT  convert DISK (qcow2) to RAW unless RAW exists; install SCRIPT as a one-shot unit in the image's rw overlay
-#   vmtest.sh boot RAW CONSOLE [SECS] boot RAW under KVM (33 NICs, as the vs testbed expects) until the guest powers off
-#   vmtest.sh fetch RAW DIR           copy /host/hlcheck*.txt out of RAW into DIR
+# Boot-test helper for installed sonic-vs disks (qcow2 or raw; changed in place).
+#   vmtest.sh inject DISK SCRIPT        install SCRIPT as a one-shot unit in the image's rw overlay
+#   vmtest.sh boot DISK CONSOLE [SECS]  boot DISK under KVM (33 NICs, as the vs testbed expects) until the guest powers off
+#   vmtest.sh fetch DISK DIR            copy /host/hlcheck*.txt out of DISK into DIR
 set -euo pipefail
 HERE=$(dirname "$(realpath "$0")")
+. "$HERE/attach.sh"
 
-with_host() {  # with_host RAW CMD...: run CMD with $M set to the mounted SONiC-OS partition
-    local raw=$1; shift
-    local L; L=$(sudo losetup -f -P --show "$raw")
+with_host() {  # with_host DISK CMD...: run CMD with $M set to the mounted SONiC-OS partition
+    attach_disk "$1"; shift
     M=$(mktemp -d)
-    sudo mount "$(sudo blkid -o device -t LABEL=SONiC-OS "$L"p*)" "$M"
-    "$@" || true
-    sudo umount "$M"; sudo losetup -d "$L"; rmdir "$M"
+    sudo mount "$(sonic_os_part)" "$M"
+    local rc=0; "$@" || rc=$?
+    sudo umount "$M"; detach_disk; rmdir "$M"
+    return $rc
 }
 
 do_inject() {
-    local rw; rw=$(echo "$M"/image-*/rw)
+    # rw/ does not exist before first boot, so glob only the image directory
+    local img; img=$(echo "$M"/image-*)
+    [ -d "$img" ] || { echo "no image-* directory under $M" >&2; return 1; }
+    local rw=$img/rw
     sudo install -D -m 755 "$1" "$rw/usr/local/bin/hlcheck.sh"
     sudo install -D -m 644 "$HERE/hlcheck.service" "$rw/etc/systemd/system/hlcheck.service"
     sudo mkdir -p "$rw/etc/systemd/system/multi-user.target.wants"
     sudo ln -sf /etc/systemd/system/hlcheck.service "$rw/etc/systemd/system/multi-user.target.wants/hlcheck.service"
-    echo "injected $(basename "$1") into $(basename "$(dirname "$rw")")"
+    echo "injected $(basename "$1") into $(basename "$img")"
 }
 
 do_fetch() {
@@ -31,10 +35,10 @@ do_fetch() {
 
 case $1 in
 inject)
-    [ -e "$3" ] || qemu-img convert -O raw "$2" "$3"
-    with_host "$3" do_inject "$(realpath "$4")" ;;
+    with_host "$2" do_inject "$(realpath "$3")" ;;
 boot)
-    args=(-enable-kvm -cpu host -m 6144 -smp 4 -drive "file=$2,if=virtio,format=raw" -display none -monitor none -vga none
+    fmt=$(qemu-img info --output=json "$2" | python3 -c 'import json,sys; print(json.load(sys.stdin)["format"])')
+    args=(-enable-kvm -cpu host -m 6144 -smp 4 -drive "file=$2,if=virtio,format=$fmt" -display none -monitor none -vga none
           -serial "file:$3" -device pci-bridge,id=br1,chassis_nr=1)
     for i in $(seq 0 32); do
         # i440fx has too few slots for 33 NICs; put the upper half behind a bridge
