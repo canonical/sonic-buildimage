@@ -18,6 +18,7 @@ from natsort import natsorted, ns as natsortns
 from portconfig import get_port_config, get_fabric_port_config, get_fabric_monitor_config
 from sonic_py_common.interface import backplane_prefix
 from sonic_py_common.multi_asic import is_multi_asic, get_asic_id_from_name
+from sonic_py_common.device_info import VS_PLATFORMS
 
 # TODO: Remove this once we no longer support Python 2
 if sys.version_info.major == 3:
@@ -2201,7 +2202,7 @@ def parse_xml(filename, platform=None, port_config_file=None, asic_name=None, hw
 
     # Enable tunnel_qos_remap if downstream_redundancy_types(T1) or redundancy_type(T0) = Gemini/Libra
     enable_tunnel_qos_map = False
-    if platform and 'kvm' in platform:
+    if platform and ('kvm' in platform or platform in VS_PLATFORMS):
         enable_tunnel_qos_map = False
     elif results['DEVICE_METADATA']['localhost']['type'].lower() == 'leafrouter' and ('gemini' in str(downstream_redundancy_types).lower() or 'libra' in str(downstream_redundancy_types).lower()):
         enable_tunnel_qos_map = True

@@ -44,6 +44,7 @@ CHASSIS_DB_CONF_FILENAME = "chassisdb.conf"
 FRONTEND_ASIC_SUB_ROLE = "FrontEnd"
 BACKEND_ASIC_SUB_ROLE = "BackEnd"
 VS_PLATFORM = "x86_64-kvm_x86_64-r0"
+VS_PLATFORMS = (VS_PLATFORM, "arm64-qemu_armv8a-r0")
 
 # Chassis STATE_DB keys
 CHASSIS_INFO_TABLE = 'CHASSIS_INFO|chassis {}'
@@ -871,7 +872,7 @@ def get_system_mac(namespace=None, hostname=None):
     version_info = get_sonic_version_info()
     platform = get_platform()
 
-    if platform == VS_PLATFORM:
+    if platform in VS_PLATFORMS:
         return generate_mac_for_vs(hostname, namespace)
 
     if (version_info['asic_type'] in ['mellanox', 'nvidia-bluefield']):
