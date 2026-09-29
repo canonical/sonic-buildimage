@@ -45,11 +45,6 @@ parts:
       dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
       # Clean up deb/wheel source files
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
@@ -84,6 +79,8 @@ parts:
       - libboost-serialization1.83.0
       - libhiredis1.1.0
       - libxxhash0
+      # libnl-3/genl/route/nf come along as hard Depends of libnl-cli-3-200
+      - libnl-cli-3-200
       # Container-specific packages
       - radvd
 

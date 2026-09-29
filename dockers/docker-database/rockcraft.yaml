@@ -41,6 +41,8 @@ parts:
       - libpython3.14
       - libboost-serialization1.83.0
       - libxxhash0
+      # libnl-3/genl/route/nf come along as hard Depends of libnl-cli-3-200
+      - libnl-cli-3-200
   setup-database:
     plugin: dump
     source: .
@@ -56,11 +58,6 @@ parts:
         dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
         dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
         dpkg -x debs/libdashapi_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
-        dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
 
         # Clean up deb/wheel source files from install tree
         rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels ${CRAFT_PART_INSTALL}/python-debs
