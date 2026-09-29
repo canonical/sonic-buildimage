@@ -1,0 +1,32 @@
+--- a/scripts/build_kvm_image.sh
++++ b/scripts/build_kvm_image.sh
+@@ -62,7 +62,6 @@
+     done
+ }
+ 
+-apt-get install -y net-tools
+ create_disk
+ prepare_installer_disk
+ 
+@@ -90,8 +89,8 @@
+     -name "onie" \
+     -boot "order=cd,once=d" -cdrom "$ONIE_RECOVERY_ISO" \
+     -device e1000,netdev=onienet \
+-    -netdev user,id=onienet,hostfwd=:0.0.0.0:3041-:22 \
+-    -vnc 0.0.0.0:0 \
++    -netdev user,id=onienet,hostfwd=tcp:127.0.0.1:3041-:22 \
++    -vnc 127.0.0.1:0 \
+     -vga std \
+     -drive file=$DISK,media=disk,if=virtio,index=0 \
+     -drive file=$INSTALLER_DISK,if=virtio,index=1 \
+@@ -118,8 +117,8 @@
+ /usr/bin/kvm -m $MEM \
+     -name "onie" \
+     -device e1000,netdev=onienet \
+-    -netdev user,id=onienet,hostfwd=:0.0.0.0:3041-:22 \
+-    -vnc 0.0.0.0:0 \
++    -netdev user,id=onienet,hostfwd=tcp:127.0.0.1:3041-:22 \
++    -vnc 127.0.0.1:0 \
+     -vga std \
+     -snapshot \
+     -drive file=$DISK,media=disk,if=virtio,index=0 \

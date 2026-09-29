@@ -1,0 +1,10 @@
+[Unit]
+Description=hardlink A/B health check
+After=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/hlcheck.sh
+
+[Install]
+WantedBy=multi-user.target
