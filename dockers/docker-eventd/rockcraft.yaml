@@ -44,11 +44,6 @@ parts:
       dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
 
       # Render rsyslog plugin conf files from j2 templates
       mkdir -p ${CRAFT_PART_INSTALL}/etc/rsyslog.d/rsyslog_plugin_conf
@@ -96,6 +91,8 @@ parts:
       - libboost-serialization1.83.0
       - libhiredis1.1.0
       - libxxhash0
+      # libnl-3/genl/route/nf come along as hard Depends of libnl-cli-3-200
+      - libnl-cli-3-200
 
     override-prime: |
       craftctl default

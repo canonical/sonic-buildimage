@@ -34,11 +34,6 @@ parts:
 
       # Install SONiC debs (wildcard filenames)
       dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-genl-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-route-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-nf-3-200_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libnl-cli-3-200_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
@@ -87,6 +82,8 @@ parts:
       - libboost-serialization1.83.0
       - libhiredis1.1.0
       - libxxhash0
+      # libnl-3/genl/route/nf come along as hard Depends of libnl-cli-3-200
+      - libnl-cli-3-200
       - libpython3.14
       # pmon-specific runtime packages
       - ipmitool
