@@ -117,6 +117,11 @@ generate_device_list()
     if [ "$TARGET_MACHINE" = "alpinevs" ] ; then
       echo "x86_64-kvm_x86_64-r0" >> "$platforms_asic";
     fi
+
+    # arm64 vs installs from ONIE's qemu_armv8a platform, which sonic-device-data aliases to vs
+    if [ "$TARGET_MACHINE" = "vs" ] && [ "$CONFIGURED_ARCH" = "arm64" ]; then
+      echo "arm64-qemu_armv8a-r0" >> "$platforms_asic";
+    fi
 }
 
 if [ "$IMAGE_TYPE" = "onie" ]; then
