@@ -951,8 +951,8 @@ if [[ $MULTIARCH_QEMU_ENVIRON == y || $CROSS_BUILD_ENVIRON == y ]]; then
     DOCKERFS_PATH=../dockerfs/
 fi
 
-## Compress docker files
-if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ]; then
+## Compress docker files; only the Aboot and DSC installers can unpack a zstd dockerfs
+if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ] && [[ "$IMAGE_TYPE" == aboot || "$IMAGE_TYPE" == dsc ]]; then
     pushd $FILESYSTEM_ROOT && sudo tar -I pzstd -cf $OLDPWD/$FILESYSTEM_DOCKERFS -C ${DOCKERFS_PATH}var/lib/docker .; popd
 else
     pushd $FILESYSTEM_ROOT && sudo tar -I pigz -cf $OLDPWD/$FILESYSTEM_DOCKERFS -C ${DOCKERFS_PATH}var/lib/docker .; popd

@@ -401,7 +401,7 @@ install_deb_package $debs_path/sonic-host-services-rs_*.deb
 install_deb_package $debs_path/sonic-db-cli_*.deb
 
 
-{% if include_system_eventd == "y" and build_reduce_image_size != "y" %}
+{% if include_system_eventd == "y" and not (build_reduce_image_size == "y" and image_type == "aboot") %}
 # Install sonic-rsyslog-plugin
 install_deb_package $debs_path/sonic-rsyslog-plugin_*.deb
 {% endif %}

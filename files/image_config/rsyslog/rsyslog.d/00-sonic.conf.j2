@@ -5,7 +5,7 @@ template(name="prog_msg" type="list") {
     constant(value="\n")
 }
 
-{% if include_system_eventd == "y" and build_reduce_image_size != "y" %}
+{% if include_system_eventd == "y" and not (build_reduce_image_size == "y" and image_type == "aboot") %}
 
 $ModLoad omprog
 
@@ -18,7 +18,7 @@ if re_match($programname, "bgp[0-9]*#(frr|zebra|staticd|watchfrr)") then {
 
 if re_match($programname, "bgp[0-9]*#bgpd") then {
     /var/log/frr/bgpd.log
-    {% if include_system_eventd == "y" and build_reduce_image_size != "y" %}
+    {% if include_system_eventd == "y" and not (build_reduce_image_size == "y" and image_type == "aboot") %}
     action(type="omprog"
         binary="/usr/bin/rsyslog_plugin -r /etc/rsyslog.d/bgpd_regex.json -m sonic-events-bgp"
         output="/var/log/rsyslog_plugin.log"
