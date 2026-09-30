@@ -925,10 +925,7 @@ if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ]; then
    sudo scripts/build-optimize-fs-size.py "$FILESYSTEM_ROOT" \
       --image-type "$IMAGE_TYPE" \
       --hardlinks var/lib/docker \
-      --hardlinks usr/share/sonic/device \
-      --remove-docs \
-      --remove-mans \
-      --remove-licenses
+      --hardlinks usr/share/sonic/device
 fi
 
 sudo mksquashfs $FILESYSTEM_ROOT $FILESYSTEM_SQUASHFS -comp zstd -b 1M -e boot -e var/lib/docker -e $PLATFORM_DIR
