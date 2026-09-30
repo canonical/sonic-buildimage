@@ -18,7 +18,7 @@
 - 越过探路停下的前沿，静态扫描还能查出**至少 8 处交叉专有的构建依赖缺口，外加一处结构性的 Python 冲突**，而且这些都还没碰到容器层。失败是一轮冒一个，看不到头。
 - 速度是次要理由：光是 arm64 rootfs 就花了 47 分钟，几乎全在 qemu 下（`mkinitramfs` 每次 shell 调用都要起一个模拟进程）。原生构建以全速跑完这一步。
 
-探路本身没有跑原生构建。之后的原生构建已经产出并启动了 `sonic-vs.bin`，见[原生构建报告](2026-09-28-resolute-arm64-native-build-report-zh.md)。
+探路本身没有跑原生构建。之后的原生构建已经产出 `sonic-vs.bin`，经 SONiC 的 arm64 ONIE 装机并启动，见[原生构建报告](2026-09-28-resolute-arm64-native-build-report-zh.md)。
 
 ## 1. 走到了哪一步
 
@@ -127,7 +127,7 @@ E-1 还顺带暴露了一处真实的不一致：对 arm64，`scripts/build_debi
 
 ## 6. 原生路径预计要做的事
 
-原生构建证实了下面前三条，另外还需要两处改动（pmon 的 SSD 工具和 initramfs），见[原生构建报告](2026-09-28-resolute-arm64-native-build-report-zh.md)。
+原生构建证实了下面前三条。要构建并启动，另外还需要两处改动（pmon 的 SSD 工具和 initramfs）；要经 ONIE 装机，还需要三处（内核格式、平台名和控制台），见[原生构建报告](2026-09-28-resolute-arm64-native-build-report-zh.md)。
 
 以下在探路前就已查实，但探路没有实际走到：
 

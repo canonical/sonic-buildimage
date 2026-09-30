@@ -1,0 +1,148 @@
+[   23.8s] ONIE embed started; ejecting the ISO so the next boot comes from disk
+[   29.5s] ONIE embedded; rebooting
+[   47.0s] ONIE booted from disk (its GRUB: 2.04)
+[   47.9s] running onie-nos-install http://10.0.2.2:8089/sonic-vs.bin.podler3
+127.0.0.1 - - [29/Sep/2026 08:10:51] "GET /sonic-vs.bin.podler3 HTTP/1.1" 200 -
+[  111.6s] SONiC installer: Installed SONiC base image SONiC-OS successfully
+[  119.5s] GRUB 2.04 menu after install
+[  119.5s] GRUB entries seen: ONIE: NOS install successful: http, ONIE: Rebooting..., ONIE:/ # discover: installer mode, SONiC-OS-arm64-native.0-381d8c3a0, ONIE
+[  150.1s] SONiC serial login prompt reached
+----- SONiC state (ssh) -----
+BOOT_IMAGE=/image-arm64-native.0-381d8c3a0/boot/vmlinuz-7.0.0-1002-sonic root=UUID=551c1d79-0d01-4b4a-a83a-ae5d345683bb rw console=tty0 console=ttyAMA0,115200n8 quiet net.ifnames=0 biosdevname=0 loop=image-arm64-native.0-381d8c3a0/fs.squashfs loopfstype=squashfs apparmor=1 security=apparmor varlog_size=4096 usbcore.autosuspend=-1
+---
+onie_platform=arm64-qemu_armv8a-r0
+---
+
+SONiC Software Version: SONiC.arm64-native.0-381d8c3a0
+SONiC OS Version: 13
+Distribution: Debian forky/sid
+Kernel: 7.0.0-1002-sonic
+Build commit: 381d8c3a0
+Build date: Tue Sep 29 08:01:50 UTC 2026
+Built by: ubuntu@podler
+
+Platform: arm64-qemu_armv8a-r0
+HwSKU: Force10-S6000
+ASIC: vs
+ASIC Count: 1
+Serial Number: N/A
+Model Number: N/A
+Hardware Revision: N/A
+Uptime: 08:17:32 up 5 min,  1 user,  load average: 0.14, 0.31, 0.17
+Date: Tue 29 Sep 2026 08:17:32
+
+Docker images:
+REPOSITORY                    TAG                        IMAGE ID       SIZE
+docker-macsec                 arm64-native.0-381d8c3a0   b68d1970d508   376MB
+docker-macsec                 latest                     b68d1970d508   376MB
+docker-router-advertiser      arm64-native.0-381d8c3a0   72a9a8662418   343MB
+docker-router-advertiser      latest                     72a9a8662418   343MB
+docker-gnmi-sidecar           arm64-native.0-381d8c3a0   0ed798502c03   342MB
+docker-gnmi-sidecar           latest                     0ed798502c03   342MB
+docker-restapi-sidecar        arm64-native.0-381d8c3a0   9310278ea3dd   343MB
+docker-restapi-sidecar        latest                     9310278ea3dd   343MB
+docker-dash-ha                arm64-native.0-381d8c3a0   adfcfcf5b621   391MB
+docker-dash-ha                latest                     adfcfcf5b621   391MB
+docker-fpm-frr                arm64-native.0-381d8c3a0   f468110f29f9   444MB
+docker-fpm-frr                latest                     f468110f29f9   444MB
+docker-gbsyncd-vs             arm64-native.0-381d8c3a0   176758e55092   1.09GB
+docker-gbsyncd-vs             latest                     176758e55092   1.09GB
+docker-mux                    arm64-native.0-381d8c3a0   5efa3ec28dfa   355MB
+docker-mux                    latest                     5efa3ec28dfa   355MB
+docker-orchagent              arm64-native.0-381d8c3a0   1269ce6fbb3f   409MB
+docker-orchagent              latest                     1269ce6fbb3f   409MB
+docker-teamd                  arm64-native.0-381d8c3a0   560ab39c009c   374MB
+docker-teamd                  latest                     560ab39c009c   374MB
+docker-lldp                   arm64-native.0-381d8c3a0   d6e8b4fa031b   350MB
+docker-lldp                   latest                     d6e8b4fa031b   350MB
+docker-dhcp-relay             arm64-native.0-381d8c3a0   c3a5d858663c   370MB
+docker-dhcp-relay             latest                     c3a5d858663c   370MB
+docker-database               arm64-native.0-381d8c3a0   0ad6ba1e08f6   349MB
+docker-database               latest                     0ad6ba1e08f6   349MB
+docker-platform-monitor       arm64-native.0-381d8c3a0   3c5c6ed8e5bb   461MB
+docker-platform-monitor       latest                     3c5c6ed8e5bb   461MB
+docker-snmp                   arm64-native.0-381d8c3a0   6cde6fe8a854   369MB
+docker-snmp                   latest                     6cde6fe8a854   369MB
+docker-sonic-otel             arm64-native.0-381d8c3a0   a308408eab01   657MB
+docker-sonic-otel             latest                     a308408eab01   657MB
+docker-sonic-mgmt-framework   arm64-native.0-381d8c3a0   b56b1a1e96c5   401MB
+docker-sonic-mgmt-framework   latest                     b56b1a1e96c5   401MB
+docker-syncd-vs               arm64-native.0-381d8c3a0   2b9495ed863c   1.09GB
+docker-syncd-vs               latest                     2b9495ed863c   1.09GB
+docker-nat                    arm64-native.0-381d8c3a0   92d5570f0402   383MB
+docker-nat                    latest                     92d5570f0402   383MB
+docker-gnmi-watchdog          arm64-native.0-381d8c3a0   bc4cd2ac4e58   349MB
+docker-gnmi-watchdog          latest                     bc4cd2ac4e58   349MB
+docker-sysmgr                 arm64-native.0-381d8c3a0   a89c3092a0b2   347MB
+docker-sysmgr                 latest                     a89c3092a0b2   347MB
+docker-bmp-watchdog           arm64-native.0-381d8c3a0   04bc295946dc   342MB
+docker-bmp-watchdog           latest                     04bc295946dc   342MB
+docker-sonic-gnmi             arm64-native.0-381d8c3a0   d71362db2cb1   478MB
+docker-sonic-gnmi             latest                     d71362db2cb1   478MB
+docker-sonic-bmp              arm64-native.0-381d8c3a0   0a55bbec695a   343MB
+docker-sonic-bmp              latest                     0a55bbec695a   343MB
+docker-eventd                 arm64-native.0-381d8c3a0   061757a8a2a0   342MB
+docker-eventd                 latest                     061757a8a2a0   342MB
+docker-sflow                  arm64-native.0-381d8c3a0   b5f2482a56e7   375MB
+docker-sflow                  latest                     b5f2482a56e7   375MB
+
+---
+Platform: arm64-qemu_armv8a-r0
+HwSKU: Force10-S6000
+ASIC: vs
+ASIC Count: 1
+Serial Number: N/A
+Model Number: N/A
+Hardware Revision: N/A
+lrwxrwxrwx   1 root root    20 Sep 29 07:55 arm64-qemu_armv8a-r0 -> x86_64-kvm_x86_64-r0
+drwxr-xr-x 493 root root 13512 Sep 29 08:03 x86_64-kvm_x86_64-r0
+sonic-platform-vs	1.0
+---
+total 24
+drwxr-xr-x 6 admin admin 4096 Sep 29 08:12 .
+drwxr-xr-x 7 root  root  4096 Sep 29 08:12 ..
+drwxr-xr-x 2 root  root  4096 Sep 29 08:11 arm64-qemu_armv8a-r0
+drwxr-xr-x 2 root  root  4096 Sep 29 08:11 common
+drwxr-xr-x 2 admin admin 4096 Sep 29 08:11 grub
+drwxr-xr-x 2 root  root  4096 Sep 29 08:11 x86_64-kvm_x86_64-r0
+ 1f 8b 08 00
+---
+1:# serial console: EFI ConOut
+2:terminal_input console
+3:terminal_output console
+24:menuentry 'SONiC-OS-arm64-native.0-381d8c3a0' {
+32:        linux   /image-arm64-native.0-381d8c3a0/boot/vmlinuz-7.0.0-1002-sonic root=UUID=551c1d79-0d01-4b4a-a83a-ae5d345683bb rw console=tty0 console=ttyAMA0,115200n8 quiet                   net.ifnames=0 biosdevname=0                 loop=image-arm64-native.0-381d8c3a0/fs.squashfs loopfstype=squashfs                                       apparmor=1 security=apparmor varlog_size=4096 usbcore.autosuspend=-1 
+36:# Menu entry to chainload ONIE UEFI
+37:# Insert --unrestricted to NOT require a Secure Grub login.
+38:menuentry ONIE {
+---
+degraded
+● system-health.service    loaded failed failed SONiC system health monitor
+● watchdog-control.service loaded failed failed watchdog control service
+---
+bgp Up 4 minutes
+database Up 5 minutes
+eventd Up 4 minutes
+gbsyncd Up 4 minutes
+gnmi Up 4 minutes
+lldp Up 3 minutes
+mgmt-framework Up 3 minutes
+pmon Up 4 minutes
+radv Up 4 minutes
+snmp Up 3 minutes
+swss Up 4 minutes
+syncd Up 4 minutes
+sysmgr Up 4 minutes
+teamd Up 4 minutes
+---
+PORTS_APPL=32 PORTS_ASIC=33 ROUTES_ASIC=69
+BGP router identifier 10.1.0.1, local AS number 65100 vrf-id 0
+Peers 32, using 770304 KiB of memory
+Force10-S6000
+22:82:48:b0:12:99
+
+Warning: Permanently added '[127.0.0.1]:3043' (RSA) to the list of known hosts.
+Ubuntu 26.04.1 LTS \n \l
+
+
+[  452.3s] done; VM left running (kill qemu-system-aarch64 to stop)
