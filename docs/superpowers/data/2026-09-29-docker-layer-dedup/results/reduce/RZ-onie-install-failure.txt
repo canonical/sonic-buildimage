@@ -1,0 +1,40 @@
+ONIE: Executing installer: file://dev/vdb/onie-installer.bin
+Verifying image checksum ... OK.
+Preparing image archive ... OK.
+Installing SONiC in ONIE
+ONIE Installer: platform: x86_64-vs-r0
+onie_platform: x86_64-kvm_x86_64-r0
+Partition #1 is in use.
+Partition #2 is in use.
+Partition #3 is available
+Creating new SONiC-OS partition /dev/vda3 ...
+Could not create partition 3 from 268288 to 67377151
+Unable to set partition 3's name to 'SONiC-OS'!
+Error encountered; not saving changes.
+Warning: The first trial of creating partition failed, trying the largest aligned available block of sectors on the disk
+Warning: The kernel is still using the old partition table.
+The new table will be used at the next reboot.
+The operation has completed successfully.
+mke2fs 1.42.13 (17-May-2015)
+Creating filesystem with 4160763 4k blocks and 1040384 inodes
+Filesystem UUID: 9c47f9db-2008-434b-97b7-8aa4b5259696
+Superblock backups stored on blocks: 
+	32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, 
+	4096000
+
+Allocating group tables:   0/127       done                            
+Writing inode tables:   0/127       done                            
+Creating journal (32768 blocks): done
+Writing superblocks and filesystem accounting information:   0/127       done
+
+Installing SONiC to /tmp/tmp.IJFwnu/image-test_rock-merge-resolute.0-43f0cf65
+Archive:  fs.zip
+   creating: boot/
+  inflating: boot/initrd.img-7.0.0-1002-sonic
+  inflating: boot/vmlinuz-7.0.0-1002-sonic
+  inflating: boot/System.map-7.0.0-1002-sonic
+  inflating: boot/config-7.0.0-1002-sonic
+  inflating: fs.squashfs
+tar: invalid magic
+tar: short read
+Failure: Unable to install image: file://dev/vdb/onie-installer.bin

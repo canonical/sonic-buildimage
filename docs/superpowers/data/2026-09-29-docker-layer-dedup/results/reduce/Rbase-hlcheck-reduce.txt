@@ -1,0 +1,232 @@
+
+### settled after (s) / uptime
+346
+ 01:20:21 up 6 min,  0 users,  load average: 0.15, 0.32, 0.18
+
+### image version
+test_rock-merge-resolute.0-43f0cf65
+
+### running containers
+bgp	docker-fpm-frr:latest	Up
+database	docker-database:latest	Up
+eventd	docker-eventd:latest	Up
+gbsyncd	docker-gbsyncd-vs:latest	Up
+gnmi	docker-sonic-gnmi:latest	Up
+lldp	docker-lldp:latest	Up
+mgmt-framework	docker-sonic-mgmt-framework:latest	Up
+pmon	docker-platform-monitor:latest	Up
+radv	docker-router-advertiser:latest	Up
+snmp	docker-snmp:latest	Up
+swss	docker-orchagent:latest	Up
+syncd	docker-syncd-vs:latest	Up
+sysmgr	docker-sysmgr:latest	Up
+teamd	docker-teamd:latest	Up
+
+### feature state
+Feature         State            AutoRestart
+--------------  ---------------  --------------
+bgp             enabled          enabled
+database        always_enabled   always_enabled
+dhcp_relay      disabled         enabled
+eventd          enabled          enabled
+gbsyncd         enabled          enabled
+gnmi            enabled          enabled
+lldp            enabled          enabled
+macsec          disabled         enabled
+mgmt-framework  enabled          enabled
+mux             always_disabled  enabled
+nat             disabled         enabled
+otel            disabled         enabled
+pmon            enabled          enabled
+radv            enabled          enabled
+sflow           disabled         enabled
+snmp            enabled          enabled
+swss            enabled          enabled
+syncd           enabled          enabled
+teamd           enabled          enabled
+
+### failed units
+system-health.service    loaded failed failed SONiC system health monitor
+watchdog-control.service loaded failed failed watchdog control service
+
+### ports / routes in ASIC_DB
+33
+69
+
+### PORT_TABLE / PortInitDone
+32
+lanes
+0
+
+### interfaces (head)
+  Interface            Lanes    Speed    MTU    FEC           Alias    Vlan    Oper    Admin    Type    Asym PFC
+-----------  ---------------  -------  -----  -----  --------------  ------  ------  -------  ------  ----------
+  Ethernet0      25,26,27,28      40G   9100    N/A    fortyGigE0/0  routed      up       up     N/A         N/A
+  Ethernet4      29,30,31,32      40G   9100    N/A    fortyGigE0/4  routed      up       up     N/A         N/A
+  Ethernet8      33,34,35,36      40G   9100    N/A    fortyGigE0/8  routed      up       up     N/A         N/A
+
+### bgp summary (tail)
+10.0.0.61      4  64015          0          0         0      0       0  never      Active          ARISTA15T0
+10.0.0.63      4  64016          0          0         0      0       0  never      Active          ARISTA16T0
+
+Total number of neighbors 32
+
+### hardlinked files in layers
+2010
+
+### docker du (MB)
+11778
+
+### copy-up: shared pci.ids before
+swss a2f5f6bd6355
+bgp a2f5f6bd6355
+lldp a2f5f6bd6355
+pmon a2f5f6bd6355
+snmp a2f5f6bd6355
+      1 402840 1
+      1 524493 1
+      1 528905 1
+      1 795907 1
+      1 801859 1
+
+### copy-up: append in swss only
+swss MUTATED
+bgp d class
+lldp d class
+pmon d class
+snmp d class
+      5 d class
+      1 MUTATED
+
+### docker save integrity
+docker-orchagent layers 8 match
+docker-syncd-vs layers 6 match
+Error response from daemon: open /var/lib/docker/overlay2/2676eeba70789623542fcdcb4ed6c9c78f8a6912a49304739b4f809ec616a04a/merged/usr/lib/python3.14/__pycache__/__future__.cpython-314.pyc: no such file or directory
+tar: This does not look like a tar archive
+tar: Exiting with failure status due to previous errors
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/s/manifest.json'
+
+### rmi docker-gbsyncd-vs (shares inodes with syncd-vs)
+Error response from daemon: conflict: unable to remove repository reference "docker-gbsyncd-vs:test_rock-merge-resolute.0-43f0cf65" (must force) - container f88a0848fb33 is using its referenced image 62f8fb25f72f
+Untagged: docker-gbsyncd-vs:latest
+071ca6fb7631
+478a5dc1ffa4
+
+### restart swss (also restarts syncd)
+bgp database eventd gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+33
+
+### config reload
+reload rc=0
+bgp database eventd gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+33
+system-health.service    loaded failed failed SONiC system health monitor
+watchdog-control.service loaded failed failed watchdog control service
+
+### reduce: setuid/setgid bits (host and containers)
+host: 4755 /usr/bin/passwd 4755 /usr/bin/chsh 4755 /usr/bin/mount 4755 /usr/bin/umount 2755 /usr/bin/chage 2755 /usr/sbin/unix_chkpwd 
+swss: 4755 /usr/bin/passwd 4755 /usr/bin/chsh 4755 /usr/bin/mount 4755 /usr/bin/umount 2755 /usr/bin/chage 2755 /usr/sbin/unix_chkpwd 
+lldp: 755 /usr/bin/passwd 755 /usr/bin/chsh 4755 /usr/bin/mount 4755 /usr/bin/umount 755 /usr/bin/chage 755 /usr/sbin/unix_chkpwd 
+snmp: 755 /usr/bin/passwd 755 /usr/bin/chsh 4755 /usr/bin/mount 4755 /usr/bin/umount 755 /usr/bin/chage 755 /usr/sbin/unix_chkpwd 
+teamd: 755 /usr/bin/passwd 755 /usr/bin/chsh 4755 /usr/bin/mount 4755 /usr/bin/umount 755 /usr/bin/chage 755 /usr/sbin/unix_chkpwd 
+
+### reduce: doc/man/licenses entries (host and containers)
+host: /usr/share/doc=1 /usr/share/man=0 /usr/share/common-licenses=17 
+swss: /usr/share/doc=221 /usr/share/man=0 /usr/share/common-licenses=17 
+lldp: /usr/share/doc=188 /usr/share/man=28 /usr/share/common-licenses=17 
+
+### reduce: host rsyslog and the event plugin
+-rwxr-xr-x 1 root root 245176 Sep 29 12:41 /usr/bin/rsyslog_plugin
+00-sonic.conf 99-default.conf bgp_events.conf bgp_regex.json bgpd_regex.json dhcp_relay_events.conf dhcp_relay_regex.json dockerd_regex.json host_events.conf kernel_regex.json monit_regex.json seu_regex.json swss_events.conf swss_regex.json syncd_events.conf syncd_regex.json systemd_regex.json 
+files using omprog: /etc/rsyslog.d/00-sonic.conf /etc/rsyslog.d/bgp_events.conf /etc/rsyslog.d/dhcp_relay_events.conf /etc/rsyslog.d/host_events.conf /etc/rsyslog.d/swss_events.conf /etc/rsyslog.d/syncd_events.conf 
+rsyslog: active
+      1 rsyslogd: action 'action-12-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-12-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-13-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-13-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-14-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-14-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-15-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-15-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-16-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-16-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-17-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-17-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-19-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-19-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-20-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-20-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-21-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-21-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+      1 rsyslogd: action 'action-2-omprog' resumed (module 'omprog') [v8.2512.0 try https://www.rsyslog.com/e/2359 ]
+      1 rsyslogd: action 'action-2-omprog' suspended (module 'omprog'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2512.0 try https://www.rsyslog.com/e/2007 ]
+
+### docker save of every image
+docker-bmp-watchdog:latest ok
+docker-dash-engine:latest ok
+docker-dash-ha:latest ok
+docker-database:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/40363258bce591f8f590fda8e533f2ea7d09576638f79e4dbb1168b3d4b72661/diff/usr/lib/python3.14/__p
+docker-dhcp-relay:latest ok
+docker-eventd:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/c9bc7c26c64d92b7d942bfdf93c2da5e77d75df8095bf3b210873fca8e9baa93/merged/usr/lib/python3.14/_
+docker-fpm-frr:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/2676eeba70789623542fcdcb4ed6c9c78f8a6912a49304739b4f809ec616a04a/merged/usr/lib/python3.14/_
+docker-gnmi-sidecar:latest ok
+docker-gnmi-watchdog:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/44f2dd0d798bdb8cbb469e540d1e4d13f1c4561202cda3856d0a1f248d1e3642/merged/usr/lib/python3/dist
+docker-lldp:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/061a4f8b879a9d961bbab39e93351e781f7899fb503397b9110ff75d781bd1b3/merged/usr/lib/python3.14/_
+docker-macsec:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/ae6045af31b01af6968370b277a2f0280a2125339a300a211a34aa3c25ffb02f/merged/usr/lib/python3.14/_
+docker-mux:latest ok
+docker-nat:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/6a4bd5ec3380893d9b64dfec93f395aad6704184276b3b4a43450d5639be217f/merged/usr/lib/python3.14/_
+docker-orchagent:latest ok
+docker-platform-monitor:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/a8e15f902f258cae7171ab9f7d1f0f390477d69b20d2fdfc9951c200efbc26a9/merged/usr/lib/python3.14/_
+docker-restapi-sidecar:latest ok
+docker-router-advertiser:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/87b91576f68bc632bde1cd81c9eca9400383fd4966f890a402bfdc1d57619cdf/merged/usr/lib/python3.14/_
+docker-sflow:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/e5a098c37caf9f2d33590ed6c363e26da59454eaeef83ec1ea91db707943a612/merged/usr/lib/python3.14/_
+docker-snmp:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/907f28d59bf3a3a50ca8f223ffe205a71690685ee547b9c8251ac82c585f5387/merged/usr/lib/python3.14/_
+docker-sonic-bmp:latest ok
+docker-sonic-gnmi:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/99101ecdad79df2bcb6f8577a218ef91c0fa9c06fbdc3639c8a66f7e1463dcf4/merged/usr/lib/python3.14/_
+docker-sonic-mgmt-framework:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/2255c7900145bd5a8914ad4f23b0c00339e0a3d22b69e2db49310122f7ace917/merged/usr/lib/python3.14/_
+docker-sonic-otel:latest ok
+docker-syncd-vs:latest ok
+docker-sysmgr:latest ok
+docker-teamd:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/18445c616311a877bc962e963de6d2fa80ddeaac85468edba930ef26ee0a74a3/merged/usr/lib/python3.14/_
+
+### syslog ERR lines (normalised)
+      3 ERR syncd#syncd: message repeated 31 times: [ :- getStats: NULL pointer function argument]
+      3 ERR syncd#syncd: :- getStats: NULL pointer function argument
+      3 ERR swss#orchagent: :- initBufferConstants: Failed to get Maximum memory size, rv:-15
+      3 ERR swss#fdbsyncd: :- readData: netlink reports an error=-25 on reading a netlink socket
+      2 ERR teamd#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR radv#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR pmon#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR pmon#chassis_db_init: Failed to load chassis due to ModuleNotFoundError("No module named 'sonic_platform'")
+      2 ERR gnmi#telemetry: :- getDbInfo: Failed to find CHASSIS_STATE_DB database in : key
+      2 ERR gnmi#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR gnmi#dialout_client_cli: :- getDbInfo: Failed to find CHASSIS_STATE_DB database in : key
+      2 ERR database#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      1 ERR teamd#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR sysmgr#sysmgr#rsyslogd: librelp error 10008 forwarding to server 127.0.0.1:2514 - suspending  [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR syncd#rsyslogd: librelp error 10008 forwarding to server 127.0.0.1:2514 - suspending  [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR swss#rsyslogd: librelp error 10008 forwarding to server 127.0.0.1:2514 - suspending  [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR sfputil: Failed to instantiate Chassis due to FileNotFoundError('Metadata file /etc/sonic/vs_chassis_metadata.json not found')
+      1 ERR rsyslogd: imrelp: error 'error when receiving data, session broken', object  'lstn 2514: conn to clt 127.0.0.1/127.0.0.1' - input may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      1 ERR rasdaemon: Can't get traces from ras:memory_failure_event
+      1 ERR rasdaemon: Can't get traces from cxl:memory_module
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_poison
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_overflow
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_memory_sparing
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_generic_event
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_general_media
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_dram
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_aer_uncorrectable_error
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_aer_correctable_error
+      1 ERR radv#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR pmon#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR gnmi#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR database#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR bgp#sharpd: [VCGF0-X62M1][EC 100663301] INTERFACE_STATE: Cannot find IF Ethernet100 in VRF 0
+      1 ERR bgp#sharpd: [KTE2S-GTBDA][EC 100663301] INTERFACE_ADDRESS_DEL: Cannot find IF 67 in VRF 0
+      1 ERR bgp#sharpd: [KTE2S-GTBDA][EC 100663301] INTERFACE_ADDRESS_ADD: Cannot find IF 67 in VRF 0
+      1 ERR bgp#rsyslogd: librelp error 10008 forwarding to server 127.0.0.1:2514 - suspending  [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+
+### DONE

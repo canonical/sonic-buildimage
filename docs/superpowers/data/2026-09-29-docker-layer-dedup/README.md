@@ -25,8 +25,11 @@ unzip -p installer/fs.zip dockerfs.tar.gz | pigz -dc | ./dedup_tar.py | pigz -c 
 - `repack-bin.sh IN.bin OUT.bin SLAVE_IMAGE [hardlink options]` — hardlink inside `dockerfs.tar.gz`, rebuild `fs.zip`, fix `payload_image_size` and `payload_sha1` in the sharch header. `zip` is taken from `SLAVE_IMAGE` (any `sonic-slave-resolute-*` image); the host needs pigz and util-linux `hardlink`.
 - `repack-img.sh IN.img.gz OUT.img.gz [hardlink options]` — hardlink in place on an installed vs disk, `fstrim` the partition, convert back to qcow2 and gzip. `NOHL=1` skips the hardlink, which gives a baseline through the same pipeline.
 - `measure.sh NAME IMAGE.bin DISK` — print the sizes compared in the report:
-  - from the `.bin`: `dockerfs.tar.gz` and the `.bin` itself;
+  - from the `.bin`: `dockerfs.tar.gz`, `fs.squashfs` and the `.bin` itself;
   - from the installed disk (a qcow2, or the `.img.gz` of one): the docker directory, SONiC-OS partition usage, `img.gz` size, and files with more than one link.
+  
+  Pass `-` as `DISK` for the `.bin` figures only. `results/four-way/sizes.txt` predates the `fs.squashfs` column.
+- `recompress-bin.sh IN.bin OUT.bin SLAVE_IMAGE` — recompress the dockerfs of a `.bin` built with `BUILD_REDUCE_IMAGE_SIZE=y` from pzstd to pigz. The tar stream stays byte-identical, so the image can be installed from ONIE.
 - `attach.sh` — sourced by `measure.sh` and `vmtest.sh`. It attaches a disk image as a partitioned block device: loop for raw, `qemu-nbd` for qcow2.
 - `upstream-opt.sh IN.bin SCRIPT` — run upstream's `scripts/build-optimize-fs-size.py` (what `BUILD_REDUCE_IMAGE_SIZE=y` runs) on the dockerfs of a `.bin`. It runs it twice, with `--hardlinks var/lib/docker` alone and then with the three removal options added. After each run it prints:
   - the docker directory size and the size of the tar with pigz and with pzstd;
@@ -60,6 +63,11 @@ unzip -p installer/fs.zip dockerfs.tar.gz | pigz -dc | ./dedup_tar.py | pigz -c 
 
   It then powers off.
 - `hlcheck2.sh` — second boot: `docker rmi` the six images whose features are disabled, check that no remaining layer file changed, then run `config reload`.
+- `hlcheck-reduce.sh` — `hlcheck.sh` with four more sections:
+  - setuid/setgid bits on the host and in swss, lldp, snmp and teamd;
+  - doc, man and license entries;
+  - the host's rsyslog and event plugin;
+  - `docker save` of every image tagged `latest`. docker-gbsyncd-vs is not among them, because the earlier `rmi` step removes that tag.
 
 ## Results
 
@@ -72,3 +80,14 @@ unzip -p installer/fs.zip dockerfs.tar.gz | pigz -dc | ./dedup_tar.py | pigz -c 
   - `D-upstream-opt.txt` and `R-upstream-opt.txt` from `upstream-opt.sh`;
   - `hardlink-t.txt`, from `repack-bin.sh … -t`;
   - `DZ-onie-install.txt`, the ONIE console excerpt from installing the pzstd-recompressed Dockerfile `.bin`.
+- `results/reduce/` holds the `BUILD_REDUCE_IMAGE_SIZE=y` builds of the same commit.
+  - The builds passed the option through `SONIC_OVERRIDE_BUILD_VARS`.
+  - `DZ` is the Dockerfile variant and `RZ` the rock variant.
+  - `DZg` and `RZg` are the same `.bin` after `recompress-bin.sh`.
+  - `Dbase` and `Rbase` are the unmodified `D` and `R` booted again with `hlcheck-reduce.sh`.
+
+  It contains:
+  - `sizes.txt` from `measure.sh`;
+  - `*-build-reduce-lines.txt`, the build-log lines showing the script and `tar -I pzstd` running;
+  - `*-onie-install-failure.txt`, the failing ONIE install of the as-built images;
+  - `*-hlcheck-reduce.txt` and `*-hlcheck2.txt`.

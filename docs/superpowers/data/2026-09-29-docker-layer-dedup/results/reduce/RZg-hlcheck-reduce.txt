@@ -1,0 +1,212 @@
+
+### settled after (s) / uptime
+286
+ 00:34:45 up 5 min,  0 users,  load average: 0.33, 0.60, 0.33
+
+### image version
+test_rock-merge-resolute.0-43f0cf65
+
+### running containers
+bgp	docker-fpm-frr:latest	Up
+database	docker-database:latest	Up
+gbsyncd	docker-gbsyncd-vs:latest	Up
+gnmi	docker-sonic-gnmi:latest	Up
+lldp	docker-lldp:latest	Up
+mgmt-framework	docker-sonic-mgmt-framework:latest	Up
+pmon	docker-platform-monitor:latest	Up
+radv	docker-router-advertiser:latest	Up
+snmp	docker-snmp:latest	Up
+swss	docker-orchagent:latest	Up
+syncd	docker-syncd-vs:latest	Up
+sysmgr	docker-sysmgr:latest	Up
+teamd	docker-teamd:latest	Up
+
+### feature state
+Feature         State            AutoRestart
+--------------  ---------------  --------------
+bgp             enabled          enabled
+database        always_enabled   always_enabled
+dhcp_relay      disabled         enabled
+eventd          disabled         enabled
+gbsyncd         enabled          enabled
+gnmi            enabled          enabled
+lldp            enabled          enabled
+macsec          disabled         enabled
+mgmt-framework  enabled          enabled
+mux             always_disabled  enabled
+nat             disabled         enabled
+otel            disabled         enabled
+pmon            enabled          enabled
+radv            enabled          enabled
+sflow           disabled         enabled
+snmp            enabled          enabled
+swss            enabled          enabled
+syncd           enabled          enabled
+teamd           enabled          enabled
+
+### failed units
+system-health.service    loaded failed failed SONiC system health monitor
+watchdog-control.service loaded failed failed watchdog control service
+
+### ports / routes in ASIC_DB
+33
+69
+
+### PORT_TABLE / PortInitDone
+32
+lanes
+0
+
+### interfaces (head)
+  Interface            Lanes    Speed    MTU    FEC           Alias    Vlan    Oper    Admin    Type    Asym PFC
+-----------  ---------------  -------  -----  -----  --------------  ------  ------  -------  ------  ----------
+  Ethernet0      25,26,27,28      40G   9100    N/A    fortyGigE0/0  routed      up       up     N/A         N/A
+  Ethernet4      29,30,31,32      40G   9100    N/A    fortyGigE0/4  routed      up       up     N/A         N/A
+  Ethernet8      33,34,35,36      40G   9100    N/A    fortyGigE0/8  routed      up       up     N/A         N/A
+
+### bgp summary (tail)
+10.0.0.61      4  64015          0          0         0      0       0  never      Active          ARISTA15T0
+10.0.0.63      4  64016          0          0         0      0       0  never      Active          ARISTA16T0
+
+Total number of neighbors 32
+
+### hardlinked files in layers
+220979
+
+### docker du (MB)
+8116
+
+### copy-up: shared pci.ids before
+swss a2f5f6bd6355
+bgp a2f5f6bd6355
+lldp a2f5f6bd6355
+pmon a2f5f6bd6355
+snmp a2f5f6bd6355
+      5 788313 5
+
+### copy-up: append in swss only
+swss MUTATED
+bgp d class
+lldp d class
+pmon d class
+snmp d class
+      5 d class
+      1 MUTATED
+
+### docker save integrity
+Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licenses/Apache-2.0: no such file or directory
+tar: This does not look like a tar archive
+tar: Exiting with failure status due to previous errors
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/s/manifest.json'
+Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licenses/Apache-2.0: no such file or directory
+tar: This does not look like a tar archive
+tar: Exiting with failure status due to previous errors
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/s/manifest.json'
+Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licenses/Apache-2.0: no such file or directory
+tar: This does not look like a tar archive
+tar: Exiting with failure status due to previous errors
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/s/manifest.json'
+
+### rmi docker-gbsyncd-vs (shares inodes with syncd-vs)
+Error response from daemon: conflict: unable to remove repository reference "docker-gbsyncd-vs:test_rock-merge-resolute.0-43f0cf65" (must force) - container 0c31b2f00c5a is using its referenced image 62f8fb25f72f
+Untagged: docker-gbsyncd-vs:latest
+071ca6fb7631
+478a5dc1ffa4
+
+### restart swss (also restarts syncd)
+bgp database gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+33
+
+### config reload
+reload rc=0
+bgp database gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+33
+system-health.service    loaded failed failed SONiC system health monitor
+watchdog-control.service loaded failed failed watchdog control service
+
+### reduce: setuid/setgid bits (host and containers)
+host: 4755 /usr/bin/passwd 4755 /usr/bin/chsh 4755 /usr/bin/mount 4755 /usr/bin/umount 2755 /usr/bin/chage 2755 /usr/sbin/unix_chkpwd 
+swss: 755 /usr/bin/passwd 755 /usr/bin/chsh 4755 /usr/bin/mount 4755 /usr/bin/umount 755 /usr/bin/chage 2755 /usr/sbin/unix_chkpwd 
+lldp: 755 /usr/bin/passwd 755 /usr/bin/chsh 755 /usr/bin/mount 755 /usr/bin/umount 755 /usr/bin/chage 755 /usr/sbin/unix_chkpwd 
+snmp: 755 /usr/bin/passwd 755 /usr/bin/chsh 755 /usr/bin/mount 755 /usr/bin/umount 755 /usr/bin/chage 755 /usr/sbin/unix_chkpwd 
+teamd: 755 /usr/bin/passwd 755 /usr/bin/chsh 755 /usr/bin/mount 755 /usr/bin/umount 755 /usr/bin/chage 755 /usr/sbin/unix_chkpwd 
+
+### reduce: doc/man/licenses entries (host and containers)
+host: /usr/share/doc=1 /usr/share/man=0 /usr/share/common-licenses=0 
+swss: /usr/share/doc=0 /usr/share/man=0 /usr/share/common-licenses=0 
+lldp: /usr/share/doc=0 /usr/share/man=0 /usr/share/common-licenses=0 
+
+### reduce: host rsyslog and the event plugin
+ls: cannot access '/usr/bin/rsyslog_plugin': No such file or directory
+00-sonic.conf 99-default.conf bgp_regex.json bgpd_regex.json dhcp_relay_regex.json dockerd_regex.json kernel_regex.json monit_regex.json seu_regex.json swss_regex.json syncd_regex.json systemd_regex.json 
+files using omprog: 
+rsyslog: active
+      2 rsyslogd: imrelp: error 'error when receiving data, session broken', object  'lstn 2514: conn to clt 127.0.0.1/127.0.0.1' - input may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 rsyslogd: rsyslogd: imrelp: error 'error when receiving data, session broken', object  'lstn 2514: conn to clt 127.0.0.1/127.0.0.1' - input may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+
+### docker save of every image
+docker-bmp-watchdog:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-dash-engine:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/976e08cc2d8846896ec31c9230a26b0f1c52e28608442fcd78392e73badc52f0/diff/usr/local/share/man/ma
+docker-dash-ha:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-database:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/401203d6ebe662ad4781f37a6f2aa4c9a97feb9f8c190f47409f8257772b85b0/diff/usr/lib/python3.14/__p
+docker-dhcp-relay:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-eventd:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-fpm-frr:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-gnmi-sidecar:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-gnmi-watchdog:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-lldp:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-macsec:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-mux:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-nat:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-orchagent:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-platform-monitor:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-restapi-sidecar:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-router-advertiser:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-sflow:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-snmp:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-sonic-bmp:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-sonic-gnmi:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-sonic-mgmt-framework:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+docker-sonic-otel:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-syncd-vs:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-sysmgr:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/4d8e1a15826059b55ddde4f789adf17c49f8a9f49d6c2458343f738e9c793f4f/diff/usr/share/common-licen
+docker-teamd:latest FAIL: Error response from daemon: open /var/lib/docker/overlay2/5b4751c936e04680adf35b7d663b98ca72903f2bce0375e150efa3bcda75d600/diff/usr/share/common-licen
+
+### syslog ERR lines (normalised)
+      3 ERR syncd#syncd: message repeated 31 times: [ :- getStats: NULL pointer function argument]
+      3 ERR syncd#syncd: :- getStats: NULL pointer function argument
+      3 ERR swss#orchagent: :- initBufferConstants: Failed to get Maximum memory size, rv:-15
+      3 ERR swss#fdbsyncd: :- readData: netlink reports an error=-25 on reading a netlink socket
+      2 ERR teamd#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR rsyslogd: imrelp: error 'error when receiving data, session broken', object  'lstn 2514: conn to clt 127.0.0.1/127.0.0.1' - input may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR radv#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR pmon#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR pmon#chassis_db_init: Failed to load chassis due to ModuleNotFoundError("No module named 'sonic_platform'")
+      2 ERR gnmi#telemetry: :- getDbInfo: Failed to find CHASSIS_STATE_DB database in : key
+      2 ERR gnmi#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      2 ERR gnmi#dialout_client_cli: :- getDbInfo: Failed to find CHASSIS_STATE_DB database in : key
+      2 ERR database#rsyslogd: omrelp[127.0.0.1:2514]: error 'error opening connection to remote peer', object  'conn to srvr 127.0.0.1:2514' - action may not work as intended [v8.2512.0 try https://www.rsyslog.com/e/2353 ]
+      1 ERR teamd#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR sfputil: Failed to instantiate Chassis due to FileNotFoundError('Metadata file /etc/sonic/vs_chassis_metadata.json not found')
+      1 ERR rasdaemon: Can't get traces from ras:memory_failure_event
+      1 ERR rasdaemon: Can't get traces from cxl:memory_module
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_poison
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_overflow
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_memory_sparing
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_generic_event
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_general_media
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_dram
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_aer_uncorrectable_error
+      1 ERR rasdaemon: Can't get traces from cxl:cxl_aer_correctable_error
+      1 ERR radv#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR pmon#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR gnmi#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+      1 ERR database#rsyslogd: omrelp: could not connect to remote server, librelp error 10014 [v8.2512.0 try https://www.rsyslog.com/e/2291 ]
+
+### DONE

@@ -1,0 +1,27 @@
+
+### running containers before
+bgp database gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+
+### rmi docker-dhcp-relay docker-macsec docker-nat docker-sflow docker-mux docker-sonic-otel
+docker-dhcp-relay deleted-layers: 3
+docker-macsec deleted-layers: 3
+docker-nat deleted-layers: 3
+docker-sflow deleted-layers: 3
+docker-mux deleted-layers: 3
+docker-sonic-otel deleted-layers: 3
+
+### remaining layer files vs before
+files before 55680 after 52947 removed 2733 (of which hardlinked 2289)
+remaining files whose content changed: 0; new files: 0
+remaining files that shared an inode with a removed file: 5702, all intact: True
+
+### config reload after rmi
+reload rc=0
+bgp database gbsyncd gnmi lldp mgmt-framework pmon radv snmp swss syncd sysmgr teamd 
+33
+69
+Total number of neighbors 32
+system-health.service    loaded failed failed SONiC system health monitor
+watchdog-control.service loaded failed failed watchdog control service
+
+### DONE

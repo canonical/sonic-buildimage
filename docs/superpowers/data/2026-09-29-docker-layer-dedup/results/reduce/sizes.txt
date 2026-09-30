@@ -1,0 +1,4 @@
+RZ: dockerfs.tar.gz 733.1 MB | fs.squashfs 562.5 MB | .bin 1373.6 MB
+RZg: dockerfs.tar.gz 777.9 MB | fs.squashfs 562.5 MB | .bin 1418.5 MB | docker dir 2530 MB | SONiC-OS used 3153 MB | img.gz 1433.7 MB | files with nlink>1: 88021
+DZ: dockerfs.tar.gz 699.4 MB | fs.squashfs 562.5 MB | .bin 1339.9 MB
+DZg: dockerfs.tar.gz 741.9 MB | fs.squashfs 562.5 MB | .bin 1382.4 MB | docker dir 2415 MB | SONiC-OS used 3038 MB | img.gz 1397.7 MB | files with nlink>1: 31655

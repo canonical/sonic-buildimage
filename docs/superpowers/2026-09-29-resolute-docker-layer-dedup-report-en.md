@@ -6,6 +6,7 @@
   - resolute vs: the 2026-08-23 from-zero build (`2957b9e3`) and the 2026-08-27 build
   - official upstream 202605 broadcom: Azure build 20260928.6 (`6aec5bee6`, build id 1232715)
   - **same-commit Dockerfile and rock vs images**, both built locally from `test/rock-merge-resolute` `43f0cf6558`, image version `test_rock-merge-resolute.0-43f0cf65`. That commit merges `canonical/202605_resolute` `d2f9ae8502` into `canonical/202605_resolute_rock` `1d187fd351`.
+  - the same two variants built again from `43f0cf6558` with `BUILD_REDUCE_IMAGE_SIZE=y`
 - Change: local branch `feat/dockerfs-hardlink`, one signed commit `6dc4a02257` on top of `d2f9ae8502`, not pushed
 - Tools and raw results: [data/2026-09-29-docker-layer-dedup/](data/2026-09-29-docker-layer-dedup/)
 - This is the English version and the source of truth; the Chinese version is `-zh.md`
@@ -21,7 +22,8 @@
 - **Where it costs.** gzip cannot deduplicate across files, so the duplicates cost their compressed size in the `.bin` and their full size on disk after install.
 - **The fix needs no common parent image.** Running util-linux `hardlink` over `overlay2/*/diff` just before `dockerfs.tar.gz` is packed takes one line in `build_debian.sh` (§3).
   - Upstream already has an opt-in, `BUILD_REDUCE_IMAGE_SIZE` (default `n`), whose script also hardlinks the docker directory. On the same images it saves as much as `hardlink -t`, and on the rock variant more than the default `hardlink` mode (790 against 961 MB). Its metadata changes have no practical effect that we found (§3).
-  - It cannot be turned on as-is for ONIE targets. The same option switches `dockerfs.tar.gz` to pzstd, and an image packed that way fails to install from ONIE (§3).
+  - It cannot be turned on as-is for ONIE targets. The same option switches `dockerfs.tar.gz` to pzstd, and images built with it fail to install from ONIE.
+  - Recompressed to pigz so that they install, both variants boot and pass the same checks. But eventd is disabled by design, and `docker save` fails for every image, because the option's removals delete files that the layer records still list (§3).
 - **Same-commit four-way comparison on vs** (§5): Dockerfile or rock, each with and without links, all from `43f0cf6558` and all installed through ONIE.
 
   | | Dockerfile | Dockerfile + links | rock | rock + links |
@@ -35,7 +37,7 @@
 - **Rock images cannot be `docker save`d on an installed system** (§6). Links have nothing to do with it; the cause predates both.
   - After the images are loaded into the host rootfs, the build's cleanup hook deletes every `__pycache__` directory, including those inside docker layers.
   - A layer whose original tar carried `.pyc` files then no longer matches its tar-split record.
-  - This hits all 13 rocks and one Dockerfile image, `docker-gnmi-watchdog`.
+  - Measured on the installed images, this hits all 13 rocks and one Dockerfile image, `docker-gnmi-watchdog`.
 - **mtime limits how much can be linked.** By default `hardlink` only merges files whose mtime also matches. On the rock image, clamping build-time mtimes to `SOURCE_DATE_EPOCH` would link a further 462 MB (§7).
 
 ## 1. How the images are stored
@@ -192,32 +194,57 @@ Of broadcom's 242 MB of duplicates, the default mode links 214 MB. The official 
 
 - switches `dockerfs.tar.gz` to pzstd (`build_debian.sh:955-956`, added by #21852 for Aboot slim images);
 - skips installing `sonic-rsyslog-plugin` on the host (`sonic_debian_extension.j2:404`) and drops its `omprog` action from `00-sonic.conf.j2`;
+- disables eventd by default (`init_cfg.json.j2:108-109`, #17905 "Disable eventd and rsyslog plugin in slim images");
+- on broadcom, enables restapi only for device types other than LeafRouter and BackEndLeafRouter (`init_cfg.json.j2:98-99`);
 - for Aboot images, also removes non-Arista platform directories, some kernel modules and firmware.
 
-The script itself was run on the dockerfs of the `43f0cf6558` images (`upstream-opt.sh`) and compared with `hardlink` (`repack-bin.sh`). `dockerfs.tar.gz`, in MB:
+Both variants of `43f0cf6558` were built with the option. Makefile.work does not pass the option into the slave, so it went in through `SONIC_OVERRIDE_BUILD_VARS`. The option is not in `SONIC_COMMON_FLAGS_LIST`, so no package or docker image was rebuilt because of it. The build logs show the script and `tar -I pzstd` running.
 
-| | Unlinked | `hardlink --respect-xattrs` | `hardlink --respect-xattrs -t` | Upstream script, links only | Upstream script, links and removals | The same, pzstd |
-|---|---|---|---|---|---|---|
-| Dockerfile | 1035.8 | 748.0 | 740.7 | 743.3 | 741.8 | 699.3 |
-| rock | 1865.2 | 960.9 | 788.3 | 790.3 | 778.0 | 734.3 |
+**Install.** Neither image installs from ONIE, and on vs this also stops the build:
+- `installer/install.sh:233` (239 on upstream master) unpacks `dockerfs.tar.gz` with `tar xz`.
+- The vs build makes `img.gz` by installing the `.bin` through ONIE. For both variants that step fails with `tar: invalid magic` and `Failure: Unable to install image`, and ONIE retries until `install_sonic.py` gives up after 1200 s.
+- Only two paths detect zstd: the initramfs's delayed unpack (`union-mount.j2:142-149`, used by Aboot's docker-in-RAM) and the DSC installer. #21852 leaves ONIE images for later.
+
+To boot what the option produces, each `.bin` was repacked with only its dockerfs recompressed from pzstd to pigz; the tar stream inside is byte-identical. Sizes, in MB:
+
+| | Unlinked | With the option, as built (pzstd) | With the option, recompressed to pigz | `hardlink --respect-xattrs` | `hardlink --respect-xattrs -t` |
+|---|---|---|---|---|---|
+| Dockerfile `.bin` | 1676.6 | 1339.9 | 1382.4 | 1388.9 | 1381.5 |
+| Dockerfile, installed docker directory | 3386 | — | 2415 | 2456 | — |
+| rock `.bin` | 2506.0 | 1373.6 | 1418.5 | 1601.8 | 1429.2 |
+| rock, installed docker directory | 5739 | — | 2530 | 3136 | — |
+
+`fs.squashfs`, the host rootfs, goes from 562.8 to 562.5 MB. Running the script on its own over the dockerfs (`upstream-opt.sh`) separates its parts; its "links and removals" column matches the full builds' dockerfs (741.9 and 777.9 MB). `dockerfs.tar.gz`, in MB:
+
+| | Unlinked | Links only | Links and removals | The same, pzstd |
+|---|---|---|---|---|
+| Dockerfile | 1035.8 | 743.3 | 741.8 | 699.3 |
+| rock | 1865.2 | 790.3 | 778.0 | 734.3 |
 
 - **Linking.** The script groups files by base name and md5, and ignores mode, owner and mtime. On rock, all of its extra yield over the default `hardlink` mode comes from ignoring mtime; `hardlink -t` gets the same.
 - **Metadata.** Each link applies the linked file's mode and owner to the shared inode. The `chown` after the `chmod` also clears setuid and setgid, which Linux does even when root calls it.
-  - On rock this cleared 16 setuid/setgid bits (`passwd`, `chfn`, `chsh`, `gpasswd`, `mount`, `umount`; setgid `chage`, `expiry`, `unix_chkpwd`, `pam_extrausers_chkpwd`), changed 19 exec bits and changed 34 owners. On Dockerfile: no setuid or setgid, 3 exec bits, 29 owners.
+  - On rock the script cleared 16 setuid/setgid bits, changed 19 exec bits and changed 34 owners. On Dockerfile: no setuid or setgid, 3 exec bits, 29 owners.
+  - In the booted rock variant, swss's `passwd` and `chsh` went from 4755 to 755 and its `chage` from 2755 to 755. `mount` and `umount` in the lldp, snmp and teamd rocks went from 4755 to 755; those rocks already lacked the bits on `passwd`, `chsh`, `chage` and `unix_chkpwd`. The host and the booted Dockerfile variant are unchanged.
   - None has a practical effect that we found. The setuid and setgid programs only matter to a non-root user inside a container, and SONiC container processes run as root.
   - `k8s_pod_control.sh` goes from 755 to 644 in the two sidecar images. The copy that runs is on the host, and `sidecar_common.SyncItem` writes it there with mode 0o755.
   - The rest are Python files whose group is root in one image and staff in another, `/etc/skel` files, a YANG file and an apport hook.
-- **Removals.** They save 12 MB in the rock layers and 1.5 MB in the Dockerfile layers. The host rootfs already has no `/usr/share/doc` (`build_debian.sh:881`), no man pages and 0.2 MB of `common-licenses`.
-- **pzstd breaks ONIE install.** `installer/install.sh:233` (239 on upstream master) unpacks `dockerfs.tar.gz` with `tar xz`. Only two paths detect zstd: the initramfs's delayed unpack (`union-mount.j2:142-149`, used by Aboot's docker-in-RAM) and the DSC installer. #21852 leaves ONIE images for later.
-  - A Dockerfile `.bin` whose dockerfs was only recompressed with pzstd fails every ONIE install attempt with `tar: invalid magic` and `Failure: Unable to install image`.
-  - pzstd on its own would save a further 43–44 MB.
-- **rsyslog.** Without `sonic-rsyslog-plugin`, the host no longer publishes BGP log events to the event framework. eventd still copies `host_events.conf` to the host at start (`docker_image_ctl.j2:408`), and that file uses `omprog` and `/usr/bin/rsyslog_plugin`. How rsyslog handles this with the option on has not been tested.
+- **Removals.**
+  - **Size.** They save 12 MB in the rock layers and 1.5 MB in the Dockerfile layers. The host rootfs already has no `/usr/share/doc` (`build_debian.sh:881`) and no man pages; its 17 `common-licenses` entries go.
+  - **Containers.** They end up with no doc, man or license entries; swss had 221 doc and 17 license entries.
+  - **`docker save`.** It fails for every image in both booted variants (0 of 26 tested), with errors such as `open …/diff/usr/share/common-licenses/Apache-2.0: no such file or directory`. The removals delete files from layer diffs that the tar-split records still list, the same mechanism as the `.pyc` cleanup in §6. The unmodified images save 25 of 26 (Dockerfile) and 12 of 26 (rock).
+- **eventd.** 13 containers run instead of 14. The host has no `rsyslog_plugin` and no `omprog` user, and rsyslog runs with no new errors. eventd never starts, so `docker_image_ctl.j2:408` never copies `host_events.conf` to the host. Event streaming is off.
+- **Everything else** is the same as the unmodified images:
+  - ports, routes, BGP neighbours and failed units;
+  - copy-up isolation, `restart swss` and `config reload`;
+  - `docker rmi` of the six disabled images leaves every other file intact. 38,227 files on rock and 5,702 on Dockerfile had shared an inode with a removed file.
 
-So the script links as much as `hardlink -t`, and its other changes are small or deliberate trade-offs. The option cannot be turned on for ONIE targets until the installer can unpack a zstd dockerfs. Three ways forward:
+So the option's linking matches `hardlink -t`, and pzstd saves a further 43–45 MB. The rest of what the option does belongs to slim images: no eventd, no docs, and no `docker save`. On ONIE targets the option cannot be turned on until the installer can unpack a zstd dockerfs; on vs the build itself fails. Three ways forward:
 
 - turn the option on, and teach `install.sh` to unpack zstd, or to leave the archive for the initramfs to unpack as the Aboot path does;
 - turn the option on but keep pigz for ONIE images;
-- keep the one line in `build_debian.sh`, adding `-t` for the full saving.
+- keep the one line in `build_debian.sh`, adding `-t` for the full saving. It links as much as the option and changes nothing else.
+
+The first two also bring the slim-image trade-offs above.
 
 ## 4. End-to-end check on vs
 
@@ -399,8 +426,9 @@ So the cleanup also deletes every `__pycache__` inside every loaded layer. That 
 | Dockerfile | `docker-gnmi-watchdog` (349 files) |
 | rock | all 13 rocks (462–1,412 files each) and `docker-gnmi-watchdog` |
 
-- The failure was observed for docker-fpm-frr on both rock variants, and it does not depend on links.
-- For the other images it follows from the same missing files; it was not run.
+- `docker save` of every image on the installed, unlinked images confirms it. On Dockerfile, 25 of 26 save, and only docker-gnmi-watchdog fails. On rock, 12 of 26 save, and it fails for exactly the 13 rocks and docker-gnmi-watchdog. docker-gbsyncd-vs was not tested, because an earlier step of the check removes its `latest` tag.
+- The failure does not depend on links. docker-fpm-frr fails the same way on the linked rock image, and docker-orchagent and docker-syncd-vs save on all four variants (§5).
+- In SONiC itself, `docker save` runs when `sonic-installer install` migrates packages (`sonic_installer/main.py:402`). `sonic-package-manager migrate` saves each installed non-built-in package's image from the old image's dockerd (`manager.py:793`); built-in packages are skipped.
 - Operations that need to rebuild the original layer tar are affected too, such as `docker push`.
 - The rock containers also recompile the Python standard library into their own writable layers at start. After one boot, 11 container layers held such `.pyc` files.
 
@@ -458,8 +486,8 @@ Clamping and pinning are not prerequisites for the hardlink change. They raise i
 ## 8. Not done
 
 - The hardlink change is a local commit, not a PR. Whether to adopt `-t`, or `BUILD_REDUCE_IMAGE_SIZE` with an installer change, is open.
-- No image linked with `-t` or by the upstream script was booted. Their sizes come from repacking the `.bin`.
-- The host's rsyslog behaviour with `BUILD_REDUCE_IMAGE_SIZE=y` has not been tested.
+- No image linked with `-t` was booted. Its sizes come from repacking the `.bin`.
+- The `BUILD_REDUCE_IMAGE_SIZE` restapi change on broadcom was not tested; everything here ran on vs.
 - Clamping at export and `override-prime` are measured by simulation only (`mtime_report.py`). Neither has been implemented.
-- The `.pyc` cleanup issue (§6) is not fixed. `docker save` was run only for docker-fpm-frr.
+- The `.pyc` cleanup issue (§6) is not fixed.
 - The broadcom numbers come from analysing the images. The broadcom image was not installed on hardware or in a VM with links.

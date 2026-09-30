@@ -6,6 +6,7 @@
   - resolute vs：2026-08-23 从零构建（`2957b9e3`）和 2026-08-27 构建
   - 官方上游 202605 broadcom：Azure 构建 20260928.6（`6aec5bee6`，build id 1232715）
   - **同一 commit 的 Dockerfile 版与 rock 版 vs 镜像**，都在本地从 `test/rock-merge-resolute` `43f0cf6558` 构建，镜像版本 `test_rock-merge-resolute.0-43f0cf65`。这个 commit 是把 `canonical/202605_resolute` `d2f9ae8502` 合并进 `canonical/202605_resolute_rock` `1d187fd351`。
+  - 同样两个版本，从 `43f0cf6558` 以 `BUILD_REDUCE_IMAGE_SIZE=y` 再构建一次
 - 改动：本地分支 `feat/dockerfs-hardlink`，在 `d2f9ae8502` 之上一个签名提交 `6dc4a02257`，未推送
 - 工具与原始结果：[data/2026-09-29-docker-layer-dedup/](data/2026-09-29-docker-layer-dedup/)
 - 本文为中文版；英文版为唯一事实来源（`-en.md`）
@@ -21,7 +22,8 @@
 - **代价在哪里。** gzip 做不了跨文件去重，所以重复部分在 `.bin` 里占压缩后的大小，装机后在盘上占完整大小。
 - **修法不需要抽公共父镜像。** 在打包 `dockerfs.tar.gz` 之前对 `overlay2/*/diff` 跑一遍 util-linux `hardlink`，`build_debian.sh` 里加一行即可（§3）。
   - 上游已有一个可选开关 `BUILD_REDUCE_IMAGE_SIZE`（默认 `n`），它调用的脚本也会对 docker 目录做硬链接。在同样的镜像上，它省下的和 `hardlink -t` 一样多；在 rock 版上比 `hardlink` 默认模式省得多（790 对 961 MB）。它改动的元数据，我们没有找到实际影响（§3）。
-  - 但在 ONIE 平台上不能直接打开。同一个开关会把 `dockerfs.tar.gz` 改用 pzstd 压缩，这样打包的镜像无法从 ONIE 安装（§3）。
+  - 但在 ONIE 平台上不能直接打开。同一个开关会把 `dockerfs.tar.gz` 改用 pzstd 压缩，用它构建出的镜像无法从 ONIE 安装。
+  - 把 dockerfs 重新压成 pigz、让镜像装得上之后，两个版本都能启动并通过同样的检查。但 eventd 按设计被关掉了；而且因为开关的删除步骤删掉了层记录里仍列着的文件，所有镜像都无法 `docker save`（§3）。
 - **vs 上同一 commit 的四相对比**（§5）：Dockerfile 版和 rock 版，各自分链接与不链接两种，全部来自 `43f0cf6558`，全部走 ONIE 装机。
 
   | | Dockerfile | Dockerfile + 链接 | rock | rock + 链接 |
@@ -35,7 +37,7 @@
 - **装好的系统上，rock 镜像无法 `docker save`**（§6）。这和链接无关，问题在两者出现之前就存在。
   - 镜像装进 host rootfs 之后，构建的清理钩子会删掉所有 `__pycache__` 目录，docker 层里的也不例外。
   - 原始 tar 里带 `.pyc` 的层，于是和它的 tar-split 记录对不上了。
-  - 受影响的是全部 13 个 rock，外加一个 Dockerfile 镜像 `docker-gnmi-watchdog`。
+  - 在装好的镜像上实测，受影响的是全部 13 个 rock，外加一个 Dockerfile 镜像 `docker-gnmi-watchdog`。
 - **mtime 限制了能链接多少。** `hardlink` 默认要求 mtime 也相同才合并。在 rock 版上，把构建期的 mtime 钳制到 `SOURCE_DATE_EPOCH`，还能再多链接 462 MB（§7）。
 
 ## 1. 镜像是怎么存的
@@ -192,32 +194,57 @@ broadcom 的 242 MB 重复里，默认模式链接了 214 MB；官方镜像 241 
 
 - 把 `dockerfs.tar.gz` 改用 pzstd 压缩（`build_debian.sh:955-956`，由 #21852 为 Aboot slim 镜像加入）；
 - 在 host 上跳过安装 `sonic-rsyslog-plugin`（`sonic_debian_extension.j2:404`），并从 `00-sonic.conf.j2` 里去掉它的 `omprog` action；
+- 默认关闭 eventd（`init_cfg.json.j2:108-109`，#17905「Disable eventd and rsyslog plugin in slim images」）；
+- 在 broadcom 上，只对 LeafRouter 和 BackEndLeafRouter 以外的设备类型启用 restapi（`init_cfg.json.j2:98-99`）；
 - 对 Aboot 镜像，还会删除非 Arista 的平台目录、部分内核模块和固件。
 
-在 `43f0cf6558` 镜像的 dockerfs 上直接跑了这个脚本（`upstream-opt.sh`），并与 `hardlink`（`repack-bin.sh`）对比。`dockerfs.tar.gz`，单位 MB：
+`43f0cf6558` 的两个版本都打开这个开关构建了一次。Makefile.work 不会把这个开关传进 slave，所以是通过 `SONIC_OVERRIDE_BUILD_VARS` 传入的。这个开关不在 `SONIC_COMMON_FLAGS_LIST` 里，所以没有任何包或 docker 镜像因它而重建。构建日志里能看到脚本和 `tar -I pzstd` 都执行了。
 
-| | 未链接 | `hardlink --respect-xattrs` | `hardlink --respect-xattrs -t` | 上游脚本，只链接 | 上游脚本，链接 + 删除 | 同上，pzstd |
-|---|---|---|---|---|---|---|
-| Dockerfile | 1035.8 | 748.0 | 740.7 | 743.3 | 741.8 | 699.3 |
-| rock | 1865.2 | 960.9 | 788.3 | 790.3 | 778.0 | 734.3 |
+**安装。** 两个镜像都无法从 ONIE 安装，在 vs 上这还会让构建本身失败：
+- `installer/install.sh:233`（上游 master 里是 239 行）用 `tar xz` 解开 `dockerfs.tar.gz`。
+- vs 构建是通过 ONIE 安装 `.bin` 来生成 `img.gz` 的。两个版本在这一步都失败，报 `tar: invalid magic` 和 `Failure: Unable to install image`，ONIE 一直重试，直到 `install_sonic.py` 在 1200 秒后放弃。
+- 只有两条路径能识别 zstd：initramfs 的延迟解包（`union-mount.j2:142-149`，供 Aboot 的 docker-in-RAM 使用）和 DSC 安装器。#21852 把 ONIE 镜像留到了以后。
+
+为了启动开关构建出的镜像，把每个 `.bin` 重新打包，只把其中的 dockerfs 从 pzstd 改压成 pigz；里面的 tar 流逐字节相同。大小，单位 MB：
+
+| | 未链接 | 开关，原样构建（pzstd） | 开关，改压成 pigz | `hardlink --respect-xattrs` | `hardlink --respect-xattrs -t` |
+|---|---|---|---|---|---|
+| Dockerfile `.bin` | 1676.6 | 1339.9 | 1382.4 | 1388.9 | 1381.5 |
+| Dockerfile，装机后 docker 目录 | 3386 | — | 2415 | 2456 | — |
+| rock `.bin` | 2506.0 | 1373.6 | 1418.5 | 1601.8 | 1429.2 |
+| rock，装机后 docker 目录 | 5739 | — | 2530 | 3136 | — |
+
+host rootfs 的 `fs.squashfs` 从 562.8 MB 变成 562.5 MB。单独在 dockerfs 上跑这个脚本（`upstream-opt.sh`）可以把各部分分开来看；其中「链接 + 删除」一列与两次真实构建的 dockerfs（741.9 和 777.9 MB）吻合。`dockerfs.tar.gz`，单位 MB：
+
+| | 未链接 | 只链接 | 链接 + 删除 | 同上，pzstd |
+|---|---|---|---|---|
+| Dockerfile | 1035.8 | 743.3 | 741.8 | 699.3 |
+| rock | 1865.2 | 790.3 | 778.0 | 734.3 |
 
 - **链接。** 这个脚本按「文件名 + md5」分组，不看 mode、属主和 mtime。在 rock 版上，它比 `hardlink` 默认模式多出来的收益全部来自不比较 mtime；`hardlink -t` 也能拿到同样的收益。
 - **元数据。** 每链接一个文件，它就把被链接文件的 mode 和属主设到共享的 inode 上。先 `chmod` 后 `chown` 还会清掉 setuid 和 setgid，Linux 上即使是 root 调用也会清。
-  - 在 rock 版上，这清掉了 16 个 setuid/setgid 位（`passwd`、`chfn`、`chsh`、`gpasswd`、`mount`、`umount`；setgid 的 `chage`、`expiry`、`unix_chkpwd`、`pam_extrausers_chkpwd`），改了 19 处可执行位和 34 处属主。在 Dockerfile 版上：没有 setuid 或 setgid，可执行位 3 处，属主 29 处。
+  - 在 rock 版上，脚本清掉了 16 个 setuid/setgid 位，改了 19 处可执行位和 34 处属主。在 Dockerfile 版上：没有 setuid 或 setgid，可执行位 3 处，属主 29 处。
+  - 在启动起来的 rock 版上，swss 里的 `passwd` 和 `chsh` 从 4755 变成 755，`chage` 从 2755 变成 755；lldp、snmp、teamd 这几个 rock 里的 `mount` 和 `umount` 从 4755 变成 755；这几个 rock 里的 `passwd`、`chsh`、`chage`、`unix_chkpwd` 本来就没有这些位。host 和启动起来的 Dockerfile 版都没有变化。
   - 这些改动我们都没有找到实际影响。setuid 和 setgid 程序只在容器里由非 root 用户运行时才有意义，而 SONiC 容器的进程都以 root 运行。
   - `k8s_pod_control.sh` 在两个 sidecar 镜像里从 755 变成 644。真正被执行的是 host 上的那份，`sidecar_common.SyncItem` 写到 host 时用的是 mode 0o755。
   - 其余的是一些 Python 文件的属组（在一个镜像里是 root，在另一个里是 staff）、`/etc/skel` 下的文件、一个 YANG 文件和一个 apport 钩子。
-- **删除选项。** 在 rock 层里省 12 MB，在 Dockerfile 层里省 1.5 MB。host rootfs 本来就没有 `/usr/share/doc`（`build_debian.sh:881`），也没有 man 手册，`common-licenses` 只有 0.2 MB。
-- **pzstd 让 ONIE 装不上。** `installer/install.sh:233`（上游 master 里是 239 行）用 `tar xz` 解开 `dockerfs.tar.gz`。只有两条路径能识别 zstd：initramfs 的延迟解包（`union-mount.j2:142-149`，供 Aboot 的 docker-in-RAM 使用）和 DSC 安装器。#21852 把 ONIE 镜像留到了以后。
-  - 一个只把 dockerfs 改用 pzstd 重新压缩的 Dockerfile 版 `.bin`，每一次 ONIE 安装都失败，报 `tar: invalid magic` 和 `Failure: Unable to install image`。
-  - 单看 pzstd，还能再省 43–44 MB。
-- **rsyslog。** 没有 `sonic-rsyslog-plugin`，host 就不再向事件框架发布 BGP 日志事件。eventd 启动时仍会把 `host_events.conf` 拷到 host（`docker_image_ctl.j2:408`），而这个文件用到了 `omprog` 和 `/usr/bin/rsyslog_plugin`。开关打开时 rsyslog 会怎样处理，还没有测过。
+- **删除选项。**
+  - **大小。** 在 rock 层里省 12 MB，在 Dockerfile 层里省 1.5 MB。host rootfs 本来就没有 `/usr/share/doc`（`build_debian.sh:881`），也没有 man 手册；它的 17 个 `common-licenses` 条目被删掉。
+  - **容器。** 容器里不再有任何 doc、man 或 license 条目；swss 原本有 221 个 doc 条目和 17 个 license 条目。
+  - **`docker save`。** 两个启动起来的版本里，所有镜像都无法 `docker save`（测了 26 个，0 个成功），报错如 `open …/diff/usr/share/common-licenses/Apache-2.0: no such file or directory`。删除选项从层的 diff 里删掉了 tar-split 记录里仍列着的文件，机制和 §6 的 `.pyc` 清理相同。未改动的镜像是 26 个里成功 25 个（Dockerfile）和 12 个（rock）。
+- **eventd。** 运行的容器是 13 个而不是 14 个。host 上没有 `rsyslog_plugin`，也没有任何配置使用 `omprog`，rsyslog 运行正常，没有新增错误。eventd 从不启动，所以 `docker_image_ctl.j2:408` 也从不把 `host_events.conf` 拷到 host。事件流因此关闭。
+- **其余各项**都与未改动的镜像相同：
+  - 端口、路由、BGP 邻居和失败单元；
+  - copy-up 隔离、`restart swss` 和 `config reload`；
+  - `docker rmi` 六个未启用的镜像后，其余文件都保持原样。rock 版有 38,227 个、Dockerfile 版有 5,702 个文件曾与被删文件共用 inode。
 
-所以这个脚本链接的量和 `hardlink -t` 一样，其余改动要么很小，要么是有意为之的取舍。在安装器能解开 zstd 格式的 dockerfs 之前，ONIE 平台不能打开这个开关。可行的路有三条：
+所以这个开关的链接效果与 `hardlink -t` 相同，pzstd 还能再省 43–45 MB。开关的其余部分是为 slim 镜像准备的：没有 eventd、没有文档、也不能 `docker save`。在安装器能解开 zstd 格式的 dockerfs 之前，ONIE 平台不能打开这个开关；在 vs 上连构建都会失败。可行的路有三条：
 
 - 打开开关，同时让 `install.sh` 能解 zstd，或者像 Aboot 那样把压缩包留给 initramfs 去解；
 - 打开开关，但 ONIE 镜像仍用 pigz；
-- 保留 `build_debian.sh` 里那一行，加上 `-t` 拿到全部收益。
+- 保留 `build_debian.sh` 里那一行，加上 `-t` 拿到全部收益。它的链接量与开关相同，除此之外什么都不改。
+
+前两条也会一并带来上面那些 slim 镜像的取舍。
 
 ## 4. vs 上的端到端检查
 
@@ -399,8 +426,9 @@ sequenceDiagram
 | Dockerfile | `docker-gnmi-watchdog`（349 个文件） |
 | rock | 全部 13 个 rock（每个 462–1,412 个文件）以及 `docker-gnmi-watchdog` |
 
-- 失败是在两个 rock 版上对 docker-fpm-frr 实际观察到的，与链接无关。
-- 其他镜像是根据同样缺失的文件推断出来的，没有实际运行。
+- 在装好的未链接镜像上对每个镜像跑 `docker save`，证实了这一点。Dockerfile 版 26 个里成功 25 个，只有 docker-gnmi-watchdog 失败。rock 版 26 个里成功 12 个，失败的恰好是 13 个 rock 和 docker-gnmi-watchdog。docker-gbsyncd-vs 没有测，因为检查脚本前面的一步删掉了它的 `latest` 标签。
+- 失败与链接无关：docker-fpm-frr 在链接后的 rock 版上以同样的方式失败，docker-orchagent 和 docker-syncd-vs 在四个版本上都能 save（§5）。
+- 在 SONiC 自身里，`sonic-installer install` 迁移包时会用到 `docker save`（`sonic_installer/main.py:402`）。`sonic-package-manager migrate` 会从旧镜像的 dockerd 里 save 每个已安装的非内置包的镜像（`manager.py:793`）；内置包会被跳过。
 - 需要重建原始层 tar 的其他操作也会受影响，例如 `docker push`。
 - rock 容器启动时还会把 Python 标准库重新编译到各自的可写层里。启动一次后，有 11 个容器层里出现了这样的 `.pyc`。
 
@@ -458,8 +486,8 @@ graph LR
 ## 8. 未完成
 
 - 硬链接改动是本地提交，还没开 PR。采用 `-t`，还是改安装器后采用 `BUILD_REDUCE_IMAGE_SIZE`，尚未决定。
-- 没有启动过用 `-t` 或上游脚本链接的镜像。它们的大小来自对 `.bin` 的重新打包。
-- `BUILD_REDUCE_IMAGE_SIZE=y` 时 host 上 rsyslog 的表现没有测过。
+- 没有启动过用 `-t` 链接的镜像。它的大小来自对 `.bin` 的重新打包。
+- `BUILD_REDUCE_IMAGE_SIZE` 在 broadcom 上对 restapi 的改动没有测；这里的一切都跑在 vs 上。
 - 导出时钳制和 `override-prime` 钳制只做了模拟测量（`mtime_report.py`），都没实现。
-- `.pyc` 清理的问题（§6）没有修。`docker save` 只对 docker-fpm-frr 实际运行过。
+- `.pyc` 清理的问题（§6）没有修。
 - broadcom 的数字来自对镜像的分析。没有把链接后的 broadcom 镜像装到硬件或 VM 上。

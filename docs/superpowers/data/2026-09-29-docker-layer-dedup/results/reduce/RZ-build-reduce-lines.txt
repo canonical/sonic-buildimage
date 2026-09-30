@@ -1,0 +1,4 @@
+5597:+ sudo scripts/build-optimize-fs-size.py ./fsroot-vs --image-type kvm --hardlinks var/lib/docker --hardlinks usr/share/sonic/device --remove-docs --remove-mans --remove-licenses
+5598:loaded 103208 files and 15403 folders
+5601:loaded 18052 files and 2217 folders
+5677:+ sudo tar -I pzstd -cf /sonic/dockerfs.tar.gz -C var/lib/docker .
