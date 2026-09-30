@@ -170,6 +170,14 @@ parts:
       yang-models: usr/local/yang-models
       cvlyang-models: usr/local/cvlyang-models
 
+  install-pip:
+    plugin: nil
+    # After install-python so its build does not pick up the staged pip
+    after: [install-python]
+    # start.sh pip-installs the platform's sonic_platform wheel
+    stage-packages:
+      - python3-pip
+
   add-user:
     plugin: nil
     after: [setup-pmon]
