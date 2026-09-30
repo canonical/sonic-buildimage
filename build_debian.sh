@@ -924,7 +924,7 @@ sudo cp files/image_config/resolv-config/resolv.conf.head $FILESYSTEM_ROOT/etc/r
 if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ]; then
    sudo scripts/build-optimize-fs-size.py "$FILESYSTEM_ROOT" \
       --image-type "$IMAGE_TYPE" \
-      --hardlinks var/lib/docker \
+      --hardlinks 'var/lib/docker/overlay2/*/diff' \
       --hardlinks usr/share/sonic/device
 fi
 
