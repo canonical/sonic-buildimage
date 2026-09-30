@@ -20,7 +20,8 @@
   - rock vs: 3126 MB, 55.5% (§5).
 - **Where it costs.** gzip cannot deduplicate across files, so the duplicates cost their compressed size in the `.bin` and their full size on disk after install.
 - **The fix needs no common parent image.** Running util-linux `hardlink` over `overlay2/*/diff` just before `dockerfs.tar.gz` is packed takes one line in `build_debian.sh` (§3).
-  - Upstream already has an opt-in that also hardlinks the docker directory: `BUILD_REDUCE_IMAGE_SIZE`, default `n`. Its matching rule ignores mode, owner, extended attributes and mtime, and turning it on changes other things as well (§3).
+  - Upstream already has an opt-in, `BUILD_REDUCE_IMAGE_SIZE` (default `n`), whose script also hardlinks the docker directory. On the same images it saves as much as `hardlink -t`, and on the rock variant more than the default `hardlink` mode (790 against 961 MB). Its metadata changes have no practical effect that we found (§3).
+  - It cannot be turned on as-is for ONIE targets. The same option switches `dockerfs.tar.gz` to pzstd, and an image packed that way fails to install from ONIE (§3).
 - **Same-commit four-way comparison on vs** (§5): Dockerfile or rock, each with and without links, all from `43f0cf6558` and all installed through ONIE.
 
   | | Dockerfile | Dockerfile + links | rock | rock + links |
@@ -44,15 +45,41 @@
 - **Dockerfile images.**
   - `docker-base-resolute` ends in `FROM scratch` / `COPY --from=base / /`, which makes it a single layer of 233 MB.
   - Every other Dockerfile starts `FROM $BASE` and adds one layer via the `rsync_from_builder_stage` macro (`dockers/dockerfile-macros.j2:48-50`), plus an empty `rm /cache.tgz` layer.
-  - The chain is base (233 MB) → config-engine (94 MB) → swss-layer (32 MB, shared by 7 images) → the image's own layer.
+  - The chain is base (233 MB) → config-engine (94 MB in the 09-17 broadcom build, 71 MB on vs) → swss-layer (32 MB, shared by 7 images) → the image's own layer.
   - A parent layer is stored once no matter how many images sit on it. If every broadcom image were flattened into one self-contained layer, the total would be 9828 MB instead of the 2018 MB stored now.
 - **Rock images** have a different shape, described in §5.
+
+The Dockerfile chain in the vs `43f0cf6558` build:
+
+```mermaid
+graph TD
+    B["docker-base-resolute<br/>233 MB · 26 images"]
+    C["docker-config-engine-resolute<br/>71 MB · 26 images"]
+    S["docker-swss-layer-resolute<br/>32 MB · 7 images"]
+    B --> C --> S
+    C --> SY["docker-syncd-vs<br/>own layer 772 MB"]
+    C --> GB["docker-gbsyncd-vs<br/>own layer 772 MB,<br/>771 MB of it identical to syncd-vs"]
+    C --> OT["17 more images<br/>own layers 0.5–343 MB"]
+    S --> SW["orchagent · fpm-frr · teamd<br/>macsec · nat · sflow · dash-ha"]
+    DE["docker-dash-engine<br/>595 MB, FROM p4lang, shares no layer"]
+```
 
 **Storage path.**
 
 - **`.bin`.** `sonic-*.bin` → `installer/fs.zip` → `dockerfs.tar.gz`. That last file is a pigz tar of the build's whole `/var/lib/docker`: overlay2 layer directories plus image metadata (`build_debian.sh:954-963`).
 - **Installed disk.** On an installed disk, including the vs `img.gz`, `installer/install.sh:233` untars it into `/host/image-<version>/docker`.
 - **Neither form deduplicates across layers.**
+
+```mermaid
+graph LR
+    A["build rootfs<br/>/var/lib/docker<br/>overlay2 layers"] -->|"tar with pigz<br/>build_debian.sh:958"| B["dockerfs.tar.gz<br/>gzip window 32 KB,<br/>no cross-file dedup"]
+    B -->|"zip<br/>build_debian.sh:963"| C["installer/fs.zip<br/>with fs.squashfs, boot/"]
+    C -->|"sharch"| D["sonic-*.bin"]
+    D -->|"ONIE, install.sh:233<br/>unzip, then tar xz"| E["/host/image-VERSION/docker"]
+    D -.->|"vs only: build_kvm_image.sh<br/>installs it into a disk"| G["sonic-vs.img.gz"]
+    G -.-> E
+    E --> F["dockerd at boot<br/>the same overlay2 layers"]
+```
 
 ## 2. How much is duplicated
 
@@ -102,7 +129,25 @@ Upstream's list is the same, plus about 22 copies of the buildinfo `copyrights.t
 sudo bash -c "hardlink --respect-xattrs $FILESYSTEM_ROOT/${DOCKERFS_PATH}var/lib/docker/overlay2/*/diff"
 ```
 
-This goes in `build_debian.sh` immediately before `## Compress docker files`. The slave image already has util-linux 2.41.3 `hardlink`. Why it is safe:
+This goes in `build_debian.sh` immediately before `## Compress docker files`. The slave image already has util-linux 2.41.3 `hardlink`. The steps in `build_debian.sh` that touch the docker directory, by line:
+
+```mermaid
+graph TD
+    A["693 · sonic_debian_extension.sh<br/>docker load every image into the rootfs's /var/lib/docker"]
+    B["862 · collect_host_image_version_files.sh<br/>post_run_cleanup deletes every __pycache__, layers included (§6)"]
+    C["924 · only with BUILD_REDUCE_IMAGE_SIZE=y<br/>build-optimize-fs-size.py"]
+    D["934 · mksquashfs the host rootfs<br/>var/lib/docker excluded"]
+    H["new: hardlink --respect-xattrs overlay2/*/diff"]
+    E["954 · tar dockerfs.tar.gz<br/>pigz, or pzstd with BUILD_REDUCE_IMAGE_SIZE=y"]
+    F["963 · zip into fs.zip"]
+    A --> B --> C --> D --> H --> E --> F
+    classDef new fill:#2a78d6,color:#fff,stroke:#2a78d6
+    classDef opt stroke-dasharray: 4 4
+    class H new
+    class C opt
+```
+
+Why it is safe:
 
 - **tar.** GNU tar writes the second and later names of an inode as link entries, and busybox tar in ONIE restores them as links.
 - **overlayfs.** Lower layers are read-only to containers. A write, `chmod` or `rm` inside a container copies the file up into that container's upper directory and leaves the shared inode untouched.
@@ -111,6 +156,24 @@ This goes in `build_debian.sh` immediately before `## Compress docker files`. Th
 - **Merge rules.** `hardlink` only merges files with equal content, mode, owner, and (with `--respect-xattrs`) extended attributes. By default mtime must match too. `-t` drops the mtime check.
   - The docker layers of a built image contain no `.pyc` files: the host-image cleanup deletes them (§6). `-t` therefore cannot make a cached bytecode file stale inside a layer.
   - `-t` does make some files report a different mtime than the one they were built with.
+
+One linked file at run time:
+
+```mermaid
+graph TB
+    subgraph lower["read-only image layers, overlay2/*/diff"]
+        L1["layer of image 1<br/>/usr/share/misc/pci.ids"]
+        L2["layer of image 2<br/>/usr/share/misc/pci.ids"]
+        L3["layers of images 3 to 5<br/>/usr/share/misc/pci.ids"]
+    end
+    I(("one inode<br/>5 links"))
+    L1 --- I
+    L2 --- I
+    L3 --- I
+    I -.->|"read-only source"| W["a write inside the swss container"]
+    W -->|"overlayfs copy-up"| U["swss container's upper dir<br/>new inode, seen only by swss"]
+    R["docker rmi image 2"] -.->|"removes that layer's name only<br/>5 links become 4"| L2
+```
 
 What it saves:
 
@@ -125,24 +188,36 @@ What it saves:
 
 Of broadcom's 242 MB of duplicates, the default mode links 214 MB. The official image links 202 of its 241 MB. The rest have matching content but different mtimes (§7).
 
-**Upstream's opt-in: `BUILD_REDUCE_IMAGE_SIZE`.** Upstream PR #16729 (2023) added `scripts/build-optimize-fs-size.py`. `rules/config:394` defaults the option to `n`. With `y`, `build_debian.sh:924-932` runs the script with `--hardlinks var/lib/docker`. It differs from the change above in several ways:
+**Upstream's opt-in: `BUILD_REDUCE_IMAGE_SIZE`.** Upstream PR #16729 (2023) added `scripts/build-optimize-fs-size.py`. `rules/config:394` defaults the option to `n`. With `y`, `build_debian.sh:924-932` runs the script with `--hardlinks var/lib/docker`, `--hardlinks usr/share/sonic/device` and options that remove docs, man pages and licenses. The same option also:
 
-- **Matching rule.** It groups files by base name plus md5 and ignores mode, owner, extended attributes and mtime. After each link it applies the linked file's mode, owner and mtime to the shared inode, so every name ends up with the metadata of whichever file was linked last. Simulated on the `43f0cf6558` images:
+- switches `dockerfs.tar.gz` to pzstd (`build_debian.sh:955-956`, added by #21852 for Aboot slim images);
+- skips installing `sonic-rsyslog-plugin` on the host (`sonic_debian_extension.j2:404`) and drops its `omprog` action from `00-sonic.conf.j2`;
+- for Aboot images, also removes non-Arista platform directories, some kernel modules and firmware.
 
-  | | Upstream rule links | Paths whose mode or owner would change |
-  |---|---|---|
-  | Dockerfile | 960.3 MB | 59 (for example `versions-*` files with mode 644 against 666, and Python files with group 0 against 50) |
-  | rock | 3119.5 MB | 123 |
+The script itself was run on the dockerfs of the `43f0cf6558` images (`upstream-opt.sh`) and compared with `hardlink` (`repack-bin.sh`). `dockerfs.tar.gz`, in MB:
 
-  Extended attributes were not measured.
-- **Scope.** It walks all of `var/lib/docker`, not only the layer `diff` directories.
-- **Side effects.** The same option also:
-  - deletes `usr/share/doc`, `usr/share/man` and `usr/share/common-licenses` from the host rootfs and from every layer;
-  - switches `dockerfs.tar.gz` to pzstd (`build_debian.sh:955-956`);
-  - skips installing `sonic-rsyslog-plugin` on the host (`sonic_debian_extension.j2:404`);
-  - for Aboot images, also removes non-Arista platform directories, some kernel modules and firmware.
+| | Unlinked | `hardlink --respect-xattrs` | `hardlink --respect-xattrs -t` | Upstream script, links only | Upstream script, links and removals | The same, pzstd |
+|---|---|---|---|---|---|---|
+| Dockerfile | 1035.8 | 748.0 | 740.7 | 743.3 | 741.8 | 699.3 |
+| rock | 1865.2 | 960.9 | 788.3 | 790.3 | 778.0 | 734.3 |
 
-`hardlink --respect-xattrs` only links files that are interchangeable, and it changes nothing else. It is the safer way to get the same saving.
+- **Linking.** The script groups files by base name and md5, and ignores mode, owner and mtime. On rock, all of its extra yield over the default `hardlink` mode comes from ignoring mtime; `hardlink -t` gets the same.
+- **Metadata.** Each link applies the linked file's mode and owner to the shared inode. The `chown` after the `chmod` also clears setuid and setgid, which Linux does even when root calls it.
+  - On rock this cleared 16 setuid/setgid bits (`passwd`, `chfn`, `chsh`, `gpasswd`, `mount`, `umount`; setgid `chage`, `expiry`, `unix_chkpwd`, `pam_extrausers_chkpwd`), changed 19 exec bits and changed 34 owners. On Dockerfile: no setuid or setgid, 3 exec bits, 29 owners.
+  - None has a practical effect that we found. The setuid and setgid programs only matter to a non-root user inside a container, and SONiC container processes run as root.
+  - `k8s_pod_control.sh` goes from 755 to 644 in the two sidecar images. The copy that runs is on the host, and `sidecar_common.SyncItem` writes it there with mode 0o755.
+  - The rest are Python files whose group is root in one image and staff in another, `/etc/skel` files, a YANG file and an apport hook.
+- **Removals.** They save 12 MB in the rock layers and 1.5 MB in the Dockerfile layers. The host rootfs already has no `/usr/share/doc` (`build_debian.sh:881`), no man pages and 0.2 MB of `common-licenses`.
+- **pzstd breaks ONIE install.** `installer/install.sh:233` (239 on upstream master) unpacks `dockerfs.tar.gz` with `tar xz`. Only two paths detect zstd: the initramfs's delayed unpack (`union-mount.j2:142-149`, used by Aboot's docker-in-RAM) and the DSC installer. #21852 leaves ONIE images for later.
+  - A Dockerfile `.bin` whose dockerfs was only recompressed with pzstd fails every ONIE install attempt with `tar: invalid magic` and `Failure: Unable to install image`.
+  - pzstd on its own would save a further 43–44 MB.
+- **rsyslog.** Without `sonic-rsyslog-plugin`, the host no longer publishes BGP log events to the event framework. eventd still copies `host_events.conf` to the host at start (`docker_image_ctl.j2:408`), and that file uses `omprog` and `/usr/bin/rsyslog_plugin`. How rsyslog handles this with the option on has not been tested.
+
+So the script links as much as `hardlink -t`, and its other changes are small or deliberate trade-offs. The option cannot be turned on for ONIE targets until the installer can unpack a zstd dockerfs. Three ways forward:
+
+- turn the option on, and teach `install.sh` to unpack zstd, or to leave the archive for the initramfs to unpack as the Aboot path does;
+- turn the option on but keep pigz for ONIE images;
+- keep the one line in `build_debian.sh`, adding `-t` for the full saving.
 
 ## 4. End-to-end check on vs
 
@@ -198,19 +273,47 @@ Of broadcom's 242 MB of duplicates, the default mode links 214 MB. The official 
 
 `repack-bin.sh` made the two linked variants. The two unlinked variants are the build's own `img.gz`. The linked ones went through the same ONIE install with the same `build_kvm_image.sh` copy as §4.
 
+```mermaid
+graph TD
+    S["43f0cf6558 · PLATFORM=vs · INCLUDE_ICCPD=n"]
+    S --> M1["make target/sonic-vs.img.gz<br/>every image from its Dockerfile"]
+    M1 --> D["D: Dockerfile<br/>sonic-vs.bin and img.gz kept"]
+    M1 --> BR["build_rocks-local.sh<br/>13 rocks packed by rockcraft,<br/>written over target/docker-*.gz"]
+    BR --> M2["make target/sonic-vs.img.gz again<br/>rootfs and image only"]
+    M2 --> R["R: rock"]
+    D -->|"repack-bin.sh"| DH["DH: Dockerfile + links"]
+    R -->|"repack-bin.sh"| RH["RH: rock + links"]
+    DH --> I["ONIE install<br/>local build_kvm_image.sh"]
+    RH --> I
+    D -->|"the build's own img.gz"| T["boot 1: hlcheck.sh<br/>boot 2: hlcheck2.sh"]
+    R -->|"the build's own img.gz"| T
+    I --> T
+```
+
 **Image set.** Both variants carry the same 27 images. In the rock variant, 13 of them are rocks, each with `pebble enter` as entrypoint and `umoci` in its history:
 
 > database, eventd, fpm-frr, lldp, macsec, nat, platform-monitor, router-advertiser, sflow, snmp, sonic-gnmi, sonic-mgmt-framework, teamd
 
-**Rock layer shape.** Each rock has five layers:
+**Rock layer shape.** Each rock has five layers: the `ubuntu:26.04` base (L0), `/.rock/metadata.yaml` (L1), one layer holding every part (L2), the pebble layer YAML (L3) and `metadata.yaml` again (L4). docker-database has three layers and its own 185 MB base. The rock variant's images:
 
-- L0: the `ubuntu:26.04` base, 101 MB, shared by 12 rocks.
-- L1: `/.rock/metadata.yaml`.
-- L2: one layer holding every part, 126–336 MB.
-- L3: the pebble layer YAML.
-- L4: `metadata.yaml` again.
+```mermaid
+graph TD
+    subgraph dockerfile["14 Dockerfile images"]
+        B["docker-base-resolute<br/>233 MB · 13 images"] --> C["config-engine<br/>71 MB · 13 images"]
+        C --> S["swss-layer 32 MB<br/>orchagent · dash-ha"]
+        C --> O["syncd-vs · gbsyncd-vs<br/>and 9 more"]
+        DE["docker-dash-engine<br/>595 MB, own base"]
+    end
+    subgraph rocks["13 rocks"]
+        U["ubuntu:26.04 base<br/>101 MB · 12 rocks"] --> R1["L1 metadata"]
+        R1 --> R2["L2 every part<br/>126–336 MB, one per rock"]
+        R2 --> R3["L3 pebble layer"] --> R4["L4 metadata"]
+        DB["docker-database<br/>own 185 MB base + 2 layers"]
+        N["114 MB of the same content<br/>in all 12 L2 layers:<br/>python3.14 and packages, pebble, redis tools"] -.- R2
+    end
+```
 
-docker-database has three layers and its own 185 MB base. Rocks have no parent–child relation with each other or with the Dockerfile chain. Each L2 layer stages its own runtime, which the Dockerfile images take once from config-engine and swss-layer. About 2.1 GB of the rock variant's 3.1 GB of duplicates sits in the 13 rocks' own layers.
+Rocks have no parent–child relation with each other or with the Dockerfile chain. Each L2 layer stages its own runtime, which the Dockerfile images take once from config-engine and swss-layer. About 2.1 GB of the rock variant's 3.1 GB of duplicates sits in the 13 rocks' own layers, and 114 MB of content is in every one of the 12 L2 layers on the shared base.
 
 **Size** (`measure.sh`).
 
@@ -221,6 +324,24 @@ docker-database has three layers and its own 185 MB base. Rocks have no parent�
 | installed docker directory | 3386 MB | 2456 MB (−27.5%) | 5739 MB | 3136 MB (−45.4%) |
 | used on the SONiC-OS partition | 4009 MB | 3079 MB | 6362 MB | 3758 MB |
 | `sonic-vs.img.gz` | 1693.0 MB | 1404.6 MB (−17.0%) | 2524.0 MB | 1618.0 MB (−35.9%) |
+
+```mermaid
+%%{init: {"xyChart": {"showDataLabel": true}, "themeVariables": {"xyChart": {"plotColorPalette": "#2a78d6"}}}}%%
+xychart-beta
+    title "sonic-vs.bin (MB)"
+    x-axis ["Dockerfile", "Dockerfile + links", "rock", "rock + links"]
+    y-axis "MB" 0 --> 2600
+    bar [1676.6, 1388.9, 2506.0, 1601.8]
+```
+
+```mermaid
+%%{init: {"xyChart": {"showDataLabel": true}, "themeVariables": {"xyChart": {"plotColorPalette": "#2a78d6"}}}}%%
+xychart-beta
+    title "installed docker directory (MB)"
+    x-axis ["Dockerfile", "Dockerfile + links", "rock", "rock + links"]
+    y-axis "MB" 0 --> 6000
+    bar [3386, 2456, 5739, 3136]
+```
 
 **What links do to the rock overhead:**
 
@@ -250,13 +371,24 @@ Within each pair the syslog ERR lines differ only by a few messages whose presen
 
 ## 6. Finding: the host-image `.pyc` cleanup breaks `docker save`
 
-`src/sonic-build-hooks/scripts/post_run_cleanup:30` runs `find / | grep -E "__pycache__" | xargs rm -rf`. The host image runs this hook in its chroot through `scripts/collect_host_image_version_files.sh:26`. The sequence in `build_debian.sh` is:
+`src/sonic-build-hooks/scripts/post_run_cleanup:30` runs `find / | grep -E "__pycache__" | xargs rm -rf`. The host image runs this hook in its chroot through `scripts/collect_host_image_version_files.sh:26`. What happens, with `build_debian.sh` line numbers:
 
-| Step | Line |
-|---|---|
-| `sonic_debian_extension.sh` loads every docker image into the rootfs's `/var/lib/docker` | 693 |
-| `collect_host_image_version_files.sh` runs `post_run_cleanup` | 862 |
-| `dockerfs.tar.gz` is packed | 954 |
+```mermaid
+sequenceDiagram
+    participant B as build_debian.sh
+    participant L as layer diff dirs
+    participant T as tar-split records
+    participant S as docker save on the device
+    B->>L: 693 docker load writes each layer, __pycache__ included
+    B->>T: and records every entry of the original layer tar
+    B->>L: 862 post_run_cleanup deletes every __pycache__
+    Note over L,T: .pyc files gone from diff, still listed in tar-split
+    B->>B: 954 pack both into dockerfs.tar.gz
+    S->>T: replay the entries of a layer
+    S->>L: open .../__future__.cpython-314.pyc
+    L-->>S: no such file or directory
+    Note over S: save stops
+```
 
 So the cleanup also deletes every `__pycache__` inside every loaded layer. That is why no measured image has `.pyc` files in its layers.
 
@@ -300,6 +432,23 @@ Where clamping has to happen:
   - `slave.mk` does not pass it to `docker build`.
 - **Rocks: in `override-prime`.** Touching everything newer than `SOURCE_DATE_EPOCH` there covers the pip-installed packages that make up most of the rock gap.
 
+Where each kind of image can be clamped:
+
+```mermaid
+graph LR
+    subgraph df["Dockerfile image"]
+        A1["builder stage<br/>apt, pip"] -->|"rsync_from_builder_stage<br/>compares size + mtime"| A2["image layer"]
+        A2 --> A3["BuildKit export<br/>SOURCE_DATE_EPOCH +<br/>rewrite-timestamp=true"]
+    end
+    subgraph rk["rock"]
+        B1["parts<br/>stage-packages, pip"] --> B2["override-prime<br/>touch files newer than<br/>SOURCE_DATE_EPOCH"]
+        B2 --> B3["rockcraft pack"]
+    end
+    X["not here: rsync would skip<br/>a changed file of the same size"] -.-> A1
+    classDef clamp fill:#2a78d6,color:#fff,stroke:#2a78d6
+    class A3,B2 clamp
+```
+
 **Pinning.**
 - **Upstream.** The official pipeline (`.azure-pipelines/azure-pipelines-Official.yml:24`) builds with `SONIC_VERSION_CONTROL_COMPONENTS=deb,py2,py3,web`. `rules/config:332-334` turns that into `MIRROR_SNAPSHOT=y`, so every apt operation reads the same archive snapshot.
 - **resolute.** `rules/config:306` already points `BUILD_SNAPSHOT_URL` at snapshot.ubuntu.com. But neither local builds nor `.github/workflows/resolute-build.yml` include `deb` in `SONIC_VERSION_CONTROL_COMPONENTS`, so `MIRROR_SNAPSHOT` stays `n` and apt reads the live archive. Whether the snapshot path works end to end on resolute has not been tested.
@@ -308,8 +457,9 @@ Clamping and pinning are not prerequisites for the hardlink change. They raise i
 
 ## 8. Not done
 
-- The hardlink change is a local commit, not a PR.
-- `hardlink -t` was measured by simulation only; no image linked with `-t` was booted.
+- The hardlink change is a local commit, not a PR. Whether to adopt `-t`, or `BUILD_REDUCE_IMAGE_SIZE` with an installer change, is open.
+- No image linked with `-t` or by the upstream script was booted. Their sizes come from repacking the `.bin`.
+- The host's rsyslog behaviour with `BUILD_REDUCE_IMAGE_SIZE=y` has not been tested.
 - Clamping at export and `override-prime` are measured by simulation only (`mtime_report.py`). Neither has been implemented.
 - The `.pyc` cleanup issue (§6) is not fixed. `docker save` was run only for docker-fpm-frr.
 - The broadcom numbers come from analysing the images. The broadcom image was not installed on hardware or in a VM with links.

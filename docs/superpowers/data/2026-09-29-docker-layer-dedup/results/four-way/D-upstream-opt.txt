@@ -1,0 +1,15 @@
+original: docker dir 3387 MB | pigz tar 1035.8 MB | pzstd tar 977.9 MB
+A: upstream hardlinks only: docker dir 2427 MB | pigz tar 743.3 MB | pzstd tar 700.6 MB
+A: layer files 52171 -> 52171; mode changed 31 (exec bits 3), owner changed 29, mtime changed 5455
+  setuid/setgid lost 0, gained 0
+  lost by name: []
+  exec-bit change: /usr/share/apport/package-hooks/source_shadow.py 0o644 -> 0o755
+  exec-bit change: /usr/sbin/cli/scripts/__init__.py 0o755 -> 0o644
+  exec-bit change: /usr/local/cvlyang-models/sonic-passwh.yang 0o644 -> 0o755
+B: + remove docs/mans/licenses: docker dir 2415 MB | pigz tar 741.8 MB | pzstd tar 699.3 MB
+B: layer files 52171 -> 51333; mode changed 31 (exec bits 3), owner changed 29, mtime changed 5432
+  setuid/setgid lost 0, gained 0
+  lost by name: []
+  exec-bit change: /usr/share/apport/package-hooks/source_shadow.py 0o644 -> 0o755
+  exec-bit change: /usr/sbin/cli/scripts/__init__.py 0o755 -> 0o644
+  exec-bit change: /usr/local/cvlyang-models/sonic-passwh.yang 0o644 -> 0o755

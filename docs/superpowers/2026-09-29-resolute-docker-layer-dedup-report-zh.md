@@ -20,7 +20,8 @@
   - rock 版 vs：3126 MB，55.5%（§5）。
 - **代价在哪里。** gzip 做不了跨文件去重，所以重复部分在 `.bin` 里占压缩后的大小，装机后在盘上占完整大小。
 - **修法不需要抽公共父镜像。** 在打包 `dockerfs.tar.gz` 之前对 `overlay2/*/diff` 跑一遍 util-linux `hardlink`，`build_debian.sh` 里加一行即可（§3）。
-  - 上游已有一个可选开关，也会对 docker 目录做硬链接：`BUILD_REDUCE_IMAGE_SIZE`，默认 `n`。它的合并规则不看 mode、属主、扩展属性和 mtime，而且打开后还会顺带改动别的东西（§3）。
+  - 上游已有一个可选开关 `BUILD_REDUCE_IMAGE_SIZE`（默认 `n`），它调用的脚本也会对 docker 目录做硬链接。在同样的镜像上，它省下的和 `hardlink -t` 一样多；在 rock 版上比 `hardlink` 默认模式省得多（790 对 961 MB）。它改动的元数据，我们没有找到实际影响（§3）。
+  - 但在 ONIE 平台上不能直接打开。同一个开关会把 `dockerfs.tar.gz` 改用 pzstd 压缩，这样打包的镜像无法从 ONIE 安装（§3）。
 - **vs 上同一 commit 的四相对比**（§5）：Dockerfile 版和 rock 版，各自分链接与不链接两种，全部来自 `43f0cf6558`，全部走 ONIE 装机。
 
   | | Dockerfile | Dockerfile + 链接 | rock | rock + 链接 |
@@ -44,15 +45,41 @@
 - **Dockerfile 镜像。**
   - `docker-base-resolute` 以 `FROM scratch` / `COPY --from=base / /` 结尾，因此是 233 MB 的单层。
   - 其余每个 Dockerfile 都以 `FROM $BASE` 开头，通过 `rsync_from_builder_stage` 宏（`dockers/dockerfile-macros.j2:48-50`）加一层，外加一个空的 `rm /cache.tgz` 层。
-  - 链条是 base（233 MB）→ config-engine（94 MB）→ swss-layer（32 MB，7 个镜像共用）→ 镜像自己的层。
+  - 链条是 base（233 MB）→ config-engine（09-17 broadcom 构建为 94 MB，vs 上为 71 MB）→ swss-layer（32 MB，7 个镜像共用）→ 镜像自己的层。
   - 父层不管有多少镜像叠在上面都只存一份。如果把每个 broadcom 镜像都压成自包含的单层，总量会是 9828 MB，而现在实际存的是 2018 MB。
 - **rock 镜像**的形态不同，见 §5。
+
+vs `43f0cf6558` 构建里的 Dockerfile 链：
+
+```mermaid
+graph TD
+    B["docker-base-resolute<br/>233 MB · 26 个镜像"]
+    C["docker-config-engine-resolute<br/>71 MB · 26 个镜像"]
+    S["docker-swss-layer-resolute<br/>32 MB · 7 个镜像"]
+    B --> C --> S
+    C --> SY["docker-syncd-vs<br/>自有层 772 MB"]
+    C --> GB["docker-gbsyncd-vs<br/>自有层 772 MB，<br/>其中 771 MB 与 syncd-vs 相同"]
+    C --> OT["另外 17 个镜像<br/>自有层 0.5–343 MB"]
+    S --> SW["orchagent · fpm-frr · teamd<br/>macsec · nat · sflow · dash-ha"]
+    DE["docker-dash-engine<br/>595 MB，FROM p4lang，不共享任何层"]
+```
 
 **存储路径。**
 
 - **`.bin`。** `sonic-*.bin` → `installer/fs.zip` → `dockerfs.tar.gz`。最后这个文件是构建时整个 `/var/lib/docker` 的 pigz tar：overlay2 各层目录加上镜像元数据（`build_debian.sh:954-963`）。
 - **装好的盘。** 在装好的盘上（包括 vs 的 `img.gz`），`installer/install.sh:233` 把它解到 `/host/image-<version>/docker`。
 - **两种形态都不做跨层去重。**
+
+```mermaid
+graph LR
+    A["构建机 rootfs<br/>/var/lib/docker<br/>overlay2 各层"] -->|"tar + pigz<br/>build_debian.sh:958"| B["dockerfs.tar.gz<br/>gzip 窗口 32 KB，<br/>做不了跨文件去重"]
+    B -->|"zip<br/>build_debian.sh:963"| C["installer/fs.zip<br/>连同 fs.squashfs、boot/"]
+    C -->|"sharch"| D["sonic-*.bin"]
+    D -->|"ONIE，install.sh:233<br/>unzip 后 tar xz"| E["/host/image-版本/docker"]
+    D -.->|"仅 vs：build_kvm_image.sh<br/>把它装进一块盘"| G["sonic-vs.img.gz"]
+    G -.-> E
+    E --> F["启动时 dockerd<br/>用的就是这些 overlay2 层"]
+```
 
 ## 2. 重复了多少
 
@@ -102,7 +129,25 @@
 sudo bash -c "hardlink --respect-xattrs $FILESYSTEM_ROOT/${DOCKERFS_PATH}var/lib/docker/overlay2/*/diff"
 ```
 
-这一行放在 `build_debian.sh` 里紧挨 `## Compress docker files` 之前。slave 镜像里已经有 util-linux 2.41.3 的 `hardlink`。为什么安全：
+这一行放在 `build_debian.sh` 里紧挨 `## Compress docker files` 之前。slave 镜像里已经有 util-linux 2.41.3 的 `hardlink`。`build_debian.sh` 里涉及 docker 目录的步骤，按行号排列：
+
+```mermaid
+graph TD
+    A["693 · sonic_debian_extension.sh<br/>把所有镜像 docker load 进 rootfs 的 /var/lib/docker"]
+    B["862 · collect_host_image_version_files.sh<br/>post_run_cleanup 删掉所有 __pycache__，层里的也删（§6）"]
+    C["924 · 仅当 BUILD_REDUCE_IMAGE_SIZE=y<br/>build-optimize-fs-size.py"]
+    D["934 · mksquashfs 打包 host rootfs<br/>排除 var/lib/docker"]
+    H["新增：hardlink --respect-xattrs overlay2/*/diff"]
+    E["954 · tar 打包 dockerfs.tar.gz<br/>pigz；BUILD_REDUCE_IMAGE_SIZE=y 时为 pzstd"]
+    F["963 · zip 进 fs.zip"]
+    A --> B --> C --> D --> H --> E --> F
+    classDef new fill:#2a78d6,color:#fff,stroke:#2a78d6
+    classDef opt stroke-dasharray: 4 4
+    class H new
+    class C opt
+```
+
+为什么安全：
 
 - **tar。** GNU tar 把同一 inode 的第二个及以后的名字写成链接条目，ONIE 里的 busybox tar 解包时会还原成链接。
 - **overlayfs。** 下层对容器只读。容器里的写、`chmod` 或 `rm` 会把文件 copy-up 到该容器自己的 upper 目录，共享的 inode 不受影响。
@@ -111,6 +156,24 @@ sudo bash -c "hardlink --respect-xattrs $FILESYSTEM_ROOT/${DOCKERFS_PATH}var/lib
 - **合并规则。** `hardlink` 只合并内容、mode、属主以及（加 `--respect-xattrs` 时）扩展属性都相同的文件。默认还要求 mtime 相同，`-t` 去掉 mtime 检查。
   - 构建出来的镜像，docker 层里没有 `.pyc` 文件：host-image 的清理步骤把它们删了（§6）。因此 `-t` 不可能让层里的字节码缓存变得过期。
   - 但 `-t` 确实会让一些文件报告的 mtime 与构建时的不同。
+
+一个被链接的文件在运行时的情况：
+
+```mermaid
+graph TB
+    subgraph lower["只读的镜像层 overlay2/*/diff"]
+        L1["镜像 1 的层<br/>/usr/share/misc/pci.ids"]
+        L2["镜像 2 的层<br/>/usr/share/misc/pci.ids"]
+        L3["镜像 3–5 的层<br/>/usr/share/misc/pci.ids"]
+    end
+    I(("一个 inode<br/>5 个链接"))
+    L1 --- I
+    L2 --- I
+    L3 --- I
+    I -.->|"只读来源"| W["swss 容器里写这个文件"]
+    W -->|"overlayfs copy-up"| U["swss 容器的 upper 目录<br/>新 inode，只有 swss 看得到"]
+    R["docker rmi 镜像 2"] -.->|"只删掉这一层的名字<br/>链接数 5 变 4"| L2
+```
 
 省下多少：
 
@@ -125,24 +188,36 @@ sudo bash -c "hardlink --respect-xattrs $FILESYSTEM_ROOT/${DOCKERFS_PATH}var/lib
 
 broadcom 的 242 MB 重复里，默认模式链接了 214 MB；官方镜像 241 MB 里链接了 202 MB。其余内容相同但 mtime 不同（§7）。
 
-**上游的可选开关：`BUILD_REDUCE_IMAGE_SIZE`。** 上游 PR #16729（2023）加入了 `scripts/build-optimize-fs-size.py`。`rules/config:394` 把这个开关默认设为 `n`。设为 `y` 时，`build_debian.sh:924-932` 会带 `--hardlinks var/lib/docker` 调用这个脚本。它和上面的改动有几处不同：
+**上游的可选开关：`BUILD_REDUCE_IMAGE_SIZE`。** 上游 PR #16729（2023）加入了 `scripts/build-optimize-fs-size.py`。`rules/config:394` 把这个开关默认设为 `n`。设为 `y` 时，`build_debian.sh:924-932` 会带 `--hardlinks var/lib/docker`、`--hardlinks usr/share/sonic/device` 以及删除文档、man 手册和许可证的选项调用这个脚本。同一个开关还会：
 
-- **合并规则。** 它按「文件名 + md5」分组，不看 mode、属主、扩展属性和 mtime。每链接一个文件，就把被链接文件的 mode、属主和 mtime 设到共享的 inode 上，所以最终每个名字的元数据都取决于最后链进来的那个文件。在 `43f0cf6558` 的镜像上模拟：
+- 把 `dockerfs.tar.gz` 改用 pzstd 压缩（`build_debian.sh:955-956`，由 #21852 为 Aboot slim 镜像加入）；
+- 在 host 上跳过安装 `sonic-rsyslog-plugin`（`sonic_debian_extension.j2:404`），并从 `00-sonic.conf.j2` 里去掉它的 `omprog` action；
+- 对 Aboot 镜像，还会删除非 Arista 的平台目录、部分内核模块和固件。
 
-  | | 上游规则能链接 | mode 或属主会被改掉的路径 |
-  |---|---|---|
-  | Dockerfile | 960.3 MB | 59 个（例如 `versions-*` 文件的权限 644 与 666、Python 文件的属组 0 与 50） |
-  | rock | 3119.5 MB | 123 个 |
+在 `43f0cf6558` 镜像的 dockerfs 上直接跑了这个脚本（`upstream-opt.sh`），并与 `hardlink`（`repack-bin.sh`）对比。`dockerfs.tar.gz`，单位 MB：
 
-  扩展属性没有测量。
-- **范围。** 它遍历整个 `var/lib/docker`，而不只是各层的 `diff` 目录。
-- **附带改动。** 同一个开关还会：
-  - 从 host rootfs 和每一层里删除 `usr/share/doc`、`usr/share/man` 和 `usr/share/common-licenses`；
-  - 把 `dockerfs.tar.gz` 改用 pzstd 压缩（`build_debian.sh:955-956`）；
-  - 在 host 上跳过安装 `sonic-rsyslog-plugin`（`sonic_debian_extension.j2:404`）；
-  - 对 Aboot 镜像，还会删除非 Arista 的平台目录、部分内核模块和固件。
+| | 未链接 | `hardlink --respect-xattrs` | `hardlink --respect-xattrs -t` | 上游脚本，只链接 | 上游脚本，链接 + 删除 | 同上，pzstd |
+|---|---|---|---|---|---|---|
+| Dockerfile | 1035.8 | 748.0 | 740.7 | 743.3 | 741.8 | 699.3 |
+| rock | 1865.2 | 960.9 | 788.3 | 790.3 | 778.0 | 734.3 |
 
-`hardlink --respect-xattrs` 只链接可以互换的文件，除此之外什么都不改。要拿到同样的收益，它是更安全的做法。
+- **链接。** 这个脚本按「文件名 + md5」分组，不看 mode、属主和 mtime。在 rock 版上，它比 `hardlink` 默认模式多出来的收益全部来自不比较 mtime；`hardlink -t` 也能拿到同样的收益。
+- **元数据。** 每链接一个文件，它就把被链接文件的 mode 和属主设到共享的 inode 上。先 `chmod` 后 `chown` 还会清掉 setuid 和 setgid，Linux 上即使是 root 调用也会清。
+  - 在 rock 版上，这清掉了 16 个 setuid/setgid 位（`passwd`、`chfn`、`chsh`、`gpasswd`、`mount`、`umount`；setgid 的 `chage`、`expiry`、`unix_chkpwd`、`pam_extrausers_chkpwd`），改了 19 处可执行位和 34 处属主。在 Dockerfile 版上：没有 setuid 或 setgid，可执行位 3 处，属主 29 处。
+  - 这些改动我们都没有找到实际影响。setuid 和 setgid 程序只在容器里由非 root 用户运行时才有意义，而 SONiC 容器的进程都以 root 运行。
+  - `k8s_pod_control.sh` 在两个 sidecar 镜像里从 755 变成 644。真正被执行的是 host 上的那份，`sidecar_common.SyncItem` 写到 host 时用的是 mode 0o755。
+  - 其余的是一些 Python 文件的属组（在一个镜像里是 root，在另一个里是 staff）、`/etc/skel` 下的文件、一个 YANG 文件和一个 apport 钩子。
+- **删除选项。** 在 rock 层里省 12 MB，在 Dockerfile 层里省 1.5 MB。host rootfs 本来就没有 `/usr/share/doc`（`build_debian.sh:881`），也没有 man 手册，`common-licenses` 只有 0.2 MB。
+- **pzstd 让 ONIE 装不上。** `installer/install.sh:233`（上游 master 里是 239 行）用 `tar xz` 解开 `dockerfs.tar.gz`。只有两条路径能识别 zstd：initramfs 的延迟解包（`union-mount.j2:142-149`，供 Aboot 的 docker-in-RAM 使用）和 DSC 安装器。#21852 把 ONIE 镜像留到了以后。
+  - 一个只把 dockerfs 改用 pzstd 重新压缩的 Dockerfile 版 `.bin`，每一次 ONIE 安装都失败，报 `tar: invalid magic` 和 `Failure: Unable to install image`。
+  - 单看 pzstd，还能再省 43–44 MB。
+- **rsyslog。** 没有 `sonic-rsyslog-plugin`，host 就不再向事件框架发布 BGP 日志事件。eventd 启动时仍会把 `host_events.conf` 拷到 host（`docker_image_ctl.j2:408`），而这个文件用到了 `omprog` 和 `/usr/bin/rsyslog_plugin`。开关打开时 rsyslog 会怎样处理，还没有测过。
+
+所以这个脚本链接的量和 `hardlink -t` 一样，其余改动要么很小，要么是有意为之的取舍。在安装器能解开 zstd 格式的 dockerfs 之前，ONIE 平台不能打开这个开关。可行的路有三条：
+
+- 打开开关，同时让 `install.sh` 能解 zstd，或者像 Aboot 那样把压缩包留给 initramfs 去解；
+- 打开开关，但 ONIE 镜像仍用 pigz；
+- 保留 `build_debian.sh` 里那一行，加上 `-t` 拿到全部收益。
 
 ## 4. vs 上的端到端检查
 
@@ -198,19 +273,47 @@ broadcom 的 242 MB 重复里，默认模式链接了 214 MB；官方镜像 241 
 
 两个链接版由 `repack-bin.sh` 生成。两个不链接版用的就是构建自带的 `img.gz`。链接版用和 §4 相同的 `build_kvm_image.sh` 副本走了同样的 ONIE 装机。
 
+```mermaid
+graph TD
+    S["43f0cf6558 · PLATFORM=vs · INCLUDE_ICCPD=n"]
+    S --> M1["make target/sonic-vs.img.gz<br/>全部镜像由 Dockerfile 构建"]
+    M1 --> D["D：Dockerfile 版<br/>保留 sonic-vs.bin 和 img.gz"]
+    M1 --> BR["build_rocks-local.sh<br/>rockcraft 打出 13 个 rock，<br/>写回 target/docker-*.gz"]
+    BR --> M2["再次 make target/sonic-vs.img.gz<br/>只重建 rootfs 和镜像"]
+    M2 --> R["R：rock 版"]
+    D -->|"repack-bin.sh"| DH["DH：Dockerfile + 链接"]
+    R -->|"repack-bin.sh"| RH["RH：rock + 链接"]
+    DH --> I["ONIE 装机<br/>本地 build_kvm_image.sh"]
+    RH --> I
+    D -->|"构建自带的 img.gz"| T["第一次启动：hlcheck.sh<br/>第二次启动：hlcheck2.sh"]
+    R -->|"构建自带的 img.gz"| T
+    I --> T
+```
+
 **镜像集合。** 两个版本都带同样的 27 个镜像。rock 版里其中 13 个是 rock，entrypoint 都是 `pebble enter`，history 里都有 `umoci`：
 
 > database、eventd、fpm-frr、lldp、macsec、nat、platform-monitor、router-advertiser、sflow、snmp、sonic-gnmi、sonic-mgmt-framework、teamd
 
-**rock 的层形态。** 每个 rock 有五层：
+**rock 的层形态。** 每个 rock 有五层：`ubuntu:26.04` 基础层（L0）、`/.rock/metadata.yaml`（L1）、一个装下所有 part 的层（L2）、pebble 的 layer YAML（L3），以及又一个 `metadata.yaml`（L4）。docker-database 只有三层，带着自己的 185 MB 基础层。rock 版的镜像：
 
-- L0：`ubuntu:26.04` 基础层，101 MB，12 个 rock 共用。
-- L1：`/.rock/metadata.yaml`。
-- L2：一个装下所有 part 的层，126–336 MB。
-- L3：pebble 的 layer YAML。
-- L4：又一个 `metadata.yaml`。
+```mermaid
+graph TD
+    subgraph dockerfile["14 个 Dockerfile 镜像"]
+        B["docker-base-resolute<br/>233 MB · 13 个镜像"] --> C["config-engine<br/>71 MB · 13 个镜像"]
+        C --> S["swss-layer 32 MB<br/>orchagent · dash-ha"]
+        C --> O["syncd-vs · gbsyncd-vs<br/>另有 9 个"]
+        DE["docker-dash-engine<br/>595 MB，自带基础层"]
+    end
+    subgraph rocks["13 个 rock"]
+        U["ubuntu:26.04 基础层<br/>101 MB · 12 个 rock"] --> R1["L1 元数据"]
+        R1 --> R2["L2 全部 part<br/>126–336 MB，每个 rock 一份"]
+        R2 --> R3["L3 pebble layer"] --> R4["L4 元数据"]
+        DB["docker-database<br/>自带 185 MB 基础层 + 2 层"]
+        N["114 MB 相同内容<br/>在 12 个 L2 层里各有一份：<br/>python3.14 及其包、pebble、redis 工具"] -.- R2
+    end
+```
 
-docker-database 只有三层，带着自己的 185 MB 基础层。rock 之间、rock 与 Dockerfile 链之间都没有父子关系。每个 L2 层都 stage 了自己的一整套运行时，而 Dockerfile 镜像是从 config-engine 和 swss-layer 各拿一份。rock 版 3.1 GB 重复里约有 2.1 GB 落在 13 个 rock 自己的层里。
+rock 之间、rock 与 Dockerfile 链之间都没有父子关系。每个 L2 层都 stage 了自己的一整套运行时，而 Dockerfile 镜像是从 config-engine 和 swss-layer 各拿一份。rock 版 3.1 GB 重复里约有 2.1 GB 落在 13 个 rock 自己的层里，另有 114 MB 内容在使用共享基础层的 12 个 L2 层里各有一份。
 
 **大小**（`measure.sh`）。
 
@@ -221,6 +324,24 @@ docker-database 只有三层，带着自己的 185 MB 基础层。rock 之间、
 | 装机后 docker 目录 | 3386 MB | 2456 MB（−27.5%） | 5739 MB | 3136 MB（−45.4%） |
 | SONiC-OS 分区已用 | 4009 MB | 3079 MB | 6362 MB | 3758 MB |
 | `sonic-vs.img.gz` | 1693.0 MB | 1404.6 MB（−17.0%） | 2524.0 MB | 1618.0 MB（−35.9%） |
+
+```mermaid
+%%{init: {"xyChart": {"showDataLabel": true}, "themeVariables": {"xyChart": {"plotColorPalette": "#2a78d6"}}}}%%
+xychart-beta
+    title "sonic-vs.bin（MB）"
+    x-axis ["Dockerfile", "Dockerfile + 链接", "rock", "rock + 链接"]
+    y-axis "MB" 0 --> 2600
+    bar [1676.6, 1388.9, 2506.0, 1601.8]
+```
+
+```mermaid
+%%{init: {"xyChart": {"showDataLabel": true}, "themeVariables": {"xyChart": {"plotColorPalette": "#2a78d6"}}}}%%
+xychart-beta
+    title "装机后 docker 目录（MB）"
+    x-axis ["Dockerfile", "Dockerfile + 链接", "rock", "rock + 链接"]
+    y-axis "MB" 0 --> 6000
+    bar [3386, 2456, 5739, 3136]
+```
 
 **链接对 rock 额外开销的影响：**
 
@@ -250,13 +371,24 @@ docker-database 只有三层，带着自己的 185 MB 基础层。rock 之间、
 
 ## 6. 发现：host-image 的 `.pyc` 清理让 `docker save` 失效
 
-`src/sonic-build-hooks/scripts/post_run_cleanup:30` 会执行 `find / | grep -E "__pycache__" | xargs rm -rf`。host image 通过 `scripts/collect_host_image_version_files.sh:26` 在 chroot 里运行这个钩子。`build_debian.sh` 里的顺序是：
+`src/sonic-build-hooks/scripts/post_run_cleanup:30` 会执行 `find / | grep -E "__pycache__" | xargs rm -rf`。host image 通过 `scripts/collect_host_image_version_files.sh:26` 在 chroot 里运行这个钩子。过程如下，行号来自 `build_debian.sh`：
 
-| 步骤 | 行号 |
-|---|---|
-| `sonic_debian_extension.sh` 把所有 docker 镜像 load 进 rootfs 的 `/var/lib/docker` | 693 |
-| `collect_host_image_version_files.sh` 运行 `post_run_cleanup` | 862 |
-| 打包 `dockerfs.tar.gz` | 954 |
+```mermaid
+sequenceDiagram
+    participant B as build_debian.sh
+    participant L as 层 diff 目录
+    participant T as tar-split 记录
+    participant S as 装机后的 docker save
+    B->>L: 693 docker load 写入各层，包括 __pycache__
+    B->>T: 同时记下原始层 tar 的每个条目
+    B->>L: 862 post_run_cleanup 删掉所有 __pycache__
+    Note over L,T: diff 里已没有 .pyc，tar-split 里仍有
+    B->>B: 954 两者原样打进 dockerfs.tar.gz
+    S->>T: 按记录回放一层的条目
+    S->>L: 打开 .../__future__.cpython-314.pyc
+    L-->>S: no such file or directory
+    Note over S: save 中止
+```
 
 所以这次清理也会删掉每个已 load 层里的每个 `__pycache__`。这就是测过的镜像层里都没有 `.pyc` 的原因。
 
@@ -300,6 +432,23 @@ docker-database 只有三层，带着自己的 185 MB 基础层。rock 之间、
   - `slave.mk` 没有把它传给 `docker build`。
 - **rock：在 `override-prime` 里。** 在那里把所有晚于 `SOURCE_DATE_EPOCH` 的文件 touch 一遍，就能覆盖占 rock 差距大头的 pip 安装包。
 
+两类镜像各自可以在哪里钳制：
+
+```mermaid
+graph LR
+    subgraph df["Dockerfile 镜像"]
+        A1["builder 阶段<br/>apt、pip"] -->|"rsync_from_builder_stage<br/>按大小 + mtime 比较"| A2["镜像层"]
+        A2 --> A3["BuildKit 导出<br/>SOURCE_DATE_EPOCH +<br/>rewrite-timestamp=true"]
+    end
+    subgraph rk["rock"]
+        B1["parts<br/>stage-packages、pip"] --> B2["override-prime<br/>touch 晚于<br/>SOURCE_DATE_EPOCH 的文件"]
+        B2 --> B3["rockcraft pack"]
+    end
+    X["不能在这里做：rsync 会跳过<br/>内容变了但大小没变的文件"] -.-> A1
+    classDef clamp fill:#2a78d6,color:#fff,stroke:#2a78d6
+    class A3,B2 clamp
+```
+
 **钉版本。**
 - **上游。** 官方流水线（`.azure-pipelines/azure-pipelines-Official.yml:24`）用 `SONIC_VERSION_CONTROL_COMPONENTS=deb,py2,py3,web` 构建。`rules/config:332-334` 据此把 `MIRROR_SNAPSHOT` 设为 `y`，所有 apt 操作都读同一个归档快照。
 - **resolute。** `rules/config:306` 已经把 `BUILD_SNAPSHOT_URL` 指向 snapshot.ubuntu.com。但本地构建和 `.github/workflows/resolute-build.yml` 都没有在 `SONIC_VERSION_CONTROL_COMPONENTS` 里包含 `deb`，所以 `MIRROR_SNAPSHOT` 仍是 `n`，apt 读的是实时归档。快照这条路在 resolute 上能否端到端走通，还没有测过。
@@ -308,8 +457,9 @@ docker-database 只有三层，带着自己的 185 MB 基础层。rock 之间、
 
 ## 8. 未完成
 
-- 硬链接改动是本地提交，还没开 PR。
-- `hardlink -t` 只做了模拟测量，没有启动过用 `-t` 链接的镜像。
+- 硬链接改动是本地提交，还没开 PR。采用 `-t`，还是改安装器后采用 `BUILD_REDUCE_IMAGE_SIZE`，尚未决定。
+- 没有启动过用 `-t` 或上游脚本链接的镜像。它们的大小来自对 `.bin` 的重新打包。
+- `BUILD_REDUCE_IMAGE_SIZE=y` 时 host 上 rsyslog 的表现没有测过。
 - 导出时钳制和 `override-prime` 钳制只做了模拟测量（`mtime_report.py`），都没实现。
 - `.pyc` 清理的问题（§6）没有修。`docker save` 只对 docker-fpm-frr 实际运行过。
 - broadcom 的数字来自对镜像的分析。没有把链接后的 broadcom 镜像装到硬件或 VM 上。

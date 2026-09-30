@@ -28,6 +28,10 @@ unzip -p installer/fs.zip dockerfs.tar.gz | pigz -dc | ./dedup_tar.py | pigz -c 
   - from the `.bin`: `dockerfs.tar.gz` and the `.bin` itself;
   - from the installed disk (a qcow2, or the `.img.gz` of one): the docker directory, SONiC-OS partition usage, `img.gz` size, and files with more than one link.
 - `attach.sh` — sourced by `measure.sh` and `vmtest.sh`. It attaches a disk image as a partitioned block device: loop for raw, `qemu-nbd` for qcow2.
+- `upstream-opt.sh IN.bin SCRIPT` — run upstream's `scripts/build-optimize-fs-size.py` (what `BUILD_REDUCE_IMAGE_SIZE=y` runs) on the dockerfs of a `.bin`. It runs it twice, with `--hardlinks var/lib/docker` alone and then with the three removal options added. After each run it prints:
+  - the docker directory size and the size of the tar with pigz and with pzstd;
+  - every layer file whose mode, owner or mtime changed, and every setuid/setgid bit that was lost.
+- `repack-bin-zstd.sh IN.bin OUT.bin SLAVE_IMAGE` — like `repack-bin.sh`, but only recompresses `dockerfs.tar.gz` with pzstd, as `BUILD_REDUCE_IMAGE_SIZE=y` does; used to test ONIE install of such an image.
 
 ## Building the rock variant
 
@@ -64,4 +68,7 @@ unzip -p installer/fs.zip dockerfs.tar.gz | pigz -dc | ./dedup_tar.py | pigz -c 
   - `*-hlcheck.txt` and `*-hlcheck2.txt`;
   - `sizes.txt` from `measure.sh`;
   - `mtime.txt` from `mtime_report.py`;
-  - `D-analyze.txt` and `R-analyze.txt` from `analyze.py`.
+  - `D-analyze.txt` and `R-analyze.txt` from `analyze.py`;
+  - `D-upstream-opt.txt` and `R-upstream-opt.txt` from `upstream-opt.sh`;
+  - `hardlink-t.txt`, from `repack-bin.sh … -t`;
+  - `DZ-onie-install.txt`, the ONIE console excerpt from installing the pzstd-recompressed Dockerfile `.bin`.

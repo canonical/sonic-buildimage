@@ -1,0 +1,14 @@
+# ONIE install of the Dockerfile .bin with only dockerfs.tar.gz recompressed by pzstd (repack-bin-zstd.sh)
+# console log excerpt, ANSI escapes stripped; ONIE retried in a loop until stopped
+Installing SONiC to /tmp/tmp.tuD06b/image-test_rock-merge-resolute.0-43f0cf65
+Archive:  fs.zip
+   creating: boot/
+  inflating: boot/initrd.img-7.0.0-1002-sonic
+  inflating: boot/vmlinuz-7.0.0-1002-sonic
+  inflating: boot/System.map-7.0.0-1002-sonic
+  inflating: boot/config-7.0.0-1002-sonic
+  inflating: fs.squashfs
+tar: invalid magic
+tar: short read
+Failure: Unable to install image: file://dev/vdb/onie-installer.bin
+# attempts that failed this way: 8

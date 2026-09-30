@@ -1,0 +1,19 @@
+original: docker dir 5740 MB | pigz tar 1865.2 MB | pzstd tar 1785.0 MB
+A: upstream hardlinks only: docker dir 2572 MB | pigz tar 790.3 MB | pzstd tar 745.1 MB
+A: layer files 120901 -> 120901; mode changed 90 (exec bits 19), owner changed 34, mtime changed 31245
+  setuid/setgid lost 16, gained 0
+  lost by name: [('chage', 2), ('chfn', 2), ('chsh', 2), ('expiry', 2), ('gpasswd', 2), ('mount', 1), ('pam_extrausers_chkpwd', 1), ('passwd', 2), ('umount', 1), ('unix_chkpwd', 1)]
+  exec-bit change: /usr/share/sonic/scripts/k8s_pod_control.sh 0o755 -> 0o644
+  exec-bit change: /cvlyang-models/sonic-passwh.yang 0o644 -> 0o755
+  exec-bit change: /usr/sbin/cli/scripts/__init__.py 0o755 -> 0o644
+  exec-bit change: /cvlyang-models/sonic-passwh.yang 0o644 -> 0o755
+  exec-bit change: /cvlyang-models/sonic-passwh.yang 0o644 -> 0o755
+B: + remove docs/mans/licenses: docker dir 2530 MB | pigz tar 778.0 MB | pzstd tar 734.3 MB
+B: layer files 120901 -> 102539; mode changed 90 (exec bits 19), owner changed 34, mtime changed 31087
+  setuid/setgid lost 16, gained 0
+  lost by name: [('chage', 2), ('chfn', 2), ('chsh', 2), ('expiry', 2), ('gpasswd', 2), ('mount', 1), ('pam_extrausers_chkpwd', 1), ('passwd', 2), ('umount', 1), ('unix_chkpwd', 1)]
+  exec-bit change: /usr/share/sonic/scripts/k8s_pod_control.sh 0o755 -> 0o644
+  exec-bit change: /cvlyang-models/sonic-passwh.yang 0o644 -> 0o755
+  exec-bit change: /usr/sbin/cli/scripts/__init__.py 0o755 -> 0o644
+  exec-bit change: /cvlyang-models/sonic-passwh.yang 0o644 -> 0o755
+  exec-bit change: /cvlyang-models/sonic-passwh.yang 0o644 -> 0o755
