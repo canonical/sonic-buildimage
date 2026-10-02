@@ -14,6 +14,7 @@ rocklist=(
     "dockers/docker-macsec"
     "dockers/docker-iccpd"
     "dockers/docker-sflow"
+    "dockers/docker-nat"
 )
 
 set -x
