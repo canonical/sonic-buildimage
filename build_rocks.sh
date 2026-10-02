@@ -16,6 +16,7 @@ rocklist=(
     "dockers/docker-sflow"
     "dockers/docker-nat"
     "dockers/docker-fpm-frr"
+    "dockers/docker-orchagent"
 )
 
 set -x
