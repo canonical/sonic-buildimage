@@ -131,6 +131,9 @@ parts:
       - smbus
     stage-packages:
       - python3-venv
+    organize:
+      yang-models: usr/local/yang-models
+      cvlyang-models: usr/local/cvlyang-models
 
   add-user:
     plugin: nil

@@ -127,6 +127,9 @@ parts:
       - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
     stage-packages:
       - python3-venv
+    organize:
+      yang-models: usr/local/yang-models
+      cvlyang-models: usr/local/cvlyang-models
 
   add-user:
     plugin: nil
