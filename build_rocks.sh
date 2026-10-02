@@ -12,6 +12,7 @@ rocklist=(
     "dockers/docker-teamd"
     "dockers/docker-platform-monitor"
     "dockers/docker-macsec"
+    "dockers/docker-iccpd"
 )
 
 set -x
