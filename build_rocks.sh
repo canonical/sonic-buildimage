@@ -15,6 +15,7 @@ rocklist=(
     "dockers/docker-iccpd"
     "dockers/docker-sflow"
     "dockers/docker-nat"
+    "dockers/docker-fpm-frr"
 )
 
 set -x
