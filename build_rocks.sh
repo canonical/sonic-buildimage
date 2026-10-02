@@ -17,7 +17,18 @@ rocklist=(
     "dockers/docker-nat"
     "dockers/docker-fpm-frr"
     "dockers/docker-orchagent"
+
+    # "dockers/docker-dhcp-server"
+    # "dockers/docker-dhcp-relay"
+
+    # "dockers/docker-sysmgr"
+    # "dockers/docker-stp"
 )
+
+# docker-syncd-brcm is platform-specific; only build it for the broadcom platform
+if [ "$(cat .platform 2>/dev/null)" = "broadcom" ]; then
+    rocklist+=("platform/broadcom/docker-syncd-brcm")
+fi
 
 set -x
 set -e
