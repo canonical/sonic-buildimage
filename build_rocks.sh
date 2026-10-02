@@ -4,6 +4,7 @@
 rocklist=(
     "dockers/docker-database"
     "dockers/docker-sonic-mgmt-framework"
+    "dockers/docker-eventd"
 )
 
 set -x
