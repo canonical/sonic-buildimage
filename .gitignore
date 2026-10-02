@@ -48,8 +48,16 @@ platform/*/docker-*/Dockerfile-dbg.cleanup
 dockers/*/*manifest*
 platform/*/docker-*/*manifest*
 
+# Copied files for rockcraft build
+dockers/*/debs/
+dockers/*/files/
+dockers/*/python-wheels/
+dockers/*/envs
+dockers/*/*.rock
+
 # Installer-related files and directories
 installer/x86_64/platforms/
+installer/platforms/
 
 # Generated device lists (build_image.sh generate_device_list)
 installer/platforms/
@@ -136,6 +144,8 @@ sources.list.*
 
 # Generated mirror configs
 apt-retries-count
+
+*service
 
 # Downloaded/extracted package sources and built binaries
 src/flashrom/flashrom-*/
