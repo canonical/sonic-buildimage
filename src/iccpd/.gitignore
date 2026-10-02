@@ -1,0 +1,22 @@
+# Autotools-generated files (produced by autogen.sh during the dpkg build)
+Makefile.in
+aclocal.m4
+config.h.in
+configure
+config/
+src/Makefile.in
+src/mclagdctl/Makefile.in
+autom4te.cache/
+
+# in-tree build artifacts (configure/make)
+Makefile
+config.h
+config.log
+config.status
+libtool
+stamp-h1
+.deps/
+.libs/
+*.o
+*.lo
+*.la

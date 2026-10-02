@@ -169,7 +169,7 @@ make configure PLATFORM=[ASIC_VENDOR]
 # Build SONiC image with 4 jobs in parallel.
 # Note: You can set this higher, but 4 is a good number for most cases
 #       and is well-tested.
-make SONIC_BUILD_JOBS=4 all
+make all
 ```
 
 ### Build performance tips
