@@ -1,0 +1,84 @@
+services:
+{% set is_fabric_asic = 0 %}
+{% if DEVICE_METADATA.localhost.switch_type %}
+{% if DEVICE_METADATA.localhost.switch_type == "fabric" %}
+{% set is_fabric_asic = 1 %}
+{% endif %}
+{% endif %}
+{% if is_fabric_asic == 0 %}
+  portsyncd:
+    override: replace
+    command: /usr/bin/portsyncd
+{% endif %}
+  orchagent:
+    override: replace
+    command: /usr/bin/orchagent.sh
+{% if is_fabric_asic == 0 %}
+  coppmgrd:
+    override: replace
+    command: /usr/bin/coppmgrd
+  neighsyncd:
+    override: replace
+    command: /usr/bin/neighsyncd
+  vlanmgrd:
+    override: replace
+    command: /usr/bin/vlanmgrd
+  intfmgrd:
+    override: replace
+    command: /usr/bin/intfmgrd
+  portmgrd:
+    override: replace
+    command: /usr/bin/portmgrd
+{% endif %}
+  fabricmgrd:
+    override: replace
+    command: /usr/bin/fabricmgrd
+{% if is_fabric_asic == 0 %}
+  buffermgrd:
+    override: replace
+    command: /usr/bin/buffermgrd.sh
+  vrfmgrd:
+    override: replace
+    command: /usr/bin/vrfmgrd
+  nbrmgrd:
+    override: replace
+    command: /usr/bin/nbrmgrd
+  vxlanmgrd:
+    override: replace
+    command: /usr/bin/vxlanmgrd
+  tunnelmgrd:
+    override: replace
+    command: /usr/bin/tunnelmgrd
+{% endif %}
+  enable_counters:
+    override: replace
+    command: /usr/bin/enable_counters.py
+    on-success: ignore
+    on-failure: ignore
+{% if is_fabric_asic == 0 %}
+  fdbsyncd:
+    override: replace
+    command: /usr/bin/fdbsyncd
+{% endif %}
+  countersyncd:
+    override: replace
+    command: /usr/bin/countersyncd --enable-otel
+    on-success: ignore
+{% if VLAN or DEVICE_METADATA.localhost.switch_type == "chassis-packet" %}
+  arp_update:
+    override: replace
+    command: /usr/bin/arp_update
+    on-success: ignore
+{% endif %}
+{% if VLAN %}
+  ndppd:
+    override: replace
+    command: /usr/sbin/ndppd
+    on-success: ignore
+{% endif %}
+{% if DEVICE_METADATA.localhost.subtype == "DualToR" %}
+  tunnel_packet_handler:
+    override: replace
+    command: /usr/bin/tunnel_packet_handler.py
+    on-success: ignore
+{% endif %}
