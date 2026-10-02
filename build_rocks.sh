@@ -21,7 +21,7 @@ rocklist=(
     # "dockers/docker-dhcp-server"
     "dockers/docker-dhcp-relay"
 
-    # "dockers/docker-sysmgr"
+    "dockers/docker-sysmgr"
     # "dockers/docker-stp"
 )
 
