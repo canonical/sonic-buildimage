@@ -13,6 +13,7 @@ rocklist=(
     "dockers/docker-platform-monitor"
     "dockers/docker-macsec"
     "dockers/docker-iccpd"
+    "dockers/docker-sflow"
 )
 
 set -x
