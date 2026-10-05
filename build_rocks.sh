@@ -33,8 +33,27 @@ fi
 set -x
 set -e
 
+# Print the SONiC labels (manifest, component versions, Tag) of a saved image as NUL-separated --label args
+sonic_labels()
+{
+    local cfg
+    cfg=$(tar -xOzf "$1" manifest.json | jq -r '.[0].Config')
+    tar -xOzf "$1" "$cfg" | jq -j '.config.Labels // {} | to_entries[]
+        | select(.key == "Tag" or (.key | startswith("com.azure.sonic.")))
+        | "--label\u0000\(.key)=\(.value)\u0000"'
+}
+
 for rockitem in "${rocklist[@]}"
 do
+    rockname=$(basename $rockitem)
+    rockfullname="${rockname}_1.0.0_amd64.rock"
+    # Carry over the labels slave.mk put on the Dockerfile image this rock replaces; sonic-package-manager reads them
+    mapfile -d '' labels < <(sonic_labels target/${rockname}.gz)
+    if [[ ! " ${labels[*]} " == *" com.azure.sonic.manifest="* ]]; then
+        echo "target/${rockname}.gz has no SONiC manifest label; build it with make first" >&2
+        exit 1
+    fi
+
     mkdir -p $rockitem/debs $rockitem/files $rockitem/python-wheels
 
     cp target/debs/resolute/*.deb            $rockitem/debs/
@@ -46,11 +65,11 @@ do
 
     pushd $rockitem
 
-    rockname=$(basename $rockitem)
-    rockfullname="${rockname}_1.0.0_amd64.rock"
     rockcraft clean
     rockcraft pack
-    sudo rockcraft.skopeo --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:latest
+    sudo rockcraft.skopeo --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:rock
+    echo "FROM $rockname:rock" | docker build "${labels[@]}" -t $rockname:latest -
+    docker rmi $rockname:rock
     rm -r ./debs/ ./files/ ./python-wheels/ envs ${rockfullname}
 
     popd
