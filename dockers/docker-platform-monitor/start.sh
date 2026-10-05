@@ -123,16 +123,31 @@ fi
 pebble add pmon-layer --combine /tmp/pmon-layer.yaml
 pebble replan
 
-# delay is a one-shot gate (advanced/warm reboot); start it and wait until it
-# exits before bringing up the daemons that depended on "delay:exited".
+# Start each given daemon that was rendered into the layer.
+start_if_defined() {
+    for svc in "$@"; do
+        if pebble services "$svc" 2>/dev/null | grep -q "^$svc "; then
+            pebble start "$svc" || true
+        fi
+    done
+}
+
+# Compare the Current column exactly: a substring match would also hit "inactive".
+delay_running() {
+    [ "$(pebble services delay 2>/dev/null | awk '$1=="delay"{print $3}')" = "active" ]
+}
+
+# delay is a one-shot gate (advanced/warm reboot). supervisord starts it immediately,
+# alongside the daemons that only wait for rsyslogd:running; just lm-sensors, psud,
+# syseepromd, thermalctld, pcied and sensormond additionally wait for "delay:exited".
 if pebble services delay 2>/dev/null | grep -q '^delay '; then
     pebble start delay
-    while pebble services delay 2>/dev/null | grep -q '^delay.*active'; do sleep 1; done
 fi
 
-# Start each daemon that was rendered into the layer, in original priority order.
-for svc in bmcctld chassisd chassis_db_init lm-sensors fancontrol ledd xcvrd ycabled psud syseepromd thermalctld pcied sensormond stormond; do
-    if pebble services "$svc" 2>/dev/null | grep -q "^$svc "; then
-        pebble start "$svc" || true
-    fi
-done
+# Daemons that do not depend on delay, in original priority order.
+start_if_defined bmcctld chassisd chassis_db_init fancontrol ledd xcvrd ycabled stormond
+
+# Then wait for delay to exit (a no-op when delay is not in the plan) and bring up
+# the daemons that depended on "delay:exited".
+while delay_running; do sleep 1; done
+start_if_defined lm-sensors psud syseepromd thermalctld pcied sensormond
