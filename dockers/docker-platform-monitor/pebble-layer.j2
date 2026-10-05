@@ -1,4 +1,6 @@
-services:
+{#- Render the services into a variable first: pebble rejects a layer whose `services:`
+    key is empty (every daemon skipped), so fall back to an explicit empty mapping. #}
+{% set pmon_services %}
 {% if IS_SWITCH_BMC == 1 %}
   bmcctld:
     override: replace
@@ -151,4 +153,10 @@ services:
     override: replace
     command: /usr/bin/stormond
     on-success: ignore
+{% endif %}
+{% endset %}
+{% if pmon_services | trim %}
+services:
+{{ pmon_services }}{% else %}
+services: {}
 {% endif %}
