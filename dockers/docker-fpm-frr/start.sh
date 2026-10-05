@@ -152,7 +152,7 @@ if pgrep -x pebble > /dev/null 2>&1; then
     pebble start staticd
     pebble start bgpd
 
-    for svc in bfdd ospfd pimd pathd fpmsyncd frrcfgd bgpcfgd bgpmon staticroutebfd bfdmon vtysh_b bgp_eoiu_marker sharpd; do
+    for svc in bfdd ospfd pimd pathd fpmsyncd frrcfgd bgpcfgd bgpmon staticroutebfd bfdmon vtysh_b bgp_eoiu_marker; do
         if pebble services "$svc" 2>/dev/null | grep -q "^$svc "; then
             pebble start "$svc" || true
         fi
