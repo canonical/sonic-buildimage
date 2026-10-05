@@ -497,6 +497,8 @@ echo "rsyslog-config.service" | sudo tee -a $GENERATED_SERVICE_FILE
 
 # Copy containercfgd configuration files
 sudo cp $IMAGE_CONFIGS/containercfgd/containercfgd.conf $FILESYSTEM_ROOT_USR_SHARE_SONIC_TEMPLATES/
+sudo cp $IMAGE_CONFIGS/containercfgd/containercfgd-layer.yaml $FILESYSTEM_ROOT_USR_SHARE_SONIC_TEMPLATES/
+sudo cp $IMAGE_CONFIGS/containercfgd/containercfgd-disable-layer.yaml $FILESYSTEM_ROOT_USR_SHARE_SONIC_TEMPLATES/
 
 # Copy syslog override files
 sudo mkdir -p $FILESYSTEM_ROOT/etc/systemd/system/syslog.socket.d

@@ -62,6 +62,7 @@ parts:
       ipinip.json.j2: usr/share/sonic/templates/ipinip.json.j2
       ports.json.j2: usr/share/sonic/templates/ports.json.j2
       ndppd.conf.j2: usr/share/sonic/templates/ndppd.conf.j2
+      ndppd-layer.yaml: usr/share/sonic/templates/ndppd-layer.yaml
       wait_for_link.sh.j2: usr/share/sonic/templates/wait_for_link.sh.j2
       files/arp_update: usr/bin/arp_update
       files/arp_update_vars.j2: usr/share/sonic/templates/arp_update_vars.j2
