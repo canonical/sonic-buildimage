@@ -1,0 +1,158 @@
+name: docker-dhcp-relay
+summary: SONiC dhcp-relay container
+description: A rock for SONiC dhcp-relay container
+version: "1.0.0"
+
+base: ubuntu@26.04
+build-base: ubuntu@26.04
+license: Apache-2.0
+
+platforms:
+  amd64:
+
+services:
+  rsyslogd:
+    command: /usr/sbin/rsyslogd -n -iNONE
+    override: replace
+    startup: enabled
+  start:
+    command: /usr/bin/start.sh
+    override: replace
+    startup: enabled
+    on-success: ignore
+    on-failure: ignore
+  # The per-VLAN relay agents and dhcpmon are rendered from pebble-layer.j2
+  # by start.sh at runtime.
+  dhcprelayd:
+    command: /usr/bin/dhcprelayd
+    override: replace
+
+parts:
+  setup-dhcp-relay:
+    plugin: dump
+    source: .
+    override-build: |
+      craftctl default
+
+      # Install SONiC debs (wildcard filenames)
+      dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/isc-dhcp-relay_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-dhcp4relay_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-dhcp6relay_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-dhcpmon_*.deb ${CRAFT_PART_INSTALL}
+
+      # Clean up deb/wheel source files
+      rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
+
+    organize:
+      start.sh: usr/bin/start.sh
+      pebble-layer.j2: usr/share/sonic/templates/pebble-layer.j2
+      docker-dhcp-relay.supervisord.conf.j2: usr/share/sonic/templates/docker-dhcp-relay.supervisord.conf.j2
+      port-name-alias-map.txt.j2: usr/share/sonic/templates/port-name-alias-map.txt.j2
+      wait_for_intf.sh.j2: usr/share/sonic/templates/wait_for_intf.sh.j2
+      dhcp-relay.programs.j2: usr/share/sonic/templates/dhcp-relay.programs.j2
+      dhcpv4-relay.agents.j2: usr/share/sonic/templates/dhcpv4-relay.agents.j2
+      dhcpv4-sonic-relay.agents.j2: usr/share/sonic/templates/dhcpv4-sonic-relay.agents.j2
+      dhcpv6-relay.agents.j2: usr/share/sonic/templates/dhcpv6-relay.agents.j2
+      dhcp-relay.monitors.j2: usr/share/sonic/templates/dhcp-relay.monitors.j2
+      files/syslog-layer.yaml: usr/share/sonic/templates/syslog-layer.yaml
+      files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
+      files/readiness_probe.sh: usr/bin/readiness_probe.sh
+      files/container_startup.py: usr/share/sonic/scripts/container_startup.py
+
+    stage-packages:
+      # Base runtime packages (inherited from config-engine layer)
+      - rsyslog
+      - rsyslog-relp
+      - python3
+      - redis-tools
+      - iproute2
+      - net-tools
+      - jq
+      - libzmq5
+      - libwrap0
+      - libdaemon0
+      - libdbus-1-3
+      - libjansson4
+      - python3-redis
+      - python3-yaml
+      - python3-cffi-backend
+      # SONiC deb runtime dependencies
+      - libboost-serialization1.83.0
+      - libhiredis1.1.0
+      - libxxhash0
+      # libnl-3/genl/route/nf come along as hard Depends of libnl-cli-3-200
+      - libnl-cli-3-200
+      - libpython3.14
+      # dhcp-relay-specific runtime dependencies
+      - libboost-thread1.83.0
+      - libevent-2.1-7t64
+      - libevent-pthreads-2.1-7t64
+      - libexplain51t64
+      - libjsoncpp26
+      - libpcap0.8t64
+
+    prime:
+      # Exclude unnecessary artifacts that `source: .` dumps at the rock root
+      - -files
+      - -envs
+      - -python-debs
+      - -vcache
+      - -base_image_files
+      - -buildinfo
+      - -cli-plugin-tests
+      - -Dockerfile*
+      # Docker/supervisord-path only
+      - -docker_init.sh
+      - -critical_processes
+
+    override-prime: |
+      craftctl default
+
+      cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
+      cp ${CRAFT_PROJECT_DIR}/manifest.json manifest.json
+      cp ${CRAFT_PROJECT_DIR}/envs usr/share/sonic/templates/
+
+  install-python:
+    plugin: python
+    source: .
+    build-packages:
+      # psutil is compiled from source
+      - python3-dev
+      - build-essential
+    python-packages:
+      # config-engine inherited SONiC wheels
+      - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_mgmt-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_yang_models-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_containercfgd-1.0-py3-none-any.whl
+      - ./python-wheels/sonic_config_engine-1.0-py3-none-any.whl
+      # container-specific SONiC wheels (provides dhcprelayd)
+      - ./python-wheels/sonic_dhcp_utilities-1.0-py3-none-any.whl
+      # common pip packages
+      - jinjanator
+      - click
+      - pyangbind==0.8.7
+      - lxml
+      - psutil
+    stage-packages:
+      - python3-venv
+    organize:
+      yang-models: usr/local/yang-models
+      cvlyang-models: usr/local/cvlyang-models
+
+  add-user:
+    plugin: nil
+    after: [setup-dhcp-relay]
+    overlay-script: |
+      groupadd -R $CRAFT_OVERLAY syslog
+      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
+    prime:
+      - etc/passwd
+      - etc/group
