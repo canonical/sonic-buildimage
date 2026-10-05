@@ -10,9 +10,24 @@ struct HealthStatus {
     check_bmp_port: String,
 }
  
+// Rock containers run pebble instead of supervisord
+const DB_STATUS_CMD: &str = "if command -v supervisorctl >/dev/null; then supervisorctl status; \
+    else pebble services --format json redis_bmp; fi";
+
+// Reads `supervisorctl status` (RUNNING) or `pebble services --format json` (active)
+fn redis_bmp_running(status: &str) -> bool {
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(status) {
+        return json["services"]["redis_bmp"]["current"] == "active";
+    }
+    status.lines().any(|line| {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        fields.first() == Some(&"redis_bmp") && fields.get(1) == Some(&"RUNNING")
+    })
+}
+
 fn check_bmp_db() -> String {
     let output = Command::new("docker")
-        .args(["exec", "-i", "database", "supervisorctl", "status"])
+        .args(["exec", "-i", "database", "bash", "-c", DB_STATUS_CMD])
         .output();
 
     match output {
@@ -23,11 +38,7 @@ fn check_bmp_db() -> String {
 
             let stdout = String::from_utf8_lossy(&output.stdout);
 
-            let has_redis_bmp = stdout.lines().any(|line| {
-                line.starts_with("redis_bmp") && line.contains("RUNNING")
-            });
-
-            if has_redis_bmp {
+            if redis_bmp_running(&stdout) {
                 "OK".to_string()
             } else {
                 "ERROR: redis_bmp not running".to_string()
@@ -100,5 +111,25 @@ fn main() {
                 eprintln!("Error accepting connection: {}", e);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn supervisorctl_status() {
+        assert!(redis_bmp_running("redis       RUNNING   pid 32, uptime 0:00:09\nredis_bmp   RUNNING   pid 33, uptime 0:00:09\n"));
+        assert!(!redis_bmp_running("redis_bmp   EXITED    Oct 05 02:01 AM\n"));
+    }
+
+    #[test]
+    fn pebble_services() {
+        let service = |current: &str| format!(
+            r#"{{"services":{{"redis_bmp":{{"name":"redis_bmp","startup":"disabled","current":"{current}"}}}}}}"#);
+        assert!(redis_bmp_running(&service("active")));
+        assert!(!redis_bmp_running(&service("error")));
+        assert!(!redis_bmp_running(r#"{"services":{}}"#));
     }
 }

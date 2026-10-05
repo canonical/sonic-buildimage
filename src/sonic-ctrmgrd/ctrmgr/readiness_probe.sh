@@ -13,10 +13,18 @@
 # if the start service exists, check if it exits normally
 # if the start service doesn't exit normally, exit with code 2
 pre_check_service_name="start"
-no_process_string="ERROR (no such process)"
-service_status=$(supervisorctl status $pre_check_service_name)
-if [[ $service_status != *"$no_process_string"* ]] && [[ $(echo $service_status |awk '{print $2}') != 'EXITED' ]]; then
-    exit 2
+if command -v supervisorctl >/dev/null; then
+    no_process_string="ERROR (no such process)"
+    service_status=$(supervisorctl status $pre_check_service_name)
+    if [[ $service_status != *"$no_process_string"* ]] && [[ $(echo $service_status |awk '{print $2}') != 'EXITED' ]]; then
+        exit 2
+    fi
+else
+    # Rock containers run pebble: the one-shot start service is inactive (or error) once it has exited
+    service_state=$(pebble services --format json $pre_check_service_name | jq -r --arg n "$pre_check_service_name" '.services[$n].current // empty')
+    if [[ -n $service_state ]] && [[ $service_state != 'inactive' ]] && [[ $service_state != 'error' ]]; then
+        exit 2
+    fi
 fi
 
 # feature owner can add their own readiness check script
