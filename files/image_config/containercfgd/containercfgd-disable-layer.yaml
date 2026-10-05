@@ -1,0 +1,5 @@
+summary: containercfgd stopped by `config syslog rate-limit-feature disable`; pebble cannot remove a service
+services:
+  containercfgd:
+    override: merge
+    startup: disabled
