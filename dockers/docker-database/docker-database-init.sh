@@ -56,7 +56,9 @@ export BMP_DB_PORT=6400
 
 REDIS_DIR=/var/run/redis$NAMESPACE_ID
 mkdir -p $REDIS_DIR/sonic-db
-mkdir -p /etc/supervisor/conf.d/
+if [[ "$USE_PEBBLE" != "true" ]]; then
+    mkdir -p /etc/supervisor/conf.d/
+fi
 
 if [ -f /etc/sonic/database_config$NAMESPACE_ID.json ]; then
     cp /etc/sonic/database_config$NAMESPACE_ID.json $REDIS_DIR/sonic-db/database_config.json
@@ -154,21 +156,20 @@ do
     else
         echo -n > /var/lib/$inst/dump.rdb
     fi
-    if [[ "$USE_PEBBLE" != "true" ]]; then
-        chown -R redis:redis /var/lib/$inst
-    fi
+    # the Redis process is operating under the 'redis' user in supervisord and make redis user own /var/lib/$inst inside db container.
+    chown -R redis:redis /var/lib/$inst
 done
+
+chown -R redis:redis $REDIS_DIR
+REDIS_BMP_DIR="/var/lib/redis_bmp"
+if [[ -d $REDIS_BMP_DIR ]]; then
+    chown -R redis:redis $REDIS_BMP_DIR
+fi
 
 if [[ "$USE_PEBBLE" == "true" ]]; then
     pebble start redis
     pebble start redis_bmp
     pebble start flushdb
 else
-    chown -R redis:redis $REDIS_DIR
-    REDIS_BMP_DIR="/var/lib/redis_bmp"
-    if [[ -d $REDIS_BMP_DIR ]]; then
-        chown -R redis:redis $REDIS_BMP_DIR
-    fi
-
     exec /usr/local/bin/supervisord
 fi

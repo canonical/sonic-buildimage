@@ -20,12 +20,23 @@ services:
     override: replace
     startup: enabled
     on-success: ignore
+    environment:
+      # Dockerfile.j2 bakes the build flag in; the rock build assumes its default
+      INCLUDE_SYSTEM_EVENTD: "y"
   redis:
     command: bash -c "{ [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
     override: replace
+    user: redis
+    group: redis
+    on-success: ignore
+    on-failure: shutdown
   redis_bmp:
     command: bash -c "{ [[ -s /var/lib/redis_bmp/dump.rdb ]] || rm -f /var/lib/redis_bmp/dump.rdb; } && mkdir -p /var/lib/redis_bmp && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6400 --unixsocket /var/run/redis/redis_bmp.sock --pidfile /var/run/redis/redis_bmp.pid --dir /var/lib/redis_bmp"
     override: replace
+    user: redis
+    group: redis
+    on-success: ignore
+    on-failure: shutdown
   flushdb:
     command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
     override: replace
@@ -112,6 +123,13 @@ parts:
 
       # Configure redis settings (same sed as Dockerfile.j2)
       sed -ri 's/^# save ""$/save ""/g; s/^daemonize yes$/daemonize no/; s/^logfile .*$/logfile ""/; s/^# syslog-enabled no$/syslog-enabled no/; s/^# unixsocket/unixsocket/; s/redis-server.sock/redis.sock/g; s/^client-output-buffer-limit pubsub [0-9]+mb [0-9]+mb [0-9]+/client-output-buffer-limit pubsub 0 0 0/; s/^notify-keyspace-events ""$/notify-keyspace-events AKE/; s/^databases [0-9]+$/databases 100/' etc/redis/redis.conf
+
+      # redis-server runs as redis, which nothing staged creates; the bare base has no overlay /etc to add it in
+      groupadd -R ${CRAFT_PRIME} -r redis
+      useradd -R ${CRAFT_PRIME} -M -r -g redis -d /var/lib/redis -s /usr/sbin/nologin redis
+      rm -f etc/passwd- etc/group-
+      # The host docker cp's the warm-boot dump.rdb here before start; docker-database-init.sh chowns it to redis
+      install -d -m 0750 var/lib/redis
 
       # Copy manifest to root
       cp ${CRAFT_PROJECT_DIR}/manifest.json .
