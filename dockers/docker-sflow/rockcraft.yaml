@@ -24,6 +24,8 @@ services:
   sflowmgrd:
     command: /usr/bin/sflowmgrd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
   port_index_mapper:
     command: /usr/bin/port_index_mapper.py
     override: replace

@@ -24,6 +24,8 @@ services:
   rebootbackend:
     command: /usr/bin/rebootbackend
     override: replace
+    on-success: ignore
+    on-failure: shutdown
 
 parts:
   setup-sysmgr:

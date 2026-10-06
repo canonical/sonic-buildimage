@@ -8,46 +8,74 @@ services:
 {% if is_fabric_asic == 0 %}
   portsyncd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/portsyncd
 {% endif %}
   orchagent:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/orchagent.sh
 {% if is_fabric_asic == 0 %}
   coppmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/coppmgrd
   neighsyncd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/neighsyncd
   vlanmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/vlanmgrd
   intfmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/intfmgrd
   portmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/portmgrd
 {% endif %}
   fabricmgrd:
     override: replace
+{% if is_fabric_asic == 0 %}
+    on-success: ignore
+    on-failure: shutdown
+{% endif %}
     command: /usr/bin/fabricmgrd
 {% if is_fabric_asic == 0 %}
   buffermgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/buffermgrd.sh
   vrfmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/vrfmgrd
   nbrmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/nbrmgrd
   vxlanmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/vxlanmgrd
   tunnelmgrd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/tunnelmgrd
 {% endif %}
   enable_counters:
@@ -58,6 +86,8 @@ services:
 {% if is_fabric_asic == 0 %}
   fdbsyncd:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/bin/fdbsyncd
 {% endif %}
   countersyncd:

@@ -24,11 +24,10 @@ services:
   syncd:
     command: /usr/bin/syncd_start.sh
     override: replace
-    # supervisord autorestart=false: the host syncd.sh stop path asks syncd to
-    # exit (syncd_request_shutdown) and waits for it to go away, so it must not
-    # be restarted
+    # Not restarted in place: the host syncd.sh stop path asks syncd to exit and
+    # waits for it to go away; an unexpected exit stops the container instead
     on-success: ignore
-    on-failure: ignore
+    on-failure: shutdown
   ledinit:
     command: /usr/bin/start_led.sh
     override: replace

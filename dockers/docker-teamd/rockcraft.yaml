@@ -24,13 +24,19 @@ services:
   teammgrd:
     command: /usr/bin/teammgrd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     kill-delay: 60s
   teamsyncd:
     command: /usr/bin/teamsyncd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
   tlm_teamd:
     command: /usr/bin/tlm_teamd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
 
 parts:
   setup-teamd:

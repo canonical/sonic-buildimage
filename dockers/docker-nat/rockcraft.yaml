@@ -24,9 +24,13 @@ services:
   natmgrd:
     command: /usr/bin/natmgrd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
   natsyncd:
     command: /usr/bin/natsyncd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
 
 parts:
   setup-nat:
