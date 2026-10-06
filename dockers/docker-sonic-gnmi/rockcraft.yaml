@@ -24,6 +24,8 @@ services:
   gnmi-native:
     command: /usr/bin/gnmi-native.sh
     override: replace
+    on-success: ignore
+    on-failure: shutdown
   dialout:
     command: /usr/bin/dialout.sh
     override: replace

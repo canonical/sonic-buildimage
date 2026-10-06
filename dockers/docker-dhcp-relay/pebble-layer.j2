@@ -19,6 +19,8 @@ services:
 {% if sonic_relay %}
   dhcp4relay:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/sbin/dhcp4relay{% if dual_tor %} -u Loopback0{% endif %}
 
 {% endif %}
@@ -54,6 +56,8 @@ services:
 {% if ctx.v6_agent %}
   dhcp6relay:
     override: replace
+    on-success: ignore
+    on-failure: shutdown
     command: /usr/sbin/dhcp6relay{% if dual_tor %} -u Loopback0{% endif %}
 
 {% endif %}

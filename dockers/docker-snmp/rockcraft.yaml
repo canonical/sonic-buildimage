@@ -27,9 +27,13 @@ services:
   snmpd:
     command: /usr/sbin/snmpd -f -LS0-2d -u Debian-snmp -g Debian-snmp -I -smux,mteTrigger,mteTriggerConf,ifTable,ifXTable,inetCidrRouteTable,ipCidrRouteTable,ip,disk_hw -p /run/snmpd.pid
     override: replace
+    on-success: ignore
+    on-failure: shutdown
   snmp-subagent:
     command: python3 -m sonic_ax_impl
     override: replace
+    on-success: ignore
+    on-failure: shutdown
 
 parts:
   setup-snmp:

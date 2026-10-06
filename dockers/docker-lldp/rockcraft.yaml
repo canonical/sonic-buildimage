@@ -24,6 +24,8 @@ services:
   lldpd:
     command: /usr/sbin/lldpd -d -I Ethernet[0-9]*,eth0 -C eth0
     override: replace
+    on-success: ignore
+    on-failure: shutdown
   waitfor-lldp-ready:
     command: /usr/bin/waitfor_lldp_ready.sh
     override: replace
@@ -32,9 +34,13 @@ services:
   lldp-syncd:
     command: python3 -m lldp_syncd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
   lldpmgrd:
     command: /usr/bin/lldpmgrd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
 
 parts:
   setup-lldp:

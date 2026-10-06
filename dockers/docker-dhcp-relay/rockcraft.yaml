@@ -26,6 +26,8 @@ services:
   dhcprelayd:
     command: /usr/bin/dhcprelayd
     override: replace
+    on-success: ignore
+    on-failure: shutdown
 
 parts:
   setup-dhcp-relay:
