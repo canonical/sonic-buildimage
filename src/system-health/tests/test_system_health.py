@@ -36,7 +36,7 @@ from health_checker.config import Config
 from health_checker.hardware_checker import HardwareChecker
 from health_checker.health_checker import HealthChecker
 from health_checker.manager import HealthCheckerManager
-from health_checker.service_checker import ServiceChecker
+from health_checker.service_checker import ServiceChecker, PEBBLE_SEPARATOR
 from health_checker.user_defined_checker import UserDefinedChecker
 from health_checker.sysmonitor import Sysmonitor
 from health_checker.sysmonitor import MonitorStateDbTask
@@ -59,6 +59,26 @@ mock_supervisorctl_output = """
 snmpd                       RUNNING   pid 67, uptime 1:03:56
 snmp-subagent               EXITED    Oct 19 01:53 AM
 """
+mock_pebble_plan = """services:
+    rsyslogd:
+        startup: enabled
+        override: replace
+        command: /usr/sbin/rsyslogd -n -iNONE
+    snmpd:
+        override: replace
+        command: /usr/sbin/snmpd -f
+        on-success: ignore
+        on-failure: shutdown
+    snmp-subagent:
+        override: replace
+        command: python3 -m sonic_ax_impl
+        on-success: ignore
+        on-failure: shutdown
+"""
+mock_pebble_services = ('{"services":{'
+                        '"rsyslogd":{"name":"rsyslogd","startup":"enabled","current":"active","current-since":"2026-10-06T10:40:00Z"},'
+                        '"snmpd":{"name":"snmpd","startup":"disabled","current":"active","current-since":"2026-10-06T10:40:01Z"},'
+                        '"snmp-subagent":{"name":"snmp-subagent","startup":"disabled","current":"inactive","current-since":"2026-10-06T10:41:00Z"}}}')
 device_info.get_platform = MagicMock(return_value='unittest')
 
 device_runtime_metadata = {"DEVICE_RUNTIME_METADATA": {"ETHERNET_PORTS_PRESENT":True}}
@@ -178,6 +198,59 @@ def test_service_checker_single_asic(mock_config_db, mock_run, mock_docker_clien
     checker.save_critical_process_cache()
     checker.load_critical_process_cache()
     assert origin_container_critical_processes == checker.container_critical_processes
+
+
+# A rock container has no /etc/supervisor/critical_processes
+@patch('swsscommon.swsscommon.ConfigDBConnector.connect', MagicMock())
+@patch('health_checker.service_checker.ServiceChecker._get_container_folder', MagicMock(return_value=os.path.dirname(test_path)))
+@patch('sonic_py_common.multi_asic.is_multi_asic', MagicMock(return_value=False))
+@patch('docker.DockerClient')
+@patch('health_checker.utils.run_command')
+@patch('swsscommon.swsscommon.ConfigDBConnector')
+def test_service_checker_pebble(mock_config_db, mock_run, mock_docker_client):
+    setup()
+    mock_db_data = MagicMock()
+    mock_db_data.get_table = MagicMock(return_value={
+        'snmp': {
+            'state': 'enabled',
+            'has_global_scope': 'True',
+            'has_per_asic_scope': 'False',
+        }
+    })
+    mock_config_db.return_value = mock_db_data
+    mock_snmp_container = MagicMock()
+    mock_snmp_container.name = 'snmp'
+    mock_docker_client_object = MagicMock()
+    mock_docker_client.return_value = mock_docker_client_object
+    mock_docker_client_object.containers.list = MagicMock(return_value=[mock_snmp_container])
+
+    def pebble_status(services):
+        return mock_pebble_plan + PEBBLE_SEPARATOR + '\n' + services
+
+    mock_run.return_value = pebble_status(mock_pebble_services)
+    checker = ServiceChecker()
+    config = Config()
+    checker.check(config)
+    cmd = mock_run.call_args_list[-1].args[0]
+    assert 'docker exec snmp' in cmd and 'supervisorctl status' in cmd and 'pebble services --format json' in cmd
+    # Critical processes are the services with on-failure: shutdown
+    assert checker._info['snmp:snmpd'][HealthChecker.INFO_FIELD_OBJECT_STATUS] == HealthChecker.STATUS_OK
+    assert checker._info['snmp:snmp-subagent'][HealthChecker.INFO_FIELD_OBJECT_STATUS] == HealthChecker.STATUS_NOT_OK
+    assert 'snmp:rsyslogd' not in checker._info
+
+    # A critical service pebble never started is skipped, like a program absent from supervisord.conf
+    checker.reset()
+    mock_run.return_value = pebble_status(mock_pebble_services.replace(
+        '"current":"inactive","current-since":"2026-10-06T10:41:00Z"', '"current":"inactive"'))
+    checker.check(config)
+    assert checker._info['snmp:snmpd'][HealthChecker.INFO_FIELD_OBJECT_STATUS] == HealthChecker.STATUS_OK
+    assert 'snmp:snmp-subagent' not in checker._info
+
+    # Unparsable pebble output reports nothing for the container
+    checker.reset()
+    mock_run.return_value = pebble_status('not json')
+    checker.check(config)
+    assert not any(key.startswith('snmp:') for key in checker._info)
 
 
 @patch('swsscommon.swsscommon.ConfigDBConnector.connect', MagicMock())
