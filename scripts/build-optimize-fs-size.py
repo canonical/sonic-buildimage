@@ -1,98 +1,16 @@
 #!/usr/bin/env python3
 
 import argparse
-import hashlib
+import glob
 import os
 import shutil
 import subprocess
 import sys
 
-from collections import defaultdict
-from functools import cached_property
-
 DRY_RUN = False
 def enable_dry_run(enabled):
     global DRY_RUN # pylint: disable=global-statement
     DRY_RUN = enabled
-
-class File:
-    def __init__(self, path):
-        self.path = path
-
-    def __str__(self):
-        return self.path
-
-    def rmtree(self):
-        if DRY_RUN:
-           print(f'rmtree {self.path}')
-           return
-        shutil.rmtree(self.path)
-
-    def hardlink(self, src):
-        if DRY_RUN:
-           print(f'hardlink {self.path} {src}')
-           return
-        st = self.stats
-        os.remove(self.path)
-        os.link(src.path, self.path)
-        os.chmod(self.path, st.st_mode)
-        os.chown(self.path, st.st_uid, st.st_gid)
-        os.utime(self.path, times=(st.st_atime, st.st_mtime))
-
-    @property
-    def name(self):
-        return os.path.basename(self.path)
-
-    @cached_property
-    def stats(self):
-        return os.stat(self.path)
-
-    @cached_property
-    def size(self):
-        return self.stats.st_size
-
-    @cached_property
-    def checksum(self):
-        with open(self.path, 'rb') as f:
-            return hashlib.md5(f.read()).hexdigest()
-
-class FileManager:
-    def __init__(self, path):
-        self.path = path
-        self.files = []
-        self.folders = []
-        self.nindex = defaultdict(list)
-        self.cindex = defaultdict(list)
-
-    def add_file(self, path):
-        if not os.path.isfile(path) or os.path.islink(path):
-            return
-        f = File(path)
-        self.files.append(f)
-
-    def load_tree(self):
-        self.files = []
-        self.folders = []
-        for root, _, files in os.walk(self.path):
-            self.folders.append(File(root))
-            for f in files:
-                self.add_file(os.path.join(root, f))
-        print(f'loaded {len(self.files)} files and {len(self.folders)} folders')
-
-    def generate_index(self):
-        print('Computing file hashes')
-        for f in self.files:
-            self.nindex[f.name].append(f)
-            self.cindex[(f.name, f.checksum)].append(f)
-
-    def create_hardlinks(self):
-        print('Creating hard links')
-        for files in self.cindex.values():
-            if len(files) <= 1:
-                continue
-            orig = files[0]
-            for f in files[1:]:
-                f.hardlink(orig)
 
 class FsRoot:
     def __init__(self, path):
@@ -140,10 +58,15 @@ class FsRoot:
         ])
 
     def hardlink_under(self, path):
-        fm = FileManager(os.path.join(self.path, path))
-        fm.load_tree()
-        fm.generate_index()
-        fm.create_hardlinks()
+        # Link identical files that also share mode, owner and xattrs; mtime is ignored.
+        # path may be a glob; all matches go to one call so files are linked across them.
+        paths = sorted(glob.glob(os.path.join(self.path, path)))
+        if not paths:
+            raise FileNotFoundError(f'no match for {path} under {self.path}')
+        cmd = ['hardlink', '--respect-xattrs', '--ignore-time']
+        if DRY_RUN:
+            cmd.append('--dry-run')
+        subprocess.run(cmd + paths, check=True)
 
     def remove_platforms(self, filter_func):
         devpath = os.path.join(self.path, 'usr/share/sonic/device')

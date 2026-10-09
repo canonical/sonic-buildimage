@@ -924,11 +924,8 @@ sudo cp files/image_config/resolv-config/resolv.conf.head $FILESYSTEM_ROOT/etc/r
 if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ]; then
    sudo scripts/build-optimize-fs-size.py "$FILESYSTEM_ROOT" \
       --image-type "$IMAGE_TYPE" \
-      --hardlinks var/lib/docker \
-      --hardlinks usr/share/sonic/device \
-      --remove-docs \
-      --remove-mans \
-      --remove-licenses
+      --hardlinks 'var/lib/docker/overlay2/*/diff' \
+      --hardlinks usr/share/sonic/device
 fi
 
 sudo mksquashfs $FILESYSTEM_ROOT $FILESYSTEM_SQUASHFS -comp zstd -b 1M -e boot -e var/lib/docker -e $PLATFORM_DIR
@@ -951,8 +948,8 @@ if [[ $MULTIARCH_QEMU_ENVIRON == y || $CROSS_BUILD_ENVIRON == y ]]; then
     DOCKERFS_PATH=../dockerfs/
 fi
 
-## Compress docker files
-if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ]; then
+## Compress docker files; only the Aboot and DSC installers can unpack a zstd dockerfs
+if [ "$BUILD_REDUCE_IMAGE_SIZE" = "y" ] && [[ "$IMAGE_TYPE" == aboot || "$IMAGE_TYPE" == dsc ]]; then
     pushd $FILESYSTEM_ROOT && sudo tar -I pzstd -cf $OLDPWD/$FILESYSTEM_DOCKERFS -C ${DOCKERFS_PATH}var/lib/docker .; popd
 else
     pushd $FILESYSTEM_ROOT && sudo tar -I pigz -cf $OLDPWD/$FILESYSTEM_DOCKERFS -C ${DOCKERFS_PATH}var/lib/docker .; popd

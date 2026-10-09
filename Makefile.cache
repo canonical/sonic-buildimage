@@ -417,6 +417,7 @@ RFS_DEP_FILES := $(wildcard \
 	$(shell git ls-files files/sshd) \
 	$(shell git ls-files files/dhcp) \
 	src/sonic-build-hooks/buildinfo/trusted.gpg.d \
+	$(shell git ls-files src/sonic-build-hooks/scripts src/sonic-build-hooks/hooks src/sonic-build-hooks/debian) \
 	platform/$(CONFIGURED_PLATFORM)/modules  \
 	files/docker/docker.service.conf \
 	files/build_templates/default_users.json.j2 \

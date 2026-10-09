@@ -27,7 +27,8 @@ fi
 rm -rf /sonic/target /ssh
 rm -rf /tmp/*
 rm -rf /debs /python-wheels  ~/.cache
-find / | grep -E "__pycache__" | xargs rm -rf
+# Skip /var/lib/docker: deleting files from loaded layers breaks docker save
+find / -path /var/lib/docker -prune -o -print | grep -E "__pycache__" | xargs rm -rf
 
 rm -rf $BUILD_VERSION_PATH/*
 
