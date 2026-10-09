@@ -391,7 +391,7 @@ class ServiceChecker(HealthChecker):
         """
         plan_services = (yaml.safe_load(plan) or {}).get('services') or {}
         critical_process_list = [name for name, service in plan_services.items()
-                                 if str(service.get('on-failure', '')).endswith('shutdown')]
+                                 if str(service.get('on-failure', '')) == 'shutdown']
         data = {}
         for name, service in (json.loads(services).get('services') or {}).items():
             if 'current-since' in service:
