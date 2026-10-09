@@ -68,10 +68,8 @@ start_if_defined()
 if pgrep -x pebble > /dev/null 2>&1; then
     LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
     pebble add syslog-layer --combine $LAYER_FILE
-    pebble replan
 
     pebble add swss-layer --combine /tmp/swss-layer.yaml
-    pebble replan
 
     # gearsyncd is a sub-second one-shot (pushes gearbox config, exits); run inline.
     if [ "$SWITCH_TYPE" != "fabric" ]; then

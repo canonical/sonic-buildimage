@@ -137,12 +137,10 @@ echo "# Config files managed by sonic-config-engine" > /var/sonic/config_status
 if pgrep -x pebble > /dev/null 2>&1; then
     LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
     pebble add syslog-layer --combine $LAYER_FILE
-    pebble replan
 
     sonic-cfggen -d -y /etc/sonic/constants.yml \
         -t /usr/share/sonic/templates/pebble-layer.j2 > /tmp/frr-layer.yaml
     pebble add frr-layer --combine /tmp/frr-layer.yaml
-    pebble replan
 
     pebble start mgmtd
     pebble start zebra

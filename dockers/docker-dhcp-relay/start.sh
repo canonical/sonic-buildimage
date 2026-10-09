@@ -59,14 +59,12 @@ fi
 if [ -n "$IN_PEBBLE" ]; then
     LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
     pebble add syslog-layer --combine $LAYER_FILE
-    pebble replan
 
     # Relay agents (dhcp4relay/dhcp6relay/isc-dhcpv4-relay-*) and dhcpmon-*,
     # in the order they appear in the rendered layer
     RELAY_SERVICES=$(python3 -c 'import sys, yaml; print(*((yaml.safe_load(open(sys.argv[1])) or {}).get("services") or {}))' $PEBBLE_LAYER)
     if [ -n "$RELAY_SERVICES" ]; then
         pebble add dhcp-relay-layer --combine $PEBBLE_LAYER
-        pebble replan
 
         # dhcpmon waits for the relay agents (supervisord dependent_startup_wait_for)
         for svc in $RELAY_SERVICES; do

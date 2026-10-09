@@ -110,7 +110,6 @@ confvar="{\"HAVE_SENSORS_CONF\":$HAVE_SENSORS_CONF, \"HAVE_FANCONTROL_CONF\":$HA
 
 LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
 pebble add syslog-layer --combine $LAYER_FILE
-pebble replan
 
 # Render the daemon layer from the same template conditions supervisord used,
 # then inject it as a dynamic pebble layer.
@@ -121,7 +120,6 @@ else
     sonic-cfggen -d -a "$confvar" -t $PEBBLE_LAYER_TEMPLATE > /tmp/pmon-layer.yaml
 fi
 pebble add pmon-layer --combine /tmp/pmon-layer.yaml
-pebble replan
 
 # Start each given daemon that was rendered into the layer.
 start_if_defined() {
