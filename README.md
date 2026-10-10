@@ -237,6 +237,23 @@ sudo lxd init --auto
 `rockcraft pack` uses LXD, so the build must run on a host where LXD can create
 instances (bare metal or a VM) rather than in the `sonic-slave` container.
 
+Each `rockcraft pack` re-downloads the same Ubuntu stage-packages
+(100+ `.deb`s) for every container, which dominates the per-container build
+time. `build_rocks.sh` therefore routes those downloads through a local
+[apt-cacher-ng](https://www.unix-ag.uni-kl.de/~bloch/acng/) proxy: the first
+container warms the cache and the rest hit it locally. This is an accelerator,
+not a prerequisite — if `apt-cacher-ng` is not installed, `build_rocks.sh`
+warns and falls back to downloading straight from `archive.ubuntu.com` (identical
+output, just slower). Install it to get the speedup:
+
+```shell
+sudo apt-get install -y apt-cacher-ng
+```
+
+`build_rocks.sh` auto-detects the proxy, resolves the LXD bridge gateway address
+itself, and injects `http_proxy` only for the `rockcraft pack` commands (leaving
+`https_proxy` and the build instances' base images untouched).
+
 ### How the rock build works
 
 `build_rocks.sh` runs *after* the normal `make` build: it reads the SONiC labels
