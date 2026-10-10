@@ -3,6 +3,7 @@ RestartWaiter.waitAdvancedBootDone()
 
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -156,7 +157,11 @@ class SyslogHandler:
             output = run_command(['sonic-cfggen', '-d', '-t', '/usr/share/sonic/templates/rsyslog-container.conf.j2', '-a', json_args])
             f.write(output)
         run_command(['cp', self.TMP_SYSLOG_CONF_PATH, self.SYSLOG_CONF_PATH])
-        run_command(['supervisorctl', 'restart', 'rsyslogd'])
+        if shutil.which('supervisorctl'):
+            run_command(['supervisorctl', 'restart', 'rsyslogd'])
+        else:
+            # Rock containers run pebble instead of supervisord
+            run_command(['pebble', 'restart', 'rsyslogd'])
         self.current_interval = new_interval
         self.current_burst = new_burst
 

@@ -21,7 +21,7 @@ PORT_MODE_CHECKER = ["DhcpServerTableCfgChangeEventChecker", "DhcpPortTableEvent
                      "DhcpOptionTableEventChecker", "VlanTableEventChecker", "VlanIntfTableEventChecker",
                      "VlanMemberTableEventChecker"]
 SMART_SWITCH_CHECKER = ["DpusTableEventChecker", "MidPlaneTableEventChecker"]
-LEASE_UPDATE_SCRIPT_PATH = "/etc/kea/lease_update.sh"
+LEASE_UPDATE_SCRIPT_PATH = "/usr/share/kea/scripts/lease_update.sh"
 DEFAULT_LEASE_TIME = 900
 DEFAULT_LEASE_PATH = "/var/lib/kea/kea-lease.csv"
 KEA_DHCP4_CONF_TEMPLATE_PATH = "/usr/share/sonic/templates/kea-dhcp4.conf.j2"
