@@ -1,3 +1,6 @@
+# vs boots via grub on every arch; arm64 would otherwise default to uboot (Makefile.work)
+override TARGET_BOOTLOADER = grub
+
 include $(PLATFORM_PATH)/syncd-vs.mk
 include $(PLATFORM_PATH)/sonic-version.mk
 include $(PLATFORM_PATH)/docker-sonic-vs.mk
