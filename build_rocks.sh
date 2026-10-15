@@ -46,9 +46,7 @@ ensure_apt_cacher() {
 
     # Try to start apt-cacher-ng service. If can't, fallback
     if ! curl -s -o /dev/null --max-time 3 "http://127.0.0.1:3142/"; then
-        sudo systemctl start apt-cacher-ng 2>/dev/null \
-            || sudo service apt-cacher-ng start 2>/dev/null \
-            || true
+        sudo systemctl start apt-cacher-ng
     fi
     if ! curl -s -o /dev/null --max-time 3 "http://127.0.0.1:3142/"; then
         echo "WARN: could not start apt-cacher-ng; building against archive.ubuntu.com directly." >&2
@@ -56,7 +54,7 @@ ensure_apt_cacher() {
     fi
 
     local gw
-    gw="$(lxc network get lxdbr0 ipv4.address 2>/dev/null | cut -d/ -f1)" || true
+    gw="$(lxc network get lxdbr0 ipv4.address | cut -d/ -f1)"
     if [ -z "$gw" ]; then
         echo "WARN: could not resolve the LXD bridge gateway; building against archive.ubuntu.com directly." >&2
         return 0
@@ -65,11 +63,11 @@ ensure_apt_cacher() {
     # The stock config ships an empty backends_ubuntu, which falls back to a
     # stale country-mirror list that 503s under parallel load; pin the real
     # archive and raise the upstream retry limit. Best-effort, non-fatal.
-    sudo sh -c 'printf "http://archive.ubuntu.com/ubuntu\n" > /usr/lib/apt-cacher-ng/backends_ubuntu' 2>/dev/null || true
-    if ! grep -q '^DlMaxRetries:' /etc/apt-cacher-ng/acng.conf 2>/dev/null; then
-        echo 'DlMaxRetries: 8' | sudo tee -a /etc/apt-cacher-ng/acng.conf >/dev/null 2>&1 || true
+    sudo sh -c 'printf "http://archive.ubuntu.com/ubuntu\n" > /usr/lib/apt-cacher-ng/backends_ubuntu'
+    if ! grep -q '^DlMaxRetries:' /etc/apt-cacher-ng/acng.conf; then
+        echo 'DlMaxRetries: 8' | sudo tee -a /etc/apt-cacher-ng/acng.conf
     fi
-    sudo systemctl reload apt-cacher-ng 2>/dev/null || true
+    sudo systemctl reload apt-cacher-ng
 
     APT_CACHER_URL="http://${gw}:3142"
 }
