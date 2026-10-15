@@ -80,10 +80,17 @@ jobs:
           submodules: recursive
       - name: Setup build prerequisites
         uses: ./.github/actions/resolute-build-setup
-      - name: Build sonic-broadcom image
+      - name: Build sonic-broadcom image (supervisord pass)
         run: |
           make init
           make configure PLATFORM=broadcom
+          make target/sonic-broadcom.bin
+      - name: Pack service containers as rocks
+        run: |
+          ./build_rocks.sh
+      - name: Rebuild sonic-broadcom image with rock containers
+        run: |
+          rm -f target/sonic-broadcom.bin
           make target/sonic-broadcom.bin
       - name: Upload sonic-broadcom image
         uses: actions/upload-artifact@v4

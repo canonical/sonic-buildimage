@@ -26,9 +26,9 @@ identical tree, so confirm with `git merge-base` before assuming a bad rebase.
   the retained trixie/bookworm paths disabled (`NOTRIXIE=1`, `NOBOOKWORM=1`).
 
 - Migration documentation lives only on the `202605_resolute_doc` branch
-  (`docs/superpowers/`) and is authoritative for design, plans, status, and
+  (`docs/superpowers/`) and is for design, plans, status, and
   compatibility decisions; do not duplicate or edit it without an explicit
-  documentation task.
+  documentation task. Some of them may be outdated.
 
 ## Build System
 

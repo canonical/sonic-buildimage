@@ -29,3 +29,11 @@ else
         cp $HWSKU_DIR/sai.profile /etc/sai.d/sai.profile
     fi
 fi
+
+if pgrep -x pebble > /dev/null 2>&1; then
+    LAYER_FILE="/usr/share/sonic/templates/syslog-layer.yaml"
+    pebble add syslog-layer --combine $LAYER_FILE
+
+    pebble start syncd
+    pebble start ledinit || true
+fi

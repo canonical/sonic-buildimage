@@ -1,0 +1,7 @@
+summary: containercfgd for rock containers, installed by `config syslog rate-limit-feature enable`
+services:
+  containercfgd:
+    override: replace
+    command: /usr/bin/containercfgd
+    startup: enabled
+    on-success: ignore

@@ -14,7 +14,7 @@ expected_kea_config = {
             {
                 "library": "/usr/local/lib/kea/hooks/libdhcp_run_script.so",
                 "parameters": {
-                    "name": "/etc/kea/lease_update.sh",
+                    "name": "/usr/share/kea/scripts/lease_update.sh",
                     "sync": False
                 }
             }

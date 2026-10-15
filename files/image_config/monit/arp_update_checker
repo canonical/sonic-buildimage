@@ -54,14 +54,27 @@ def is_arp_update_stuck(timeout=TIMEOUT):
     except subprocess.CalledProcessError:
         return False
 
+def swss_uses_pebble():
+    """Return True if the swss container runs pebble (no supervisord), False if supervisord.
+    """
+    try:
+        out = subprocess.check_output(["docker", "exec", "swss", "pgrep", "-x", "-c", "pebble"])
+        return int(out.strip()) > 0
+    except (subprocess.CalledProcessError, ValueError):
+        return False
+
 def restart_arp_update():
     """Restart the arp_update process."""
     try:
         log_info("patching arp_update...")
         sed_regex="s/ping6cmd=\"ping6/ping6cmd=\"timeout 0.2 ping6/"
         subprocess.check_call(["docker", "exec", "swss", "sed", "-i", "-s", sed_regex, "/usr/bin/arp_update"])
-        # restart arp_update to make sure changes are in effect
-        subprocess.check_call(["docker", "exec", "swss", "supervisorctl", "restart", "arp_update"])
+        # restart arp_update to make sure changes are in effect.
+        # Rock containers are managed by pebble; Upstream ones by supervisord.
+        if swss_uses_pebble():
+            subprocess.check_call(["docker", "exec", "swss", "pebble", "restart", "arp_update"])
+        else:
+            subprocess.check_call(["docker", "exec", "swss", "supervisorctl", "restart", "arp_update"])
         log_info("arp_update process restarted successfully.")
     except subprocess.CalledProcessError as e:
         log_error(f"Failed to restart arp_update process: {e}")

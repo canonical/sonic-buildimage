@@ -64,6 +64,22 @@ elif ! docker buildx version >/dev/null 2>&1; then
   fi
 fi
 
+# Rock build prerequisites (used by build_rocks.sh): rockcraft (snap, backed by
+# LXD) and a local apt-cacher-ng that caches the Ubuntu stage-packages pulled
+# per-container during `rockcraft pack`.
+if ! command -v apt-cacher-ng >/dev/null 2>&1; then
+  sudo apt-get install -y apt-cacher-ng
+fi
+if ! command -v lxc >/dev/null 2>&1; then
+  sudo snap install lxd
+fi
+if ! lxc info >/dev/null 2>&1; then
+  sudo lxd init --auto
+fi
+if ! command -v rockcraft >/dev/null 2>&1; then
+  sudo snap install rockcraft --classic
+fi
+
 # Toolchain for the build (make/git), helper scripts (jq) and the jinja2 CLI
 sudo apt-get install -y make git jq python3-pip
 pip3 install --user --quiet jinjanator || pip3 install --user --quiet --break-system-packages jinjanator

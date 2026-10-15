@@ -1,0 +1,6 @@
+summary: ndppd, added by `config vlan proxy_arp` when no VLAN existed at container start
+services:
+  ndppd:
+    override: replace
+    command: /usr/sbin/ndppd
+    on-success: ignore

@@ -70,6 +70,23 @@ def test_update_syslog_config(mock_run_cmd):
     mock_run_cmd.assert_called()
 
 
+@mock.patch('containercfgd.containercfgd.run_command')
+@mock.patch('containercfgd.containercfgd.SyslogHandler.parse_syslog_conf', mock.MagicMock(return_value=('100', '200')))
+def test_update_syslog_config_restarts_rsyslogd(mock_run_cmd):
+    mock_run_cmd.return_value = ""
+    data = {containercfgd.SYSLOG_RATE_LIMIT_INTERVAL: '200',
+            containercfgd.SYSLOG_RATE_LIMIT_BURST: '200'}
+
+    with mock.patch('containercfgd.containercfgd.shutil.which', return_value='/usr/local/bin/supervisorctl'):
+        containercfgd.SyslogHandler().update_syslog_config(data)
+    mock_run_cmd.assert_called_with(['supervisorctl', 'restart', 'rsyslogd'])
+
+    # Rock containers have no supervisorctl and run pebble
+    with mock.patch('containercfgd.containercfgd.shutil.which', return_value=None):
+        containercfgd.SyslogHandler().update_syslog_config(data)
+    mock_run_cmd.assert_called_with(['pebble', 'restart', 'rsyslogd'])
+
+
 def test_parse_syslog_conf():
     handler = containercfgd.SyslogHandler()
     handler.SYSLOG_CONF_PATH = os.path.join(test_path, 'mock_rsyslog.conf')

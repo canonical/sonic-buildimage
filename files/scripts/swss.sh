@@ -434,7 +434,8 @@ start() {
                 # Need to restart XCVRD on media_settings.json skus due to
                 # https://github.com/sonic-net/sonic-buildimage/issues/21902
                 debug "Restarting xcvrd service..."
-                /usr/bin/docker exec pmon supervisorctl restart xcvrd
+                # Rock containers run pebble instead of supervisord
+                /usr/bin/docker exec pmon bash -c "if command -v supervisorctl >/dev/null; then supervisorctl restart xcvrd; else pebble restart xcvrd; fi"
             fi
         fi
     fi
