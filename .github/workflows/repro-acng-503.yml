@@ -61,6 +61,12 @@ jobs:
           # backends_ubuntu (the fallback) does NOT help; overwrite the primary
           # list so acng only ever talks to the real archive.
           sudo sh -c 'printf "http://archive.ubuntu.com/ubuntu/\n" > /usr/lib/apt-cacher-ng/ubuntu_mirrors'
+          # acng's built-in VfilePattern does not recognise resolute's
+          # cnf/Commands-* (command-not-found) index files, so it answers them
+          # with 403 Forbidden file type or location. Add them explicitly.
+          grep -q '^VfilePatternEx:' /etc/apt-cacher-ng/acng.conf \
+            || echo 'VfilePatternEx: (^|.*/)(Commands-.*|Components-.*)(\.gz|\.bz2|\.xz|\.zst)?$' \
+                 | sudo tee -a /etc/apt-cacher-ng/acng.conf
           grep -q '^DlMaxRetries:' /etc/apt-cacher-ng/acng.conf || echo 'DlMaxRetries: 8' | sudo tee -a /etc/apt-cacher-ng/acng.conf
           sudo systemctl restart apt-cacher-ng
           echo "LXD_GW=${gw}" >> "$GITHUB_ENV"
@@ -73,7 +79,7 @@ jobs:
           echo "== /usr/lib/apt-cacher-ng/ubuntu_mirrors (primary) =="
           sudo cat /usr/lib/apt-cacher-ng/ubuntu_mirrors || true
           echo "== acng.conf active lines =="
-          sudo grep -E '^(Remap|Proxy|DlMaxRetries|PassThroughPattern|ExThreshold|Port|BindAddress)' /etc/apt-cacher-ng/acng.conf || true
+          sudo grep -E '^(Remap|Proxy|DlMaxRetries|VfilePatternEx|PassThroughPattern|ExThreshold|Port|BindAddress)' /etc/apt-cacher-ng/acng.conf || true
           echo "== gai.conf IPv4/IPv6 precedence =="
           grep '^precedence' /etc/gai.conf || true
 
