@@ -1,0 +1,120 @@
+name: repro-acng-503
+
+# Minimal repro for the 503 failures seen while `rockcraft pack` runs
+# `apt-get dist-upgrade` inside its LXD build instance with http_proxy pointed
+# at the host apt-cacher-ng. Skips the multi-hour SONiC build entirely.
+#
+# Path being reproduced (mirrors build_rocks.sh + install-prerequisites.sh):
+#   1. apt-cacher-ng installed noninteractively, LXD initialized
+#   2. ensure_apt_cacher: pin backends_ubuntu to archive.ubuntu.com, set
+#      DlMaxRetries: 8, systemctl restart apt-cacher-ng
+#   3. LXD container launched from ubuntu:26.04, apt-get dist-upgrade run with
+#      http_proxy=http://<lxdbr0 gw>:3142
+#
+# On failure, diagnostics (IPv4/IPv6 reachability, acng upstream connections,
+# acng logs) are dumped into the job log and a tmate session is left open.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ci-repro/*]
+
+concurrency:
+  group: repro-acng-503-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  repro:
+    runs-on: [self-hosted, resolute, amd64, large]
+    timeout-minutes: 45
+    steps:
+      - name: Install apt-cacher-ng and LXD
+        run: |
+          set -eux
+          export DEBIAN_FRONTEND=noninteractive
+          if ! command -v apt-cacher-ng >/dev/null 2>&1; then
+            # postinst opens an interactive curses dialog otherwise; pre-seed
+            # debconf so the install cannot hang on a noninteractive runner.
+            sudo sh -c 'echo "apt-cacher-ng apt-cacher-ng/tunnelenable boolean false" | debconf-set-selections'
+            sudo apt-get install -y apt-cacher-ng
+          fi
+          if ! command -v lxc >/dev/null 2>&1; then
+            sudo snap install lxd
+          fi
+          # Runners are ephemeral, so LXD is always pre-init here.
+          sudo lxd init --auto
+
+      - name: Configure apt-cacher-ng (mirrors build_rocks.sh ensure_apt_cacher)
+        run: |
+          set -eux
+          if ! curl -s -o /dev/null --max-time 3 "http://127.0.0.1:3142/"; then
+            sudo systemctl start apt-cacher-ng
+          fi
+          curl -s -o /dev/null --max-time 3 "http://127.0.0.1:3142/"
+          gw="$(lxc network get lxdbr0 ipv4.address | cut -d/ -f1)"
+          test -n "$gw"
+          sudo sh -c 'printf "http://archive.ubuntu.com/ubuntu\n" > /usr/lib/apt-cacher-ng/backends_ubuntu'
+          grep -q '^DlMaxRetries:' /etc/apt-cacher-ng/acng.conf || echo 'DlMaxRetries: 8' | sudo tee -a /etc/apt-cacher-ng/acng.conf
+          sudo systemctl restart apt-cacher-ng
+          echo "LXD_GW=${gw}" >> "$GITHUB_ENV"
+
+      - name: Dump effective acng configuration
+        run: |
+          set -x
+          echo "== /etc/apt-cacher-ng/backends_ubuntu =="
+          sudo cat /etc/apt-cacher-ng/backends_ubuntu || true
+          echo "== /usr/lib/apt-cacher-ng/backends_ubuntu =="
+          sudo cat /usr/lib/apt-cacher-ng/backends_ubuntu || true
+          echo "== acng.conf active lines =="
+          sudo grep -E '^(Remap|Proxy|DlMaxRetries|PassThroughPattern|ExThreshold|Port|BindAddress)' /etc/apt-cacher-ng/acng.conf || true
+          echo "== gai.conf IPv4/IPv6 precedence =="
+          grep '^precedence' /etc/gai.conf || true
+
+      - name: Baseline connectivity (IPv4/IPv6 direct and via acng)
+        run: |
+          set -x
+          echo "== IPv4 direct =="
+          curl -4 -s -o /dev/null -w 'archive.ubuntu.com IPv4: %{http_code}\n' http://archive.ubuntu.com/ubuntu/dists/resolute/InRelease || true
+          curl -4 -s -o /dev/null -w 'security.ubuntu.com IPv4: %{http_code}\n' http://security.ubuntu.com/ubuntu/dists/resolute-security/InRelease || true
+          echo "== IPv6 direct =="
+          curl -6 -s -o /dev/null -w 'archive.ubuntu.com IPv6: %{http_code}\n' http://archive.ubuntu.com/ubuntu/dists/resolute/InRelease || true
+          echo "== via acng =="
+          curl -s -x http://127.0.0.1:3142 -o /dev/null -w 'archive via acng: %{http_code}\n' http://archive.ubuntu.com/ubuntu/dists/resolute/InRelease || true
+          curl -s -x http://127.0.0.1:3142 -o /dev/null -w 'security via acng: %{http_code}\n' http://security.ubuntu.com/ubuntu/dists/resolute-security/InRelease || true
+
+      - name: dist-upgrade in LXD container through acng
+        run: |
+          set -eux
+          lxc launch ubuntu:26.04 repro-c1
+          for i in $(seq 1 30); do
+            if lxc exec repro-c1 -- getent hosts archive.ubuntu.com >/dev/null 2>&1; then
+              break
+            fi
+            sleep 5
+          done
+          echo "== container routes =="
+          lxc exec repro-c1 -- ip route
+          echo "== apt-get update through acng =="
+          lxc exec repro-c1 -- env http_proxy="http://${LXD_GW}:3142" apt-get update
+          echo "== apt-get dist-upgrade through acng =="
+          lxc exec repro-c1 -- env http_proxy="http://${LXD_GW}:3142" DEBIAN_FRONTEND=noninteractive apt-get -y dist-upgrade
+
+      - name: Collect diagnostics on failure
+        if: failure()
+        run: |
+          set -x
+          echo "== acng upstream connections =="
+          ss -tnp | grep 3142 || true
+          echo "== acng log tail =="
+          sudo tail -150 /var/log/apt-cacher-ng/apt-cacher.log || true
+          echo "== acng err =="
+          sudo cat /var/log/apt-cacher-ng/apt-cacher.err 2>/dev/null || true
+          echo "== container list =="
+          lxc list || true
+
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: canonical/action-tmate@main
+        with:
+          limit-access-to-actor: true
+        timeout-minutes: 600
