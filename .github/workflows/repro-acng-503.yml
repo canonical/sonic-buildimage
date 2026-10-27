@@ -6,8 +6,9 @@ name: repro-acng-503
 #
 # Path being reproduced (mirrors build_rocks.sh + install-prerequisites.sh):
 #   1. apt-cacher-ng installed noninteractively, LXD initialized
-#   2. ensure_apt_cacher: pin backends_ubuntu to archive.ubuntu.com, set
-#      DlMaxRetries: 8, systemctl restart apt-cacher-ng
+#   2. ensure_apt_cacher: pin ubuntu_mirrors (the primary backend list acng
+#      round-robins through) to archive.ubuntu.com, set DlMaxRetries: 8,
+#      systemctl restart apt-cacher-ng
 #   3. LXD container launched from ubuntu:26.04, apt-get dist-upgrade run with
 #      http_proxy=http://<lxdbr0 gw>:3142
 #
@@ -53,7 +54,13 @@ jobs:
           curl -s -o /dev/null --max-time 3 "http://127.0.0.1:3142/"
           gw="$(lxc network get lxdbr0 ipv4.address | cut -d/ -f1)"
           test -n "$gw"
-          sudo sh -c 'printf "http://archive.ubuntu.com/ubuntu\n" > /usr/lib/apt-cacher-ng/backends_ubuntu'
+          # `Remap-uburep: file:ubuntu_mirrors /ubuntu ; file:backends_ubuntu` --
+          # ubuntu_mirrors is the primary backend list acng round-robins through;
+          # the stock file is a long list of geo mirrors that are unreachable or
+          # stale for resolute, which yields 503/403 under parallel load. Pinning
+          # backends_ubuntu (the fallback) does NOT help; overwrite the primary
+          # list so acng only ever talks to the real archive.
+          sudo sh -c 'printf "http://archive.ubuntu.com/ubuntu/\n" > /usr/lib/apt-cacher-ng/ubuntu_mirrors'
           grep -q '^DlMaxRetries:' /etc/apt-cacher-ng/acng.conf || echo 'DlMaxRetries: 8' | sudo tee -a /etc/apt-cacher-ng/acng.conf
           sudo systemctl restart apt-cacher-ng
           echo "LXD_GW=${gw}" >> "$GITHUB_ENV"
@@ -61,10 +68,10 @@ jobs:
       - name: Dump effective acng configuration
         run: |
           set -x
-          echo "== /etc/apt-cacher-ng/backends_ubuntu =="
-          sudo cat /etc/apt-cacher-ng/backends_ubuntu || true
           echo "== /usr/lib/apt-cacher-ng/backends_ubuntu =="
           sudo cat /usr/lib/apt-cacher-ng/backends_ubuntu || true
+          echo "== /usr/lib/apt-cacher-ng/ubuntu_mirrors (primary) =="
+          sudo cat /usr/lib/apt-cacher-ng/ubuntu_mirrors || true
           echo "== acng.conf active lines =="
           sudo grep -E '^(Remap|Proxy|DlMaxRetries|PassThroughPattern|ExThreshold|Port|BindAddress)' /etc/apt-cacher-ng/acng.conf || true
           echo "== gai.conf IPv4/IPv6 precedence =="
