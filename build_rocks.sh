@@ -67,7 +67,9 @@ ensure_apt_cacher() {
     if ! grep -q '^DlMaxRetries:' /etc/apt-cacher-ng/acng.conf; then
         echo 'DlMaxRetries: 8' | sudo tee -a /etc/apt-cacher-ng/acng.conf
     fi
-    sudo systemctl reload apt-cacher-ng
+    # apt-cacher-ng's unit defines no ExecReload, so `systemctl reload` fails with
+    # "Job type reload is not applicable"; restart to pick up the config change.
+    sudo systemctl restart apt-cacher-ng
 
     APT_CACHER_URL="http://${gw}:3142"
 }
