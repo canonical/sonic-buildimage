@@ -80,8 +80,9 @@ if ! command -v rockcraft >/dev/null 2>&1; then
   sudo snap install rockcraft --classic
 fi
 
-# Toolchain for the build (make/git), helper scripts (jq) and the jinja2 CLI
-sudo apt-get install -y make git jq python3-pip
+# Toolchain for the build (make/git), helper scripts (jq), the jinja2 CLI, and
+# pigz (build_rocks.sh runs `docker save ... | pigz -c` on the host).
+sudo apt-get install -y make git jq python3-pip pigz
 pip3 install --user --quiet jinjanator || pip3 install --user --quiet --break-system-packages jinjanator
 echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
