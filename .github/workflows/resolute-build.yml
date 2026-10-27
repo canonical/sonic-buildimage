@@ -13,7 +13,8 @@ on:
         type: string
         default: 202605_resolute
   push:
-    branches: [ci-workflow/*]
+    branches: [ci-workflow/*, 202605_resolute]
+    tags: ["v*"]
 
 concurrency:
   group: resolute-build-${{ github.ref }}
@@ -71,6 +72,8 @@ jobs:
   build-broadcom:
     runs-on: [self-hosted, resolute, amd64, large]
     timeout-minutes: 1440 # 24 hours
+    permissions:
+      contents: write # Required for softprops/action-gh-release to create/update releases
     steps:
       - name: Checkout merge/pr ref
         uses: actions/checkout@v4
@@ -99,6 +102,13 @@ jobs:
           path: target/sonic-broadcom.bin
           retention-days: 7
           if-no-files-found: error
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.0
+        with:
+          files: target/sonic-broadcom.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Collect logs on failure
         if: failure()
         run: |

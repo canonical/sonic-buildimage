@@ -68,14 +68,21 @@ fi
 # LXD) and a local apt-cacher-ng that caches the Ubuntu stage-packages pulled
 # per-container during `rockcraft pack`.
 if ! command -v apt-cacher-ng >/dev/null 2>&1; then
+  # apt-cacher-ng's postinst launches an interactive curses dialog; a plain
+  # `apt-get install -y` does not suppress debconf prompts, so it blocks forever
+  # on the non-interactive runner. Pre-seed the answers and force the
+  # noninteractive frontend instead.
+  export DEBIAN_FRONTEND=noninteractive
+  sudo sh -c 'echo "apt-cacher-ng apt-cacher-ng/tunnelenable boolean false" | debconf-set-selections'
   sudo apt-get install -y apt-cacher-ng
 fi
 if ! command -v lxc >/dev/null 2>&1; then
   sudo snap install lxd
 fi
-if ! lxc info >/dev/null 2>&1; then
-  sudo lxd init --auto
-fi
+# Runners are ephemeral, so LXD is always caught pre-init here: walk the default
+# profile, disk device, storage pool, and lxdbr0 bridge in one pass so that
+# rockcraft pack has a usable backend.
+sudo lxd init --auto
 if ! command -v rockcraft >/dev/null 2>&1; then
   sudo snap install rockcraft --classic
 fi
