@@ -64,6 +64,22 @@ elif ! docker buildx version >/dev/null 2>&1; then
   fi
 fi
 
+# Rock build prerequisites (used by build_rocks.sh): rockcraft (snap, backed by
+# LXD). apt-cacher-ng is intentionally not installed here: its geo-mirror
+# round-robin and incomplete index-file handling caused 503/403 failures that
+# only show up on cold caches (i.e. every ephemeral runner). build_rocks.sh
+# falls back to direct archive.ubuntu.com downloads when no acng is present.
+if ! command -v lxc >/dev/null 2>&1; then
+  sudo snap install lxd
+fi
+# Runners are ephemeral, so LXD is always caught pre-init here: walk the default
+# profile, disk device, storage pool, and lxdbr0 bridge in one pass so that
+# rockcraft pack has a usable backend.
+sudo lxd init --auto
+if ! command -v rockcraft >/dev/null 2>&1; then
+  sudo snap install rockcraft --classic
+fi
+
 # Toolchain for the build (make/git), helper scripts (jq) and the jinja2 CLI
 sudo apt-get install -y make git jq python3-pip
 pip3 install --user --quiet jinjanator || pip3 install --user --quiet --break-system-packages jinjanator

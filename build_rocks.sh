@@ -17,11 +17,9 @@ rocklist=(
     "dockers/docker-nat"
     "dockers/docker-fpm-frr"
     "dockers/docker-orchagent"
-
-    # "dockers/docker-dhcp-server"
     "dockers/docker-dhcp-relay"
-
     "dockers/docker-sysmgr"
+    # "dockers/docker-dhcp-server"
     # "dockers/docker-stp"
 )
 
@@ -32,6 +30,51 @@ fi
 
 set -x
 set -e
+
+APT_CACHER_URL=""
+
+# Point the rock pack steps at a local apt-cacher-ng proxy, so every container
+# avoids re-download the same Ubuntu stage-packages. 
+# This is an accelerator, not a hard prerequisite: if it cannot be set up, 
+# warn and fall back to downloading straight from archive.ubuntu.com. 
+ensure_apt_cacher() {
+    if ! command -v apt-cacher-ng >/dev/null 2>&1; then
+        echo "WARN: apt-cacher-ng not installed; building against archive.ubuntu.com directly." >&2
+        echo "      Speed it up with: sudo apt-get install -y apt-cacher-ng" >&2
+        return 0
+    fi
+
+    # Try to start apt-cacher-ng service. If can't, fallback
+    if ! curl -s -o /dev/null --max-time 3 "http://127.0.0.1:3142/"; then
+        sudo systemctl start apt-cacher-ng
+    fi
+    if ! curl -s -o /dev/null --max-time 3 "http://127.0.0.1:3142/"; then
+        echo "WARN: could not start apt-cacher-ng; building against archive.ubuntu.com directly." >&2
+        return 0
+    fi
+
+    local gw
+    gw="$(lxc network get lxdbr0 ipv4.address | cut -d/ -f1)"
+    if [ -z "$gw" ]; then
+        echo "WARN: could not resolve the LXD bridge gateway; building against archive.ubuntu.com directly." >&2
+        return 0
+    fi
+
+    # The stock config ships an empty backends_ubuntu, which falls back to a
+    # stale country-mirror list that 503s under parallel load; pin the real
+    # archive and raise the upstream retry limit. Best-effort, non-fatal.
+    sudo sh -c 'printf "http://archive.ubuntu.com/ubuntu\n" > /usr/lib/apt-cacher-ng/backends_ubuntu'
+    if ! grep -q '^DlMaxRetries:' /etc/apt-cacher-ng/acng.conf; then
+        echo 'DlMaxRetries: 8' | sudo tee -a /etc/apt-cacher-ng/acng.conf
+    fi
+    # apt-cacher-ng's unit defines no ExecReload, so `systemctl reload` fails with
+    # "Job type reload is not applicable"; restart to pick up the config change.
+    sudo systemctl restart apt-cacher-ng
+
+    APT_CACHER_URL="http://${gw}:3142"
+}
+
+ensure_apt_cacher
 
 # Print the SONiC labels (manifest, component versions, Tag) of a saved image as NUL-separated --label args
 sonic_labels()
@@ -66,7 +109,11 @@ do
     pushd $rockitem
 
     rockcraft clean
-    rockcraft pack
+    if [ -n "$APT_CACHER_URL" ]; then
+        http_proxy="$APT_CACHER_URL" rockcraft pack
+    else
+        rockcraft pack
+    fi
     sudo rockcraft.skopeo --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:rock
     echo "FROM $rockname:rock" | docker build "${labels[@]}" -t $rockname:latest -
     docker rmi $rockname:rock
