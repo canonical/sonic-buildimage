@@ -115,6 +115,7 @@ do
         rockcraft pack
     fi
     sudo rockcraft.skopeo --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:rock
+    rockcraft clean
     echo "FROM $rockname:rock" | docker build "${labels[@]}" -t $rockname:latest -
     docker rmi $rockname:rock
     rm -r ./debs/ ./files/ ./python-wheels/ envs ${rockfullname}
