@@ -112,9 +112,7 @@ jobs:
         run: |
           # Intermediates from the previous build. Later rebuild step regenerates all of them
           sudo rm -rf --one-file-system fsroot-broadcom fs.zip fs.squashfs dockerfs.tar.gz target/sonic-broadcom.bin
-          # Dangling images, exited build containers and build cache; keeps the
-          # tagged images and slave image the rebuild still needs.
-          make clean-docker
+          sudo rm -rf --one-file-system fsroot.docker.resolute
 
       - name: Pack service containers as rocks
         run: |
