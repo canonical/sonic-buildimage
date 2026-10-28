@@ -90,6 +90,10 @@ for rockitem in "${rocklist[@]}"
 do
     rockname=$(basename $rockitem)
     rockfullname="${rockname}_1.0.0_amd64.rock"
+    if [ ! -f target/${rockname}.gz ]; then
+        # Container target/${rockname}.gz disabled in this build config(e.g. INCLUDE_ICCPD=n), skipping
+        continue
+    fi
     # Carry over the labels slave.mk put on the Dockerfile image this rock replaces; sonic-package-manager reads them
     mapfile -d '' labels < <(sonic_labels target/${rockname}.gz)
     if [[ ! " ${labels[*]} " == *" com.azure.sonic.manifest="* ]]; then
@@ -99,7 +103,9 @@ do
 
     mkdir -p $rockitem/debs $rockitem/files $rockitem/python-wheels
 
-    cp target/debs/resolute/*.deb            $rockitem/debs/
+    # No rockcraft.yaml dpkg -x'es a debug package; skip *-dbgsym/*-dbg debs to save disk
+    find target/debs/resolute -maxdepth 1 -name '*.deb' ! -name '*-dbgsym_*' ! -name '*-dbg_*' \
+        -exec cp -t $rockitem/debs/ {} +
     # Note: ONIE recovery *.iso and *.log are host/install artifacts — keep them out
     rsync -a --exclude='*.iso' --exclude='*.log' target/files/resolute/ $rockitem/files/
     cp target/python-wheels/resolute/*.whl   $rockitem/python-wheels/
