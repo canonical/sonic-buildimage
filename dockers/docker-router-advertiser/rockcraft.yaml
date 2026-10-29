@@ -21,16 +21,6 @@ services:
     startup: enabled
     on-success: ignore
     on-failure: ignore
-  wait_for_link:
-    command: /usr/bin/wait_for_link.sh
-    override: replace
-    on-success: ignore
-    on-failure: ignore
-  radvd:
-    command: /usr/sbin/radvd -n
-    override: replace
-    on-success: ignore
-    on-failure: shutdown
 
 parts:
   setup-router-advertiser:
@@ -54,6 +44,7 @@ parts:
       start.sh: usr/bin/start.sh
       radvd.conf.j2: usr/share/sonic/templates/radvd.conf.j2
       wait_for_link.sh.j2: usr/share/sonic/templates/wait_for_link.sh.j2
+      radvd-layer.yaml: usr/share/sonic/templates/radvd-layer.yaml
       files/syslog-layer.yaml: usr/share/sonic/templates/syslog-layer.yaml
       files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
       files/readiness_probe.sh: usr/bin/readiness_probe.sh

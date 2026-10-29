@@ -1,0 +1,13 @@
+# Added by start.sh only when radvd should run, so the pebble plan holds the
+# same programs as docker-router-advertiser.supervisord.conf.j2 renders.
+services:
+  wait_for_link:
+    command: /usr/bin/wait_for_link.sh
+    override: replace
+    on-success: ignore
+    on-failure: ignore
+  radvd:
+    command: /usr/sbin/radvd -n
+    override: replace
+    on-success: ignore
+    on-failure: shutdown

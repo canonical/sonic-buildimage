@@ -44,6 +44,8 @@ if pgrep -x pebble > /dev/null 2>&1; then
     fi
 
     if [ "${START_RADVD}" = "true" ]; then
+        # radvd is in the plan only when it runs, as in the supervisord.conf.j2 path
+        pebble add radvd-layer --combine /usr/share/sonic/templates/radvd-layer.yaml
         # pebble start returns when the service is active, not when it exits.
         # radvd.conf sets IgnoreIfMissing on, so radvd safely waits for interfaces.
         pebble start wait_for_link
