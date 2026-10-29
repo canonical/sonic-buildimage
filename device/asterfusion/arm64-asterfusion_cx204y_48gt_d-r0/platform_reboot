@@ -1,0 +1,16 @@
+#!/bin/sh
+
+mr_reboot() {
+    sudo /sbin/reboot &
+    sleep 120
+    echo "Shutdown is timed out, force reboot!"
+    sudo echo b > /proc/sysrq-trigger
+}
+
+if [ $# -eq 0 ] || [ $@ = "-f" ] || [ $@ = "--force" ] || [ $@ = "reboot" ]; then
+    mr_reboot
+elif [ $@ = "-p" ] ; then
+    sudo halt
+else
+    echo "unsupported option"
+fi

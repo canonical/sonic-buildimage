@@ -1,0 +1,14 @@
+[Unit]
+Description=Asterfusion x204y-48gt Platform initialization service
+Before=network.target
+Before=config-setup.service
+DefaultDependencies=no
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/asterProcess/main.py install
+ExecStop=/usr/local/bin/asterfusion_x204y_48gt_util.py uninstall
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
