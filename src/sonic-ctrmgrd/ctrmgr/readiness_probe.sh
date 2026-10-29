@@ -20,9 +20,15 @@ if command -v supervisorctl >/dev/null; then
         exit 2
     fi
 else
-    # Rock containers run pebble: the one-shot start service is inactive (or error) once it has exited
-    service_state=$(pebble services --format json $pre_check_service_name | jq -r --arg n "$pre_check_service_name" '.services[$n].current // empty')
-    if [[ -n $service_state ]] && [[ $service_state != 'inactive' ]] && [[ $service_state != 'error' ]]; then
+    # Rock containers run pebble: the one-shot start service is inactive once it has exited with code 0,
+    # and error once it has exited with a non-zero code; an unknown service yields no state.
+    # Unlike supervisord, pebble keeps the exit result, so a failed start service is not ready.
+    # A failed pebble query is not ready either, as an unreachable supervisord is.
+    if ! service_json=$(pebble services --format json $pre_check_service_name); then
+        exit 2
+    fi
+    service_state=$(jq -r --arg n "$pre_check_service_name" '.services[$n].current // empty' <<< "$service_json")
+    if [[ -n $service_state ]] && [[ $service_state != 'inactive' ]]; then
         exit 2
     fi
 fi
