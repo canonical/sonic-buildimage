@@ -1,7 +1,7 @@
 # docker image for mrvl syncd
 
 DOCKER_SYNCD_PLATFORM_CODE = mrvl-prestera
-include $(PLATFORM_PATH)/../template/docker-syncd-trixie.mk
+include $(PLATFORM_PATH)/../template/docker-syncd-resolute.mk
 
 $(DOCKER_SYNCD_BASE)_DEPENDS += $(SYNCD)
 $(DOCKER_SYNCD_BASE)_DEPENDS += $(MRVL_SAI)
