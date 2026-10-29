@@ -4,13 +4,17 @@ include $(PLATFORM_PATH)/docker-syncd-mrvl-prestera-rpc.mk
 include $(PLATFORM_PATH)/docker-saiserver-mrvl-prestera.mk
 include $(PLATFORM_PATH)/libsaithrift-dev.mk
 include $(PLATFORM_PATH)/one-image.mk
+ifeq ($(CONFIGURED_ARCH),arm64)
+# Resolute arm64 supports only the Asterfusion CX204Y, which boots through GRUB
+override TARGET_BOOTLOADER = grub
+include $(PLATFORM_PATH)/mrvl-prestera.mk
+include $(PLATFORM_PATH)/platform-asterfusion.mk
+else
 include $(PLATFORM_PATH)/platform-marvell.mk
-ifeq ($(CONFIGURED_ARCH),$(filter $(CONFIGURED_ARCH),arm64 armhf))
+ifeq ($(CONFIGURED_ARCH),armhf)
 include $(PLATFORM_PATH)/mrvl-prestera.mk
 include $(PLATFORM_PATH)/platform-nokia.mk
 endif
-ifeq ($(CONFIGURED_ARCH),arm64)
-include $(PLATFORM_PATH)/platform-asterfusion.mk
 endif
 
 SONIC_ALL += $(SONIC_ONE_IMAGE) \

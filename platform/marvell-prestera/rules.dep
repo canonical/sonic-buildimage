@@ -3,12 +3,14 @@ include $(PLATFORM_PATH)/docker-syncd-mrvl-prestera-rpc.dep
 include $(PLATFORM_PATH)/docker-syncd-mrvl-prestera.dep
 include $(PLATFORM_PATH)/libsaithrift-dev.dep
 include $(PLATFORM_PATH)/one-image.dep
+ifeq ($(CONFIGURED_ARCH),arm64)
+include $(PLATFORM_PATH)/mrvl-prestera.dep
+include $(PLATFORM_PATH)/platform-asterfusion.dep
+else
 include $(PLATFORM_PATH)/platform-marvell.dep
-ifeq ($(CONFIGURED_ARCH),$(filter $(CONFIGURED_ARCH),arm64 armhf))
+ifeq ($(CONFIGURED_ARCH),armhf)
 include $(PLATFORM_PATH)/mrvl-prestera.dep
 include $(PLATFORM_PATH)/platform-nokia.dep
 endif
-ifeq ($(CONFIGURED_ARCH),arm64)
-include $(PLATFORM_PATH)/platform-asterfusion.dep
 endif
 include $(PLATFORM_PATH)/sai.dep
