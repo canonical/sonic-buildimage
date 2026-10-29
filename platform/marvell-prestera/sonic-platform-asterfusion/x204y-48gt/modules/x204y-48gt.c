@@ -503,7 +503,7 @@ static ssize_t hw_reset_set(struct device *dev, struct device_attribute *da, con
 
 
 
-static int Asterfusion_i2c_probe(struct i2c_client *client, const struct i2c_device_id *dev_id)
+static int Asterfusion_i2c_probe(struct i2c_client *client)
 {
     struct Asterfusion_i2c_data *data;
     int status;
@@ -582,7 +582,7 @@ exit:
     return status;
 }
 
-static int Asterfusion_i2c_remove(struct i2c_client *client)
+static void Asterfusion_i2c_remove(struct i2c_client *client)
 {
     struct Asterfusion_i2c_data *data = i2c_get_clientdata(client);
     hwmon_device_unregister(data->hwmon_dev);
@@ -594,7 +594,6 @@ static int Asterfusion_i2c_remove(struct i2c_client *client)
     sysfs_remove_group(&client->dev.kobj, &X204Y_48GT_FAN_group);
 
     kfree(data);
-    return 0;
 }
 
 static const struct i2c_device_id Asterfusion_i2c_id[] =
