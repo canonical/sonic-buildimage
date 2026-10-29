@@ -54,6 +54,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       gnmi-native.sh: usr/bin/gnmi-native.sh
       dialout.sh: usr/bin/dialout.sh
@@ -98,7 +99,6 @@ parts:
       - -buildinfo
       - -Dockerfile*
       - -supervisord.conf
-      - -critical_processes
 
     override-prime: |
       craftctl default

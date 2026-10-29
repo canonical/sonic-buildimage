@@ -132,6 +132,10 @@ if [[ "$USE_PEBBLE" != "true" ]]; then
     sonic-cfggen -j "$db_cfg_file_tmp" -a "$additional_data_json" \
     -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
     -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
+else
+    mkdir -p /etc/supervisor/
+    sonic-cfggen -j "$db_cfg_file_tmp" \
+    -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
 fi
 
 if [[ "$start_chassis_db" != "1" ]] && [[ -z "$chassis_db_address" ]]; then

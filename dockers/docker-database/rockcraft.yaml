@@ -77,6 +77,7 @@ parts:
       database_config.json.j2: usr/share/sonic/templates/database_config.json.j2
       database_global.json.j2: usr/share/sonic/templates/database_global.json.j2
       multi_database_config.json.j2: usr/share/sonic/templates/multi_database_config.json.j2
+      critical_processes.j2: usr/share/sonic/templates/critical_processes.j2
       files/syslog-layer.yaml: usr/share/sonic/templates/
       docker-database-init.sh: usr/local/bin/docker-database-init.sh
       files/container_startup.py: usr/share/sonic/scripts/container_startup.py

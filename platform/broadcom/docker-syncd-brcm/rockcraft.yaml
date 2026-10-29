@@ -62,6 +62,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       start_led.sh: usr/bin/start_led.sh
       bcmsh: usr/bin/bcmsh
@@ -113,7 +114,6 @@ parts:
       - -buildinfo
       - -Dockerfile*
       - -supervisord.conf
-      - -critical_processes
 
     override-prime: |
       craftctl default

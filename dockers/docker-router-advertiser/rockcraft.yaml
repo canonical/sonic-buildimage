@@ -41,6 +41,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       radvd.conf.j2: usr/share/sonic/templates/radvd.conf.j2
       wait_for_link.sh.j2: usr/share/sonic/templates/wait_for_link.sh.j2

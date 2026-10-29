@@ -51,6 +51,7 @@ parts:
     organize:
       start.sh: usr/bin/start.sh
       pebble-layer.j2: usr/share/sonic/templates/pebble-layer.j2
+      critical_processes.j2: usr/share/sonic/templates/critical_processes.j2
       orchagent.sh: usr/bin/orchagent.sh
       swssconfig.sh: usr/bin/swssconfig.sh
       buffermgrd.sh: usr/bin/buffermgrd.sh
@@ -127,7 +128,6 @@ parts:
       # Docker/supervisord-path only
       - -docker-init.j2
       - -supervisord.conf.j2
-      - -critical_processes.j2
       - -watchdog_processes.j2
       - -vlan_vars.j2
       - -arp_update.conf

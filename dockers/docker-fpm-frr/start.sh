@@ -6,6 +6,7 @@
 # render with a dynamic pebble layer, and starts daemons via pebble.
 
 mkdir -p /etc/frr
+mkdir -p /etc/supervisor
 
 # /var/log/frr ships inside the frr .deb (debian/frr.dirs) owned root:root;
 # the Docker path's frr.postinst chowns it via a find-loop that dpkg -x
@@ -18,6 +19,7 @@ chown frr:frr /var/log/frr
 
 FRR_VARS=$(sonic-cfggen -d \
     -y /etc/sonic/constants.yml \
+    -t /usr/share/sonic/templates/supervisord/critical_processes.j2,/etc/supervisor/critical_processes \
     -t /usr/share/sonic/templates/isolate.j2,/usr/sbin/bgp-isolate \
     -t /usr/share/sonic/templates/unisolate.j2,/usr/sbin/bgp-unisolate \
     -t /usr/share/sonic/templates/frr_vars.j2)

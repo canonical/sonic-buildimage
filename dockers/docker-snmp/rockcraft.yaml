@@ -63,6 +63,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       snmp_yml_to_configdb.py: usr/bin/snmp_yml_to_configdb.py
       snmpd.conf.j2: usr/share/sonic/templates/snmpd.conf.j2

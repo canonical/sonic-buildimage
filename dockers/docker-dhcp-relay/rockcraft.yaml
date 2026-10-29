@@ -53,6 +53,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       pebble-layer.j2: usr/share/sonic/templates/pebble-layer.j2
       docker-dhcp-relay.supervisord.conf.j2: usr/share/sonic/templates/docker-dhcp-relay.supervisord.conf.j2
@@ -112,7 +113,6 @@ parts:
       - -Dockerfile*
       # Docker/supervisord-path only
       - -docker_init.sh
-      - -critical_processes
 
     override-prime: |
       craftctl default

@@ -57,6 +57,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       wait_for_dhcpservd.sh: usr/bin/wait_for_dhcpservd.sh
       kea-dhcp4.conf.j2: usr/share/sonic/templates/kea-dhcp4.conf.j2
@@ -109,7 +110,6 @@ parts:
       # Docker/supervisord-path only
       - -docker_init.sh
       - -supervisord.conf
-      - -critical_processes
 
     override-prime: |
       craftctl default

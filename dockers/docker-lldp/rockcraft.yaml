@@ -66,6 +66,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       lldpmgrd: usr/bin/lldpmgrd
       waitfor_lldp_ready.sh: usr/bin/waitfor_lldp_ready.sh

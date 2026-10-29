@@ -3,7 +3,6 @@ import json
 import os
 import pickle
 import re
-import yaml
 
 from swsscommon import swsscommon
 from sonic_py_common import multi_asic, device_info
@@ -16,8 +15,6 @@ logger = Logger(log_identifier=SYSLOG_IDENTIFIER)
 
 EVENTS_PUBLISHER_SOURCE = "sonic-events-host"
 EVENTS_PUBLISHER_TAG = "process-not-running"
-# Separates `pebble plan` from `pebble services` in the status of a rock container
-PEBBLE_SEPARATOR = "----pebble-services----"
 
 def check_docker_image(image_name):
     """
@@ -378,25 +375,13 @@ class ServiceChecker(HealthChecker):
             data[items[0].strip()] = items[1].strip()
         return data
 
-    def _parse_pebble_status(self, plan, services):
-        """Parse `pebble plan` and `pebble services --format json` of a rock container.
-
-        Rocks run pebble instead of supervisord. A critical process is a service whose failure shuts
-        pebble, hence the container, down (on-failure: shutdown), as a critical process does with
-        supervisor-proc-exit-listener. A service that was never started is left out, like a program
-        absent from supervisord.conf.
-
-        Returns:
-            (critical_process_list, {service name: status})
+    def _parse_pebble_status(self, services):
+        """Parse `pebble services --format json` of a rock container into {service name: status},
+        as _parse_supervisorctl_status does. pebble lists every service of its plan, as supervisorctl
+        lists every program of supervisord.conf; an active service maps to RUNNING.
         """
-        plan_services = (yaml.safe_load(plan) or {}).get('services') or {}
-        critical_process_list = [name for name, service in plan_services.items()
-                                 if str(service.get('on-failure', '')) == 'shutdown']
-        data = {}
-        for name, service in (json.loads(services).get('services') or {}).items():
-            if 'current-since' in service:
-                data[name] = 'RUNNING' if service.get('current') == 'active' else service.get('current', '').upper()
-        return critical_process_list, data
+        return {name: 'RUNNING' if service.get('current') == 'active' else str(service.get('current', '')).upper()
+                for name, service in (json.loads(services).get('services') or {}).items()}
 
     def publish_events(self, container_name, critical_process_list):
         params = swsscommon.FieldValueMap()
@@ -428,7 +413,7 @@ class ServiceChecker(HealthChecker):
                 # however, in supervisor.conf it is "/usr/bin/orchagent.sh"
                 # Rock containers run pebble instead of supervisord.
                 cmd = 'docker exec {} bash -c "if command -v supervisorctl >/dev/null; then supervisorctl status; ' \
-                      'else pebble plan; echo {}; pebble services --format json; fi"'.format(container_name, PEBBLE_SEPARATOR)
+                      'else pebble services --format json; fi"'.format(container_name)
                 process_status = utils.run_command(cmd, timeout=15)
                 if process_status is None:
                     for process_name in critical_process_list:
@@ -436,11 +421,10 @@ class ServiceChecker(HealthChecker):
                     self.publish_events(container_name, critical_process_list)
                     return
 
-                if PEBBLE_SEPARATOR in process_status:
-                    plan, _, services = process_status.partition(PEBBLE_SEPARATOR)
+                if process_status.lstrip().startswith('{'):
                     try:
-                        critical_process_list, process_status = self._parse_pebble_status(plan, services)
-                    except (ValueError, yaml.YAMLError, AttributeError) as e:
+                        process_status = self._parse_pebble_status(process_status)
+                    except (ValueError, AttributeError) as e:
                         logger.log_error('Failed to parse pebble status of {}: {}'.format(container_name, e))
                         return
                 else:

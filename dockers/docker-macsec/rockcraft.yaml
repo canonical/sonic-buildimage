@@ -55,6 +55,7 @@ parts:
       rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
 
     organize:
+      critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
       files/syslog-layer.yaml: usr/share/sonic/templates/syslog-layer.yaml
       files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
@@ -103,7 +104,6 @@ parts:
       - -cli-plugin-tests
       - -Dockerfile*
       - -supervisord.conf
-      - -critical_processes
 
     override-prime: |
       craftctl default
