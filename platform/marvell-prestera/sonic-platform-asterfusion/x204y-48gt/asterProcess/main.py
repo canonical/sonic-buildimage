@@ -113,10 +113,8 @@ def checkDriver():
             status, output = common.doBash("modprobe " + KERNEL_MODULE[i])
     return
 
+# The muxes and the system EEPROM come from the device tree
 i2c_topology_dict=[
-	{'bus': "i2c-0", 'driver' : "pca9548", 'address': "0x75"},
-	{'bus': "i2c-7", 'driver' : "24c64", 'address': "0x50"},
-	{'bus': "i2c-1", 'driver' : "pca9548", 'address': "0x76"},
 	{'bus': "i2c-1/1-0076/channel-0", 'driver' : "optoe2", 'address': "0x50"},
 	{'bus': "i2c-1/1-0076/channel-1", 'driver' : "optoe2", 'address': "0x50"},
 	{'bus': "i2c-1/1-0076/channel-2", 'driver' : "optoe2", 'address': "0x50"},
