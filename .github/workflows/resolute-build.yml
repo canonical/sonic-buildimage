@@ -102,6 +102,9 @@ jobs:
       - name: Setup build prerequisites
         uses: ./.github/actions/resolute-build-setup
 
+      - name: Install rock build prerequisites
+        uses: canonical/craft-actions/rockcraft/setup@d2add174925f9bca7b0a826010c8e1ce2a4bbc3d # v1.0.0
+
       - name: Build sonic-broadcom image (supervisord pass)
         run: |
           make init

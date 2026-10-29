@@ -10,7 +10,6 @@ set -eux
 # Every install in the docker branches below is wrapped in set +e/ set -e so a
 # repo failure can fall through to the next source instead of aborting.
 
-# dockerd needs the overlay module for its default overlay2 driver
 sudo modprobe overlay
 
 # Install docker-ce from the official docker.com apt repo (fresh daemon plus
@@ -64,29 +63,10 @@ elif ! docker buildx version >/dev/null 2>&1; then
   fi
 fi
 
-# Rock build prerequisites (used by build_rocks.sh): rockcraft (snap, backed by
-# LXD). apt-cacher-ng is intentionally not installed here: its geo-mirror
-# round-robin and incomplete index-file handling caused 503/403 failures that
-# only show up on cold caches (i.e. every ephemeral runner). build_rocks.sh
-# falls back to direct archive.ubuntu.com downloads when no acng is present.
-if ! command -v lxc >/dev/null 2>&1; then
-  sudo snap install lxd
-fi
-# Runners are ephemeral, so LXD is always caught pre-init here: walk the default
-# profile, disk device, storage pool, and lxdbr0 bridge in one pass so that
-# rockcraft pack has a usable backend.
-sudo lxd init --auto
-if ! command -v rockcraft >/dev/null 2>&1; then
-  sudo snap install rockcraft --classic
-fi
-
-# Toolchain for the build (make/git), helper scripts (jq), the jinja2 CLI, and
-# pigz (build_rocks.sh runs `docker save ... | pigz -c` on the host).
 sudo apt-get install -y make git jq python3-pip pigz
 pip3 install --user --quiet jinjanator || pip3 install --user --quiet --break-system-packages jinjanator
 echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-# Give the CI user access to dockerd
 sudo gpasswd -a "$(id -un)" docker || true
 sudo systemctl restart docker
 sudo chmod a+rw /var/run/docker.sock
