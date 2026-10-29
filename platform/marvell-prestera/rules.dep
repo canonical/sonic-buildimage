@@ -8,4 +8,7 @@ ifeq ($(CONFIGURED_ARCH),$(filter $(CONFIGURED_ARCH),arm64 armhf))
 include $(PLATFORM_PATH)/mrvl-prestera.dep
 include $(PLATFORM_PATH)/platform-nokia.dep
 endif
+ifeq ($(CONFIGURED_ARCH),arm64)
+include $(PLATFORM_PATH)/platform-asterfusion.dep
+endif
 include $(PLATFORM_PATH)/sai.dep

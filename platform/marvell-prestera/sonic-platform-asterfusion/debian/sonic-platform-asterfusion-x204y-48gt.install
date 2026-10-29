@@ -1,0 +1,6 @@
+x204y-48gt/asterProcess/*                         usr/local/bin/asterProcess
+x204y-48gt/service/platform_api_mgnt.sh           usr/local/bin
+x204y-48gt/scripts/sensors                        usr/local/bin
+x204y-48gt/utils/asterfusion_x204y_48gt_sensors.py usr/local/bin
+x204y-48gt/service/x204y_48gt-platform-init.service usr/lib/systemd/system
+build/wheel/sonic_platform-1.0-py3-none-any.whl   usr/share/sonic/device/arm64-asterfusion_cx204y_48gt_d-r0

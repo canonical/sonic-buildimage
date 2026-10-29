@@ -1,0 +1,20 @@
+Source: sonic-platform-asterfusion
+Section: main
+Priority: optional
+Maintainer: Sheldon Qi <sheldon.qi@canonical.com>
+Build-Depends: debhelper-compat (= 13), python3, python3-build, python3-setuptools, python3-wheel, device-tree-compiler, linux-sonic-headers-7.0.0-1002
+Rules-Requires-Root: no
+Standards-Version: 4.7.2
+
+Package: sonic-platform-asterfusion-x204y-48gt
+Architecture: arm64
+Depends: ${misc:Depends}, linux-image-7.0.0-1002-sonic
+Description: Platform support for the Asterfusion CX204Y-48GT
+ Kernel modules (mvcpss, x204y-48gt CPLD), the sonic_platform API wheel and
+ the vendor platform-init service.
+
+Package: sonic-platform-asterfusion-dtb
+Architecture: arm64
+Depends: ${misc:Depends}
+Description: Device trees for Asterfusion switches
+ Installed in /boot at image build time, where GRUB loads them.

@@ -1,0 +1,17 @@
+/build/
+/x204y-48gt/build/
+/x204y-48gt/*.egg-info/
+/x204y-48gt/modules/*.o
+/x204y-48gt/modules/*.ko
+/x204y-48gt/modules/*.mod
+/x204y-48gt/modules/*.mod.c
+/x204y-48gt/modules/.*.cmd
+/x204y-48gt/modules/Module.symvers
+/x204y-48gt/modules/modules.order
+/debian/*.debhelper
+/debian/*.debhelper.log
+/debian/*.substvars
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/sonic-platform-asterfusion-*/
