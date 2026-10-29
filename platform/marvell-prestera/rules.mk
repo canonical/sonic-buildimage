@@ -1,4 +1,5 @@
 include $(PLATFORM_PATH)/sai.mk
+include $(PLATFORM_PATH)/mrvl-sai-pystub.mk
 include $(PLATFORM_PATH)/docker-syncd-mrvl-prestera.mk
 include $(PLATFORM_PATH)/docker-syncd-mrvl-prestera-rpc.mk
 include $(PLATFORM_PATH)/docker-saiserver-mrvl-prestera.mk
@@ -32,3 +33,9 @@ endif
 
 # Runtime dependency on mrvl-prestera sai is set only for syncd
 $(SYNCD)_RDEPENDS += $(MRVL_SAI)
+
+# Alternate SAI builds may link libpython3.11, which Resolute lacks
+ifneq ($(MRVL_SAI_ASSETS_BASE_URL),)
+$(SYNCD)_DEPENDS += $(MRVL_SAI_PYSTUB)
+$(SYNCD)_RDEPENDS += $(MRVL_SAI_PYSTUB)
+endif

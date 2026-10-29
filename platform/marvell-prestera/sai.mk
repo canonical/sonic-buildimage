@@ -10,6 +10,17 @@ MRVL_SAI_VERSION = 1.17.1-13
 endif
 
 MRVL_SAI_URL_PREFIX = https://github.com/Marvell-switching/sonic-marvell-binaries/raw/master/$(CONFIGURED_ARCH)/sai-plugin/$(BRANCH)/
+
+# Place here URL (http(s) or file://) and version of an alternate mrvllibsai deb
+MRVL_SAI_ASSETS_BASE_URL ?=
+MRVL_SAI_ASSETS_VERSION ?=
+ifneq ($(MRVL_SAI_ASSETS_BASE_URL),)
+ifeq ($(MRVL_SAI_ASSETS_VERSION),)
+$(error MRVL_SAI_ASSETS_BASE_URL needs MRVL_SAI_ASSETS_VERSION)
+endif
+MRVL_SAI_VERSION = $(MRVL_SAI_ASSETS_VERSION)
+MRVL_SAI_URL_PREFIX = $(MRVL_SAI_ASSETS_BASE_URL)
+endif
 MRVL_SAI = mrvllibsai_$(MRVL_SAI_VERSION)_$(PLATFORM_ARCH).deb
 $(MRVL_SAI)_URL = $(MRVL_SAI_URL_PREFIX)/$(MRVL_SAI)
 

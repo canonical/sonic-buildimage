@@ -1,0 +1,15 @@
+Source: mrvl-sai-pystub
+Section: libs
+Priority: optional
+Maintainer: Sheldon Qi <sheldon.qi@canonical.com>
+Build-Depends: debhelper-compat (= 13)
+Rules-Requires-Root: no
+Standards-Version: 4.7.2
+
+Package: mrvl-sai-pystub
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: libpython3.11 stand-in for vendor Marvell SAI builds
+ Some vendor Marvell SAI builds link libpython3.11 for a debug shell that
+ syncd never enables. This package satisfies that link at load time; every
+ function aborts if it is ever called.

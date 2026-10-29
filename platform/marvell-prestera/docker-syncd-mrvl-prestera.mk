@@ -5,6 +5,9 @@ include $(PLATFORM_PATH)/../template/docker-syncd-resolute.mk
 
 $(DOCKER_SYNCD_BASE)_DEPENDS += $(SYNCD)
 $(DOCKER_SYNCD_BASE)_DEPENDS += $(MRVL_SAI)
+ifneq ($(MRVL_SAI_ASSETS_BASE_URL),)
+$(DOCKER_SYNCD_BASE)_DEPENDS += $(MRVL_SAI_PYSTUB)
+endif
 
 $(DOCKER_SYNCD_BASE)_DBG_DEPENDS += $(SYNCD_DBG) \
                                 $(LIBSWSSCOMMON_DBG) \

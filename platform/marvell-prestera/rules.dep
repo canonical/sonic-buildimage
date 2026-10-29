@@ -14,3 +14,4 @@ include $(PLATFORM_PATH)/platform-nokia.dep
 endif
 endif
 include $(PLATFORM_PATH)/sai.dep
+include $(PLATFORM_PATH)/mrvl-sai-pystub.dep
