@@ -33,7 +33,7 @@ if pgrep -x pebble > /dev/null 2>&1; then
     pebble add syslog-layer --combine $LAYER_FILE
 
     pebble start lldpd
-    pebble start waitfor-lldp-ready
+    /usr/bin/waitfor_lldp_ready.sh
     pebble start lldp-syncd
     pebble start lldpmgrd
 fi
