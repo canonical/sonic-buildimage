@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/architecture.mk
+
+LIB := libpython3.11.so.1.0
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(DEB_HOST_GNU_TYPE)-gcc $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -shared -fPIC -Wl,-soname,$(LIB) -o $(LIB) pystub.c
+
+override_dh_auto_install:
+	install -D -m 644 $(LIB) debian/mrvl-sai-pystub/usr/lib/$(DEB_HOST_MULTIARCH)/$(LIB)
+
+# Not a real libpython: nothing should pick up a dependency on this package
+override_dh_makeshlibs:
+
+override_dh_auto_clean:
+	rm -f $(LIB)
+	dh_auto_clean

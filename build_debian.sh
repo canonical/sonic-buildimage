@@ -861,7 +861,8 @@ fi
 
 ## ONIE's GRUB 2.04 rejects an EFI zboot kernel ("invalid magic number"); ship the plain Image, gzipped like pensando's.
 ZBOOT_KERNEL=$FILESYSTEM_ROOT/boot/vmlinuz-${LINUX_KERNEL_VERSION}
-if [[ $CONFIGURED_PLATFORM == vs && $CONFIGURED_ARCH == arm64 && $SECURE_UPGRADE_MODE != dev && $SECURE_UPGRADE_MODE != prod ]] &&
+if [[ ($CONFIGURED_PLATFORM == vs || $CONFIGURED_PLATFORM == marvell-prestera) && $CONFIGURED_ARCH == arm64 &&
+      $SECURE_UPGRADE_MODE != dev && $SECURE_UPGRADE_MODE != prod ]] &&
    sudo dd if=$ZBOOT_KERNEL bs=1 skip=4 count=4 status=none | grep -qx zimg; then
     ZBOOT_OFFSET=$(sudo od -An -tu4 -j8 -N4 $ZBOOT_KERNEL | tr -d ' ')
     ZBOOT_SIZE=$(sudo od -An -tu4 -j12 -N4 $ZBOOT_KERNEL | tr -d ' ')

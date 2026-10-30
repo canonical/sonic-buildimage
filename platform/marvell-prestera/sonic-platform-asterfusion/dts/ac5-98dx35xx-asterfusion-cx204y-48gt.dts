@@ -1,0 +1,268 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Device Tree for Asterfusion CX204Y-48GT-M (48x 1G RJ45 + 4x 25G SFP28).
+ *
+ * Board facts come from the vendor's ac5x-204.dtb (AsterNOS V6.1R006P002),
+ * expressed with mainline bindings.
+ */
+
+/dts-v1/;
+
+#include "ac5-98dx35xx.dtsi"
+
+/ {
+	model = "Asterfusion CX204Y-48GT-M";
+	compatible = "asterfusion,cx204y-48gt", "marvell,ac5x", "marvell,ac5";
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart2;
+		spiflash0 = &spiflash0;
+		gpio0 = &gpio0;
+		gpio1 = &gpio1;
+		ethernet0 = &eth0;
+		/* Bus numbers are ABI for the platform API (CPLD 6-0040, EEPROM 7-0050, SFP 10..13) */
+		i2c0 = &i2c0;
+		i2c1 = &i2c1;
+		i2c2 = &mux75_ch0;
+		i2c3 = &mux75_ch1;
+		i2c4 = &mux75_ch2;
+		i2c5 = &mux75_ch3;
+		i2c6 = &mux75_ch4;
+		i2c7 = &mux75_ch5;
+		i2c8 = &mux75_ch6;
+		i2c9 = &mux75_ch7;
+		i2c10 = &mux76_ch0;
+		i2c11 = &mux76_ch1;
+		i2c12 = &mux76_ch2;
+		i2c13 = &mux76_ch3;
+		i2c14 = &mux76_ch4;
+		i2c15 = &mux76_ch5;
+		i2c16 = &mux76_ch6;
+		i2c17 = &mux76_ch7;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x2 0x00000000 0x1 0x00000000>;
+	};
+
+	/* Nodes below match sonic-linux-kernel's AC5 dts patch (0005) */
+	watchdog {
+		compatible = "arm,smc-wdt";
+	};
+
+	soc {
+		/* mvcpss looks this node up by path */
+		prestera {
+			compatible = "marvell,armada-ac5-switch";
+			interrupts = <GIC_SPI 0x23 IRQ_TYPE_LEVEL_HIGH>;
+		};
+	};
+};
+
+&{/timer} {
+	clock-frequency = <25000000>;
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&mdio {
+	phy1: ethernet-phy@1 {
+		reg = <1>;
+		/* page 3 reg 16: LED function control, as in vendor V6.1R006P002 */
+		marvell,reg-init = <3 16 0 0x17>;
+	};
+};
+
+&eth0 {
+	status = "okay";
+	phy-handle = <&phy1>;
+};
+
+&i2c0 {
+	status = "okay";
+
+	rtc@68 {
+		compatible = "dallas,ds1339";
+		reg = <0x68>;
+	};
+
+	i2c-mux@75 {
+		compatible = "nxp,pca9548";
+		reg = <0x75>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mux75_ch0: i2c@0 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0>;
+		};
+
+		mux75_ch1: i2c@1 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <1>;
+		};
+
+		mux75_ch2: i2c@2 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <2>;
+		};
+
+		mux75_ch3: i2c@3 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <3>;
+		};
+
+		/* System CPLD at 0x40 is instantiated by the x204y-48gt module */
+		mux75_ch4: i2c@4 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <4>;
+		};
+
+		mux75_ch5: i2c@5 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <5>;
+
+			eeprom@50 {
+				compatible = "atmel,24c64";
+				reg = <0x50>;
+				read-only;
+			};
+		};
+
+		mux75_ch6: i2c@6 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <6>;
+		};
+
+		mux75_ch7: i2c@7 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <7>;
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+
+	/* SFP28 cages 49..52 on channels 0..3; optoe2 is bound by the platform init */
+	i2c-mux@76 {
+		compatible = "nxp,pca9548";
+		reg = <0x76>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mux76_ch0: i2c@0 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0>;
+		};
+
+		mux76_ch1: i2c@1 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <1>;
+		};
+
+		mux76_ch2: i2c@2 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <2>;
+		};
+
+		mux76_ch3: i2c@3 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <3>;
+		};
+
+		mux76_ch4: i2c@4 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <4>;
+		};
+
+		mux76_ch5: i2c@5 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <5>;
+		};
+
+		mux76_ch6: i2c@6 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <6>;
+		};
+
+		mux76_ch7: i2c@7 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <7>;
+		};
+	};
+};
+
+/* USB0 is a host USB; USB1 (device mode) is not used on this board */
+&usb0 {
+	/* DRAM starts at 8 GB, beyond the 32-bit mask of plain orion-ehci */
+	compatible = "marvell,ac5-ehci", "marvell,orion-ehci";
+	status = "okay";
+};
+
+&spi0 {
+	status = "okay";
+
+	spiflash0: flash@0 {
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		reg = <0>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "spi_flash_part0";
+				reg = <0x0 0x800000>;
+			};
+
+			partition@800000 {
+				label = "spi_flash_part1";
+				reg = <0x800000 0x700000>;
+			};
+
+			partition@f00000 {
+				label = "spi_flash_part2";
+				reg = <0xf00000 0x100000>;
+			};
+		};
+	};
+};
+
+/* eMMC I/O is 3.3V on this board (vendor DT: no-1-8-v, mmc-ddr-3_3v) */
+&sdhci {
+	status = "okay";
+	/delete-property/ mmc-ddr-1_8v;
+	/delete-property/ mmc-hs200-1_8v;
+	/delete-property/ mmc-hs400-1_8v;
+	no-1-8-v;
+	mmc-ddr-3_3v;
+};

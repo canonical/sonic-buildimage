@@ -1,0 +1,6 @@
+/libpython3.11.so.1.0
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/*.substvars
+/debian/mrvl-sai-pystub/

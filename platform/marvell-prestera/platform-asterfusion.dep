@@ -1,0 +1,10 @@
+MPATH       := $($(ASTERFUSION_CX204Y_48GT_PLATFORM)_SRC_PATH)
+DEP_FILES   := $(SONIC_COMMON_FILES_LIST) $(PLATFORM_PATH)/platform-asterfusion.mk $(PLATFORM_PATH)/platform-asterfusion.dep
+DEP_FILES   += $(SONIC_COMMON_BASE_FILES_LIST)
+DEP_FILES   += $(shell git ls-files $(MPATH))
+# mvcpss sources come from the mrvl-prestera submodule, outside SRC_PATH, so track its commit
+MRVL_PRESTERA_COMMIT := $(shell git -C $(PLATFORM_PATH)/mrvl-prestera rev-parse HEAD)
+
+$(ASTERFUSION_CX204Y_48GT_PLATFORM)_CACHE_MODE  := GIT_CONTENT_SHA
+$(ASTERFUSION_CX204Y_48GT_PLATFORM)_DEP_FLAGS   := $(SONIC_COMMON_FLAGS_LIST) $(MRVL_PRESTERA_COMMIT)
+$(ASTERFUSION_CX204Y_48GT_PLATFORM)_DEP_FILES   := $(DEP_FILES)

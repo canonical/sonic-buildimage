@@ -1,0 +1,5 @@
+sonic-platform-asterfusion (1.0) unstable; urgency=medium
+
+  * Package the Asterfusion CX204Y-48GT platform for Resolute SONiC.
+
+ -- Sheldon Qi <sheldon.qi@canonical.com>  Thu, 29 Oct 2026 17:00:00 +0000

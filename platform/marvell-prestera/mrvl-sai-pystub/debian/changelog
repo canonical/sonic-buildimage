@@ -1,0 +1,5 @@
+mrvl-sai-pystub (1.0) unstable; urgency=medium
+
+  * Load-time libpython3.11 stand-in for vendor Marvell SAI builds.
+
+ -- Sheldon Qi <sheldon.qi@canonical.com>  Thu, 29 Oct 2026 17:00:00 +0000

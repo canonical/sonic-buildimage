@@ -1,0 +1,49 @@
+#!/usr/bin/make -f
+
+export INSTALL_MOD_DIR := extra
+
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+    MAKE_FLAGS += -j$(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+endif
+
+KVERSION    ?= $(shell uname -r)
+KERNEL_SRC  := /lib/modules/$(KVERSION)
+MOD_SRC_DIR := $(shell pwd)
+BUILD_DIR   := $(MOD_SRC_DIR)/build
+PKG_X204Y   := sonic-platform-asterfusion-x204y-48gt
+
+# mvcpss is built from the mrvl-prestera submodule, as sonic-platform-marvell does
+CPSS_SRC    := $(MOD_SRC_DIR)/../mrvl-prestera/drivers/generic
+CPSS_DIR    := $(BUILD_DIR)/mvcpss/cpssEnabler/linuxNoKernelModule/drivers
+CPSS_FLAGS  := CONFIG_KM_MVPCI=y CONFIG_KM_MVMBUS=y CONFIG_KM_MVINT=y
+
+X204Y_DIR   := $(MOD_SRC_DIR)/x204y-48gt
+DTBS        := ac5-98dx35xx-asterfusion-cx204y-48gt
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	mkdir -p $(BUILD_DIR)/mvcpss $(BUILD_DIR)/wheel
+	cp -r $(CPSS_SRC)/. $(BUILD_DIR)/mvcpss/
+	$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC)/build M=$(CPSS_DIR) $(CPSS_FLAGS) modules
+	$(MAKE) $(MAKE_FLAGS) -C $(KERNEL_SRC)/build M=$(X204Y_DIR)/modules modules
+	python3 -m build --no-isolation --wheel --outdir $(BUILD_DIR)/wheel $(X204Y_DIR)
+	set -e; for dtb in $(DTBS); do \
+		cpp -nostdinc -undef -D__DTS__ -x assembler-with-cpp -I dts -I dts/include \
+			-o $(BUILD_DIR)/$$dtb.pp.dts dts/$$dtb.dts; \
+		dtc -I dts -O dtb -o $(BUILD_DIR)/$$dtb.dtb $(BUILD_DIR)/$$dtb.pp.dts; \
+	done
+
+override_dh_auto_install:
+	$(MAKE) -C $(KERNEL_SRC)/build M=$(CPSS_DIR) INSTALL_MOD_PATH=$(MOD_SRC_DIR)/debian/$(PKG_X204Y) modules_install
+	$(MAKE) -C $(KERNEL_SRC)/build M=$(X204Y_DIR)/modules INSTALL_MOD_PATH=$(MOD_SRC_DIR)/debian/$(PKG_X204Y) modules_install
+
+override_dh_auto_test:
+
+override_dh_usrlocal:
+
+override_dh_auto_clean:
+	rm -rf $(BUILD_DIR) $(X204Y_DIR)/build $(X204Y_DIR)/*.egg-info
+	[ ! -d $(KERNEL_SRC)/build ] || $(MAKE) -C $(KERNEL_SRC)/build M=$(X204Y_DIR)/modules clean
+	dh_auto_clean
