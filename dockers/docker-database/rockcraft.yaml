@@ -52,6 +52,7 @@ parts:
       - libpython3.14
       - libboost-serialization1.83.0
       - libxxhash0
+      - python3-cffi-backend
       # libnl-3/genl/route/nf come along as hard Depends of libnl-cli-3-200
       - libnl-cli-3-200
   setup-database:
