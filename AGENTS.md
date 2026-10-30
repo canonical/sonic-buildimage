@@ -26,9 +26,9 @@ identical tree, so confirm with `git merge-base` before assuming a bad rebase.
   the retained trixie/bookworm paths disabled (`NOTRIXIE=1`, `NOBOOKWORM=1`).
 
 - Migration documentation lives only on the `202605_resolute_doc` branch
-  (`docs/superpowers/`) and is authoritative for design, plans, status, and
+  (`docs/superpowers/`) and is for design, plans, status, and
   compatibility decisions; do not duplicate or edit it without an explicit
-  documentation task.
+  documentation task. Some of them may be outdated.
 
 ## Build System
 
@@ -78,6 +78,13 @@ clearly if verification cannot be run. For build-environment, base-image,
 package, or Docker changes, verify the `BLDENV` and inspect rendered inputs
 or build logs. Inspect `git diff` and `git status` before handing off;
 preserve unrelated worktree changes.
+
+Never cancel a running GitHub Actions job or workflow run without first
+asking the user for explicit confirmation. A cancelled job destroys any live
+debugging state (e.g. an active tmate session) and forces a full rebuild that
+can cost hours. If a job's logs are unavailable because it is still running,
+ask the user how to proceed (cancel to read logs, connect to the debug session
+themselves, or wait) instead of cancelling on your own.
 
 Use concise commit prefixes (`build:`, `fix:`, `docs:`, `test:`); never
 commit local configuration, build output, generated artifacts, editor

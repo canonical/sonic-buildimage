@@ -1,4 +1,5 @@
 import docker
+import json
 import os
 import pickle
 import re
@@ -374,6 +375,14 @@ class ServiceChecker(HealthChecker):
             data[items[0].strip()] = items[1].strip()
         return data
 
+    def _parse_pebble_status(self, services):
+        """Parse `pebble services --format json` of a rock container into {service name: status},
+        as _parse_supervisorctl_status does. pebble lists every service of its plan, as supervisorctl
+        lists every program of supervisord.conf; an active service maps to RUNNING.
+        """
+        return {name: 'RUNNING' if service.get('current') == 'active' else str(service.get('current', '')).upper()
+                for name, service in (json.loads(services).get('services') or {}).items()}
+
     def publish_events(self, container_name, critical_process_list):
         params = swsscommon.FieldValueMap()
         params["ctr_name"] = container_name
@@ -402,7 +411,9 @@ class ServiceChecker(HealthChecker):
                 # We are using supervisorctl status to check the critical process status. We cannot leverage psutil here because
                 # it not always possible to get process cmdline in supervisor.conf. E.g, cmdline of orchagent is "/usr/bin/orchagent",
                 # however, in supervisor.conf it is "/usr/bin/orchagent.sh"
-                cmd = 'docker exec {} bash -c "supervisorctl status"'.format(container_name)
+                # Rock containers run pebble instead of supervisord.
+                cmd = 'docker exec {} bash -c "if command -v supervisorctl >/dev/null; then supervisorctl status; ' \
+                      'else pebble services --format json; fi"'.format(container_name)
                 process_status = utils.run_command(cmd, timeout=15)
                 if process_status is None:
                     for process_name in critical_process_list:
@@ -410,7 +421,14 @@ class ServiceChecker(HealthChecker):
                     self.publish_events(container_name, critical_process_list)
                     return
 
-                process_status = self._parse_supervisorctl_status(process_status.strip().splitlines())
+                if process_status.lstrip().startswith('{'):
+                    try:
+                        process_status = self._parse_pebble_status(process_status)
+                    except (ValueError, AttributeError) as e:
+                        logger.log_error('Failed to parse pebble status of {}: {}'.format(container_name, e))
+                        return
+                else:
+                    process_status = self._parse_supervisorctl_status(process_status.strip().splitlines())
                 for process_name in critical_process_list:
                     if config and config.ignore_services and process_name in config.ignore_services:
                         continue

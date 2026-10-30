@@ -18,7 +18,16 @@ init_devnum() {
 sys_eeprom() {
     case $1 in
         "new_device")    echo 24c16 0x50 > /sys/bus/i2c/devices/i2c-${devnum}/$1
-                         chmod 0444 /sys/bus/i2c/devices/i2c-${devnum}/0-0050/eeprom
+                         eeprom_attr=/sys/bus/i2c/devices/i2c-${devnum}/0-0050/eeprom
+                         for ((i = 0; i < 120; i++)); do
+                             [ -e "$eeprom_attr" ] && break
+                             sleep 0.5
+                         done
+                         if [ -e "$eeprom_attr" ]; then
+                             chmod 0444 "$eeprom_attr"
+                         else
+                             echo "s5232f_platform: sys_eeprom: eeprom attribute did not appear" >&2
+                         fi
                          ;;
         "delete_device") echo 0x50 > /sys/bus/i2c/devices/i2c-${devnum}/$1
                          ;;

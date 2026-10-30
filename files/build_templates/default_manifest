@@ -54,7 +54,7 @@
         "clear": [],
         "auto-generate-show": true,
         "auto-generate-config": true,
-        "auto-generate-show-source-yang-modules": [sonic-fine-grained-ecmp],
-        "auto-generate-config-source-yang-modules": [sonic-fine-grained-ecmp]
+        "auto-generate-show-source-yang-modules": ["sonic-fine-grained-ecmp"],
+        "auto-generate-config-source-yang-modules": ["sonic-fine-grained-ecmp"]
     }
 }

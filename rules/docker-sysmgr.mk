@@ -25,6 +25,7 @@ SONIC_INSTALL_DOCKER_DBG_IMAGES += $(DOCKER_SYSMGR_DBG)
 
 $(DOCKER_SYSMGR)_CONTAINER_NAME = sysmgr
 $(DOCKER_SYSMGR)_RUN_OPT += -v /var/run/dbus:/var/run/dbus:rw  
+$(DOCKER_SYSMGR)_RUN_OPT += --security-opt apparmor=unconfined
 $(DOCKER_SYSMGR)_RUN_OPT += -v /etc/sonic:/etc/sonic:ro  
 $(DOCKER_SYSMGR)_GIT_REPOSITORIES += "sonic-swss"
 $(DOCKER_SYSMGR)_GIT_REPOSITORIES += "sonic-swss-common"

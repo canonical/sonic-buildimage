@@ -1,0 +1,84 @@
+{#- Pebble translation of docker-dhcp-relay.supervisord.conf.j2 (+ the included
+    dhcp*-relay.agents.j2 / dhcp-relay.monitors.j2). Renders only the per-VLAN
+    dynamic services; rsyslogd/start/dhcprelayd are static in rockcraft.yaml.
+    Keep the selection logic in sync with the supervisord templates. -#}
+{% set sonic_relay = DEVICE_METADATA['localhost']['has_sonic_dhcpv4_relay'] == 'True' if 'has_sonic_dhcpv4_relay' in DEVICE_METADATA['localhost'] else False %}
+{% set dual_tor = 'subtype' in DEVICE_METADATA['localhost'] and DEVICE_METADATA['localhost']['subtype'] == 'DualToR' %}
+{% set ctx = { 'v4_relays': 0, 'v6_relays': 0, 'v6_agent': False } %}
+{% if sonic_relay %}{% set _ = ctx.update({'v4_relays': 1}) %}{% endif %}
+{% if VLAN_INTERFACE %}
+{% for vlan_name in VLAN_INTERFACE %}
+{% if VLAN and vlan_name in VLAN and 'dhcp_servers' in VLAN[vlan_name] and VLAN[vlan_name]['dhcp_servers']|length > 0 %}{% set _ = ctx.update({'v4_relays': ctx.v4_relays + 1}) %}{% endif %}
+{% if DHCP_RELAY and vlan_name in DHCP_RELAY and DHCP_RELAY[vlan_name]['dhcpv6_servers']|length > 0 %}
+{% set _ = ctx.update({'v6_relays': ctx.v6_relays + 1}) %}
+{% for dhcpv6_server in DHCP_RELAY[vlan_name]['dhcpv6_servers'] %}{% if dhcpv6_server | ipv6 %}{% set _ = ctx.update({'v6_agent': True}) %}{% endif %}{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+services:
+{% if sonic_relay %}
+  dhcp4relay:
+    override: replace
+    on-success: ignore
+    on-failure: shutdown
+    command: /usr/sbin/dhcp4relay{% if dual_tor %} -u Loopback0{% endif %}
+
+{% endif %}
+{#- The relay agents/monitors below are only generated when VLANs need relaying #}
+{% if VLAN_INTERFACE and (ctx.v4_relays > 0 or ctx.v6_relays > 0) %}
+{% if not sonic_relay %}
+{% set added_vlan = [] %}
+{% for (vlan_name, prefix) in VLAN_INTERFACE|pfx_filter %}
+{% if prefix | ipv4 and vlan_name not in added_vlan %}
+{% set _ = added_vlan.append(vlan_name) %}
+{% set v4_servers = [] %}
+{% if VLAN and vlan_name in VLAN and 'dhcp_servers' in VLAN[vlan_name] %}
+{% for dhcp_server in VLAN[vlan_name]['dhcp_servers'] %}{% if dhcp_server | ipv4 %}{% set _ = v4_servers.append(dhcp_server) %}{% endif %}{% endfor %}
+{% endif %}
+{% if v4_servers %}
+{#- We treat this VLAN as a downstream interface (-id), as we only want to listen for requests #}
+{% set args = ['/usr/sbin/dhcrelay', '-d', '-m', 'discard', '-a', '%h:%p', '%P', '--name-alias-map-file', '/tmp/port-name-alias-map.txt', '-id', vlan_name] %}
+{% if dual_tor %}{% set _ = args.extend(['-U', 'Loopback0', '-dt']) %}{% endif %}
+{% if DEVICE_METADATA['localhost']['deployment_id'] == '8' %}{% set _ = args.append('-si') %}{% endif %}
+{#- We treat all other interfaces as upstream interfaces (-iu), as we only want to listen for replies #}
+{% for (name, pfx) in VLAN_INTERFACE|pfx_filter %}{% if pfx | ipv4 and name != vlan_name %}{% set _ = args.extend(['-iu', name]) %}{% endif %}{% endfor %}
+{% for (name, pfx) in INTERFACE|pfx_filter %}{% if pfx | ipv4 %}{% set _ = args.extend(['-iu', name]) %}{% endif %}{% endfor %}
+{% for (name, pfx) in PORTCHANNEL_INTERFACE|pfx_filter %}{% if pfx | ipv4 %}{% set _ = args.extend(['-iu', name]) %}{% endif %}{% endfor %}
+{% for (name, gateway) in VLAN_INTERFACE|get_primary_addr %}{% if gateway | ipv4 and name == vlan_name %}{% set _ = args.extend(['-pg', gateway]) %}{% endif %}{% endfor %}
+{% set _ = args.extend(v4_servers) %}
+  isc-dhcpv4-relay-{{ vlan_name }}:
+    override: replace
+    command: '{{ args | join(" ") }}'
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if ctx.v6_agent %}
+  dhcp6relay:
+    override: replace
+    on-success: ignore
+    on-failure: shutdown
+    command: /usr/sbin/dhcp6relay{% if dual_tor %} -u Loopback0{% endif %}
+
+{% endif %}
+{#- dhcpmon: only for VLANs with an IPv4 address and at least one IPv4 dhcp server #}
+{% set vlan_list = [] %}
+{% for (vlan_name, prefix) in VLAN_INTERFACE | pfx_filter %}
+{% if prefix | ipv4 and VLAN and vlan_name in VLAN and 'dhcp_servers' in VLAN[vlan_name] and VLAN[vlan_name]['dhcp_servers']|length > 0 %}
+{% for dhcp_server in VLAN[vlan_name]['dhcp_servers'] %}{% if dhcp_server | ipv4 %}{% set _ = vlan_list.append(vlan_name) %}{% endif %}{% endfor %}
+{% endif %}
+{% endfor %}
+{% for vlan_name in vlan_list | unique %}
+{% set args = ['/usr/sbin/dhcpmon', '-id', vlan_name] %}
+{% if dual_tor %}{% set _ = args.extend(['-u', 'Loopback0']) %}{% endif %}
+{% for (name, pfx) in VLAN_INTERFACE|pfx_filter %}{% if pfx | ipv4 and name != vlan_name %}{% set _ = args.extend(['-iu', name]) %}{% endif %}{% endfor %}
+{% for (name, pfx) in INTERFACE|pfx_filter %}{% if pfx | ipv4 %}{% set _ = args.extend(['-iu', name]) %}{% endif %}{% endfor %}
+{% for (name, pfx) in PORTCHANNEL_INTERFACE|pfx_filter %}{% if pfx | ipv4 %}{% set _ = args.extend(['-iu', name]) %}{% endif %}{% endfor %}
+{% if MGMT_INTERFACE %}
+{% for (name, pfx) in MGMT_INTERFACE|pfx_filter %}{% if pfx | ipv4 %}{% set _ = args.extend(['-im', name]) %}{% endif %}{% endfor %}
+{% endif %}
+  dhcpmon-{{ vlan_name }}:
+    override: replace
+    command: '{{ args | join(" ") }}'
+{% endfor %}
+{% endif %}

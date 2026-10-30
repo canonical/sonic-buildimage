@@ -44,7 +44,7 @@ COPY ["docker_init.sh", "start.sh", "wait_for_dhcpservd.sh", "/usr/bin/"]
 COPY ["supervisord.conf", "/etc/supervisor/conf.d/"]
 COPY ["kea-dhcp4.conf.j2", "/usr/share/sonic/templates/"]
 COPY ["critical_processes", "/etc/supervisor/"]
-COPY ["lease_update.sh", "/etc/kea/"]
+COPY ["lease_update.sh", "/usr/share/kea/scripts/"]
 COPY ["kea-dhcp4-init.conf", "/etc/kea/kea-dhcp4.conf"]
 COPY ["cli", "/cli/"]
 

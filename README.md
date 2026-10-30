@@ -169,7 +169,7 @@ make configure PLATFORM=[ASIC_VENDOR]
 # Build SONiC image with 4 jobs in parallel.
 # Note: You can set this higher, but 4 is a good number for most cases
 #       and is well-tested.
-make SONIC_BUILD_JOBS=4 all
+make all
 ```
 
 ### Build performance tips
@@ -213,6 +213,97 @@ The supported ASIC vendors are:
 * PLATFORM=nephos
 * PLATFORM=nvidia-bluefield
 * PLATFORM=vs
+
+## Build SONiC image with Rockcraft/Pebble containers
+
+On the Ubuntu Resolute branch, the service containers can be built as
+[Rockcraft](https://canonical-rockcraft.readthedocs-hosted.com/) rocks running
+services under [Pebble](https://canonical-pebble.readthedocs-hosted.com/)
+instead of Dockerfile-built images running supervisord. The two paths coexist:
+every migrated container keeps its `Dockerfile.j2`/supervisord files, and the
+rock path is driven by the repo-root `build_rocks.sh` script.
+
+### Prerequisites
+
+In addition to the standard prerequisites above, the rock build needs
+`rockcraft` (which uses LXD as its build provider) installed on the host:
+
+```shell
+sudo snap install rockcraft --classic
+sudo snap install lxd
+sudo lxd init --auto
+```
+
+`rockcraft pack` uses LXD, so the build must run on a host where LXD can create
+instances (bare metal or a VM) rather than in the `sonic-slave` container.
+
+Each `rockcraft pack` re-downloads the same Ubuntu stage-packages
+(100+ `.deb`s) for every container, which dominates the per-container build
+time. `build_rocks.sh` therefore routes those downloads through a local
+[apt-cacher-ng](https://www.unix-ag.uni-kl.de/~bloch/acng/) proxy: the first
+container warms the cache and the rest hit it locally. This is an accelerator,
+not a prerequisite — if `apt-cacher-ng` is not installed, `build_rocks.sh`
+warns and falls back to downloading straight from `archive.ubuntu.com` (identical
+output, just slower). Install it to get the speedup:
+
+```shell
+sudo apt-get install -y apt-cacher-ng
+```
+
+`build_rocks.sh` auto-detects the proxy, resolves the LXD bridge gateway address
+itself, and injects `http_proxy` only for the `rockcraft pack` commands (leaving
+`https_proxy` and the build instances' base images untouched).
+
+### How the rock build works
+
+`build_rocks.sh` runs *after* the normal `make` build: it reads the SONiC labels
+off the already-built `target/docker-<name>.gz` images, packs each container as
+a rock, then overwrites those `.gz` files with the rock versions. The image is
+therefore built in two passes — once to produce the supervisord images that
+`build_rocks.sh` needs as input, then again to assemble the installer with the
+rock containers.
+
+The list of containers is driven by the `rocklist` array in `build_rocks.sh`.
+`docker-syncd-brcm` is added automatically only when the configured platform is
+`broadcom`.
+
+### Build for the VS platform
+
+```shell
+make init
+make configure PLATFORM=vs
+
+# First pass: build the supervisord images + KVM image that build_rocks.sh consumes
+make target/sonic-vs.img.gz
+
+# Pack the rocks and replace the target/docker-<name>.gz images
+./build_rocks.sh
+
+# Second pass: rebuild the image so it embeds the rock containers
+rm -f target/sonic-vs.img.gz
+make target/sonic-vs.img.gz
+```
+
+### Build for the Broadcom platform
+
+```shell
+make init
+make configure PLATFORM=broadcom
+
+# First pass: build the supervisord images (including docker-syncd-brcm) + ONIE image
+make target/sonic-broadcom.bin
+
+# Pack the rocks (docker-syncd-brcm included because .platform is broadcom)
+./build_rocks.sh
+
+# Second pass: rebuild the installer images with the rock containers
+rm -f target/sonic-broadcom.bin
+make target/sonic-broadcom.bin
+
+```
+
+Only the Broadcom `syncd` (`docker-syncd-brcm`) is migrated to a rock;
+`docker-syncd-vs` on the VS platform remains a Dockerfile/supervisord image.
 
 ## Usage for ARM Architecture
 

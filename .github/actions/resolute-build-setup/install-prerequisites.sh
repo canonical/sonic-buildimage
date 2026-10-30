@@ -10,7 +10,6 @@ set -eux
 # Every install in the docker branches below is wrapped in set +e/ set -e so a
 # repo failure can fall through to the next source instead of aborting.
 
-# dockerd needs the overlay module for its default overlay2 driver
 sudo modprobe overlay
 
 # Install docker-ce from the official docker.com apt repo (fresh daemon plus
@@ -64,12 +63,10 @@ elif ! docker buildx version >/dev/null 2>&1; then
   fi
 fi
 
-# Toolchain for the build (make/git), helper scripts (jq) and the jinja2 CLI
-sudo apt-get install -y make git jq python3-pip
+sudo apt-get install -y make git jq python3-pip pigz
 pip3 install --user --quiet jinjanator || pip3 install --user --quiet --break-system-packages jinjanator
 echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-# Give the CI user access to dockerd
 sudo gpasswd -a "$(id -un)" docker || true
 sudo systemctl restart docker
 sudo chmod a+rw /var/run/docker.sock

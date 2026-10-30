@@ -13,7 +13,8 @@ on:
         type: string
         default: 202605_resolute
   push:
-    branches: [ci-workflow/*]
+    branches: [ci-workflow/*, 202605_resolute]
+    tags: ["v*"]
 
 concurrency:
   group: resolute-build-${{ github.ref }}
@@ -27,6 +28,8 @@ jobs:
   build-vs:
     runs-on: [self-hosted, resolute, amd64, large]
     timeout-minutes: 1440 # 24 hours
+    permissions:
+      contents: write # Required for softprops/action-gh-release to create/update releases
     steps:
       - name: Checkout merge/pr ref
         uses: actions/checkout@v4
@@ -34,13 +37,16 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
           submodules: recursive
+
       - name: Setup build prerequisites
         uses: ./.github/actions/resolute-build-setup
+
       - name: Build sonic-vs image
         run: |
           make init
           make configure PLATFORM=vs
           make target/sonic-vs.img.gz
+
       - name: Upload sonic-vs image
         uses: actions/upload-artifact@v4
         with:
@@ -48,11 +54,22 @@ jobs:
           path: target/sonic-vs.img.gz
           retention-days: 7
           if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.0
+        with:
+          files: |
+            target/sonic-vs.img.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Collect logs on failure
         if: failure()
         run: |
           find target -name '*.log' -type f -print0 | tar --null -czf build-vs-logs.tgz --files-from=- 2>/dev/null || touch build-vs-logs.tgz
           ls -la build-vs-logs.tgz
+
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -61,6 +78,7 @@ jobs:
           path: build-vs-logs.tgz
           retention-days: 7
           if-no-files-found: ignore
+
       - name: Setup tmate session on failure
         if: failure()
         uses: canonical/action-tmate@main
@@ -71,6 +89,8 @@ jobs:
   build-broadcom:
     runs-on: [self-hosted, resolute, amd64, large]
     timeout-minutes: 1440 # 24 hours
+    permissions:
+      contents: write # Required for softprops/action-gh-release to create/update releases
     steps:
       - name: Checkout merge/pr ref
         uses: actions/checkout@v4
@@ -78,13 +98,34 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
           fetch-depth: 0
           submodules: recursive
+
       - name: Setup build prerequisites
         uses: ./.github/actions/resolute-build-setup
-      - name: Build sonic-broadcom image
+
+      - name: Install rock build prerequisites
+        uses: canonical/craft-actions/rockcraft/setup@d2add174925f9bca7b0a826010c8e1ce2a4bbc3d # v1.0.0
+
+      - name: Build sonic-broadcom image (supervisord pass)
         run: |
           make init
           make configure PLATFORM=broadcom
           make target/sonic-broadcom.bin
+
+      - name: Free disk space before packing rocks
+        run: |
+          # Intermediates from the previous build. Later rebuild step regenerates all of them
+          sudo rm -rf --one-file-system fsroot-broadcom fs.zip fs.squashfs dockerfs.tar.gz target/sonic-broadcom.bin
+          sudo rm -rf --one-file-system fsroot.docker.resolute
+
+      - name: Pack service containers as rocks
+        run: |
+          ./build_rocks.sh
+
+      - name: Rebuild sonic-broadcom image with rock containers
+        run: |
+          rm -f target/sonic-broadcom.bin
+          make target/sonic-broadcom.bin
+
       - name: Upload sonic-broadcom image
         uses: actions/upload-artifact@v4
         with:
@@ -92,11 +133,21 @@ jobs:
           path: target/sonic-broadcom.bin
           retention-days: 7
           if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.0
+        with:
+          files: target/sonic-broadcom.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Collect logs on failure
         if: failure()
         run: |
           find target -name '*.log' -type f -print0 | tar --null -czf build-brcm-logs.tgz --files-from=- 2>/dev/null || touch build-brcm-logs.tgz
           ls -la build-brcm-logs.tgz
+
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -105,6 +156,7 @@ jobs:
           path: build-brcm-logs.tgz
           retention-days: 7
           if-no-files-found: ignore
+
       - name: Setup tmate session on failure
         if: failure()
         uses: canonical/action-tmate@main

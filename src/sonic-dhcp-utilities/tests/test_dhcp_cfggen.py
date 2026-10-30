@@ -20,7 +20,7 @@ expected_dhcp_config = {
             {
                 "library": "/usr/local/lib/kea/hooks/libdhcp_run_script.so",
                 "parameters": {
-                    "name": "/etc/kea/lease_update.sh",
+                    "name": "/usr/share/kea/scripts/lease_update.sh",
                     "sync": False
                 }
             }
@@ -134,7 +134,7 @@ expected_dhcp_config_without_port_config = {
             {
                 "library": "/usr/local/lib/kea/hooks/libdhcp_run_script.so",
                 "parameters": {
-                    "name": "/etc/kea/lease_update.sh",
+                    "name": "/usr/share/kea/scripts/lease_update.sh",
                     "sync": False
                 }
             }
@@ -269,7 +269,7 @@ expected_render_obj = {
         {"name": "sonic-host:etp7", "condition": "substring(relay4[1].hex, -15, 15) == 'sonic-host:etp7'"},
         {"name": "sonic-host:etp11", "condition": "substring(relay4[1].hex, -16, 16) == 'sonic-host:etp11'"}
     ],
-    "lease_update_script_path": "/etc/kea/lease_update.sh",
+    "lease_update_script_path": "/usr/share/kea/scripts/lease_update.sh",
     "lease_path": "/var/lib/kea/kea-lease.csv",
     "customized_options": {
         "option223": {
