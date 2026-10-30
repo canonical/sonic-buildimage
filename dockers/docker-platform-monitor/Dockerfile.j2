@@ -106,7 +106,9 @@ RUN apt-get purge -y           \
 
 COPY ["lm-sensors.sh", "/usr/bin/"]
 COPY ["docker-pmon.supervisord.conf.j2", "docker_init.j2", "/usr/share/sonic/templates/"]
+{%- if CONFIGURED_ARCH == "amd64" %}
 COPY ["ssd_tools/*", "/usr/bin/"]
+{%- endif %}
 COPY ["critical_processes", "/etc/supervisor"]
 COPY ["etc/rsyslog.conf", "/etc/rsyslog.conf"]
 
