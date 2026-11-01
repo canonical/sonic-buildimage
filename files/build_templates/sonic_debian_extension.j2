@@ -494,6 +494,9 @@ sudo cp $IMAGE_CONFIGS/rsyslog/rsyslog.d/*.json $FILESYSTEM_ROOT/etc/rsyslog.d/
 # Remove only the installed copy: the /usr/share template and the ucf hashfile entry must stay.
 sudo rm -f $FILESYSTEM_ROOT/etc/rsyslog.d/50-default.conf
 echo "rsyslog-config.service" | sudo tee -a $GENERATED_SERVICE_FILE
+# dmesg.service comes with Ubuntu's rsyslog; keep it active after it exits so system-ready is reached
+sudo mkdir -p $FILESYSTEM_ROOT_USR_LIB_SYSTEMD_SYSTEM/dmesg.service.d
+sudo cp $IMAGE_CONFIGS/dmesg/override.conf $FILESYSTEM_ROOT_USR_LIB_SYSTEMD_SYSTEM/dmesg.service.d/
 
 # Copy containercfgd configuration files
 sudo cp $IMAGE_CONFIGS/containercfgd/containercfgd.conf $FILESYSTEM_ROOT_USR_SHARE_SONIC_TEMPLATES/
