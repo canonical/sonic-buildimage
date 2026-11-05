@@ -5,26 +5,25 @@
 Repository-wide instructions for AI models, limited to durable build, editing,
 and review practices; do not duplicate plans, progress tracking, design
 rationale, or migration reports here. Before changing a component, read the
-nearest applicable `AGENTS.md`, its build rule, and the associated template or
-source file; verify the active build environment, package versions, and
-platform support in the checked-out branch rather than assuming from here.
+nearest applicable `AGENTS.md`; verify the active build environment, package
+versions, and platform support in the checked-out branch rather than assuming 
+from here.
+
 ## Branches
 
 Canonical's maintained fork of upstream
 [`sonic-net/sonic-buildimage`](https://github.com/sonic-net/sonic-buildimage);
-it builds ONIE-compatible switch installer images and service container
-images. Upstream maintains date-named release branches (e.g. `202405`,
-`202605`) after their branch point; they can be force-rewritten with an
-identical tree, so confirm with `git merge-base` before assuming a bad rebase.
+it builds ONIE-compatible switch installer images. Upstream maintains date-named 
+release branches (e.g. `202405`, `202605`) after their branch point; they can 
+be force-rewritten with an identical tree, so confirm with `git merge-base` 
+before assuming a bad rebase.
 
 - **`feature_noble_build`** is the Ubuntu Noble (24.04) SONiC reference
   branch, migrated from the upstream Debian Bookworm based `202405` branch.
 - **`202605_resolute`** is the main Ubuntu Resolute (26.04) SONiC branch,
-  migrated from the upstream Debian Trixie based `202605` branch; the
-  migration is complete. Only Resolute-based SONiC is built here:
-  `BLDENV=resolute` is the default and only enabled build environment, with
-  the retained trixie/bookworm paths disabled (`NOTRIXIE=1`, `NOBOOKWORM=1`).
-
+  migrated from the upstream Debian Trixie based `202605` branch. Only 
+  Resolute-based SONiC is built here: `BLDENV=resolute` is the default and 
+  only enabled build environment, with the retained trixie/bookworm paths disabled.
 - Migration documentation lives only on the `202605_resolute_doc` branch
   (`docs/superpowers/`) and is for design, plans, status, and
   compatibility decisions; do not duplicate or edit it without an explicit
@@ -49,7 +48,8 @@ target first; never run destructive cleanup targets unless required.
   `stable`, or meta-packages, and preserve declared source builds in
   `rules/*.mk` without an approved build-graph update.
 - Keep changes minimal and scoped; avoid unrelated formatting and broad
-  dependency upgrades.
+  dependency upgrades. Cherry-picking from upstream updates is more preferable
+  than making our own changes.
 
 ## Submodules
 

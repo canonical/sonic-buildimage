@@ -41,11 +41,33 @@ jobs:
       - name: Setup build prerequisites
         uses: ./.github/actions/resolute-build-setup
 
-      - name: Build sonic-vs image
+      - name: Install rock build prerequisites
+        uses: canonical/craft-actions/rockcraft/setup@d2add174925f9bca7b0a826010c8e1ce2a4bbc3d # v1.0.0
+
+      - name: Build sonic-vs image (supervisord pass)
         run: |
           make init
           make configure PLATFORM=vs
           make target/sonic-vs.img.gz
+
+      - name: Free disk space before packing rocks
+        run: |
+          # Intermediates from the previous build. Later rebuild step regenerates all of them
+          sudo rm -rf --one-file-system fsroot-vs fs.zip fs.squashfs dockerfs.tar.gz target/sonic-vs.img.gz
+          sudo rm -rf --one-file-system fsroot.docker.resolute
+
+      - name: Pack service containers as rocks
+        run: |
+          ./build_rocks.sh
+
+      - name: Rebuild sonic-vs image with rock containers
+        run: |
+          rm -f target/sonic-vs.img.gz
+          make target/sonic-vs.img.gz
+
+      - name: Check the rock images were not overwritten
+        run: |
+          scripts/rock_image_check.sh
 
       - name: Upload sonic-vs image
         uses: actions/upload-artifact@v4
@@ -86,6 +108,113 @@ jobs:
           limit-access-to-actor: true
         timeout-minutes: 600
 
+  test-vs:
+    needs: build-vs
+    runs-on: [self-hosted, resolute, amd64, large]
+    timeout-minutes: 120
+    env:
+      SSHPASS: YourPaSsWoRd # default SONiC VS admin password, not a secret
+    steps:
+      - name: Checkout merge/pr ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Download sonic-vs image
+        uses: actions/download-artifact@v4
+        with:
+          name: sonic-vs-img
+          path: target
+
+      - name: Install VM tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 sshpass
+          # ssh/scp to the VM as `-F "$RUNNER_TEMP/ssh_config" sonic-vs`
+          cat > "$RUNNER_TEMP/ssh_config" <<'EOF'
+          Host sonic-vs
+            HostName 127.0.0.1
+            Port 2200
+            User admin
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            LogLevel ERROR
+            ConnectTimeout 15
+            ServerAliveInterval 30
+          EOF
+
+      - name: Boot sonic-vs VM
+        run: |
+          gunzip -c target/sonic-vs.img.gz > "$RUNNER_TEMP/sonic-vs.img"
+          sudo qemu-system-x86_64 -enable-kvm -cpu host -m 8192 -smp 4 -boot order=c -name sonic \
+              -drive file="$RUNNER_TEMP/sonic-vs.img",media=disk,if=virtio \
+              -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2200-:22 -device virtio-net-pci,netdev=net0 \
+              -display none -daemonize -pidfile "$RUNNER_TEMP/sonic-vs.pid" -serial file:"$RUNNER_TEMP/sonic-vs-serial.log"
+
+      - name: Wait for SSH on the switch
+        run: |
+          for _ in $(seq 120); do
+            if sshpass -e ssh -F "$RUNNER_TEMP/ssh_config" sonic-vs true </dev/null; then
+              sshpass -e ssh -F "$RUNNER_TEMP/ssh_config" sonic-vs 'uname -r; show version' </dev/null
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "switch not reachable over SSH after 20 minutes"; tail -50 "$RUNNER_TEMP/sonic-vs-serial.log"; exit 1
+
+      - name: Check rock and supervisord containers on the switch
+        run: |
+          sshpass -e scp -F "$RUNNER_TEMP/ssh_config" scripts/vs_rock_runtime_check.sh sonic-vs:
+          sshpass -e ssh -F "$RUNNER_TEMP/ssh_config" sonic-vs "sudo ./vs_rock_runtime_check.sh $(./build_rocks.sh --list | xargs)" </dev/null
+
+      - name: Collect switch diagnostics on failure
+        if: failure()
+        run: |
+          sshpass -e ssh -F "$RUNNER_TEMP/ssh_config" sonic-vs 'sudo bash -s' > "$RUNNER_TEMP/switch-diag.txt" 2>&1 <<'EOF'
+          docker ps -a
+          show feature status
+          for c in $(docker ps --format '{{.Names}}'); do
+            echo "===== $c"
+            docker exec "$c" pebble services 2>/dev/null && docker exec "$c" pebble logs -n=200 \
+              || docker exec "$c" supervisorctl status
+          done
+          # Exited containers cannot be exec'd into; their output is only in docker logs
+          for c in $(docker ps -a --filter status=exited --filter status=dead --format '{{.Names}}'); do
+            echo "===== $c (not running)"
+            docker logs --tail 200 "$c" 2>&1
+          done
+          EOF
+
+      - name: Make serial log readable on failure
+        if: failure()
+        run: sudo chmod a+r "$RUNNER_TEMP/sonic-vs-serial.log"
+
+      - name: Upload switch diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-vs-failure-logs
+          path: |
+            ${{ runner.temp }}/switch-diag.txt
+            ${{ runner.temp }}/sonic-vs-serial.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: canonical/action-tmate@main
+        with:
+          limit-access-to-actor: true
+        timeout-minutes: 600
+
+      - name: Stop sonic-vs VM
+        if: always()
+        run: |
+          # qemu ran under sudo, so its pid file is root-only; no pid file means the VM never booted
+          if [ -f "$RUNNER_TEMP/sonic-vs.pid" ]; then
+            sudo pkill -F "$RUNNER_TEMP/sonic-vs.pid" || true
+          fi
+
   build-broadcom:
     runs-on: [self-hosted, resolute, amd64, large]
     timeout-minutes: 1440 # 24 hours
@@ -125,6 +254,10 @@ jobs:
         run: |
           rm -f target/sonic-broadcom.bin
           make target/sonic-broadcom.bin
+
+      - name: Check the rock images were not overwritten
+        run: |
+          scripts/rock_image_check.sh
 
       - name: Upload sonic-broadcom image
         uses: actions/upload-artifact@v4
