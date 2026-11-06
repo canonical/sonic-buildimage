@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Finish `make target/sonic-vs.img.gz` first
+# Usage: ./build_rocks.sh          pack every rock and overwrite target/<container>.gz
+#        ./build_rocks.sh --list   only print the rock image names for the current platform
 rocklist=(
     "dockers/docker-database"
     "dockers/docker-sonic-mgmt-framework"
@@ -26,6 +28,12 @@ rocklist=(
 # docker-syncd-brcm is platform-specific; only build it for the broadcom platform
 if [ "$(cat .platform 2>/dev/null)" = "broadcom" ]; then
     rocklist+=("platform/broadcom/docker-syncd-brcm")
+fi
+
+# `./build_rocks.sh --list` prints the rock image names for the current platform and exits
+if [ "$1" = "--list" ]; then
+    for rockitem in "${rocklist[@]}"; do basename "$rockitem"; done
+    exit 0
 fi
 
 set -x
