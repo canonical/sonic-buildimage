@@ -87,6 +87,8 @@ parts:
       - rsyslog
       - rsyslog-relp
       - python3
+      # _swsscommon.so links libpython3.14.so.1.0; dpkg -x skips its Depends
+      - libpython3.14
       - redis-tools
       - iproute2
       - net-tools
