@@ -146,4 +146,21 @@ fi
 # Mask SIGHUP signal to avoid orchagent termination by logrotate before orchagent registers its handler.
 trap '' SIGHUP
 
+if pgrep -x pebble > /dev/null 2>&1; then
+    # pebble has no supervisord stdout-capture: turn heartbeat lines into a file mtime for the watchdog
+    HEARTBEAT_FILE=/tmp/orchagent.heartbeat
+    rm -f "$HEARTBEAT_FILE"
+    heartbeat_filter() {
+        trap '' TERM    # keep draining until orchagent closes stdout
+        local line
+        while IFS= read -r line || [[ -n $line ]]; do
+            if [[ $line == '<!--XSUPERVISOR:BEGIN-->heartbeat<!--XSUPERVISOR:END-->' ]]; then
+                : > "$HEARTBEAT_FILE"
+            else
+                printf '%s\n' "$line"
+            fi
+        done
+    }
+    exec /usr/bin/orchagent ${ORCHAGENT_ARGS} > >(heartbeat_filter)
+fi
 exec /usr/bin/orchagent ${ORCHAGENT_ARGS}
