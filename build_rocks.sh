@@ -118,6 +118,7 @@ do
     rsync -a --exclude='*.iso' --exclude='*.log' target/files/resolute/ $rockitem/files/
     cp target/python-wheels/resolute/*.whl   $rockitem/python-wheels/
     cp dockers/docker-base-resolute/etc/rsyslog.conf $rockitem/files/
+    cp files/rsyslog/syslog-layer.yaml $rockitem/files/
     echo "export IMAGE_VERSION=$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse HEAD)" > $rockitem/envs
 
     pushd $rockitem
