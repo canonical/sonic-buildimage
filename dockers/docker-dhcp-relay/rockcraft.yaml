@@ -15,12 +15,11 @@ services:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
-  supervisor-proc-exit-listener:
+  proc-exit-listener:
     command: /usr/bin/supervisor-proc-exit-listener-rs --pebble
     override: replace
     startup: enabled
     on-success: ignore
-    on-failure: restart
     requires: [rsyslogd]
     after: [rsyslogd]
   start:
