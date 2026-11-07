@@ -18,6 +18,13 @@ services:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
+  proc-exit-listener:
+    command: /usr/bin/supervisor-proc-exit-listener-rs --pebble
+    override: replace
+    startup: enabled
+    on-success: ignore
+    requires: [rsyslogd]
+    after: [rsyslogd]
   start:
     command: /usr/bin/start.sh
     override: replace
@@ -47,6 +54,7 @@ parts:
       # Install SONiC debs (wildcard filenames)
       dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-supervisord-utilities-rs_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}

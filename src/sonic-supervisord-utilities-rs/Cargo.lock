@@ -614,6 +614,7 @@ version = "1.0.0"
 dependencies = [
  "clap",
  "injectorpp",
+ "libc",
  "log",
  "mio",
  "nix",
