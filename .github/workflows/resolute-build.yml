@@ -48,7 +48,7 @@ jobs:
         run: |
           make init
           make configure PLATFORM=vs
-          make target/sonic-vs.img.gz
+          SONIC_BUILD_RETRY_COUNT=3 make target/sonic-vs.img.gz
 
       - name: Free disk space before packing rocks
         run: |
@@ -63,7 +63,7 @@ jobs:
       - name: Rebuild sonic-vs image with rock containers
         run: |
           rm -f target/sonic-vs.img.gz
-          make target/sonic-vs.img.gz
+          SONIC_BUILD_RETRY_COUNT=3 make target/sonic-vs.img.gz
 
       - name: Check the rock images were not overwritten
         run: |
@@ -238,7 +238,7 @@ jobs:
         run: |
           make init
           make configure PLATFORM=broadcom
-          make target/sonic-broadcom.bin
+          SONIC_BUILD_RETRY_COUNT=3 make target/sonic-broadcom.bin
 
       - name: Free disk space before packing rocks
         run: |
@@ -253,7 +253,7 @@ jobs:
       - name: Rebuild sonic-broadcom image with rock containers
         run: |
           rm -f target/sonic-broadcom.bin
-          make target/sonic-broadcom.bin
+          SONIC_BUILD_RETRY_COUNT=3 make target/sonic-broadcom.bin
 
       - name: Check the rock images were not overwritten
         run: |
