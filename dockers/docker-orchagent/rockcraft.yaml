@@ -15,6 +15,13 @@ services:
     command: /usr/sbin/rsyslogd -n -iNONE
     override: replace
     startup: enabled
+  proc-exit-listener:
+    command: /usr/bin/supervisor-proc-exit-listener-rs --pebble
+    override: replace
+    startup: enabled
+    on-success: ignore
+    requires: [rsyslogd]
+    after: [rsyslogd]
   start:
     command: /usr/bin/start.sh
     override: replace
@@ -32,6 +39,7 @@ parts:
       # Install SONiC debs (wildcard filenames)
       dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x debs/sonic-supervisord-utilities-rs_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
@@ -52,6 +60,7 @@ parts:
       start.sh: usr/bin/start.sh
       pebble-layer.j2: usr/share/sonic/templates/pebble-layer.j2
       critical_processes.j2: usr/share/sonic/templates/critical_processes.j2
+      watchdog_processes.j2: usr/share/sonic/templates/watchdog_processes.j2
       orchagent.sh: usr/bin/orchagent.sh
       swssconfig.sh: usr/bin/swssconfig.sh
       buffermgrd.sh: usr/bin/buffermgrd.sh
@@ -128,7 +137,6 @@ parts:
       # Docker/supervisord-path only
       - -docker-init.j2
       - -supervisord.conf.j2
-      - -watchdog_processes.j2
       - -vlan_vars.j2
       - -arp_update.conf
       - -ndppd.conf

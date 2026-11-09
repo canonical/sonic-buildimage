@@ -21,11 +21,12 @@ nix = { version = "0.27", features = ["signal", "process"] }
 thiserror = "1.0"
 mio = { version = "0.8", features = ["os-poll", "os-ext"] }
 swss-common = { path = "../sonic-swss-common/crates/swss-common" }
+serde_json = "1.0"
+libc = "0.2"
 
 [dev-dependencies]
 tempfile = "3.0"
 injectorpp = { git = "https://github.com/microsoft/injectorppforrust.git", rev = "c7317906a1d514ef99bf2fbd4c943908c265d280" } ## For ARM support
-serde_json = "1.0"
 scopeguard = "1.2"
 
 [profile.release]

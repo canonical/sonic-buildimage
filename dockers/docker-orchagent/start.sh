@@ -20,6 +20,7 @@ CFGGEN_PARAMS=" \
     -t /usr/share/sonic/templates/ports.json.j2,/etc/swss/config.d/ports.json \
     -t /usr/share/sonic/templates/ndppd.conf.j2,/etc/ndppd.conf \
     -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes \
+    -t /usr/share/sonic/templates/watchdog_processes.j2,/etc/supervisor/watchdog_processes \
     -t /usr/share/sonic/templates/wait_for_link.sh.j2,/usr/bin/wait_for_link.sh \
     -t /usr/share/sonic/templates/pebble-layer.j2,/tmp/swss-layer.yaml \
 "
