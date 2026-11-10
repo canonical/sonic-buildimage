@@ -85,9 +85,9 @@
 
 `full_name` 在有组时返回 `组名:程序名`,否则返回 `name`。
 
-`ContainerProcesses`:`container`、`backend`(`"supervisord"`、`"pebble"` 或 `None`)、`running`、`processes`、`critical_groups`、`critical_programs`、`critical_parse_ok`(`critical_processes` 有格式错误的行时为 `False`)、`error`。`get(name)` 接受带组名或不带组名的名字。
+`ContainerProcesses`:`container`、`backend`(`"supervisord"`、`"pebble"` 或 `None`)、`running`、`processes`、`critical_groups`、`critical_programs`、`critical_parse_ok`(`critical_processes` 有格式错误的行时为 `False`)、`error`。`get(name, bare=True)` 接受带组名的名字;除非 `bare=False`,也接受不带组名的名字——supervisorctl 自己只认带组名的全名。
 
-函数:`build_probe_command(container)`、`parse_probe_output(container, rc, stdout, allow_bare_critical=False)`、`build_control_command(container, action, names)`、`critical_process_status(result, groups=None, programs=None)`,以及 `parse_proc_line(line)`。
+函数:`build_probe_command(container, timeout=None)`、`parse_probe_output(container, rc, stdout, allow_bare_critical=False)`、`build_control_command(container, action, names)`、`critical_process_status(result, groups=None, programs=None, strict=True)`,以及 `parse_proc_line(line)`。`timeout` 会在命令前加上 `timeout <n>`。`strict=False` 时跳过 `critical_processes` 里格式错误的行,而不是判整个容器失败,这是 `all_critical_process_status()` 原来的做法。
 
 ### 4.2 探针
 
@@ -126,12 +126,14 @@
 
 组成员:`[group:G]` 段里的 `programs=` 列表把其中的名字归入组 `G`。渲染出的 conf 里没有某个组时,该组没有成员,与 supervisord 相同。`critical_processes` 列了某个组、而容器里完全没有渲染出 conf 时,设置 `error`。
 
-运行中服务的 pid 是运行它的那个 pebble 直接子进程,也就是包装脚本 exec 之后 supervisord 报告的那个 pid。匹配前先去掉末尾的空参数(会改写自身标题的程序会留下这些空参数)。下列规则按顺序尝试;每条规则里,一个服务只有在某个子进程是它唯一的候选、且没有别的服务也选中这个子进程时,才认领它:
+运行中服务的 pid 是运行它的那个 pebble 直接子进程,也就是包装脚本 exec 之后 supervisord 报告的那个 pid。匹配前先去掉末尾的空参数(会改写自身标题的程序会留下这些空参数)。下列规则按顺序尝试;每条规则里,一个服务只有在某个子进程是它唯一的候选、且没有别的未解析服务也列出这个子进程时,才认领它:
 
 1. argv 等于 `shlex.split(command)`。
 2. argv 等于 command 前面加上一到两个解释器参数:按 shebang 运行的脚本(`python3 /usr/bin/bgpcfgd`)。
 3. 进程名——argv[0] 的 basename 截到第一个 `:` 或空格——等于服务名:`orchagent.sh` exec 成 orchagent;lldpd 把标题改成 `lldpd: monitor.`。
-4. 子进程的启动时间加上本容器的常规差值,与服务的 `current-since` 相差不超过 0.1 秒。常规差值是同一容器内被规则 1–3 匹配上的服务的「`current-since` 减启动时间」的中位数,它抵消了 btime 丢掉的小数部分,也抵消了开机以来的时钟跳变。这条规则覆盖 exec 成别的名字的包装脚本(`gnmi-native.sh` → `telemetry`),以及外观相同的多个实例(`redis` 与 `redis_bmp`)。
+4. 子进程的启动时间加上本容器的常规差值,与服务的 `current-since` 相差不超过 0.1 秒。这条规则覆盖 exec 成别的名字的包装脚本(`gnmi-native.sh` → `telemetry`),以及外观相同的多个实例(`redis` 与 `redis_bmp`)。
+
+常规差值是「`current-since` 减启动时间」,取自同一容器内被规则 1 匹配上的服务。它抵消了 btime 丢掉的那部分小数秒(t0 DUT 上是 0.18 秒)。开机后的时钟跳变会让此前启动的所有服务的差值一起偏移,所以只算彼此相差不超过 0.1 秒的最大那一组差值,取其中位数作为常规差值;如果有两组一样大,就没有常规差值,不用规则 4。规则 3 的匹配在两种情况下作废:它自己的差值与常规差值不符,或者另有一个未被认领的子进程也符合它的启动时间;这时改由规则 4 决定。
 
 都不满足时 `pid` 为 `-1`,`pid_note` 写明没有规则匹配上。在 rock 版 vs 镜像的两次抓取里,这些规则都让每个运行中的服务各自得到不同的 pid。
 
@@ -144,7 +146,7 @@
 `SonicHost` 新增方法:
 
 - `get_process_table(container)` 返回 `ContainerProcesses`。
-- `get_process_tables(containers)` 把多个探针放进一次 `shell_cmds` 批量执行,按位置对应结果,不再从命令串里解析容器名。
+- `get_process_tables(containers)` 把多个探针放进一次 `shell_cmds` 批量执行,每个探针限时 60 秒,按位置对应结果,不再从命令串里解析容器名。
 - `control_container_process(container, action, names, module_ignore_errors=False)`。
 - `os_profile(container=None)`(§5)。
 
@@ -154,12 +156,14 @@
 
 | 文件 | 函数 |
 |---|---|
-| `tests/common/devices/sonic.py` | `get_critical_group_and_process_lists`、`critical_process_status`、`all_critical_process_status`、`start_pmon_daemon`、`stop_pmon_daemon_service`、`get_pmon_daemon_status`、`get_pmon_daemon_states`、`kill_bgpd`、`start_bgpd` |
-| `tests/common/helpers/dut_utils.py` | `get_program_info`、`get_group_program_info` |
-| `tests/autorestart/test_container_autorestart.py` | 它自己的 `get_program_info` 和 `get_group_program_info` 拷贝改用 `dut_utils` 里的版本 |
+| `tests/common/devices/sonic.py` | `get_critical_group_and_process_lists`、`critical_process_status`、`all_critical_process_status`、`start_pmon_daemon`、`stop_pmon_daemon_service`、`get_pmon_daemon_status`、`get_pmon_daemon_states`、`kill_bgpd`、`start_bgpd`、`is_service_running` |
+| `tests/common/devices/multi_asic.py` | `modify_syslog_rate_limit`:因为 database rock 里没有 `sed`,改为从宿主经 `/proc/<pid>/root` 编辑 `rsyslog.conf`,再用控制命令重启 rsyslogd |
+| `tests/common/helpers/dut_utils.py` | `get_program_info`、`get_group_program_info`、`verify_orchagent_running_or_assert` |
+| `tests/common/utilities.py`、`tests/common/helpers/dut_utils.py` | `kill_process_by_pid` 拒绝非正数的 pid |
+| `tests/autorestart/test_container_autorestart.py` | 它自己的 `get_program_info`、`get_group_program_info` 和 `kill_process_by_pid` 拷贝改用 `dut_utils` 里的版本;它自己的运行检查和程序启动改走进程表和控制命令 |
 | `tests/process_monitoring/test_critical_process_monitoring.py` | 把已停止的关键进程重新拉起的那处 `supervisorctl start` |
 
-从 supervisorctl 解析沿用下来的行为:pmon 的关键进程名单只保留正在运行的程序;`get_program_info()` 取名字包含给定字符串的第一个程序。对容器里不存在的守护进程,`get_pmon_daemon_status()` 返回 `(None, -1)`。`critical_group_process()` 没有其他调用方,已删除;`parse_service_status_and_critical_process()` 保持公开且不变。
+从 supervisorctl 解析沿用下来的行为:pmon 的关键进程名单只保留正在运行的程序;`get_program_info()` 取名字包含给定字符串的第一个程序。对容器里不存在的守护进程,`get_pmon_daemon_status()` 返回 `(None, -1)`。`get_pmon_daemon_status()` 和 `is_service_running()` 用 `bare=False` 查找程序,因为它们原来解析的 supervisorctl 输出只用 `组名:程序名` 称呼带组的程序。`all_critical_process_status()` 用 `strict=False`。`critical_group_process()` 没有其他调用方,已删除;`parse_service_status_and_critical_process()` 保持公开且不变。
 
 ### 4.6 出错处理
 
@@ -170,8 +174,9 @@
 | 缺少 `critical_processes` | 没有关键进程,与现在相同;状态取决于其余程序能否读出 |
 | `critical_processes` 有格式错误的行 | `critical_parse_ok=False`;关键进程状态为 `False`,与现在相同 |
 | pebble 容器有关键组,但没有渲染出 supervisord conf | `error` 写明组名;关键进程状态为 `False` |
-| 进程在运行但没解析出 pid | `pid=-1`,设置 `pid_note`;不影响关键进程状态 |
-| JSON 或 YAML 无法解析,或输出没有 `end` | 设置 `error`;关键进程状态为 `False` |
+| 进程在运行但没解析出 pid | `pid=-1`,设置 `pid_note`;不影响关键进程状态。`kill_process_by_pid()` 拒绝非正数的 pid:gnmi 与宿主共用 PID 命名空间,在它里面执行 `kill -SIGKILL -1` 会杀掉交换机上的所有进程 |
+| JSON 或 YAML 无法解析、pebble 输出的结构不符合预期,或输出没有 `end` | 设置 `error`;关键进程状态为 `False` |
+| 探针卡住 | `get_process_tables()` 给每个探针加上 `timeout 60`,因为命令里含单引号时 `shell_cmds` 会丢掉它自己的超时 |
 
 ## 5. 组件 2:OS 画像
 
@@ -183,9 +188,9 @@
 - Ubuntu:`debian_base` 取自 `/etc/debian_version`。`forky/sid` 得到 `forky`;纯数字按大版本映射(10 `buster`、11 `bullseye`、12 `bookworm`、13 `trixie`、14 `forky`)。
 - 其他取值得到 `debian_base=None`。
 
-`debian_base_at_least(name)` 按 `buster < bullseye < bookworm < trixie < forky < duke` 的顺序比较,`debian_base` 为 `None` 时返回 `False`。`ID` 为 `debian` 时 `is_debian` 为真。
+`debian_base_at_least(name)` 按 `buster < bullseye < bookworm < trixie < forky < duke` 的顺序比较,`debian_base` 为 `None` 时返回 `False`,名字不在这个列表里时抛 `ValueError`。`ID` 为 `debian` 时 `is_debian` 为真。
 
-`SonicHost.os_profile(container=None)` 读取宿主上的 `/etc/os-release` 和 `/etc/debian_version`;给了 `container` 时读该容器里的。宿主结果按 `SonicHost` 对象缓存,容器结果不缓存。
+`os_profile_command(container=None)` 生成打印这两个文件的命令,`parse_os_profile_output(stdout)` 解析它的输出。读不到 `/etc/os-release` 时命令失败;`/etc/debian_version` 可以没有,因为单凭 `os-release` 就能认出 Debian。`SonicHost.os_profile(container=None)` 在宿主上运行它,给了 `container` 时在该容器里运行,失败时抛异常。宿主上成功的结果按 `SonicHost` 对象缓存,容器结果不缓存。
 
 | 调用点 | 改动 | 怎么验证 |
 |---|---|---|
@@ -206,8 +211,9 @@
 
 文件放在 `tests/common/unit_tests/helpers/`,用 `python3 -m pytest --noconftest --confcutdir=tests/common/unit_tests tests/common/unit_tests/helpers/` 运行,先于被测代码编写。输入:
 
-- rock 版 vs 镜像上每个运行中容器的探针输出,存放在 `tests/common/unit_tests/helpers/data/container_processes/`:`rock-7a081af43c/` 是无配置时的,`rock-7a081af43c-t0/` 是 deploy-mg 之后的;Dockerfile 版 vs 镜像的探针输出放在它们旁边;
-- 把 btime 平移一秒后的同一批探针输出;
+- rock 版 vs 镜像上每个运行中容器的探针输出,存放在 `tests/common/unit_tests/helpers/data/container_processes/`:`rock-7a081af43c/` 是无配置时的,`rock-7a081af43c-t0/` 是 deploy-mg 之后的;`dockerfile-7a081af43c-t0/` 是 Dockerfile 版 vs 镜像 deploy-mg 之后的,新解析器与旧的 supervisorctl 解析必须对它读出相同结果;
+- 把 btime 平移一秒、以及在服务之间插入一次时钟跳变后的同一批探针输出;
+- `36c29fc` 的 `critical_processes` 解析,与新解析器在相同输入上对照;
 - 两边根文件系统里的 `/etc/os-release` 和 `/etc/debian_version`;
 - 在本地用假的 `pebble` 和 `supervisorctl` 命令运行探针脚本;
 - 构造的情形:pid 解析不出、缺少组定义、容器没在运行、后端未知、JSON 格式错误、输出被截断。
@@ -217,6 +223,8 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 ### 6.2 A/B 实测
 
 在构建机上用 cEOS 4.32.5M 做邻居搭 vms-kvm-t0,两个镜像各一次。测试:每个模块前后自动运行的 sanity 检查,以及 `test_pretest.py`、`autorestart`、`platform_tests/daemon`、`memory_checker`、`copp`、`process_monitoring`。
+
+第二轮在两个镜像上跑上游的 t0 PR 测试清单,共 271 个文件。它在一台 Testflinger 机器上运行,分到 LXD 虚拟机里的 12 个 testbed:每个镜像 6 个分片。
 
 ### 6.3 验收标准
 
@@ -242,6 +250,14 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 9. `modify_syslog_rate_limit()`、`is_service_running()` 与 `verify_orchagent_running_or_assert()`
 10. autorestart 里剩下的两处 supervisorctl 调用
 11. memory_checker 的 monit 就绪检查接受 `Waiting`
+12. `kill_process_by_pid()` 拒绝非正数的 pid
+13. 批量探针每个限时 60 秒
+14. 服务绝不认领另一个未解析服务也列出的子进程
+15. supervisorctl 辅助函数的边界情况,以及 pebble 输出结构不符合预期时设置 `error` 而不抛异常
+16. Dockerfile 版探针样本,以及与旧 supervisorctl 解析的对照测试
+17. 时钟跳变后 pebble 的 pid 仍然正确
+18. `os_profile()` 在缺少 `os-release` 时失败,而不是在缺少 `debian_version` 时失败
+19. 对照 `36c29fc` 检查 `critical_processes` 解析,以及精确的探针测试
 
 A/B 实测结果见 [../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md](../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md)。
 
@@ -251,7 +267,7 @@ A/B 实测结果见 [../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md](../2026-
 
 | 风险 | 应对 |
 |---|---|
-| `current-since` 不再是进程启动时间,或两个需要规则 4 的服务在 0.1 秒内先后启动 | 只有规则 4 依赖它。在 rock 版 vs 镜像上,规则 1–3 能解析 75 个服务中的 70 个;另外 5 个是 redis、redis_bmp、gnmi-native、dialout 和 rest-server。一个子进程同时是多个服务的候选时不匹配,所以解析不出时 `pid=-1` 并附说明,不猜 |
+| `current-since` 不再是进程启动时间,或两个需要规则 4 的服务在 0.1 秒内先后启动 | 只有规则 4 依赖它。在 rock 版 vs 镜像上,规则 1–3 在 deploy-mg 之前能解析 75 个运行中服务里的 70 个,之后能解析 70 个里的 65 个;两次剩下的 5 个都是 redis、redis_bmp、gnmi-native、dialout 和 rest-server。一个子进程同时是多个服务的候选时不匹配,所以解析不出时 `pid=-1` 并附说明,不猜 |
 | 以后的 pebble 改动 JSON 输出 | 无法解析的输出或未知的状态词会设置 `error`,不抛异常 |
 | 重构改变 supervisord 路径 | 验收标准 2 |
 | 每次查询每个容器一次探针 | `docker exec` 次数不超过现在(现在每个容器两次) |
