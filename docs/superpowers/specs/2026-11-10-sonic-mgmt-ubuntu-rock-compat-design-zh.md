@@ -41,11 +41,11 @@
 | rock 镜像带 `/etc/supervisor/critical_processes` 和 bash,但没有 `supervisorctl` | 16 个 `rockcraft.yaml` stage 了这个文件;database、orchagent、fpm-frr 在启动脚本里渲染;database rock(`base: bare`)stage 了 bash |
 | sonic-mgmt 依据 `docker exec X supervisorctl status` 判断进程健康;输出为空或无法识别时判容器不健康 | `tests/common/devices/sonic.py` 的 `SonicHost.all_critical_process_status()` 与 `parse_service_status_and_critical_process()` |
 | sanity 检查与 `config reload`、重启之后的等待都用这同一个函数,所以 `--skip_sanity` 绕不过 | `sanity_check/checks.py` 的 `check_processes`;`platform/processes_utils.py` 的 `wait_critical_processes()` |
-| 同一台交换机上两种后端并存:rock 版 vs 镜像上 16 个运行中的容器是 rock,syncd 和 gbsyncd 是 supervisord | 对全部 18 个运行中容器的探针 |
+| 同一台交换机上两种后端并存:rock 版 vs 镜像上 16 个运行中的容器是 rock;syncd 和 gbsyncd,以及 deploy-mg 之后的 bmp 和 otel,是 supervisord | deploy-mg 前后对全部运行中容器的探针 |
 | syncd 和 gbsyncd 里有 `pebble` 可执行文件,但没有运行 pebble 守护进程,所以靠可执行文件判断不了后端;能判断的是 `pebble services` 有没有应答 | 同一次探针 |
 | `pebble services --format json` 返回 `name`、`startup`、`current`、`current-since`,没有 pid;文本输出的 `Since` 列含空格(`today at 07:40 UTC`) | docker-teamd rock,pebble 1.33 |
 | 每个 pebble 服务都是 pebble 的直接子进程,并自成进程组组长 | 同一次实测:`sleep 1000` 服务 pid = pgid = 56,ppid 为 1;vs 镜像上全部 16 个 rock |
-| 运行中服务的 `current-since` 比运行它的那个子进程的启动时间晚 1.000 到 1.024 秒 | 16 个 rock 中,§4.3 的 pid 规则 1–3 能解析出的 70 个服务 |
+| 运行中服务的 `current-since` 就是运行它的那个进程的启动时间。用丢掉了秒以下部分的 `/proc/stat` btime 来算,两者之差在一次开机里是 1.000–1.024 秒,在另一次开机里是 0.178–0.193 秒;同一容器内的差值相差不超过 0.02 秒 | 两次抓取;在 t0 DUT 上,`$EPOCHREALTIME` 减去 `/proc/uptime` 等于 btime + 0.18 秒 |
 | gnmi 与宿主共用 PID 命名空间(`--pid=host`);database rock 里 root 也读不了 `/proc/1/root` | `docker inspect`;rock 版 vs 镜像上的探针 |
 | dhcp-relay rock 启动时把 `docker-dhcp-relay.supervisord.conf` 渲染到 `/etc/supervisor/conf.d/`。其中的 `[group:dhcp-relay]` 段只在有 VLAN 配了 DHCP 服务器时才生成;Dockerfile 版镜像渲染的是同一个模板 | `dockers/docker-dhcp-relay/start.sh`(pebble 分支);rock 版 vs 镜像上渲染出的 conf |
 | 没有 VLAN 配置时,radv rock 不定义 `radvd` 服务 | radv 的探针 |
@@ -131,9 +131,9 @@
 1. argv 等于 `shlex.split(command)`。
 2. argv 等于 command 前面加上一到两个解释器参数:按 shebang 运行的脚本(`python3 /usr/bin/bgpcfgd`)。
 3. 进程名——argv[0] 的 basename 截到第一个 `:` 或空格——等于服务名:`orchagent.sh` exec 成 orchagent;lldpd 把标题改成 `lldpd: monitor.`。
-4. 子进程在服务的 `current-since` 之前 0.5 到 1.5 秒启动:exec 成别的名字的包装脚本(`gnmi-native.sh` → `telemetry`),以及外观相同的多个实例(`redis` 与 `redis_bmp`)。
+4. 子进程的启动时间加上本容器的常规差值,与服务的 `current-since` 相差不超过 0.1 秒。常规差值是同一容器内被规则 1–3 匹配上的服务的「`current-since` 减启动时间」的中位数,它抵消了 btime 丢掉的小数部分,也抵消了开机以来的时钟跳变。这条规则覆盖 exec 成别的名字的包装脚本(`gnmi-native.sh` → `telemetry`),以及外观相同的多个实例(`redis` 与 `redis_bmp`)。
 
-都不满足时 `pid` 为 `-1`,`pid_note` 写明没有规则匹配上。在 rock 版 vs 镜像上,这些规则让 16 个 rock 里全部 75 个运行中的服务各自得到不同的 pid。
+都不满足时 `pid` 为 `-1`,`pid_note` 写明没有规则匹配上。在 rock 版 vs 镜像的两次抓取里,这些规则都让每个运行中的服务各自得到不同的 pid。
 
 ### 4.4 控制
 
@@ -193,6 +193,8 @@
 | `tests/copp/copp_utils.py` 的 `_install_nano`(syncd 容器) | 用 `debian_base_at_least("bookworm")` 选择现行的安装方式 | vs testbed |
 | `tests/dualtor/test_mux_port_iptables_entries.py` | `debian_base_at_least("trixie")` | 没有 Dual-ToR testbed;只有 `os_profile` 的单元测试 |
 
+等待 DUT 恢复的地方都在匹配 sshd 的 banner。Ubuntu 上的 banner 是 `SSH-2.0-OpenSSH_10.2p1 Ubuntu-2ubuntu3`,`OpenSSH_[\w\.]+ Debian` 匹配不上:deploy-mg 等了 600 秒后超时,`reboot()` 也会在每个重启测试里超时。这个正则的全部 14 处拷贝——`tests/common/reboot.py`、6 个测试、deploy-mg、`reboot_sonic.yml` 以及 l2 模式、vchassis、nut 的 playbook——都改为接受 `(Debian|Ubuntu)`。
+
 不改的地方:
 
 - `tests/test_pretest.py` 里改写 saithrift URL 的逻辑会读 syncd 的 codename,但只对微软官方镜像的版本号生效;其他版本号(包括 `202605_resolute` 构建出来的)按私有镜像处理,URL 原样保留。
@@ -204,7 +206,8 @@
 
 文件放在 `tests/common/unit_tests/helpers/`,用 `python3 -m pytest --noconftest --confcutdir=tests/common/unit_tests tests/common/unit_tests/helpers/` 运行,先于被测代码编写。输入:
 
-- rock 版 vs 镜像上每个运行中容器的探针输出,存放在 `tests/common/unit_tests/helpers/data/container_processes/rock-7a081af43c/`;Dockerfile 版 vs 镜像的探针输出放在它旁边;
+- rock 版 vs 镜像上每个运行中容器的探针输出,存放在 `tests/common/unit_tests/helpers/data/container_processes/`:`rock-7a081af43c/` 是无配置时的,`rock-7a081af43c-t0/` 是 deploy-mg 之后的;Dockerfile 版 vs 镜像的探针输出放在它们旁边;
+- 把 btime 平移一秒后的同一批探针输出;
 - 两边根文件系统里的 `/etc/os-release` 和 `/etc/debian_version`;
 - 在本地用假的 `pebble` 和 `supervisorctl` 命令运行探针脚本;
 - 构造的情形:pid 解析不出、缺少组定义、容器没在运行、后端未知、JSON 格式错误、输出被截断。
@@ -233,6 +236,8 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 3. `SonicHost` 接口,以及迁移到它上面的 `sonic.py` 与 `dut_utils.py` 公共辅助函数,连同单元测试
 4. OS 调用点
 5. `autorestart` 与 `process_monitoring` 里的测试内辅助函数
+6. sshd banner 正则
+7. 以容器为基准的启动时间规则,以及 deploy-mg 之后的探针样本
 
 推送分支需要另行确认。
 
@@ -240,7 +245,7 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 
 | 风险 | 应对 |
 |---|---|
-| pebble 某个版本改了 1 秒的确认延迟 | 只有规则 4 依赖它。在 rock 版 vs 镜像上,规则 1–3 能解析 75 个服务中的 70 个;另外 5 个是 redis、redis_bmp、gnmi-native、dialout 和 rest-server。解析不出时 `pid=-1` 并附说明,不猜 |
+| `current-since` 不再是进程启动时间,或两个需要规则 4 的服务在 0.1 秒内先后启动 | 只有规则 4 依赖它。在 rock 版 vs 镜像上,规则 1–3 能解析 75 个服务中的 70 个;另外 5 个是 redis、redis_bmp、gnmi-native、dialout 和 rest-server。一个子进程同时是多个服务的候选时不匹配,所以解析不出时 `pid=-1` 并附说明,不猜 |
 | 以后的 pebble 改动 JSON 输出 | 无法解析的输出或未知的状态词会设置 `error`,不抛异常 |
 | 重构改变 supervisord 路径 | 验收标准 2 |
 | 每次查询每个容器一次探针 | `docker exec` 次数不超过现在(现在每个容器两次) |

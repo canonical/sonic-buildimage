@@ -41,11 +41,11 @@ Each item below was checked on the images under test; none is inferred.
 | Rock images ship `/etc/supervisor/critical_processes` and bash, but no `supervisorctl` | 16 `rockcraft.yaml` files stage the file; database, orchagent and fpm-frr render it in their start scripts; the database rock (`base: bare`) stages bash |
 | sonic-mgmt decides process health from `docker exec X supervisorctl status`; empty or unrecognised output marks the container unhealthy | `SonicHost.all_critical_process_status()` and `parse_service_status_and_critical_process()` in `tests/common/devices/sonic.py` |
 | The same function backs the sanity check and the waits after `config reload` and reboot, so `--skip_sanity` does not avoid it | `check_processes` in `sanity_check/checks.py`; `wait_critical_processes()` in `platform/processes_utils.py` |
-| One switch runs both backends: on the rock vs image 16 running containers are rocks; syncd and gbsyncd run supervisord | Probe of all 18 running containers |
+| One switch runs both backends: on the rock vs image 16 running containers are rocks; syncd and gbsyncd, and after deploy-mg also bmp and otel, run supervisord | Probe of all running containers, before and after deploy-mg |
 | syncd and gbsyncd carry a `pebble` binary but run no pebble daemon, so the presence of the binary does not identify the backend; whether `pebble services` answers does | Same probe |
 | `pebble services --format json` returns `name`, `startup`, `current`, `current-since` and no pid. The text output's `Since` column contains spaces (`today at 07:40 UTC`) | docker-teamd rock, pebble 1.33 |
 | Each pebble service runs as a direct child of pebble, as the leader of its own process group | Same run: `sleep 1000` service had pid = pgid = 56, ppid 1; all 16 rocks on the vs image |
-| For an active service, `current-since` is 1.000 to 1.024 s after the start time of the child that runs it | The 70 services of the 16 rocks whose pid rules 1–3 of §4.3 resolve |
+| `current-since` of an active service is the start time of the process that runs it. Computed with `/proc/stat` btime, which drops the fraction of a second, the gap is 1.000–1.024 s on one boot and 0.178–0.193 s on another; within one container it varies by at most 0.02 s | Both captures; on the t0 DUT `$EPOCHREALTIME` minus `/proc/uptime` is btime + 0.18 s |
 | gnmi shares the host PID namespace (`--pid=host`); in the database rock, root cannot read `/proc/1/root` | `docker inspect`; probe on the rock vs image |
 | The dhcp-relay rock renders `docker-dhcp-relay.supervisord.conf` into `/etc/supervisor/conf.d/` at start. Its `[group:dhcp-relay]` section exists only when a VLAN has DHCP servers; the Dockerfile image renders the same template | `dockers/docker-dhcp-relay/start.sh` (pebble branch); rendered conf on the rock vs image |
 | Without VLAN config the radv rock defines no `radvd` service | Probe of radv |
@@ -131,9 +131,9 @@ The pid of a running service is the direct child of pebble that runs it, which i
 1. argv equals `shlex.split(command)`.
 2. argv equals the command preceded by one or two interpreter arguments: a script run through its shebang (`python3 /usr/bin/bgpcfgd`).
 3. The process name — argv[0]'s basename up to the first `:` or space — equals the service name: `orchagent.sh` exec's orchagent; lldpd retitles itself `lldpd: monitor.`.
-4. The child started 0.5 to 1.5 s before the service's `current-since`: wrappers that exec a differently named binary (`gnmi-native.sh` → `telemetry`), and instances that look the same (`redis` and `redis_bmp`).
+4. The child's start time plus the container's usual gap is within 0.1 s of the service's `current-since`. The usual gap is the median of `current-since` minus start time over the services rules 1–3 matched in the same container; it cancels the fraction btime drops and any clock step since boot. This covers wrappers that exec a differently named binary (`gnmi-native.sh` → `telemetry`) and instances that look the same (`redis` and `redis_bmp`).
 
-Otherwise `pid` is `-1` and `pid_note` says that no rule matched. On the rock vs image these rules give all 75 active services in the 16 rocks a pid of their own.
+Otherwise `pid` is `-1` and `pid_note` says that no rule matched. In both captures of the rock vs image these rules give every active service a pid of its own.
 
 ### 4.4 Control
 
@@ -193,6 +193,8 @@ New module `tests/common/helpers/os_profile.py`, standard library only.
 | `tests/copp/copp_utils.py` `_install_nano` (syncd container) | `debian_base_at_least("bookworm")` selects the current install path | vs testbed |
 | `tests/dualtor/test_mux_port_iptables_entries.py` | `debian_base_at_least("trixie")` | No dual-ToR testbed; `os_profile` unit tests only |
 
+The waits for a DUT to come back match the sshd banner. On Ubuntu it is `SSH-2.0-OpenSSH_10.2p1 Ubuntu-2ubuntu3`, which `OpenSSH_[\w\.]+ Debian` misses: deploy-mg timed out after 600 s, and `reboot()` would time out on every reboot test. All 14 copies of the regex — `tests/common/reboot.py`, six tests, deploy-mg, `reboot_sonic.yml` and the l2-mode, vchassis and nut playbooks — accept `(Debian|Ubuntu)`.
+
 Not changed:
 
 - The saithrift URL rewrite in `tests/test_pretest.py` reads the syncd codename, but it runs only for official Microsoft image versions; other version strings, including those of `202605_resolute` builds, are treated as private and keep the URL as given.
@@ -204,7 +206,8 @@ Not changed:
 
 Files under `tests/common/unit_tests/helpers/`, run with `python3 -m pytest --noconftest --confcutdir=tests/common/unit_tests tests/common/unit_tests/helpers/`. Written before the code they test. Inputs:
 
-- probe output of every running container on the rock vs image, under `tests/common/unit_tests/helpers/data/container_processes/rock-7a081af43c/`; probe output from the Dockerfile vs image is added next to it;
+- probe output of every running container on the rock vs image, under `tests/common/unit_tests/helpers/data/container_processes/`: `rock-7a081af43c/` without configuration and `rock-7a081af43c-t0/` after deploy-mg; probe output from the Dockerfile vs image is added next to them;
+- the same probe output with btime shifted by a second;
 - `/etc/os-release` and `/etc/debian_version` from both root filesystems;
 - the probe script run locally against stub `pebble` and `supervisorctl` commands;
 - constructed cases: unresolved pid, missing group definition, container not running, unknown backend, malformed JSON, truncated output.
@@ -233,6 +236,8 @@ The classification is written up in this repository and is the input to the next
 3. `SonicHost` interface, and the common helpers in `sonic.py` and `dut_utils.py` moved onto it, with their unit tests
 4. The OS call sites
 5. The test-local helpers in `autorestart` and `process_monitoring`
+6. The sshd banner regex
+7. The start-time rule relative to the container, with the probe output after deploy-mg
 
 Pushing the branch needs a separate go-ahead.
 
@@ -240,7 +245,7 @@ Pushing the branch needs a separate go-ahead.
 
 | Risk | Handling |
 |---|---|
-| A pebble release changes its 1 s okay delay | Only rule 4 depends on it. On the rock vs image rules 1–3 resolve 70 of the 75 services; the other five are redis, redis_bmp, gnmi-native, dialout and rest-server. A miss leaves `pid=-1` with a note; it is not guessed |
+| `current-since` stops being the process start, or two services that need rule 4 start within 0.1 s of each other | Only rule 4 depends on it. On the rock vs image rules 1–3 resolve 70 of the 75 services; the other five are redis, redis_bmp, gnmi-native, dialout and rest-server. A child with more than one candidate service is left unmatched, so a miss leaves `pid=-1` with a note; it is not guessed |
 | A later pebble changes its JSON output | Output that cannot be parsed, or an unknown state word, sets `error` instead of raising |
 | The refactor changes the supervisord path | Acceptance criterion 2 |
 | One probe per container per query | No more `docker exec` calls than today (today: two per container) |
