@@ -238,6 +238,12 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 5. `autorestart` 与 `process_monitoring` 里的测试内辅助函数
 6. sshd banner 正则
 7. 以容器为基准的启动时间规则,以及 deploy-mg 之后的探针样本
+8. monit 的 sanity 检查接受 `Waiting`
+9. `modify_syslog_rate_limit()`、`is_service_running()` 与 `verify_orchagent_running_or_assert()`
+10. autorestart 里剩下的两处 supervisorctl 调用
+11. memory_checker 的 monit 就绪检查接受 `Waiting`
+
+A/B 实测结果见 [../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md](../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md)。
 
 推送分支需要另行确认。
 

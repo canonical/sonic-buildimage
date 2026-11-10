@@ -1,0 +1,13 @@
+autorestart/test_container_autorestart.xml: errors=1 failures=0 skipped=7 tests=20
+copp/test_copp.xml: errors=0 failures=0 skipped=28 tests=28
+memory_checker/test_memory_checker.xml: errors=4 failures=1 skipped=0 tests=5
+platform_tests/daemon/test_chassisd.xml: errors=0 failures=0 skipped=4 tests=4
+platform_tests/daemon/test_fancontrol.xml: errors=0 failures=0 skipped=4 tests=4
+platform_tests/daemon/test_ledd.xml: errors=0 failures=0 skipped=4 tests=4
+platform_tests/daemon/test_pcied.xml: errors=0 failures=0 skipped=4 tests=4
+platform_tests/daemon/test_psud.xml: errors=0 failures=0 skipped=5 tests=5
+platform_tests/daemon/test_sensord.xml: errors=0 failures=0 skipped=3 tests=3
+platform_tests/daemon/test_syseepromd.xml: errors=0 failures=0 skipped=4 tests=4
+posttest.xml: errors=1 failures=0 skipped=2 tests=6
+pretest.xml: errors=0 failures=0 skipped=5 tests=13
+process_monitoring/test_critical_process_monitoring.xml: errors=2 failures=0 skipped=0 tests=2

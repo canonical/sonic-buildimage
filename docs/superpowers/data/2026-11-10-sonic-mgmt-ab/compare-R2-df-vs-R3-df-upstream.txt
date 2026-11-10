@@ -1,0 +1,132 @@
+~/sonic-mgmt/tests/logs/R2-df: {'passed': 31, 'skipped': 69}
+~/sonic-mgmt-upstream/tests/logs/R3-df-upstream: {'passed': 24, 'skipped': 68, 'error': 8}
+
+== outcome differs (R2-df vs R3-df-upstream)
+tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-telemetry]
+    A skipped: Skipping test for container telemetry
+    B error: failed on teardown with "Failed: !!!!!!!!!!!!!!!! Recovery of sanity check failed !!!!!!!!!!!!!!!!Exception: Exception("dut not start: DUT vlab-01 did not start
+tests.memory_checker.test_memory_checker::test_memory_checker[vlab-01-]
+    A passed: 
+    B error: failed on teardown with "Failed: Monit is not running after restarted!"
+tests.memory_checker.test_memory_checker::test_memory_checker_recover[vlab-01-]
+    A passed: 
+    B error: failed on teardown with "Failed: Monit is not running after restarted!"
+tests.memory_checker.test_memory_checker::test_memory_checker_without_container_created[vlab-01-]
+    A passed: 
+    B error: failed on teardown with "BaseExceptionGroup: errors during test teardown (2 sub-exceptions)"
+tests.memory_checker.test_memory_checker::test_monit_reset_counter_failure[vlab-01-]
+    A passed: 
+    B error: failed on setup with "Failed: Monit is not running after restarted!"
+tests.process_monitoring.test_critical_process_monitoring::test_monitoring_critical_processes
+    A passed: 
+    B error: failed on teardown with "Exception: DUT vlab-01 did not startup at first try. res: {'state': 'started', 'port': 22, 'search_regex': None, 'match_groups': [], 'm
+tests.process_monitoring.test_critical_process_monitoring::test_orchagent_heartbeat
+    A passed: 
+    B error: failed on teardown with "Failed: !!!!!!!!!!!!!!!! Recovery of sanity check failed !!!!!!!!!!!!!!!!Exception: Exception("dut not start: DUT vlab-01 did not start
+tests.test_posttest::test_collect_dualtor_logs
+    A passed: 
+    B error: failed on teardown with "Failed: !!!!!!!!!!!!!!!! Recovery of sanity check failed !!!!!!!!!!!!!!!!Exception: Exception("dut not start: DUT vlab-01 did not start
+
+== failed or error in both
+
+== all
+skipped  skipped  ::tests.transceiver.oir.test_sfp_oir
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-bgp]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-bmp]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-dhcp_relay]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-eventd]
+skipped  skipped  tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-frr_bmp]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-gnmi]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-lldp]
+skipped  skipped  tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-macsec]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-mgmt-framework]
+skipped  skipped  tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-mux]
+skipped  skipped  tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-nat]
+skipped  skipped  tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-otel]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-pmon]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-radv]
+skipped  skipped  tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-sflow]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-snmp]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-swss]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-syncd]
+passed   passed   tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-teamd]
+skipped  error    tests.autorestart.test_container_autorestart::test_containers_autorestart[vlab-01-None-telemetry]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_add_new_trap[vlab-01]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer[vlab-01-ARP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer[vlab-01-DHCP6]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer[vlab-01-DHCP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer[vlab-01-Default]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer[vlab-01-LACP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer[vlab-01-LLDP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer[vlab-01-UDLD]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[1514-vlab-01-BGP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[1514-vlab-01-IP2ME]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[1514-vlab-01-SNMP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[1514-vlab-01-SSH]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[4096-vlab-01-BGP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[4096-vlab-01-IP2ME]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[4096-vlab-01-SNMP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[4096-vlab-01-SSH]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[64-vlab-01-BGP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[64-vlab-01-IP2ME]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[64-vlab-01-SNMP]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_policer_mtu[64-vlab-01-SSH]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_remove_trap[vlab-01-delete_feature_entry]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_remove_trap[vlab-01-disable_feature_status]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_trap_config_save_after_reboot[vlab-01]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_trap_neighbor_miss[4-VlanSubnet-vlab-01]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_trap_neighbor_miss[4-VlanSubnetIPinIP-vlab-01]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_trap_neighbor_miss[6-VlanSubnet-vlab-01]
+skipped  skipped  tests.copp.test_copp.TestCOPP::test_trap_neighbor_miss[6-VlanSubnetIPinIP-vlab-01]
+skipped  skipped  tests.copp.test_copp::test_verify_copp_configuration_cli[vlab-01]
+passed   error    tests.memory_checker.test_memory_checker::test_memory_checker[vlab-01-]
+passed   error    tests.memory_checker.test_memory_checker::test_memory_checker_recover[vlab-01-]
+passed   error    tests.memory_checker.test_memory_checker::test_memory_checker_without_container_created[vlab-01-]
+passed   error    tests.memory_checker.test_memory_checker::test_monit_reset_counter_failure[vlab-01-]
+skipped  skipped  tests.platform_tests.daemon.test_chassisd::test_pmon_chassisd_kill_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_chassisd::test_pmon_chassisd_running_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_chassisd::test_pmon_chassisd_stop_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_chassisd::test_pmon_chassisd_term_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_fancontrol::test_pmon_fancontrol_kill_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_fancontrol::test_pmon_fancontrol_running_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_fancontrol::test_pmon_fancontrol_stop_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_fancontrol::test_pmon_fancontrol_term_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_ledd::test_pmon_ledd_kill_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_ledd::test_pmon_ledd_running_status
+skipped  skipped  tests.platform_tests.daemon.test_ledd::test_pmon_ledd_stop_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_ledd::test_pmon_ledd_term_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_pcied::test_pmon_pcied_kill_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_pcied::test_pmon_pcied_running_status
+skipped  skipped  tests.platform_tests.daemon.test_pcied::test_pmon_pcied_stop_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_pcied::test_pmon_pcied_term_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_psud::test_pmon_psud_kill_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_psud::test_pmon_psud_psu_status_and_led[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_psud::test_pmon_psud_running_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_psud::test_pmon_psud_stop_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_psud::test_pmon_psud_term_and_start_status[vlab-01]
+skipped  skipped  tests.platform_tests.daemon.test_sensord::test_pmon_sensord_sighup
+skipped  skipped  tests.platform_tests.daemon.test_sensord::test_pmon_sensord_sigkill
+skipped  skipped  tests.platform_tests.daemon.test_sensord::test_pmon_sensord_sigterm
+skipped  skipped  tests.platform_tests.daemon.test_syseepromd::test_pmon_syseepromd_kill_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_syseepromd::test_pmon_syseepromd_running_status
+skipped  skipped  tests.platform_tests.daemon.test_syseepromd::test_pmon_syseepromd_stop_and_start_status
+skipped  skipped  tests.platform_tests.daemon.test_syseepromd::test_pmon_syseepromd_term_and_start_status
+passed   error    tests.process_monitoring.test_critical_process_monitoring::test_monitoring_critical_processes
+passed   error    tests.process_monitoring.test_critical_process_monitoring::test_orchagent_heartbeat
+passed   error    tests.test_posttest::test_collect_dualtor_logs
+passed   passed   tests.test_posttest::test_collect_ptf_logs
+passed   passed   tests.test_posttest::test_enable_startup_tsa_tsb_service
+skipped  skipped  tests.test_posttest::test_recover_rsyslog_rate_limit[vlab-01]
+passed   passed   tests.test_posttest::test_restore_container_autorestart[vlab-01]
+skipped  skipped  tests.test_pretest::test_backend_acl_load[vlab-01]
+passed   passed   tests.test_pretest::test_cleanup_cache
+passed   passed   tests.test_pretest::test_collect_pfc_pause_delay_params
+passed   passed   tests.test_pretest::test_collect_testbed_prio
+passed   passed   tests.test_pretest::test_disable_container_autorestart
+skipped  skipped  tests.test_pretest::test_disable_rsyslog_rate_limit
+passed   passed   tests.test_pretest::test_disable_startup_tsa_tsb_service
+passed   passed   tests.test_pretest::test_features_state
+passed   passed   tests.test_pretest::test_generate_running_golden_config
+skipped  skipped  tests.test_pretest::test_update_saithrift_ptf[vlab-01]
+skipped  skipped  tests.test_pretest::test_update_snappi_testbed_metadata
+passed   passed   tests.test_pretest::test_update_testbed_metadata

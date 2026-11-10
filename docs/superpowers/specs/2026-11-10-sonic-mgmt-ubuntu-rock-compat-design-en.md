@@ -238,6 +238,12 @@ The classification is written up in this repository and is the input to the next
 5. The test-local helpers in `autorestart` and `process_monitoring`
 6. The sshd banner regex
 7. The start-time rule relative to the container, with the probe output after deploy-mg
+8. The monit sanity check accepting `Waiting`
+9. `modify_syslog_rate_limit()`, `is_service_running()` and `verify_orchagent_running_or_assert()`
+10. The two remaining supervisorctl calls in autorestart
+11. memory_checker's monit readiness check accepting `Waiting`
+
+The A/B results are in [../2026-11-10-sonic-mgmt-resolute-ab-report-en.md](../2026-11-10-sonic-mgmt-resolute-ab-report-en.md).
 
 Pushing the branch needs a separate go-ahead.
 
