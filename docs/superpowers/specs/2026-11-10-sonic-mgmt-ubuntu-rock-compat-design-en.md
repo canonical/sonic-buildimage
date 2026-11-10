@@ -14,7 +14,7 @@ Run the sonic-mgmt `202605` tests against both build modes of `202605_resolute` 
 **In scope:**
 
 1. A dual-backend (supervisord / pebble) container process interface in `SonicHost`, and migration of the common helpers listed in §4.5 to it.
-2. An OS profile helper, and the four call sites that branch on the Debian codename (§5).
+2. An OS profile helper, and the call sites that branch on the Debian codename (§5).
 3. An A/B run on both images, and classification of every remaining difference (§6).
 
 **Out of scope:** migrating the 134 direct `docker exec <container> supervisorctl` call sites inside individual tests (they move to the new interface test area by test area, later); fixing product-side issues such as the SNMP `sysDescr` text, the missing host `/var/log/frr/bgpd.log` and the image version naming (the A/B run classifies them first); `supervisorctl` on PTF hosts; runtime validation on multi-ASIC, dual-ToR or chassis testbeds (none available); upstreaming to sonic-net.
@@ -26,7 +26,7 @@ Run the sonic-mgmt `202605` tests against both build modes of `202605_resolute` 
 | Where compatibility lives | In sonic-mgmt. The images are tested as built |
 | Backend detection | Per container, at query time, inside the container. No cache |
 | Migration scope | Common helpers and the pid/kill helpers. Direct call sites later, per test area |
-| `group:` entries in pebble containers | Read the rendered `[group:X]` sections from `/etc/supervisor/conf.d/*.conf` in the container. A group with no readable definition fails the check |
+| `group:` entries in pebble containers | Read the rendered `[group:X]` sections from `/etc/supervisor/conf.d/*.conf` in the container. A group absent from the rendered conf has no members, as under supervisord; no rendered conf at all fails the check |
 | State vocabulary | supervisord state names; the native pebble state is kept alongside |
 | OS checks | By Debian base generation, not by codename string |
 | Other Ubuntu differences (version naming, SNMP, coreutils, docker 29, Python 3.14, log noise, sshd) | Decided after the A/B run, from its results |
@@ -34,22 +34,28 @@ Run the sonic-mgmt `202605` tests against both build modes of `202605_resolute` 
 
 ## 3. Verified facts
 
-Each item below was checked before this design; none is inferred.
+Each item below was checked on the images under test; none is inferred.
 
 | Fact | Evidence |
 |---|---|
 | Rock images ship `/etc/supervisor/critical_processes` and bash, but no `supervisorctl` | 16 `rockcraft.yaml` files stage the file; database, orchagent and fpm-frr render it in their start scripts; the database rock (`base: bare`) stages bash |
 | sonic-mgmt decides process health from `docker exec X supervisorctl status`; empty or unrecognised output marks the container unhealthy | `SonicHost.all_critical_process_status()` and `parse_service_status_and_critical_process()` in `tests/common/devices/sonic.py` |
 | The same function backs the sanity check and the waits after `config reload` and reboot, so `--skip_sanity` does not avoid it | `check_processes` in `sanity_check/checks.py`; `wait_critical_processes()` in `platform/processes_utils.py` |
-| `pebble services --format json` returns `name`, `startup`, `current`, `current-since` and no pid. The text output's `Since` column contains spaces (`today at 07:40 UTC`) | Run against the docker-teamd rock, pebble 1.33 |
-| Each pebble service runs as a direct child of pebble, as the leader of its own process group; its argv equals the service command when the program does not exec | Same run: `sleep 1000` service had pid = pgid = 56, ppid 1 |
-| One switch runs both backends: on the rock vs image 17 containers are rocks; syncd, mux, stp, dhcp-server and the others run supervisord | `build_rocks.sh --list` |
-| The dhcp-relay rock renders `docker-dhcp-relay.supervisord.conf` into `/etc/supervisor/conf.d/` at start, including `[group:dhcp-relay] programs=dhcprelayd,...` | `dockers/docker-dhcp-relay/start.sh` (pebble branch) |
+| One switch runs both backends: on the rock vs image 16 running containers are rocks; syncd and gbsyncd run supervisord | Probe of all 18 running containers |
+| syncd and gbsyncd carry a `pebble` binary but run no pebble daemon, so the presence of the binary does not identify the backend; whether `pebble services` answers does | Same probe |
+| `pebble services --format json` returns `name`, `startup`, `current`, `current-since` and no pid. The text output's `Since` column contains spaces (`today at 07:40 UTC`) | docker-teamd rock, pebble 1.33 |
+| Each pebble service runs as a direct child of pebble, as the leader of its own process group | Same run: `sleep 1000` service had pid = pgid = 56, ppid 1; all 16 rocks on the vs image |
+| For an active service, `current-since` is 1.000 to 1.024 s after the start time of the child that runs it | The 70 services of the 16 rocks whose pid rules 1–3 of §4.3 resolve |
+| gnmi shares the host PID namespace (`--pid=host`); in the database rock, root cannot read `/proc/1/root` | `docker inspect`; probe on the rock vs image |
+| The dhcp-relay rock renders `docker-dhcp-relay.supervisord.conf` into `/etc/supervisor/conf.d/` at start. Its `[group:dhcp-relay]` section exists only when a VLAN has DHCP servers; the Dockerfile image renders the same template | `dockers/docker-dhcp-relay/start.sh` (pebble branch); rendered conf on the rock vs image |
+| Without VLAN config the radv rock defines no `radvd` service | Probe of radv |
+| Python's `str.splitlines()`, which Ansible uses for `stdout_lines`, also splits on `\x1c`, `\x1d` and `\x1e` | Python documentation; reproduced by a failing probe test |
 | Tests read the state from `split()[1]` and the pid from `split()[3]` of a `supervisorctl status` line; pmon daemon tests expect `STOPPED` after a stop | `get_pmon_daemon_status()`; `get_program_info()` / `get_group_program_info()` in `dut_utils.py` and `test_container_autorestart.py`; `tests/platform_tests/daemon/test_*.py` |
+| A missing `critical_processes` file means no critical processes: `get_critical_group_and_process_lists()` returns empty lists and success | `tests/common/devices/sonic.py` at `36c29fc` |
 | Ubuntu: `VERSION_CODENAME=resolute`, `/etc/debian_version` = `forky/sid`. Debian 202605: `trixie`, `13.5` | Both root filesystems |
 | Not different between the two images: sudo (C sudo 1.9.x, not sudo-rs); bash with the plugin patch and `bash_tacplus`; sysctl file `/usr/lib/sysctl.d/90-sonic.conf`; chrony; OpenSSH 10.x; `release: 'none'` in `sonic_version.yml` | Package and file comparison of both root filesystems |
 
-Pebble states observed in the same run:
+Pebble states observed:
 
 | Situation | `current` | `current-since` |
 |---|---|---|
@@ -64,7 +70,7 @@ Pebble states observed in the same run:
 
 ### 4.1 Module and data model
 
-New module `tests/common/helpers/container_processes.py`, standard library only, importable without Ansible (same rule as `ansible/module_utils/sonic_release_utils.py`).
+New module `tests/common/helpers/container_processes.py`, importable without Ansible (same rule as `ansible/module_utils/sonic_release_utils.py`). It needs the standard library and PyYAML, which docker-sonic-mgmt has.
 
 `ProcessInfo`:
 
@@ -79,13 +85,13 @@ New module `tests/common/helpers/container_processes.py`, standard library only,
 
 `full_name` returns `group:name` when there is a group, otherwise `name`.
 
-`ContainerProcesses`: `container`, `backend` (`"supervisord"`, `"pebble"` or `None`), `running`, `processes`, `critical_groups`, `critical_programs`, `critical_file_found`, `error`. `get(name)` accepts a full or a bare name.
+`ContainerProcesses`: `container`, `backend` (`"supervisord"`, `"pebble"` or `None`), `running`, `processes`, `critical_groups`, `critical_programs`, `critical_parse_ok` (`False` when a `critical_processes` line is malformed), `error`. `get(name)` accepts a full or a bare name.
 
-Functions: `build_probe_command(container)`, `parse_probe_output(container, rc, stdout)`, `build_control_command(container, action, names)`, and the per-backend parsers they call.
+Functions: `build_probe_command(container)`, `parse_probe_output(container, rc, stdout, allow_bare_critical=False)`, `build_control_command(container, action, names)`, `critical_process_status(result, groups=None, programs=None)`, and `parse_proc_line(line)`.
 
 ### 4.2 Probe
 
-One command per container: `docker exec <container> bash -c '<script>'`. The command keeps the `docker exec <container>` prefix. The script uses bash builtins only, so it does not depend on which tools each rock stages (the database rock, for example, has no `sed`). It prints sections, each introduced by a marker line `@@<section>@@`:
+One command per container: `docker exec <container> bash -c '<script>'`. The command keeps the `docker exec <container>` prefix. The script uses bash builtins only, so it does not depend on which tools each rock stages (the database rock, for example, has no `sed`). It prints sections, each introduced by a line that is exactly `@@<section>@@`:
 
 | Section | Content |
 |---|---|
@@ -94,10 +100,12 @@ One command per container: `docker exec <container> bash -c '<script>'`. The com
 | `status` (supervisord) | `supervisorctl status` |
 | `services` (pebble) | `pebble services --format json` |
 | `plan` (pebble) | `pebble plan` |
-| `procs` (pebble) | One line per process: pid, ppid, pgid, then argv joined with `\x1f` (read with `mapfile -d ''` from `/proc/<pid>/cmdline`) |
-| `groups` (pebble) | The `[group:...]` sections of `/etc/supervisor/conf.d/*.conf` |
+| `btime` (pebble) | The boot time from `/proc/stat` |
+| `procs` (pebble) | One line per process: pid, ppid, pgid, start time in clock ticks, then argv joined with `\x1f`; a newline inside an argument is written as `\x02` |
+| `groups` (pebble) | `/etc/supervisor/conf.d/*.conf` |
+| `end` | Marks complete output |
 
-A non-zero exit from `docker exec` means the container is not running.
+The probe leaves out itself and its subshells. When PID 1 is not pebble, the container shares the host PID namespace, and only processes whose `/proc/<pid>/root` is the container's root are kept. A non-zero exit from `docker exec` means the container is not running.
 
 ### 4.3 Parsing rules
 
@@ -114,15 +122,18 @@ A non-zero exit from `docker exec` means the container is not running.
 
 Known limitation: a one-shot service that exited normally shows `STOPPED`, where supervisord shows `EXITED`. One-shot services are not critical, and the existing tests accept either word after a process stops.
 
-Group membership: each `programs=` list in a `[group:G]` section puts those names in group `G`.
+A program named in `critical_processes` that pebble does not define is reported `STOPPED` with `raw_state` `undefined`, as supervisord reports a configured program that has not started.
 
-The pid of a running service is resolved in this order; the first rule that gives exactly one process wins:
+Group membership: each `programs=` list in a `[group:G]` section puts those names in group `G`. A group absent from the rendered conf has no members, as under supervisord. If `critical_processes` names a group and the container has no rendered conf at all, `error` is set.
 
-1. In the process group of a pebble child whose argv equals `shlex.split(command)`: the process whose argv[0] basename equals the service name. This finds the named program behind a wrapper, for example orchagent behind `orchagent.sh`, which matches what supervisord reports after the wrapper's `exec`.
-2. The pebble child whose argv equals `shlex.split(command)`.
-3. The pebble child, leader of its own process group, whose argv[0] basename equals the command's argv[0] basename.
+The pid of a running service is the direct child of pebble that runs it, which is the pid supervisord reports once a wrapper has exec'd its program. Trailing empty arguments, left by programs that rewrite their title, are dropped before matching. The rules below are tried in order; in each, a service takes a child only if that child is its only candidate and no other service takes the same child:
 
-Otherwise `pid` is `-1` and `pid_note` names the rule that failed. The `plan` section is YAML; the parser uses PyYAML, which docker-sonic-mgmt already has.
+1. argv equals `shlex.split(command)`.
+2. argv equals the command preceded by one or two interpreter arguments: a script run through its shebang (`python3 /usr/bin/bgpcfgd`).
+3. The process name — argv[0]'s basename up to the first `:` or space — equals the service name: `orchagent.sh` exec's orchagent; lldpd retitles itself `lldpd: monitor.`.
+4. The child started 0.5 to 1.5 s before the service's `current-since`: wrappers that exec a differently named binary (`gnmi-native.sh` → `telemetry`), and instances that look the same (`redis` and `redis_bmp`).
+
+Otherwise `pid` is `-1` and `pid_note` says that no rule matched. On the rock vs image these rules give all 75 active services in the 16 rocks a pid of their own.
 
 ### 4.4 Control
 
@@ -132,20 +143,23 @@ Otherwise `pid` is `-1` and `pid_note` names the rule that failed. The `plan` se
 
 New `SonicHost` methods:
 
-- `get_container_processes(container)` returns a `ContainerProcesses`.
-- `get_containers_processes(containers)` runs the probes as one `shell_cmds` batch and matches results by position, not by parsing the command string.
+- `get_process_table(container)` returns a `ContainerProcesses`.
+- `get_process_tables(containers)` runs the probes as one `shell_cmds` batch and matches results by position, not by parsing the command string.
 - `control_container_process(container, action, names, module_ignore_errors=False)`.
+- `os_profile(container=None)` (§5).
+
+The names avoid `dut_utils.get_container_processes()`, an existing helper based on `docker top`.
 
 Helpers moved onto the new interface, with signatures and return values unchanged:
 
 | File | Functions |
 |---|---|
-| `tests/common/devices/sonic.py` | `get_critical_group_and_process_lists`, `critical_group_process`, `critical_process_status`, `all_critical_process_status`, `start_pmon_daemon`, `stop_pmon_daemon_service`, `get_pmon_daemon_status`, `get_pmon_daemon_states`, `kill_bgpd`, `start_bgpd` |
+| `tests/common/devices/sonic.py` | `get_critical_group_and_process_lists`, `critical_process_status`, `all_critical_process_status`, `start_pmon_daemon`, `stop_pmon_daemon_service`, `get_pmon_daemon_status`, `get_pmon_daemon_states`, `kill_bgpd`, `start_bgpd` |
 | `tests/common/helpers/dut_utils.py` | `get_program_info`, `get_group_program_info` |
-| `tests/autorestart/test_container_autorestart.py` | `get_program_info`, `get_group_program_info` |
-| `tests/process_monitoring/test_critical_process_monitoring.py` | the `supervisorctl start` that restores a stopped critical process |
+| `tests/autorestart/test_container_autorestart.py` | Its copies of `get_program_info` and `get_group_program_info` are replaced by the `dut_utils` versions |
+| `tests/process_monitoring/test_critical_process_monitoring.py` | The `supervisorctl start` that restores a stopped critical process |
 
-`parse_service_status_and_critical_process()` stays public and unchanged for any other caller.
+Behaviour kept from the supervisorctl parsing: pmon's critical lists keep only running programs; `get_program_info()` picks the first program whose name contains the given string. `get_pmon_daemon_status()` of a daemon the container does not have returns `(None, -1)`. `critical_group_process()` had no other caller and is removed; `parse_service_status_and_critical_process()` stays public and unchanged.
 
 ### 4.6 Error handling
 
@@ -153,10 +167,11 @@ Helpers moved onto the new interface, with signatures and return values unchange
 |---|---|
 | Container not running | `running=False`; critical status `False`, as today |
 | Backend `unknown` | `error` set; critical status `False` |
-| `critical_processes` missing | Same as today: the lists cannot be read, status `False` |
-| `group:` entry with no readable definition in a pebble container | Status `False`; `error` names the group |
+| `critical_processes` missing | No critical processes, as today; the status depends on the other programs being readable |
+| Malformed `critical_processes` line | `critical_parse_ok=False`; critical status `False`, as today |
+| Critical group in a pebble container with no rendered supervisord conf | `error` names the group; critical status `False` |
 | Running process whose pid is not resolved | `pid=-1`, `pid_note` set; the critical status is not affected |
-| JSON or YAML that cannot be parsed | `error` set; critical status `False` |
+| JSON or YAML that cannot be parsed, or output without `end` | `error` set; critical status `False` |
 
 ## 5. Component 2: OS profile
 
@@ -168,7 +183,7 @@ New module `tests/common/helpers/os_profile.py`, standard library only.
 - Ubuntu: `debian_base` comes from `/etc/debian_version`. `forky/sid` gives `forky`; a numeric value maps by major version (10 `buster`, 11 `bullseye`, 12 `bookworm`, 13 `trixie`, 14 `forky`).
 - Any other value gives `debian_base=None`.
 
-`debian_base_at_least(name)` compares in the order `buster < bullseye < bookworm < trixie < forky < duke`, and returns `False` when `debian_base` is `None`.
+`debian_base_at_least(name)` compares in the order `buster < bullseye < bookworm < trixie < forky < duke`, and returns `False` when `debian_base` is `None`. `is_debian` is true when `ID` is `debian`.
 
 `SonicHost.os_profile(container=None)` reads `/etc/os-release` and `/etc/debian_version` on the host, or inside `container` when given. The host result is cached per `SonicHost` object; container results are not cached.
 
@@ -176,20 +191,25 @@ New module `tests/common/helpers/os_profile.py`, standard library only.
 |---|---|---|
 | `tests/memory_checker/test_memory_checker.py` `get_restart_expected_logre` | `debian_base_at_least("bookworm")` selects the systemd log format with the unit name | vs testbed |
 | `tests/copp/copp_utils.py` `_install_nano` (syncd container) | `debian_base_at_least("bookworm")` selects the current install path | vs testbed |
-| `tests/test_pretest.py` saithrift URL | Rewrite the URL only when the syncd container is Debian | Not reached on vs; unit test only |
-| `tests/dualtor/test_mux_port_iptables_entries.py` | `debian_base_at_least("trixie")` | No dual-ToR testbed; unit test only |
+| `tests/dualtor/test_mux_port_iptables_entries.py` | `debian_base_at_least("trixie")` | No dual-ToR testbed; `os_profile` unit tests only |
 
-The sysctl choice in `dut_utils.enable_nat_for_dpus` and `dpu_utils` already takes the right branch on Ubuntu and is not changed.
+Not changed:
+
+- The saithrift URL rewrite in `tests/test_pretest.py` reads the syncd codename, but it runs only for official Microsoft image versions; other version strings, including those of `202605_resolute` builds, are treated as private and keep the URL as given.
+- The sysctl choice in `dut_utils.enable_nat_for_dpus` and `dpu_utils` already takes the right branch on Ubuntu.
 
 ## 6. Verification
 
 ### 6.1 Unit tests
 
-New files under `tests/common/unit_tests/helpers/`, run with `python3 -m pytest --noconftest --confcutdir=tests/common/unit_tests tests/common/unit_tests/helpers/`. Written before the code they test. Inputs:
+Files under `tests/common/unit_tests/helpers/`, run with `python3 -m pytest --noconftest --confcutdir=tests/common/unit_tests tests/common/unit_tests/helpers/`. Written before the code they test. Inputs:
 
-- probe output captured from both VMs, stored under `tests/common/unit_tests/helpers/data/`;
+- probe output of every running container on the rock vs image, under `tests/common/unit_tests/helpers/data/container_processes/rock-7a081af43c/`; probe output from the Dockerfile vs image is added next to it;
 - `/etc/os-release` and `/etc/debian_version` from both root filesystems;
-- constructed cases: unresolved pid, missing group definition, container not running, unknown backend, malformed JSON.
+- the probe script run locally against stub `pebble` and `supervisorctl` commands;
+- constructed cases: unresolved pid, missing group definition, container not running, unknown backend, malformed JSON, truncated output.
+
+The SonicHost methods and the `dut_utils` helpers are loaded with `ast` and run against a fake DUT that serves the captured probe output.
 
 ### 6.2 A/B run
 
@@ -206,14 +226,13 @@ The classification is written up in this repository and is the input to the next
 
 ## 7. Branch and commits
 
-`202605_resolute` on `canonical/sonic-mgmt`, from `sonic-net/sonic-mgmt` `202605` at `36c29fc`. GPG-signed commits in this order:
+`202605_resolute` on `canonical/sonic-mgmt`, from `sonic-net/sonic-mgmt` `202605` at `36c29fc`. GPG-signed commits in this order, each passing the unit tests on its own:
 
 1. OS profile module and its unit tests
-2. The four OS call sites
-3. Container process module and its unit tests
-4. `SonicHost` interface
-5. Common helpers in `sonic.py` and `dut_utils.py`
-6. Test-local helpers in `autorestart` and `process_monitoring`
+2. Container process module, its unit tests and the captured probe output
+3. `SonicHost` interface, and the common helpers in `sonic.py` and `dut_utils.py` moved onto it, with their unit tests
+4. The OS call sites
+5. The test-local helpers in `autorestart` and `process_monitoring`
 
 Pushing the branch needs a separate go-ahead.
 
@@ -221,7 +240,7 @@ Pushing the branch needs a separate go-ahead.
 
 | Risk | Handling |
 |---|---|
-| Wrappers or `exec` change the argv of a pebble service | The three pid rules in §4.3; anything unresolved is reported, not guessed |
-| A later pebble changes the JSON fields | Missing fields set `error` with the field name instead of raising |
+| A pebble release changes its 1 s okay delay | Only rule 4 depends on it. On the rock vs image rules 1–3 resolve 70 of the 75 services; the other five are redis, redis_bmp, gnmi-native, dialout and rest-server. A miss leaves `pid=-1` with a note; it is not guessed |
+| A later pebble changes its JSON output | Output that cannot be parsed, or an unknown state word, sets `error` instead of raising |
 | The refactor changes the supervisord path | Acceptance criterion 2 |
 | One probe per container per query | No more `docker exec` calls than today (today: two per container) |
