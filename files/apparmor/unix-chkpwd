@@ -1,0 +1,2 @@
+# libnss_tacplus (nsswitch "passwd: tacplus files") reads its configuration inside unix_chkpwd.
+/etc/tacplus_nss.conf r,
