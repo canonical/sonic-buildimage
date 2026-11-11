@@ -414,6 +414,9 @@ sudo cp files/apparmor/usr.bin.tcpdump $FILESYSTEM_ROOT/etc/apparmor.d/local/usr
 # /etc/rsyslog.d/*_events.conf fails with EACCES and no sonic-event is ever published.
 sudo cp files/apparmor/usr.sbin.rsyslogd $FILESYSTEM_ROOT/etc/apparmor.d/local/usr.sbin.rsyslogd
 
+# Ubuntu enforces the unix-chkpwd profile (Debian ships it in complain mode); let libnss_tacplus read its config.
+sudo cp files/apparmor/unix-chkpwd $FILESYSTEM_ROOT/etc/apparmor.d/local/unix-chkpwd
+
 ## Set /etc/shadow permissions to -rw-------.
 sudo LANG=c chroot $FILESYSTEM_ROOT chmod 600 /etc/shadow
 
