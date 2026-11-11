@@ -141,6 +141,8 @@ Otherwise `pid` is `-1` and `pid_note` says that no rule matched. In both captur
 
 `build_control_command(container, action, names)`, where `action` is `start`, `stop` or `restart`, produces one command that keeps the `docker exec <container>` prefix and branches inside the container: under pebble it runs `pebble <action>` with the group prefix removed from each name; under supervisord it runs `supervisorctl <action>` with the names unchanged. The return code is 0 on success and non-zero on failure under both backends.
 
+`build_signal_command(container, signal, names)` branches the same way to `pebble signal` or `supervisorctl signal`. The signal is a name such as `SIGHUP` or `HUP`; anything else is rejected before it reaches the shell. Both backends return 1 for a program the container does not define.
+
 ### 4.5 SonicHost interface and migrated helpers
 
 New `SonicHost` methods:
@@ -148,6 +150,7 @@ New `SonicHost` methods:
 - `get_process_table(container)` returns a `ContainerProcesses`.
 - `get_process_tables(containers)` runs the probes as one `shell_cmds` batch, each bounded to 60 s, and matches results by position, not by parsing the command string.
 - `control_container_process(container, action, names, module_ignore_errors=False)`.
+- `signal_container_process(container, signal, names, module_ignore_errors=False)`.
 - `os_profile(container=None)` (§5).
 
 The names avoid `dut_utils.get_container_processes()`, an existing helper based on `docker top`.
@@ -224,7 +227,7 @@ The SonicHost methods and the `dut_utils` helpers are loaded with `ast` and run 
 
 A vms-kvm-t0 testbed with cEOS 4.32.5M neighbours on the build host, once per image. Tests: the sanity checks that run around every module, plus `test_pretest.py`, `autorestart`, `platform_tests/daemon`, `memory_checker`, `copp`, `process_monitoring`.
 
-The second round runs the upstream t0 PR test list, 271 files, on both images. It runs on a Testflinger machine, split across twelve testbeds in LXD virtual machines: six shards per image.
+The second round runs the upstream t0 PR test list, 271 files, on both images. It runs on a Testflinger machine, split across twelve testbeds in LXD virtual machines: six shards per image. The test-area call sites it finds are moved onto the same interface, and the files they affect are rerun on both images.
 
 ### 6.3 Acceptance criteria
 
@@ -259,7 +262,20 @@ The classification is written up in this repository and is the input to the next
 18. `os_profile()` failing on a missing `os-release`, not on a missing `debian_version`
 19. The `critical_processes` parsing checked against `36c29fc`, and exact probe tests
 
-The A/B results are in [../2026-11-10-sonic-mgmt-resolute-ab-report-en.md](../2026-11-10-sonic-mgmt-resolute-ab-report-en.md).
+The t0 run added, one area per commit:
+
+20. `build_signal_command()` and `SonicHost.signal_container_process()`
+21. The SNMP subagent check
+22. dhcp_relay program states and pids
+23. The gnmi helpers
+24. arp_update and rsyslogd control in arp, crm, dualtor, vlan, pc and syslog
+25. The like-bgp container's entrypoint, and the fpmsyncd restart
+26. bmp program states
+27. The radvd SIGHUP
+28. thermalctld, lm-sensors and lldpmgrd
+29. The telemetry event helpers
+
+The A/B results are in [../2026-11-10-sonic-mgmt-resolute-ab-report-en.md](../2026-11-10-sonic-mgmt-resolute-ab-report-en.md), and the t0 run in [../2026-11-11-sonic-mgmt-t0-run-report-en.md](../2026-11-11-sonic-mgmt-t0-run-report-en.md).
 
 Pushing the branch needs a separate go-ahead.
 

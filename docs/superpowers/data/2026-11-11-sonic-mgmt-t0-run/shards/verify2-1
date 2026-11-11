@@ -1,0 +1,5 @@
+bgp/test_bgp_port_disable.py
+bmp/test_bmp_configdb.py
+bmp/test_bmp_statedb.py
+telemetry/test_events.py
+vlan/test_vlan.py

@@ -1,0 +1,81 @@
+[
+ {
+  "from": "tb3",
+  "from_label": "rock-3",
+  "to": "tb2",
+  "to_label": "rock-x1",
+  "files": [
+   "platform_tests/test_reboot.py",
+   "platform_tests/test_xcvr_info_in_db.py",
+   "qos/test_qos_dscp_mapping.py",
+   "restapi/test_restapi_vxlan_ecmp.py",
+   "route/test_route_flap.py",
+   "show_techsupport/test_techsupport_no_secret.py",
+   "snmp/test_snmp_lldp.py",
+   "snmp/test_snmp_queue_counters.py",
+   "ssh/test_ssh_ciphers.py",
+   "sub_port_interfaces/test_sub_port_interfaces.py",
+   "system_health/test_system_status.py",
+   "tacacs/test_ro_user.py",
+   "test_features.py",
+   "vlan/test_autostate_disabled.py",
+   "vxlan/test_vnet_route_leak.py"
+  ]
+ },
+ {
+  "from": "tb1",
+  "from_label": "rock-1",
+  "to": "tb6",
+  "to_label": "rock-x2",
+  "files": [
+   "tacacs/test_jit_user.py",
+   "telemetry/test_telemetry_cert_rotation.py",
+   "test_procdockerstatsd.py",
+   "vlan/test_vlan_ping.py",
+   "zmq/test_gnmi_zmq.py"
+  ]
+ },
+ {
+  "from": "tb7",
+  "from_label": "df-1",
+  "to": "tb8",
+  "to_label": "df-x3",
+  "files": [
+   "snmp/test_snmp_interfaces.py",
+   "snmp/test_snmp_psu.py",
+   "srv6/test_srv6_static_config.py",
+   "stress/test_stress_routes.py",
+   "syslog/test_syslog_rate_limit.py",
+   "tacacs/test_jit_user.py",
+   "telemetry/test_telemetry_cert_rotation.py",
+   "test_procdockerstatsd.py",
+   "vlan/test_vlan_ping.py",
+   "zmq/test_gnmi_zmq.py"
+  ]
+ },
+ {
+  "from": "tb4",
+  "from_label": "rock-4",
+  "to": "tb3",
+  "to_label": "rock-x4",
+  "files": [
+   "vlan/test_host_vlan.py",
+   "vxlan/test_vnet_vxlan.py"
+  ]
+ },
+ {
+  "from": "tb9",
+  "from_label": "df-3",
+  "to": "tb12",
+  "to_label": "df-x5",
+  "files": [
+   "ssh/test_ssh_ciphers.py",
+   "sub_port_interfaces/test_sub_port_interfaces.py",
+   "system_health/test_system_status.py",
+   "tacacs/test_ro_user.py",
+   "test_features.py",
+   "vlan/test_autostate_disabled.py",
+   "vxlan/test_vnet_route_leak.py"
+  ]
+ }
+]

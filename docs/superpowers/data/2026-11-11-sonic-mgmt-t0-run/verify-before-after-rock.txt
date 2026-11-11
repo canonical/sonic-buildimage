@@ -1,0 +1,46 @@
+before: {'setup-error': 64, 'passed': 98, 'failed': 33, 'skipped': 139} | after: {'passed': 186, 'skipped': 143, 'failed': 5}
+teardown before: {'la-noise': 115, 'ok': 203, 'la': 14, 'teardown-error': 2} | after: {'la-noise': 137, 'ok': 195, 'teardown-error': 2}
+
+== still failing after the fixes
+tests.pc.test_po_cleanup::test_po_cleanup_after_reload[vlab-01] failed: tests.common.plugins.loganalyzer.loganalyzer.LogAnalyzerError: match: 0  (before: failed)
+tests.platform_tests.test_platform_info::test_turn_on_off_psu_and_check_psustatus[vlab-01-ignore_particular_error_log0] failed: AssertionError: Run command 'sudo psuutil status' failed  (before: failed)
+tests.process_monitoring.test_critical_process_monitoring::test_monitoring_critical_processes failed: Failed: Program 'staticd' in container 'bgp' is in the 'STOPPED' state, expected 'RUNNING'  (before: failed)
+tests.snmp.test_snmp_v2mib::test_snmp_v2mib[vlab-01] failed: Failed: System values ['Ubuntu forky/sid'] was not found in SNMP facts: SONiC Software Version: SONiC.202605_resolute.0-7a081af43 - HwSku: Force10-S60  (before: failed)
+tests.test_pktgen::test_pktgen[vlab-01-None] failed: tests.common.plugins.loganalyzer.loganalyzer.LogAnalyzerError: match: 18  (before: failed)
+
+== fixed (failed/setup-error before, passed/skipped after)
+2 tests.arp.test_arp_update
+3 tests.arp.test_unknown_mac.TestUnknownMac
+2 tests.bgp.test_bgp_command
+1 tests.bmp.test_bmp_redis_instance
+1 tests.cacl.test_cacl_function
+7 tests.crm.test_crm
+9 tests.dhcp_relay.test_dhcp_relay
+2 tests.dualtor.test_orchagent_active_tor_downstream
+4 tests.generic_config_updater.test_dhcp_relay
+3 tests.gnmi.test_gnmi
+1 tests.gnmi.test_gnmi_appldb
+16 tests.gnmi.test_gnmi_configdb
+8 tests.gnmi.test_gnmi_countersdb
+1 tests.gnmi.test_gnmi_smartswitch
+3 tests.gnmi.test_gnoi_os
+1 tests.gnmi.test_gnoi_system
+2 tests.gnmi.test_gnoi_system_reboot
+1 tests.minigraph.test_masked_services
+1 tests.monit.test_monit_status
+2 tests.platform_tests.test_platform_info
+4 tests.platform_tests.test_reboot
+1 tests.radv.test_radv_ipv6_ra
+1 tests.snmp.test_snmp_cpu
+1 tests.snmp.test_snmp_default_route
+1 tests.snmp.test_snmp_fdb
+4 tests.snmp.test_snmp_interfaces
+2 tests.snmp.test_snmp_loopback
+1 tests.snmp.test_snmp_memory
+1 tests.snmp.test_snmp_pfc_counters
+2 tests.snmp.test_snmp_psu
+1 tests.snmp.test_snmp_queue
+1 tests.syslog.test_syslog_rate_limit
+2 tests.telemetry.test_events
+
+== loganalyzer lines beyond noise after the fixes

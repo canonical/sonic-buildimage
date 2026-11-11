@@ -1,0 +1,14 @@
+before: {'passed': 187, 'skipped': 143, 'failed': 4} | after: {'passed': 186, 'skipped': 143, 'failed': 5}
+teardown before: {'la-noise': 135, 'ok': 196, 'teardown-error': 3} | after: {'la-noise': 135, 'ok': 194, 'teardown-error': 5}
+
+== still failing after the fixes
+tests.platform_tests.test_platform_info::test_turn_on_off_psu_and_check_psustatus[vlab-01-ignore_particular_error_log0] failed: AssertionError: Run command 'sudo psuutil status' failed  (before: failed)
+tests.platform_tests.test_reboot::test_continuous_reboot[vlab-01] failed: Failed: Not all critical processes are healthy  (before: passed)
+tests.snmp.test_snmp_v2mib::test_snmp_v2mib[vlab-01] failed: Failed: System values ['Ubuntu forky/sid'] was not found in SNMP facts: SONiC Software Version: SONiC.HEAD.0-7a081af4 - HwSku: Force10-S6000 - Distrib  (before: failed)
+tests.telemetry.test_events::test_events[vlab-01-False] failed: tests.common.errors.RunAnsibleModuleFail: run module shell failed, Ansible Results =>  (before: passed)
+tests.test_pktgen::test_pktgen[vlab-01-None] failed: tests.common.plugins.loganalyzer.loganalyzer.LogAnalyzerError: match: 18  (before: failed)
+
+== fixed (failed/setup-error before, passed/skipped after)
+1 tests.gnmi.test_gnoi_system_reboot
+
+== loganalyzer lines beyond noise after the fixes

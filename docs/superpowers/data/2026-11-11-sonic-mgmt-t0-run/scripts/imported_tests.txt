@@ -1,0 +1,12 @@
+bgp/test_startup_tsa_tsb_service.py
+clock/test_clock.py
+generic_config_updater/add_cluster/test_add_cluster.py
+platform_tests/test_platform_info.py
+platform_tests/test_reboot.py
+upgrade_path/test_upgrade_path.py
+vlan/test_vlan.py
+voq/test_voq_disrupts.py
+voq/test_voq_init.py
+voq/test_voq_ipfwd.py
+voq/test_voq_nbr.py
+vxlan/test_vxlan_ecmp.py

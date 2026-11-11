@@ -1,0 +1,21 @@
+02:12:30 tb2 takes 15 files from tb3 as rock-x1: platform_tests/test_reboot.py .. vxlan/test_vnet_route_leak.py
+03:06:03 tb6 takes 5 files from tb1 as rock-x2: tacacs/test_jit_user.py .. zmq/test_gnmi_zmq.py
+03:27:06 tb8 takes 10 files from tb7 as df-x3: snmp/test_snmp_interfaces.py .. zmq/test_gnmi_zmq.py
+03:27:36 tb3 takes 2 files from tb4 as rock-x4: vlan/test_host_vlan.py .. vxlan/test_vnet_vxlan.py
+03:44:09 manual: tb3 reruns rock-x4 files + platform_tests/test_link_down.py as rock-x4b
+03:46:03 tb12 takes 7 files from tb9 as df-x5: ssh/test_ssh_ciphers.py .. vxlan/test_vnet_route_leak.py
+03:49:31 manual: tb2 runs verify-1 as rock-v1
+03:49:32 manual: tb4 runs verify-2 as rock-v2
+03:49:32 manual: tb5 runs verify-3 as rock-v3
+03:49:33 manual: tb6 runs verify-4 as rock-v4
+04:48:10 balancer stopped by hand (no files left to hand over)
+04:48:10 manual: tb8 runs verify-1 as df-v1
+04:48:11 manual: tb9 runs verify-2 as df-v2
+04:48:11 manual: tb10 runs verify-3 as df-v3
+04:48:12 manual: tb12 runs verify-4 as df-v4
+04:54:26 manual: tb2 runs syslog/test_syslog_rate_limit.py as rock-v5
+04:54:27 manual: tb11 runs syslog/test_syslog_rate_limit.py as df-v5
+05:54:11 manual: tb4 runs verify2-1 as rock-w1
+05:54:11 manual: tb5 runs verify2-2 as rock-w2
+05:54:12 manual: tb7 runs verify2-1 as df-w1
+05:54:12 manual: tb11 runs verify2-2 as df-w2

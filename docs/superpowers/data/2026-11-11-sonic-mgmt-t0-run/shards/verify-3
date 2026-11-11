@@ -1,0 +1,15 @@
+crm/test_crm.py
+dualtor/test_orchagent_active_tor_downstream.py
+gnmi/test_gnmi_appldb.py
+gnmi/test_gnoi_killprocess.py
+gnmi/test_gnoi_os.py
+iface_namingmode/test_iface_namingmode.py
+ip/test_mgmt_ipv6_only.py
+radv/test_radv_ipv6_ra.py
+snmp/test_snmp_interfaces.py
+snmp/test_snmp_lldp.py
+snmp/test_snmp_pfc_counters.py
+telemetry/test_events.py
+telemetry/test_telemetry.py
+telemetry/test_telemetry_cert_rotation.py
+test_pktgen.py

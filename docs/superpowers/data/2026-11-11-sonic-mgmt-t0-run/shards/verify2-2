@@ -1,0 +1,6 @@
+bmp/test_frr_bmp_sanity.py
+dhcp_relay/test_dhcpv6_relay.py
+generic_config_updater/test_dhcp_relay.py
+pc/test_po_cleanup.py
+platform_tests/daemon/test_sensord.py
+platform_tests/test_platform_info.py

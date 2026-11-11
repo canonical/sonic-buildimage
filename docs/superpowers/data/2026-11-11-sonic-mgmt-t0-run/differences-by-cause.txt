@@ -1,0 +1,13 @@
+  40 cases  10 files  gnmi helpers (supervisorctl; pebble shuts the container down)
+  16 cases   6 files  arp_update / rsyslogd control (supervisorctl)
+  15 cases  10 files  snmp subagent check (supervisorctl)
+  14 cases   1 files  not a difference: randomised parameters
+  13 cases   2 files  dhcp_relay state and pid (supervisorctl)
+   3 cases   2 files  pmon / lldp control (supervisorctl)
+   2 cases   1 files  like-bgp container entrypoint
+   2 cases   1 files  telemetry event helpers (supervisorctl, python)
+   1 cases   1 files  bmp state (supervisorctl)
+   1 cases   1 files  rock product: on-failure shutdown vs auto_restart
+   1 cases   1 files  radvd SIGHUP (supervisorctl)
+   1 cases   1 files  not a difference: testbed loop device busy (df)
+109 cases, 37 files

@@ -141,6 +141,8 @@
 
 `build_control_command(container, action, names)`(`action` 为 `start`、`stop` 或 `restart`)生成一条保留 `docker exec <容器>` 前缀的命令,在容器内分支:pebble 下执行 `pebble <action>`,并去掉每个名字的组前缀;supervisord 下执行 `supervisorctl <action>`,名字不变。两种后端下,成功返回 0,失败返回非零。
 
+`build_signal_command(container, signal, names)` 以同样的方式分支到 `pebble signal` 或 `supervisorctl signal`。signal 是 `SIGHUP` 或 `HUP` 这样的名字;其他任何值在到达 shell 之前就被拒绝。容器里没有定义的程序,两种后端都返回 1。
+
 ### 4.5 SonicHost 接口与迁移的辅助函数
 
 `SonicHost` 新增方法:
@@ -148,6 +150,7 @@
 - `get_process_table(container)` 返回 `ContainerProcesses`。
 - `get_process_tables(containers)` 把多个探针放进一次 `shell_cmds` 批量执行,每个探针限时 60 秒,按位置对应结果,不再从命令串里解析容器名。
 - `control_container_process(container, action, names, module_ignore_errors=False)`。
+- `signal_container_process(container, signal, names, module_ignore_errors=False)`。
 - `os_profile(container=None)`(§5)。
 
 这样命名是为了避开已有的、基于 `docker top` 的 `dut_utils.get_container_processes()`。
@@ -224,7 +227,7 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 
 在构建机上用 cEOS 4.32.5M 做邻居搭 vms-kvm-t0,两个镜像各一次。测试:每个模块前后自动运行的 sanity 检查,以及 `test_pretest.py`、`autorestart`、`platform_tests/daemon`、`memory_checker`、`copp`、`process_monitoring`。
 
-第二轮在两个镜像上跑上游的 t0 PR 测试清单,共 271 个文件。它在一台 Testflinger 机器上运行,分到 LXD 虚拟机里的 12 个 testbed:每个镜像 6 个分片。
+第二轮在两个镜像上跑上游的 t0 PR 测试清单,共 271 个文件。它在一台 Testflinger 机器上运行,分到 LXD 虚拟机里的 12 个 testbed:每个镜像 6 个分片。这一轮发现的测试代码调用点也迁移到同一套接口上,受影响的文件在两个镜像上重跑。
 
 ### 6.3 验收标准
 
@@ -259,7 +262,20 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 18. `os_profile()` 在缺少 `os-release` 时失败,而不是在缺少 `debian_version` 时失败
 19. 对照 `36c29fc` 检查 `critical_processes` 解析,以及精确的探针测试
 
-A/B 实测结果见 [../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md](../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md)。
+t0 运行又增加了以下提交,每个领域一个:
+
+20. `build_signal_command()` 与 `SonicHost.signal_container_process()`
+21. SNMP 子代理检查
+22. dhcp_relay 的程序状态与 pid
+23. gnmi helper
+24. arp、crm、dualtor、vlan、pc、syslog 里对 arp_update 和 rsyslogd 的控制
+25. like-bgp 容器的入口,以及 fpmsyncd 重启
+26. bmp 的程序状态
+27. radvd 的 SIGHUP
+28. thermalctld、lm-sensors 和 lldpmgrd
+29. telemetry 事件 helper
+
+A/B 实测结果见 [../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md](../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md),t0 运行结果见 [../2026-11-11-sonic-mgmt-t0-run-report-zh.md](../2026-11-11-sonic-mgmt-t0-run-report-zh.md)。
 
 推送分支需要另行确认。
 
