@@ -5,7 +5,7 @@
   - rock + pebble:镜像版本 `202605_resolute.0-7a081af43`
   - Dockerfile + supervisord:镜像版本 `HEAD.0-7a081af4`
 - 测试清单:上游 t0 PR 测试清单,共 271 个文件,用 `run_tests.sh -m individual` 运行
-- 测试代码:`canonical/sonic-mgmt` 的 `202605_resolute` 分支。主轮使用设计文档里的 19 个提交,即 `031aeb4`。§4 的修复又增加了 10 个提交,只在本地,未推送。
+- 测试代码:`canonical/sonic-mgmt` 的 `202605_resolute` 分支。主轮使用设计文档里的 19 个提交,即 `031aeb4`。§4 的修复又增加了 11 个提交,只在本地,未推送。
 - testbed:12 个 vms-kvm-t0,每个镜像 6 个,各自跑在 Testflinger 机器 jasperoid 上的一个 LXD 虚拟机里(§1)
 - 设计文档:[specs/2026-11-10-sonic-mgmt-ubuntu-rock-compat-design-zh.md](specs/2026-11-10-sonic-mgmt-ubuntu-rock-compat-design-zh.md)
 - 原始结果与脚本:[data/2026-11-11-sonic-mgmt-t0-run/](data/2026-11-11-sonic-mgmt-t0-run/)
@@ -15,7 +15,7 @@
 
 1. t0 清单的 271 个文件在两个镜像上都跑完,每个镜像 3040 个用例。分支在 `031aeb4` 时,Dockerfile 版有 18 个失败,rock 版有 110 个。
 2. 两个镜像的结果在 37 个文件的 109 个用例上不同,每一个都找到了原因:
-   - 93 个:sonic-mgmt 测试代码直接调用 `supervisorctl`、假定容器入口会执行镜像名后面的命令,或在容器里运行 `python`。§4 的 10 个提交修复了它们:rock 版上 93 个里有 92 个现在与 Dockerfile 版一样通过或跳过,第 93 个走到了一处 rock 差异(§5)。在 Dockerfile 版上,这些修复不改变任何结果;重跑中出现的变化都是修复前也出现过的偶发失败。
+   - 93 个:sonic-mgmt 测试代码直接调用 `supervisorctl`、假定容器入口会执行镜像名后面的命令,或在容器里运行 `python`。§4 的提交修复了它们:rock 版上 93 个里有 92 个现在与 Dockerfile 版一样通过或跳过,第 93 个走到了一处 rock 差异(§5)。在 Dockerfile 版上,这些修复不改变任何结果;重跑中出现的变化都是修复前也出现过的偶发失败。
    - 1 个:A/B 报告里已经报告过的 rock `auto_restart` 限制。
    - 15 个不是差异:14 个使用每次运行都不同的随机参数,1 个是某台 Dockerfile testbed 上的 loop 设备被占用。
 3. 测试越过 supervisorctl 之后,又发现两处 rock 差异(§5):容器停止时 pebble 把 rsyslogd 和其他服务一起停掉,关停阶段的日志因此丢失;rock 的 eventd 里没有 `/usr/bin/python`。这两处都不在 sonic-mgmt 里改。
@@ -77,17 +77,18 @@ supervisorctl 引起的失败,在不同测试里表现不同:
 | 提交 | 范围 | rock 上修复的用例 |
 |---|---|---|
 | `011a5d3` | `build_signal_command()` / `SonicHost.signal_container_process()`,附单元测试 | — |
-| `0cf76c0` | snmp_helpers:子代理状态改从进程表读取 | 15 |
-| `b7077a8` | dhcp_relay_utils、test_dhcpv6_relay、GCU test_dhcp_relay | 13 |
-| `7c42fb3` | gnmi helper、gnmi_setup、grpc_fixtures、GNMIEnvironment | 40 |
-| `32139ac` | arp、crm、dualtor、vlan、pc、syslog 里的 arp_update 与 rsyslogd | 15 |
-| `5ec61f8` | like-bgp 入口;fpmsyncd 重启 | 2 |
-| `3c1f152` | bmp 状态 | 1 |
-| `dde533a` | radvd SIGHUP | 1 |
-| `1247389` | thermalctld、lm-sensors、lldpmgrd | 3 |
-| `e94abec` | telemetry 事件 helper;事件发布工具改用 `python3` | 2 |
+| `1cb1b22` | snmp_helpers:子代理状态改从进程表读取 | 15 |
+| `d98176b` | dhcp_relay_utils、test_dhcpv6_relay、GCU test_dhcp_relay | 13 |
+| `2147e61` | gnmi helper、gnmi_setup、grpc_fixtures、GNMIEnvironment | 40 |
+| `82ecd48` | arp、crm、dualtor、vlan、pc、syslog 里的 arp_update 与 rsyslogd | 15 |
+| `5aae892` | like-bgp 入口;fpmsyncd 重启 | 2 |
+| `f977a99` | bmp 状态 | 1 |
+| `0239d07` | radvd SIGHUP | 1 |
+| `16c9fb7` | thermalctld、lm-sensors、lldpmgrd | 3 |
+| `8e0b354` | telemetry 事件 helper;事件发布工具改用 `python3` | 2 |
+| `5c2f2e4` | 程序名与 signal 名按整串校验 | — |
 
-分支的单元测试在每个提交上都通过(`011a5d3` 之后为 289 个)。
+分支的单元测试在每个提交上都通过(`011a5d3` 之后为 289 个,`5c2f2e4` 之后为 293 个)。
 
 验证时,在两个镜像上用修复后的代码重跑了 64 个文件:所有被修复改到或用到被改 helper 的文件、所有出现过 rock 特有失败的文件,以及所有卷入 gnmi 连锁反应的文件。在 rock 版上,这些文件从 98 通过、33 失败、64 setup 错误,变为 186 通过、5 失败。剩下的 5 个失败:
 
@@ -101,6 +102,8 @@ supervisorctl 引起的失败,在不同测试里表现不同:
 
 - `test_gnoi_system_reboot_cold` 主轮失败、修复后通过;`test_continuous_reboot` 主轮通过、修复后失败。两次失败都是重启 300 秒后 lldp 的关键进程还没运行,这在任何修复之前就出现过。第二次失败发生时 testbed 的链路是断开的(§7)。
 - `telemetry/test_events` 两次重跑通过,第三次失败:gNMI 订阅在 30 秒期限内没有收到 `mem-threshold-exceeded` 事件。修复没有碰这条路径。
+
+对这些提交的独立审查没有发现严重问题。它指出了几处:迁移后的代码把探针失败读成"程序不存在",于是在旧代码会失败的地方跳过或通过;一个原本在无匹配时会失败的管道;一个不再提前返回的 SNMP 轮询;一个变宽松的 teardown 检查;一个在 Ansible 下从来没生效过的 `docker exec -it`;以及会放行末尾换行的校验。上面的提交已包含这些修复。受这些修复影响的 14 个文件(包括 `crm`、`syslog/test_syslog_rate_limit`、`dhcp_relay/test_dhcp_relay` 和 `telemetry/test_events`)在两个镜像上又跑了一遍:各 50 个通过、15 个跳过,没有失败(`verify-review-rerun.txt`)。
 
 ## 5. 本轮发现的 rock 差异
 
@@ -126,7 +129,7 @@ supervisorctl 引起的失败,在不同测试里表现不同:
 | `snmp/test_snmp_v2mib` | sysDescr 里没有测试从 DUT 读到的 `Ubuntu forky/sid` | Ubuntu-SONiC(A/B 报告已知) |
 | `test_pktgen` | 它自己的 loganalyzer 匹配到 18 行,全是下面这条 AppArmor 消息 | Ubuntu-SONiC |
 
-**两个镜像共有的 loganalyzer 噪声。** t0 清单里大多数测试的 teardown,都因为 `ERR unix_chkpwd: nss_tacplus: /etc/tacplus_nss.conf fopen failed` 和 `bad config or server line for nss_tacplus` 这两行被 loganalyzer 判失败。rsyslogd 也会写同样这一对。Ubuntu 26.04 用 AppArmor profile `unix-chkpwd` 约束 `unix_chkpwd`,它放行 NSS 库,但不放行 `/etc/tacplus_nss.conf`。在一台 vs DUT 上,用 `apparmor_parser -R` 卸载这个 profile 后消息消失,重新加载后又出现;dmesg 里没有 DENIED 记录。可能的修法是在 `/etc/apparmor.d/local/unix-chkpwd` 里加 `/etc/tacplus_nss.conf r,`。本报告的对比把这两行单独剔除。
+**两个镜像共有的 loganalyzer 噪声。** t0 清单里大多数测试的 teardown,都因为 `ERR unix_chkpwd: nss_tacplus: /etc/tacplus_nss.conf fopen failed` 和 `bad config or server line for nss_tacplus` 这两行被 loganalyzer 判失败。rsyslogd 也会写同样这一对。sudo 的 PAM account 阶段会运行 `unix_chkpwd`,它通过 nsswitch 的 `passwd: tacplus files` 解析用户,于是 `libnss_tacplus` 去打开 `/etc/tacplus_nss.conf`。Ubuntu 26.04 的 apparmor 5.0.2 以 enforce 模式加载 profile `unix-chkpwd`,它放行 NSS 库,但不放行这个文件。镜像上运行着 auditd,所以每次拒绝都记在 `/var/log/audit/audit.log` 里(一台 DUT 上有 3285 条,每次 sudo 一条),不进 dmesg。用 `apparmor_parser -R` 卸载这个 profile 后消息消失。Debian trixie 的 apparmor 4.1.0 带的是同一个 profile,但标记为 `flags=(complain)`;两个镜像都安装 apparmor,所以基于 Debian 的镜像不会记这两行。[canonical/sonic-buildimage#30](https://github.com/canonical/sonic-buildimage/pull/30) 以 `/etc/apparmor.d/local/unix-chkpwd` 的形式加入 `/etc/tacplus_nss.conf r,`。本报告的对比把这两行单独剔除。
 
 ## 7. testbed 注意事项
 
@@ -139,5 +142,5 @@ supervisorctl 引起的失败,在不同测试里表现不同:
 ## 8. 没有做的
 
 - 在 t0 清单之外的 34 个文件里(dualtor、dualtor_mgmt、qos、dash、ha、gnmi_e2e、platform API 等),还有大约 70 行在 DUT 上运行 `supervisorctl`。t0 清单里只剩两处,而且都只写日志:`arp/test_arp_extended` 的调试输出和 `snmp/test_snmp_lldp` 的诊断信息。
-- rock 产品侧的问题(关停日志顺序、`auto_restart`、eventd 的 `python`)和 §6 的 Ubuntu-SONiC 问题,留给产品侧处理。
+- rock 产品侧的问题(关停日志顺序、`auto_restart`、eventd 的 `python`)和 §6 的 Ubuntu-SONiC 失败,留给产品侧处理;只有 AppArmor 噪声已有修复在审(#30)。
 - 分支没有推送。

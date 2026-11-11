@@ -22,10 +22,10 @@ for kind in ("main", "verify"):
     (T / kind).mkdir()
 dropped = 0
 for vm in sorted((T / "raw").glob("tb*/logs")):
-    for d in sorted(p for p in vm.iterdir() if p.is_dir() and re.fullmatch(r"(rock|df)-(\d+|x\d+b?|[vw]\d+)", p.name)):
+    for d in sorted(p for p in vm.iterdir() if p.is_dir() and re.fullmatch(r"(rock|df)-(\d+|x\d+b?|[vwr]\d+)", p.name)):
         if d.name in dropped_labels:
             continue
-        kind = "verify" if re.fullmatch(r"(rock|df)-[vw]\d+", d.name) else "main"
+        kind = "verify" if re.fullmatch(r"(rock|df)-[vwr]\d+", d.name) else "main"
         target = T / kind / d.name
         shutil.copytree(d, target)
         for f in stolen.get(d.name, ()):

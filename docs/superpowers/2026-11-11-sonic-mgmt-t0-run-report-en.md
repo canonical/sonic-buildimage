@@ -5,7 +5,7 @@
   - rock + pebble: image version `202605_resolute.0-7a081af43`
   - Dockerfile + supervisord: image version `HEAD.0-7a081af4`
 - Test list: the upstream t0 PR test list, 271 files, run through `run_tests.sh -m individual`
-- Test code: `canonical/sonic-mgmt` branch `202605_resolute`. The main run used the 19 commits of the design at `031aeb4`. The fixes in §4 add 10 commits, local only (not pushed).
+- Test code: `canonical/sonic-mgmt` branch `202605_resolute`. The main run used the 19 commits of the design at `031aeb4`. The fixes in §4 add 11 commits, local only (not pushed).
 - Testbeds: twelve vms-kvm-t0 testbeds, six per image, each in an LXD virtual machine on the Testflinger machine jasperoid (§1)
 - Design: [specs/2026-11-10-sonic-mgmt-ubuntu-rock-compat-design-en.md](specs/2026-11-10-sonic-mgmt-ubuntu-rock-compat-design-en.md)
 - Raw results and scripts: [data/2026-11-11-sonic-mgmt-t0-run/](data/2026-11-11-sonic-mgmt-t0-run/)
@@ -15,7 +15,7 @@
 
 1. All 271 files of the t0 list ran on both images, 3040 test cases each. With the branch at `031aeb4`, the Dockerfile image had 18 failures and the rock image 110.
 2. The two images differed in 109 test cases in 37 files. Every one has a cause:
-   - 93 cases: sonic-mgmt test code that calls `supervisorctl` directly, assumes a container's entrypoint runs a given command, or runs `python` in a container. The 10 commits in §4 fix them: on the rock image 92 of the 93 now pass or skip as on the Dockerfile image, and the 93rd reaches a rock difference (§5). On the Dockerfile image the fixes change no result; the only changes in the reruns are intermittent failures also seen without them.
+   - 93 cases: sonic-mgmt test code that calls `supervisorctl` directly, assumes a container's entrypoint runs a given command, or runs `python` in a container. The commits in §4 fix them: on the rock image 92 of the 93 now pass or skip as on the Dockerfile image, and the 93rd reaches a rock difference (§5). On the Dockerfile image the fixes change no result; the only changes in the reruns are intermittent failures also seen without them.
    - 1 case: the rock `auto_restart` limitation already reported in the A/B run.
    - 15 cases are not differences: 14 use random parameters that differ between runs, and 1 is a busy loop device on one Dockerfile testbed.
 3. Two more rock differences showed up once the tests got past supervisorctl (§5): pebble stops rsyslogd together with the other services when a container stops, so shutdown logs are lost; and the rock eventd has no `/usr/bin/python`. Neither is changed in sonic-mgmt.
@@ -77,17 +77,18 @@ The supervisorctl failures look different from test to test:
 | Commit | Area | Rock cases fixed |
 |---|---|---|
 | `011a5d3` | `build_signal_command()` / `SonicHost.signal_container_process()`, with unit tests | — |
-| `0cf76c0` | snmp_helpers: subagent state from the process table | 15 |
-| `b7077a8` | dhcp_relay_utils, test_dhcpv6_relay, GCU test_dhcp_relay | 13 |
-| `7c42fb3` | gnmi helpers, gnmi_setup, grpc_fixtures, GNMIEnvironment | 40 |
-| `32139ac` | arp_update and rsyslogd in arp, crm, dualtor, vlan, pc, syslog | 15 |
-| `5ec61f8` | like-bgp entrypoint; fpmsyncd restart | 2 |
-| `3c1f152` | bmp state | 1 |
-| `dde533a` | radvd SIGHUP | 1 |
-| `1247389` | thermalctld, lm-sensors, lldpmgrd | 3 |
-| `e94abec` | telemetry event helpers; `python3` for the events publish tool | 2 |
+| `1cb1b22` | snmp_helpers: subagent state from the process table | 15 |
+| `d98176b` | dhcp_relay_utils, test_dhcpv6_relay, GCU test_dhcp_relay | 13 |
+| `2147e61` | gnmi helpers, gnmi_setup, grpc_fixtures, GNMIEnvironment | 40 |
+| `82ecd48` | arp_update and rsyslogd in arp, crm, dualtor, vlan, pc, syslog | 15 |
+| `5aae892` | like-bgp entrypoint; fpmsyncd restart | 2 |
+| `f977a99` | bmp state | 1 |
+| `0239d07` | radvd SIGHUP | 1 |
+| `16c9fb7` | thermalctld, lm-sensors, lldpmgrd | 3 |
+| `8e0b354` | telemetry event helpers; `python3` for the events publish tool | 2 |
+| `5c2f2e4` | program and signal names checked against the whole string | — |
 
-The branch's unit tests pass at each commit (289 tests after `011a5d3`).
+The branch's unit tests pass at each commit (289 tests after `011a5d3`, 293 after `5c2f2e4`).
 
 Verification reran 64 files on both images with the fixes: every file the fixes touch or that uses a changed helper, every file with a rock-only failure, and every file that reached the gnmi cascade. On the rock image these files went from 98 passed, 33 failed and 64 setup errors to 186 passed and 5 failed. The remaining 5 failures:
 
@@ -101,6 +102,8 @@ On the Dockerfile image the same files gave the same call outcomes before and af
 
 - `test_gnoi_system_reboot_cold` failed in the main run and passed after; `test_continuous_reboot` passed in the main run and failed after. Both failures are lldp's critical processes not running 300 s after a reboot, which happened before any fix. The second one ran while the testbed links were down (§7).
 - `telemetry/test_events` passed in two reruns and failed in the third: the gNMI subscription saw no `mem-threshold-exceeded` event within its 30 s deadline. The fixes do not touch that path.
+
+An independent review of the commits found no critical problem. It found places where the migrated code read a failed probe as "program absent" and so skipped or passed where the old code failed, a pipeline that used to fail on no match, an SNMP poll that no longer returned early, a teardown check that had become looser, a `docker exec -it` that had never worked under Ansible, and validation that accepted a trailing newline. The commits above include the fixes. The 14 files these fixes touch, including `crm`, `syslog/test_syslog_rate_limit`, `dhcp_relay/test_dhcp_relay` and `telemetry/test_events`, were run again on both images: 50 passed and 15 skipped on each, with no failure (`verify-review-rerun.txt`).
 
 ## 5. Rock differences found by this run
 
@@ -126,7 +129,7 @@ teammgrd cleans up and logs under pebble. When the whole container stops, pebble
 | `snmp/test_snmp_v2mib` | sysDescr does not contain the `Ubuntu forky/sid` the test reads from the DUT | Ubuntu-SONiC (known from the A/B run) |
 | `test_pktgen` | its own loganalyzer matches 18 lines, all the AppArmor message below | Ubuntu-SONiC |
 
-**Loganalyzer noise on both images.** Most teardowns in the t0 list fail loganalyzer on `ERR unix_chkpwd: nss_tacplus: /etc/tacplus_nss.conf fopen failed` and `bad config or server line for nss_tacplus`. rsyslogd logs the same pair. Ubuntu 26.04 confines `unix_chkpwd` with the AppArmor profile `unix-chkpwd`, which allows the NSS libraries but not `/etc/tacplus_nss.conf`. On a vs DUT, unloading the profile with `apparmor_parser -R` stops the messages and loading it again brings them back; no DENIED record appears in dmesg. The likely fix is `/etc/tacplus_nss.conf r,` in `/etc/apparmor.d/local/unix-chkpwd`. The comparison in this report sets these two lines aside.
+**Loganalyzer noise on both images.** Most teardowns in the t0 list fail loganalyzer on `ERR unix_chkpwd: nss_tacplus: /etc/tacplus_nss.conf fopen failed` and `bad config or server line for nss_tacplus`. rsyslogd logs the same pair. sudo's PAM account stack runs `unix_chkpwd`, which resolves the user through nsswitch `passwd: tacplus files`, so `libnss_tacplus` opens `/etc/tacplus_nss.conf`. Ubuntu 26.04's apparmor 5.0.2 enforces the profile `unix-chkpwd`, which allows the NSS libraries but not that file. auditd runs on the image, so each denial goes to `/var/log/audit/audit.log` (3285 on one DUT, one per sudo) rather than to dmesg. Unloading the profile with `apparmor_parser -R` stops the messages. Debian trixie's apparmor 4.1.0 ships the same profile with `flags=(complain)`, and both images install apparmor, which is why the Debian-based image does not log them. [canonical/sonic-buildimage#30](https://github.com/canonical/sonic-buildimage/pull/30) adds `/etc/tacplus_nss.conf r,` as `/etc/apparmor.d/local/unix-chkpwd`. The comparison in this report sets these two lines aside.
 
 ## 7. Testbed notes
 
@@ -139,5 +142,5 @@ teammgrd cleans up and logs under pebble. When the whole container stops, pebble
 ## 8. Not done
 
 - About 70 lines that run `supervisorctl` on the DUT remain in 34 files outside the t0 list (dualtor, dualtor_mgmt, qos, dash, ha, gnmi_e2e, platform API and others). In the t0 list only two remain, and they only log: the debug output of `arp/test_arp_extended` and the diagnostics of `snmp/test_snmp_lldp`.
-- The rock product items (shutdown log ordering, `auto_restart`, eventd `python`) and the Ubuntu-SONiC items in §6 are left for the product side.
+- The rock product items (shutdown log ordering, `auto_restart`, eventd `python`) and the Ubuntu-SONiC failures in §6 are left for the product side; only the AppArmor noise has a fix under review (#30).
 - The branch is not pushed.

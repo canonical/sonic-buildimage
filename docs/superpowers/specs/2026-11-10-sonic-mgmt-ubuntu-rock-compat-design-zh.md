@@ -274,6 +274,7 @@ t0 运行又增加了以下提交,每个领域一个:
 27. radvd 的 SIGHUP
 28. thermalctld、lm-sensors 和 lldpmgrd
 29. telemetry 事件 helper
+30. 程序名与 signal 名按整串校验
 
 A/B 实测结果见 [../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md](../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md),t0 运行结果见 [../2026-11-11-sonic-mgmt-t0-run-report-zh.md](../2026-11-11-sonic-mgmt-t0-run-report-zh.md)。
 

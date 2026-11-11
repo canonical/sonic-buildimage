@@ -274,6 +274,7 @@ The t0 run added, one area per commit:
 27. The radvd SIGHUP
 28. thermalctld, lm-sensors and lldpmgrd
 29. The telemetry event helpers
+30. Program and signal names checked against the whole string
 
 The A/B results are in [../2026-11-10-sonic-mgmt-resolute-ab-report-en.md](../2026-11-10-sonic-mgmt-resolute-ab-report-en.md), and the t0 run in [../2026-11-11-sonic-mgmt-t0-run-report-en.md](../2026-11-11-sonic-mgmt-t0-run-report-en.md).
 
