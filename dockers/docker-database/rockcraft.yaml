@@ -64,7 +64,8 @@ parts:
     plugin: nil
     source: https://github.com/jy5275/chisel-releases.git
     source-type: git
-    source-commit: 93045dc116f9ceda06eda1c448edbe9edc44433a
+    source-branch: sonic-26.04
+    source-depth: 1
     override-build: |
       chisel cut --release ./ --root ${CRAFT_PART_INSTALL} \
         base-files_base \
@@ -88,6 +89,7 @@ parts:
         gawk_bins \
         iproute2_config \
         iproute2_ip-bin \
+        jq_bins \
         libboost-serialization1.83.0_libs \
         libhiredis1.1.0_libs \
         libnl-nf-3-200_libs \
@@ -132,6 +134,7 @@ parts:
   #     - gawk_bins
   #     - iproute2_config
   #     - iproute2_ip-bin
+  #     - jq_bins
   #     - libboost-serialization1.83.0_libs
   #     - libhiredis1.1.0_libs
   #     - libnl-nf-3-200_libs
@@ -215,7 +218,8 @@ parts:
     plugin: nil
     source: https://github.com/jy5275/chisel-releases.git
     source-type: git
-    source-commit: 93045dc116f9ceda06eda1c448edbe9edc44433a
+    source-branch: sonic-26.04
+    source-depth: 1
     override-build: |
       chisel cut --release ./ --root ${CRAFT_PART_INSTALL} python3.14_standard python3-minimal_python3
     stage:
