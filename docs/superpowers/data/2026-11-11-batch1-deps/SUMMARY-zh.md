@@ -84,6 +84,7 @@ eventd 的 `start.sh` 只做 `pebble start eventd` 和 `eventdb_wrapper.sh`（ba
 | mgmt-framework | `ca-certificates_data` | `cli` 路径打开 `/usr/lib/ssl/cert.pem` → `/etc/ssl/certs/ca-certificates.crt`；该文件由 deb 的维护脚本生成，`analyze.py` 把它归为非 archive 文件，没给出 slice（Task 11 补上） |
 | 全部 | `procps_bins`、`procps_ps-bin` | host 侧 `show services`（`docker exec <c> ps aux`）、`pgrep -x pebble`、`kill` |
 | database | `procps_sysctl`、`iproute2_ip-bin` | `docker_image_ctl.j2` 的 `sysctl`，init 脚本的 `ip -4 -o addr` |
+| database | `sed_bins` | `docker_image_ctl.j2` 在 multi-ASIC 上执行 `docker exec database$DEV sed -i ... /usr/lib/sysctl.d/90-sonic.conf`；单 ASIC 的 trace 采不到，VS 的 hostcmds 路径发现缺失后补上 |
 
 ## 4 · 已知的覆盖缺口
 
