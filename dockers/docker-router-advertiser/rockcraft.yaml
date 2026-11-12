@@ -1,9 +1,10 @@
+# Removed dependencies and why: see sonic-buildimage 202605_resolute_doc docs/superpowers/data/2026-11-11-batch1-deps/REMOVALS-zh.md
 name: docker-router-advertiser
 summary: SONiC router advertiser container
-description: A rock for SONiC router advertiser container
+description: A Chiselled rock for SONiC router advertiser container
 version: "1.0.0"
 
-base: ubuntu@26.04
+base: bare
 build-base: ubuntu@26.04
 license: Apache-2.0
 
@@ -30,24 +31,118 @@ services:
     on-failure: ignore
 
 parts:
+  # INTERIM: Ubuntu slices are cut from jy5275/chisel-releases@sonic-26.04
+  # (upstream ubuntu-26.04 + pending PRs) because these slices are not upstream yet:
+  #   rsyslog, rsyslog-relp, libestr0, libfastjson4, librelp0  <- canonical/chisel-releases#1104
+  #   radvd                                                    <- canonical/chisel-releases#1169
+  #   python3-cffi-backend                                     <- canonical/chisel-releases#1509
+  # Once ALL PRs above are merged into canonical/chisel-releases ubuntu-26.04:
+  #   1. delete this `slices-interim` part
+  #   2. uncomment the `ubuntu-slices` part below (same slice list)
+  #   3. drop `slices-interim` from any `after:` list
+  slices-interim:
+    plugin: nil
+    source: https://github.com/jy5275/chisel-releases.git
+    source-type: git
+    source-branch: sonic-26.04
+    source-depth: 1
+    override-build: |
+      chisel cut --release ./ --root ${CRAFT_PART_INSTALL} \
+        base-files_base \
+        base-files_chisel \
+        base-files_release-info \
+        base-passwd_data \
+        bash_bins \
+        coreutils_cat \
+        coreutils_chmod \
+        coreutils_cut \
+        coreutils_echo \
+        coreutils_env \
+        coreutils_mkdir \
+        coreutils_rm-bin \
+        coreutils_sleep \
+        coreutils_touch \
+        grep_bins \
+        jq_bins \
+        libboost-serialization1.83.0_libs \
+        libc6_gconv \
+        libc-bin_locale \
+        libhiredis1.1.0_libs \
+        libnl-nf-3-200_libs \
+        libpython3.14_libs \
+        libxxhash0_libs \
+        libzmq5_libs \
+        openssl_config \
+        procps_bins \
+        python3-cffi-backend_libs \
+        python3-yaml_libs \
+        radvd_bins \
+        rsyslog_bins \
+        rsyslog-relp_modules
+    stage:
+      # Debian's apport hook (apport is not in the rock); install-python ships the sitecustomize.py
+      # that adds its site-packages
+      - -usr/lib/python3.14/sitecustomize.py
+
+  # ubuntu-slices:
+  #   plugin: nil
+  #   stage-slices:
+  #     - base-files_base
+  #     - base-files_chisel
+  #     - base-files_release-info
+  #     - base-passwd_data
+  #     - bash_bins
+  #     - coreutils_cat
+  #     - coreutils_chmod
+  #     - coreutils_cut
+  #     - coreutils_echo
+  #     - coreutils_env
+  #     - coreutils_mkdir
+  #     - coreutils_rm-bin
+  #     - coreutils_sleep
+  #     - coreutils_touch
+  #     - grep_bins
+  #     - jq_bins
+  #     - libboost-serialization1.83.0_libs
+  #     - libc6_gconv
+  #     - libc-bin_locale
+  #     - libhiredis1.1.0_libs
+  #     - libnl-nf-3-200_libs
+  #     - libpython3.14_libs
+  #     - libxxhash0_libs
+  #     - libzmq5_libs
+  #     - openssl_config
+  #     - procps_bins
+  #     - python3-cffi-backend_libs
+  #     - python3-yaml_libs
+  #     - radvd_bins
+  #     - rsyslog_bins
+  #     - rsyslog-relp_modules
+  #   stage:
+  #     - -usr/lib/python3.14/sitecustomize.py
+
+  sonic-debs:
+    plugin: nil
+    source: debs
+    override-build: |
+      dpkg -x libswsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x sonic-supervisord-utilities-rs_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x libyang3_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x python3-libyang_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
+      dpkg -x sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
+    organize:
+      # base-files_var makes /var/run a symlink to /run; libswsscommon ships a real var/run/
+      var/run/redis: run/redis
+    stage:
+      - -var/run
+      - -usr/share/doc
+      - -usr/share/man
+
   setup-router-advertiser:
     plugin: dump
     source: .
-    override-build: |
-      craftctl default
-
-      # Install SONiC debs (wildcard filenames)
-      dpkg -x debs/socat_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libswsscommon_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/sonic-supervisord-utilities-rs_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/libyang3_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/python3-libyang_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/sonic-db-cli_*.deb ${CRAFT_PART_INSTALL}
-      dpkg -x debs/sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
-      # Clean up deb/wheel source files
-      rm -rf ${CRAFT_PART_INSTALL}/debs ${CRAFT_PART_INSTALL}/python-wheels
-
+    after: [slices-interim, sonic-debs]
     organize:
       critical_processes: etc/supervisor/critical_processes
       start.sh: usr/bin/start.sh
@@ -58,44 +153,45 @@ parts:
       files/swss_vars.j2: usr/share/sonic/templates/swss_vars.j2
       files/readiness_probe.sh: usr/bin/readiness_probe.sh
       files/container_startup.py: usr/share/sonic/scripts/container_startup.py
-
-    stage-packages:
-      # Base runtime packages (inherited from config-engine layer)
-      - rsyslog
-      - rsyslog-relp
-      - python3
-      - redis-tools
-      - iproute2
-      - net-tools
-      - jq
-      - libzmq5
-      - libwrap0
-      - libdaemon0
-      - libdbus-1-3
-      - libjansson4
-      - python3-redis
-      - python3-yaml
-      - python3-cffi-backend
-      - libpython3.14
-      # SONiC deb runtime dependencies
-      - libboost-serialization1.83.0
-      - libhiredis1.1.0
-      - libxxhash0
-      # libnl-3/genl/route/nf come along as hard Depends of libnl-cli-3-200
-      - libnl-cli-3-200
-      # Container-specific packages
-      - radvd
-
+    stage:
+      - etc/supervisor/
+      - usr/
     override-prime: |
       craftctl default
 
+      # Replace the rsyslog_config slice's /etc/rsyslog.conf with SONiC's; done at prime so the slice copy cannot win
       cp ${CRAFT_PROJECT_DIR}/files/rsyslog.conf etc/rsyslog.conf
       cp ${CRAFT_PROJECT_DIR}/manifest.json manifest.json
       cp ${CRAFT_PROJECT_DIR}/envs usr/share/sonic/templates/
 
+      # syslog user as in the previous image (uid 999, primary group adm from base-passwd_data)
+      groupadd -R ${CRAFT_PRIME} -g 1001 syslog
+      useradd -R ${CRAFT_PRIME} -M -r -u 999 -g adm syslog
+      rm -f etc/passwd- etc/group- etc/shadow- etc/gshadow- etc/.pwd.lock
+
+  # Build-time only: pip re-executes itself under the staged interpreter and imports stdlib modules
+  # (colorsys, ...) the runtime slices leave out. Stage a fuller stdlib for that, prime none of it.
+  pip-interpreter:
+    plugin: nil
+    source: https://github.com/jy5275/chisel-releases.git
+    source-type: git
+    source-branch: sonic-26.04
+    source-depth: 1
+    override-build: |
+      chisel cut --release ./ --root ${CRAFT_PART_INSTALL} python3.14_standard python3-minimal_python3
+    stage:
+      # install-python writes its own sitecustomize.py (adds its site-packages)
+      - -usr/lib/python3.14/sitecustomize.py
+    prime:
+      - -*
+
   install-python:
     plugin: python
     source: .
+    # The python plugin (v2) refuses the build host's interpreter and runs pip under the staged one
+    after: [slices-interim, pip-interpreter]
+    build-packages:
+      - python3-pip
     python-packages:
       # config-engine inherited SONiC wheels
       - ./python-wheels/sonic_py_common-1.0-py3-none-any.whl
@@ -108,18 +204,6 @@ parts:
       - click
       - pyangbind==0.8.7
       - lxml
-    stage-packages:
-      - python3-venv
     organize:
       yang-models: usr/local/yang-models
       cvlyang-models: usr/local/cvlyang-models
-
-  add-user:
-    plugin: nil
-    after: [setup-router-advertiser]
-    overlay-script: |
-      groupadd -R $CRAFT_OVERLAY syslog
-      useradd -R $CRAFT_OVERLAY -M -r --system -g adm syslog
-    prime:
-      - etc/passwd
-      - etc/group
