@@ -104,7 +104,8 @@ parts:
         python3-cffi-backend_libs \
         redis-server_bins \
         rsyslog_bins \
-        rsyslog-relp_modules
+        rsyslog-relp_modules \
+        sed_bins
     stage:
       # Debian's apport hook (apport is not in the rock); install-python ships the sitecustomize.py
       # that adds its site-packages
@@ -150,6 +151,7 @@ parts:
   #     - redis-server_bins
   #     - rsyslog_bins
   #     - rsyslog-relp_modules
+  #     - sed_bins
   #   stage:
   #     - -usr/lib/python3.14/sitecustomize.py
 
