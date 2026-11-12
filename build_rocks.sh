@@ -3,6 +3,7 @@
 # Finish `make target/sonic-vs.img.gz` first
 # Usage: ./build_rocks.sh          pack every rock and overwrite target/<container>.gz
 #        ./build_rocks.sh --list   only print the rock image names for the current platform
+#        ./build_rocks.sh [--list] <rock name>...   restrict to the named rocks, e.g. docker-database
 rocklist=(
     "dockers/docker-database"
     "dockers/docker-sonic-mgmt-framework"
@@ -30,8 +31,25 @@ if [ "$(cat .platform 2>/dev/null)" = "broadcom" ]; then
     rocklist+=("platform/broadcom/docker-syncd-brcm")
 fi
 
-# `./build_rocks.sh --list` prints the rock image names for the current platform and exits
+# Optional rock names (e.g. docker-database) restrict the run, or the --list output, to those rocks
+list_only=false
 if [ "$1" = "--list" ]; then
+    list_only=true
+    shift
+fi
+if [ "$#" -gt 0 ]; then
+    selected=()
+    for rockitem in "${rocklist[@]}"; do
+        for name in "$@"; do
+            [ "$(basename "$rockitem")" = "$name" ] && selected+=("$rockitem")
+        done
+    done
+    [ "${#selected[@]}" -eq "$#" ] || { echo "unknown rock name in: $*" >&2; exit 2; }
+    rocklist=("${selected[@]}")
+fi
+
+# `./build_rocks.sh --list` prints the rock image names for the current platform and exits
+if [ "$list_only" = true ]; then
     for rockitem in "${rocklist[@]}"; do basename "$rockitem"; done
     exit 0
 fi
