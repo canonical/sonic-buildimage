@@ -1,0 +1,16 @@
+acl/custom_acl_table/test_custom_acl_table.py
+bgp/test_bgp_gr_helper.py
+clock/test_clock.py
+dhcp_server/test_dhcp_server_multi_vlans.py
+drop_packets/test_drop_counters.py
+dualtor/test_orchagent_mac_move.py
+gnmi/test_gnoi_system_grpc.py
+http/test_http_copy.py
+ipfwd/test_dir_bcast.py
+lldp/test_lldp.py
+pc/test_lag_member_forwarding.py
+pfcwd/test_pfc_config.py
+platform_tests/test_advanced_reboot.py::test_warm_reboot
+stress/test_stress_routes.py
+vlan/test_vlan_ping.py
+vlan/test_vlan_ports_down.py

@@ -1,0 +1,264 @@
+amd64: 3040 cases, call {'passed': 1088, 'skipped': 1933, 'failed': 16, 'setup-error': 3} | teardown {'la-noise': 451, 'ok': 2587, 'teardown-error': 2}
+arm64: 3040 cases, call {'passed': 1046, 'skipped': 1943, 'failed': 35, 'setup-error': 16} | teardown {'la-noise': 426, 'ok': 2587, 'teardown-error': 10, 'la': 17}
+
+== call outcome differs (amd64 -> arm64)
+tests.bgp.test_bgp_session::test_bgp_session_interface_down[interface-bgp_docker]
+    amd64  skipped: BGP session test is not supported on Virtual Switch
+    arm64  failed: Failed: neighbor 10.0.0.57 state is still established
+tests.bgp.test_bgp_session::test_bgp_session_interface_down[interface-reboot]
+    amd64  skipped: BGP session test is not supported on Virtual Switch
+    arm64  failed: Failed: neighbor 10.0.0.57 state is still established
+tests.bgp.test_bgp_session::test_bgp_session_interface_down[interface-swss_docker]
+    amd64  skipped: BGP session test is not supported on Virtual Switch
+    arm64  failed: Failed: neighbor 10.0.0.57 state is still established
+tests.bgp.test_bgp_session::test_bgp_session_interface_down[neighbor-reboot]
+    amd64  skipped: BGP session test is not supported on Virtual Switch
+    arm64  passed: 
+tests.bgp.test_bgp_stress_link_flap::test_bgp_stress_link_flap[all]
+    amd64  skipped: Stress link flap test is not supported on Virtual Switch
+    arm64  passed: 
+tests.bgp.test_bgp_stress_link_flap::test_bgp_stress_link_flap[fanout]
+    amd64  skipped: Stress link flap test is not supported on Virtual Switch
+    arm64  passed: 
+tests.dhcp_relay.test_dhcp_pkt_recv.TestDhcpv6WithEmptyAclTable::test_dhcpv6_multicast_recv
+    amd64  failed: Failed: Didn't get packet with expected transaction id
+    arm64  passed: 
+tests.dualtor.test_orchagent_active_tor_downstream::test_active_tor_remove_neighbor_downstream_active[ipv4]
+    amd64  passed: 
+    arm64  failed: scapy.error.Scapy_Exception: No data could be read!
+tests.dualtor.test_orchagent_active_tor_downstream::test_active_tor_remove_neighbor_downstream_active[ipv6]
+    amd64  passed: 
+    arm64  failed: scapy.error.Scapy_Exception: No data could be read!
+tests.dualtor.test_orchagent_mac_move::test_mac_move
+    amd64  passed: 
+    arm64  failed: scapy.error.Scapy_Exception: No data could be read!
+tests.dualtor.test_orchagent_standby_tor_downstream::test_downstream_standby_mux_toggle_active[ipv4]
+    amd64  passed: 
+    arm64  failed: scapy.error.Scapy_Exception: No data could be read!
+tests.dualtor.test_orchagent_standby_tor_downstream::test_downstream_standby_mux_toggle_active[ipv6]
+    amd64  passed: 
+    arm64  failed: scapy.error.Scapy_Exception: No data could be read!
+tests.ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv4-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv4-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv6-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv6-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv4-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv4-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv6-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv6-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv4-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv4-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv6-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv6-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ipv4-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ipv4-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ipv6-ipv4]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ipv6-ipv6]
+    amd64  passed: 
+    arm64  skipped: PBH introduced in 202111 and skip this test on Mellanox 2700 platform. Test does not support dualtor topology.
+tests.gnmi.test_gnoi_system_reboot::test_gnoi_system_reboot_cold
+    amd64  passed: 
+    arm64  failed: Failed: Not all critical processes are healthy
+tests.hash.test_generic_hash::test_ecmp_and_lag_hash[CRC-INNER_L4_DST_PORT-ipv6-ipv6-nvgre]
+    amd64  skipped: This case is not supported on many platforms and often encounters issues. We can still run it, but we won’t rely on or validate the results. Or test case has is
+    arm64  absent: 
+tests.hash.test_generic_hash::test_ecmp_and_lag_hash[CRC-INNER_SRC_MAC-ipv6-ipv4-nvgre]
+    amd64  absent: 
+    arm64  skipped: This case is not supported on many platforms and often encounters issues. We can still run it, but we won’t rely on or validate the results. Or test case has is
+tests.hash.test_generic_hash::test_ecmp_hash[XOR-ETHERTYPE-ipv4-None-None]
+    amd64  skipped: The field ETHERTYPE is not supported by the ecmp test case.
+    arm64  absent: 
+tests.hash.test_generic_hash::test_ecmp_hash[XOR-INNER_SRC_IP-ipv4-ipv4-vxlan]
+    amd64  absent: 
+    arm64  skipped: This case is not supported on many platforms and often encounters issues. We can still run it, but we won’t rely on or validate the results. Or test case has is
+tests.hash.test_generic_hash::test_lag_hash[XOR-INNER_IP_PROTOCOL-ipv4-ipv4-nvgre]
+    amd64  skipped: Skip the test_lag_member_flap case on setups without multi-member uplink portchannels.
+    arm64  absent: 
+tests.hash.test_generic_hash::test_lag_hash[XOR-SRC_MAC-ipv4-None-None]
+    amd64  absent: 
+    arm64  skipped: Skip the test_lag_member_flap case on setups without multi-member uplink portchannels.
+tests.hash.test_generic_hash::test_lag_member_flap[CRC_CCITT-INNER_DST_MAC-ipv6-ipv6-nvgre]
+    amd64  skipped: Skip the test_lag_member_flap case on setups without multi-member uplink portchannels.
+    arm64  absent: 
+tests.hash.test_generic_hash::test_lag_member_flap[XOR-INNER_SRC_IP-ipv4-ipv6-vxlan]
+    amd64  absent: 
+    arm64  skipped: Skip the test_lag_member_flap case on setups without multi-member uplink portchannels.
+tests.hash.test_generic_hash::test_lag_member_remove_add[RANDOM-VLAN_ID-ipv4-None-None]
+    amd64  skipped: Skip the test_lag_member_flap case on setups without multi-member uplink portchannels.
+    arm64  absent: 
+tests.hash.test_generic_hash::test_lag_member_remove_add[XOR-INNER_L4_SRC_PORT-ipv6-ipv4-nvgre]
+    amd64  absent: 
+    arm64  skipped: Skip the test_lag_member_flap case on setups without multi-member uplink portchannels.
+tests.hash.test_generic_hash::test_nexthop_flap[CRC-INNER_DST_IP-ipv6-ipv6-ipinip]
+    amd64  absent: 
+    arm64  skipped: This case is not supported on many platforms and often encounters issues. We can still run it, but we won’t rely on or validate the results. Or test case has is
+tests.hash.test_generic_hash::test_nexthop_flap[RANDOM-IP_PROTOCOL-ipv4-None-None]
+    amd64  skipped: This case is not supported on many platforms and often encounters issues. We can still run it, but we won’t rely on or validate the results. Or test case has is
+    arm64  absent: 
+tests.hash.test_generic_hash::test_reboot[CRC-ETHERTYPE-ipv6-None-None-fast]
+    amd64  absent: 
+    arm64  skipped: The field ETHERTYPE is not supported by the ecmp test case.
+tests.hash.test_generic_hash::test_reboot[RANDOM-INNER_L4_DST_PORT-ipv4-ipv6-ipinip-cold]
+    amd64  passed: 
+    arm64  absent: 
+tests.ip.test_ip_packet.TestIPPacket::test_forward_ip_packet_with_0xffff_chksum_drop[vlab-01]
+    amd64  passed: 
+    arm64  failed: KeyError: 'vlab-01'
+tests.lldp.test_lldp::test_lldp_interfaces[vlab-01-None]
+    amd64  passed: 
+    arm64  failed: Failed: eth0 is missing from LLDP table
+tests.lldp.test_lldp::test_lldp_interfaces_config_reload[vlab-01-None]
+    amd64  passed: 
+    arm64  failed: Failed: eth0 is missing from LLDP table after config reload
+tests.pc.test_lag_2::test_lag[vlab-01|PortChannel104-lacp_rate]
+    amd64  passed: 
+    arm64  failed: tests.common.errors.RunAnsibleModuleFail: run module eos_config failed, Ansible Results =>
+tests.platform_tests.test_reboot::test_cold_reboot[gnoi_based-vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: Not all critical processes are healthy
+tests.platform_tests.test_reboot::test_continuous_reboot[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: Not all critical processes are healthy
+tests.platform_tests.test_reboot::test_warm_reboot[gnoi_based-vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: Not all critical processes are healthy
+tests.platform_tests.test_service_warm_restart::test_service_warm_restart[vlab-01]
+    amd64  skipped: Testcase not supported for kvm
+    arm64  setup-error: failed on setup with "Failed: DUT not ready for test. Health check failed before reboot: {'check_services': True, 'check_interfaces_and_transceivers': 'Unkown e
+tests.tacacs.test_authorization::test_authorization_local[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tests.tacacs.test_authorization::test_authorization_tacacs_and_local[vlab-01]
+    amd64  failed: Failed: Command: 'cat /etc/passwd' failed with exit code: 0, stdout: ['root:x:0:0:root:/root:/bin/bash\n', 'daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\n', 
+    arm64  setup-error: failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tests.tacacs.test_authorization::test_authorization_tacacs_and_local_then_server_down_after_login[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tests.tacacs.test_authorization::test_authorization_tacacs_only[vlab-01]
+    amd64  failed: Failed: Command: 'cat /etc/passwd' failed with exit code: 0, stdout: ['root:x:0:0:root:/root:/bin/bash\n', 'daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\n', 
+    arm64  setup-error: failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tests.tacacs.test_authorization::test_authorization_tacacs_only_some_server_down[vlab-01]
+    amd64  failed: Failed: Command: 'cat /etc/passwd' failed with exit code: 0, stdout: ['root:x:0:0:root:/root:/bin/bash\n', 'daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\n', 
+    arm64  setup-error: failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tests.tacacs.test_authorization::test_authorization_tacacs_only_then_server_down_after_login[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tests.tacacs.test_authorization::test_backward_compatibility_disable_authorization[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tests.tacacs.test_authorization::test_bypass_authorization[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tests.tacacs.test_authorization::test_fallback_to_local_authorization_with_config_reload[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tests.tacacs.test_authorization::test_send_remote_address[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tests.tacacs.test_authorization::test_stop_request_next_server_after_reject[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: None
+tests.tacacs.test_authorization::test_tacacs_authorization_commands_during_login[vlab-01]
+    amd64  passed: 
+    arm64  setup-error: failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tests.tacacs.test_authorization::test_tacacs_authorization_wildcard[vlab-01]
+    amd64  failed: Failed: Not found data: cmd=/usr/bin/ls in tacplus server log
+    arm64  setup-error: failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tests.tacacs.test_jit_user::test_jit_user[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+tests.tacacs.test_ro_user::test_ro_user[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+tests.tacacs.test_ro_user::test_ro_user_banned_command[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: hostcfgd did not start after 240 seconds
+tests.tacacs.test_ro_user::test_ro_user_ipv6[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: cat command failed because TACACS server not running
+tests.tacacs.test_rw_user::test_rw_user[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+tests.tacacs.test_rw_user::test_rw_user_ipv6[vlab-01]
+    amd64  passed: 
+    arm64  failed: Failed: cat command failed because TACACS server not running
+tests.telemetry.test_events::test_events[vlab-01-False]
+    amd64  passed: 
+    arm64  failed: tests.common.errors.RunAnsibleModuleFail: run module shell failed, Ansible Results =>
+
+== teardown differs (amd64 -> arm64), ignoring la-noise vs ok
+tests.generic_config_updater.test_lo_interface::test_lo_interface_tc2_vrf_change: amd64 la-noise -> arm64 la
+tests.gnmi.test_gnoi_system_reboot::test_gnoi_system_reboot_cold: amd64 ok -> arm64 teardown-error
+tests.platform_tests.test_reboot::test_cold_reboot[gnoi_based-vlab-01]: amd64 ok -> arm64 teardown-error
+tests.platform_tests.test_reboot::test_continuous_reboot[vlab-01]: amd64 ok -> arm64 teardown-error
+tests.platform_tests.test_reboot::test_warm_reboot[gnoi_based-vlab-01]: amd64 ok -> arm64 teardown-error
+tests.radv.test_radv_ipv6_ra::test_radv_router_advertisement: amd64 la-noise -> arm64 la
+tests.radv.test_radv_ipv6_ra::test_solicited_router_advertisement: amd64 la-noise -> arm64 la
+tests.radv.test_radv_ipv6_ra::test_solicited_router_advertisement_with_m_flag: amd64 la-noise -> arm64 la
+tests.radv.test_radv_ipv6_ra::test_unsolicited_router_advertisement_with_m_flag: amd64 la-noise -> arm64 la
+tests.snmp.test_snmp_interfaces::test_snmp_interfaces[vlab-01]: amd64 la-noise -> arm64 la
+tests.snmp.test_snmp_interfaces::test_snmp_interfaces_error_discard[vlab-01-None]: amd64 la-noise -> arm64 la
+tests.snmp.test_snmp_interfaces::test_snmp_interfaces_mibs[vlab-01]: amd64 la-noise -> arm64 la
+tests.snmp.test_snmp_interfaces::test_snmp_mgmt_interface[vlab-01]: amd64 la-noise -> arm64 la
+tests.snmp.test_snmp_memory::test_snmp_memory[vlab-01]: amd64 la-noise -> arm64 la
+tests.snmp.test_snmp_memory::test_snmp_memory_load[vlab-01]: amd64 la-noise -> arm64 la
+tests.syslog.test_syslog::test_syslog[7.0.80.165-7.0.80.166]: amd64 la-noise -> arm64 la
+tests.syslog.test_syslog::test_syslog[7.0.80.166-None]: amd64 la-noise -> arm64 la
+tests.syslog.test_syslog::test_syslog[fd82:b34f:cc99::100-7.0.80.166]: amd64 la-noise -> arm64 la
+tests.syslog.test_syslog::test_syslog[fd82:b34f:cc99::100-None]: amd64 la-noise -> arm64 la
+tests.syslog.test_syslog::test_syslog[fd82:b34f:cc99::100-fd82:b34f:cc99::200]: amd64 la-noise -> arm64 la
+tests.tacacs.test_authorization::test_send_remote_address[vlab-01]: amd64 ok -> arm64 teardown-error
+tests.tacacs.test_jit_user::test_jit_user[vlab-01]: amd64 ok -> arm64 teardown-error
+tests.tacacs.test_ro_user::test_ro_user_ipv6[vlab-01]: amd64 ok -> arm64 teardown-error
+tests.tacacs.test_rw_user::test_rw_user_ipv6[vlab-01]: amd64 ok -> arm64 teardown-error
+tests.vlan.test_autostate_disabled.TestAutostateDisabled::test_autostate_disabled[vlab-01]: amd64 la-noise -> arm64 la
+
+== loganalyzer lines beyond known noise
+   16 arm64 vlab-N ERR systemd[N]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.   [only arm64]
+    1 arm64 vlab-N ERR monit[N]:   [only arm64]
+
+== failures common to both
+tests.disk.test_disk_exhaustion::test_disk_exhaustion failed: Failed: DUT Forwarded 334 packets, not in expected range
+tests.platform_tests.cli.test_show_platform::test_platform_serial_no[vlab-01] failed: AssertionError: Run command 'sudo decode-syseeprom -s' failed
+tests.platform_tests.cli.test_show_platform::test_show_platform_firmware_status[vlab-01] failed: AssertionError: Run command 'show platform firmware status' failed
+tests.platform_tests.cli.test_show_platform::test_show_platform_pcieinfo[vlab-01] failed: Failed: Failed to validate output of command 'show platform pcieinfo -c' line: 'Error: [Errno 2] No such file or directory: '/usr/share/sonic/device/x86_64-kvm_
+tests.platform_tests.cli.test_show_platform::test_show_platform_psustatus failed: Failed: No PSUs are displayed with OK status on 'vlab-01'
+tests.platform_tests.cli.test_show_platform::test_show_platform_syseeprom[vlab-01] failed: AssertionError: Run command 'show platform syseeprom' failed
+tests.platform_tests.sfp.test_sfputil::test_check_sfputil_eeprom_hexdump[vlab-01-None] failed: tests.common.errors.RunAnsibleModuleFail: run module command failed, Ansible Results =>
+tests.platform_tests.sfp.test_sfputil::test_check_sfputil_error_status[vlab-01-None-sudo sfputil show error-status --fetch-from-hardware] setup-error: failed on setup with "tests.common.errors.RunAnsibleModuleFail: run module command failed, Ansible Results =>
+tests.platform_tests.sfp.test_sfputil::test_check_sfputil_error_status[vlab-01-None-sudo sfputil show error-status] setup-error: failed on setup with "tests.common.errors.RunAnsibleModuleFail: run module command failed, Ansible Results =>
+tests.platform_tests.test_platform_info::test_turn_on_off_psu_and_check_psustatus[vlab-01-ignore_particular_error_log0] failed: AssertionError: Run command 'sudo psuutil status' failed
+tests.radv.test_radv_run::test_radv_deployment_id failed: AssertionError: radv service is still running
+tests.snmp.test_snmp_v2mib::test_snmp_v2mib[vlab-01] failed: Failed: System values ['Ubuntu forky/sid'] was not found in SNMP facts: SONiC Software Version: SONiC.HEAD.0-7a081af4 - HwSku: Force10-S6000 - Distribution: Deb
+tests.syslog.test_logrotate::test_logrotate_full_partition_no_archives_cleanup setup-error: failed on setup with "tests.common.errors.RunAnsibleModuleFail: run module shell failed, Ansible Results =>
+tests.test_pktgen::test_pktgen[vlab-01-None] failed: tests.common.plugins.loganalyzer.loganalyzer.LogAnalyzerError: match: 18

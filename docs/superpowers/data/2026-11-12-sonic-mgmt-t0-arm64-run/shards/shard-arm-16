@@ -1,0 +1,17 @@
+acl/test_acl_outer_vlan.py
+bgp/test_bgp_route_neigh_learning.py
+db_migrator/test_migrate_dns.py
+decap/test_decap.py
+ecmp/inner_hashing/test_wr_inner_hashing_lag.py
+gnmi/test_gnmi_configdb.py
+gnmi/test_gnmi_countersdb.py
+pc/test_lag_member.py
+pfcwd/test_pfcwd_all_port_storm.py
+platform_tests/sfp/test_sfpshow.py
+platform_tests/test_cpu_memory_usage.py
+platform_tests/test_first_time_boot_password_change/test_first_time_boot_password_change.py
+qos/test_pfc_counters.py
+restapi/test_restapi_vxlan_ecmp.py
+srv6/test_srv6_dataplane.py
+ssh/test_ssh_limit.py
+sub_port_interfaces/test_show_subinterface.py

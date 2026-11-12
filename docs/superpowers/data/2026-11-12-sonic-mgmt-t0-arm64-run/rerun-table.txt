@@ -1,0 +1,187 @@
+case                                                                                             amd64  arm64  A-alias B-plain
+bgp.test_bgp_session::test_bgp_session_interface_down[interface-bgp_docker]                      skip   FAIL   skip    FAIL   
+      arm64    Failed: neighbor 10.0.0.57 state is still established
+      B-plain  Failed: neighbor 10.0.0.57 state is still established
+bgp.test_bgp_session::test_bgp_session_interface_down[interface-reboot]                          skip   FAIL   skip    FAIL   
+      arm64    Failed: neighbor 10.0.0.57 state is still established
+      B-plain  Failed: neighbor 10.0.0.57 state is still established
+bgp.test_bgp_session::test_bgp_session_interface_down[interface-swss_docker]                     skip   FAIL   skip    FAIL   
+      arm64    Failed: neighbor 10.0.0.57 state is still established
+      B-plain  Failed: neighbor 10.0.0.57 state is still established
+bgp.test_bgp_session::test_bgp_session_interface_down[neighbor-reboot]                           skip   pass   skip    pass   
+bgp.test_bgp_stress_link_flap::test_bgp_stress_link_flap[all]                                    skip   pass   skip    pass   
+bgp.test_bgp_stress_link_flap::test_bgp_stress_link_flap[fanout]                                 skip   pass   skip    pass   
+dhcp_relay.test_dhcp_pkt_recv.TestDhcpv6WithEmptyAclTable::test_dhcpv6_multicast_recv            FAIL   pass   pass    pass   
+      amd64    Failed: Didn't get packet with expected transaction id
+dualtor.test_orchagent_active_tor_downstream::test_active_tor_remove_neighbor_downstream_active[ pass   FAIL   pass    pass   
+      arm64    scapy.error.Scapy_Exception: No data could be read!
+dualtor.test_orchagent_active_tor_downstream::test_active_tor_remove_neighbor_downstream_active[ pass   FAIL   FAIL    FAIL   
+      arm64    scapy.error.Scapy_Exception: No data could be read!
+      A-alias  scapy.error.Scapy_Exception: No data could be read!
+      B-plain  scapy.error.Scapy_Exception: No data could be read!
+dualtor.test_orchagent_mac_move::test_mac_move                                                   pass   FAIL   pass    FAIL   
+      arm64    scapy.error.Scapy_Exception: No data could be read!
+      B-plain  scapy.error.Scapy_Exception: No data could be read!
+dualtor.test_orchagent_standby_tor_downstream::test_downstream_standby_mux_toggle_active[ipv4]   pass   FAIL   pass    pass   
+      arm64    scapy.error.Scapy_Exception: No data could be read!
+dualtor.test_orchagent_standby_tor_downstream::test_downstream_standby_mux_toggle_active[ipv6]   pass   FAIL   pass    pass   
+      arm64    scapy.error.Scapy_Exception: No data could be read!
+ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv4-ipv4]     pass   skip   pass    skip   
+ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv4-ipv6]     pass   skip   pass    skip   
+ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv6-ipv4]     pass   skip   pass    skip   
+ecmp.inner_hashing.test_inner_hashing.TestDynamicInnerHashing::test_inner_hashing[ipv6-ipv6]     pass   skip   pass    skip   
+ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv4-ip pass   skip   pass    skip   
+ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv4-ip pass   skip   pass    skip   
+ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv6-ip pass   skip   pass    skip   
+ecmp.inner_hashing.test_inner_hashing_lag.TestDynamicInnerHashingLag::test_inner_hashing[ipv6-ip pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv4-ipv4 pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv4-ipv6 pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv6-ipv4 pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing.TestWRDynamicInnerHashing::test_inner_hashing[ipv6-ipv6 pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ip pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ip pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ip pass   skip   pass    skip   
+ecmp.inner_hashing.test_wr_inner_hashing_lag.TestWRDynamicInnerHashingLag::test_inner_hashing[ip pass   skip   pass    skip   
+generic_config_updater.test_lo_interface::test_lo_interface_tc2_vrf_change                       pass   pass+la pass    pass   
+      arm64    vlab-01 ERR monit[777]:
+gnmi.test_gnoi_system_reboot::test_gnoi_system_reboot_cold                                       pass   FAIL+te pass    pass   
+      arm64    Failed: Not all critical processes are healthy
+ip.test_ip_packet.TestIPPacket::test_forward_ip_packet_with_0xffff_chksum_drop[vlab-01]          pass   FAIL   pass    FAIL   
+      arm64    KeyError: 'vlab-01'
+      B-plain  KeyError: 'vlab-01'
+lldp.test_lldp::test_lldp_interfaces[vlab-01-None]                                               pass   FAIL   pass    FAIL   
+      arm64    Failed: eth0 is missing from LLDP table
+      B-plain  Failed: eth0 is missing from LLDP table
+lldp.test_lldp::test_lldp_interfaces_config_reload[vlab-01-None]                                 pass   FAIL   pass    FAIL   
+      arm64    Failed: eth0 is missing from LLDP table after config reload
+      B-plain  Failed: eth0 is missing from LLDP table after config reload
+pc.test_lag_2::test_lag[vlab-01|PortChannel104-lacp_rate]                                        pass   FAIL   FAIL    FAIL   
+      arm64    tests.common.errors.RunAnsibleModuleFail: run module eos_config failed, Ansible Results =>
+      A-alias  tests.common.errors.RunAnsibleModuleFail: run module eos_config failed, Ansible Results =>
+      B-plain  tests.common.errors.RunAnsibleModuleFail: run module eos_config failed, Ansible Results =>
+platform_tests.test_reboot::test_cold_reboot[gnoi_based-vlab-01]                                 pass   FAIL+te pass    pass   
+      arm64    Failed: Not all critical processes are healthy
+platform_tests.test_reboot::test_continuous_reboot[vlab-01]                                      pass   FAIL+te FAIL+te pass   
+      arm64    Failed: Not all critical processes are healthy
+      A-alias  Failed: Not all critical processes are healthy
+platform_tests.test_reboot::test_warm_reboot[gnoi_based-vlab-01]                                 pass   FAIL+te FAIL+te pass   
+      arm64    Failed: Not all critical processes are healthy
+      A-alias  Failed: Not all critical processes are healthy
+platform_tests.test_service_warm_restart::test_service_warm_restart[vlab-01]                     skip   SETUP  skip    SETUP  
+      arm64    failed on setup with "Failed: DUT not ready for test. Health check failed before reboot: {'check_services': True, 'check_interfaces_and_transceivers':
+      B-plain  failed on setup with "Failed: DUT not ready for test. Health check failed before reboot: {'check_services': True, 'check_interfaces_and_transceivers':
+radv.test_radv_ipv6_ra::test_radv_router_advertisement                                           pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+radv.test_radv_ipv6_ra::test_solicited_router_advertisement                                      pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+radv.test_radv_ipv6_ra::test_solicited_router_advertisement_with_m_flag                          pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+radv.test_radv_ipv6_ra::test_unsolicited_router_advertisement_with_m_flag                        pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+snmp.test_snmp_interfaces::test_snmp_interfaces[vlab-01]                                         pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+snmp.test_snmp_interfaces::test_snmp_interfaces_error_discard[vlab-01-None]                      pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+snmp.test_snmp_interfaces::test_snmp_interfaces_mibs[vlab-01]                                    pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+snmp.test_snmp_interfaces::test_snmp_mgmt_interface[vlab-01]                                     pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+snmp.test_snmp_memory::test_snmp_memory[vlab-01]                                                 pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+snmp.test_snmp_memory::test_snmp_memory_load[vlab-01]                                            pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+syslog.test_syslog::test_syslog[7.0.80.165-7.0.80.166]                                           pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+syslog.test_syslog::test_syslog[7.0.80.166-None]                                                 pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+syslog.test_syslog::test_syslog[fd82:b34f:cc99::100-7.0.80.166]                                  pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+syslog.test_syslog::test_syslog[fd82:b34f:cc99::100-None]                                        pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+syslog.test_syslog::test_syslog[fd82:b34f:cc99::100-fd82:b34f:cc99::200]                         pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.
+tacacs.test_authorization::test_authorization_local[vlab-01]                                     pass   SETUP  SETUP   SETUP  
+      arm64    failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      A-alias  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_authorization_tacacs_and_local[vlab-01]                          FAIL   SETUP  SETUP   SETUP  
+      amd64    Failed: Command: 'cat /etc/passwd' failed with exit code: 0, stdout: ['root:x:0:0:root:/root:/bin/bash\n', 'daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/no
+      arm64    failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      A-alias  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_authorization_tacacs_and_local_then_server_down_after_login[vlab pass   SETUP  SETUP   SETUP  
+      arm64    failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      A-alias  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_authorization_tacacs_only[vlab-01]                               FAIL   SETUP  SETUP   SETUP  
+      amd64    Failed: Command: 'cat /etc/passwd' failed with exit code: 0, stdout: ['root:x:0:0:root:/root:/bin/bash\n', 'daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/no
+      arm64    failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      A-alias  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      B-plain  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tacacs.test_authorization::test_authorization_tacacs_only_some_server_down[vlab-01]              FAIL   SETUP  SETUP   SETUP  
+      amd64    Failed: Command: 'cat /etc/passwd' failed with exit code: 0, stdout: ['root:x:0:0:root:/root:/bin/bash\n', 'daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/no
+      arm64    failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      A-alias  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      B-plain  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tacacs.test_authorization::test_authorization_tacacs_only_then_server_down_after_login[vlab-01]  pass   SETUP  SETUP   SETUP  
+      arm64    failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      A-alias  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      B-plain  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+tacacs.test_authorization::test_backward_compatibility_disable_authorization[vlab-01]            pass   SETUP  SETUP   SETUP  
+      arm64    failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      A-alias  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_bypass_authorization[vlab-01]                                    pass   SETUP  SETUP   SETUP  
+      arm64    failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      A-alias  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_fallback_to_local_authorization_with_config_reload[vlab-01]      pass   SETUP  SETUP   SETUP  
+      arm64    failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      A-alias  failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_send_remote_address[vlab-01]                                     pass   SETUP+te SETUP+te SETUP+te
+      arm64    failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      A-alias  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_stop_request_next_server_after_reject[vlab-01]                   pass   FAIL   FAIL    FAIL   
+      arm64    Failed: None
+      A-alias  Failed: None
+      B-plain  paramiko.ssh_exception.SSHException: Error reading SSH protocol banner[Errno 104] Connection reset by peer
+tacacs.test_authorization::test_tacacs_authorization_commands_during_login[vlab-01]              pass   SETUP  SETUP   SETUP  
+      arm64    failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      A-alias  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_authorization::test_tacacs_authorization_wildcard[vlab-01]                           FAIL   SETUP  SETUP   SETUP  
+      amd64    Failed: Not found data: cmd=/usr/bin/ls in tacplus server log
+      arm64    failed on setup with "TypeError: 'NoneType' object does not support the context manager protocol"
+      A-alias  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+      B-plain  failed on setup with "paramiko.ssh_exception.SSHException: Error reading SSH protocol banner"
+tacacs.test_jit_user::test_jit_user[vlab-01]                                                     pass   FAIL+te FAIL+te FAIL+te
+      arm64    Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+      A-alias  Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+      B-plain  Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+tacacs.test_ro_user::test_ro_user[vlab-01]                                                       pass   FAIL   FAIL    FAIL   
+      arm64    Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+      A-alias  Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+      B-plain  Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+tacacs.test_ro_user::test_ro_user_banned_command[vlab-01]                                        pass   FAIL   FAIL    FAIL   
+      arm64    Failed: hostcfgd did not start after 240 seconds
+      A-alias  Failed: hostcfgd did not start after 240 seconds
+      B-plain  Failed: hostcfgd did not start after 240 seconds
+tacacs.test_ro_user::test_ro_user_ipv6[vlab-01]                                                  pass   FAIL+te FAIL+te FAIL+te
+      arm64    Failed: cat command failed because TACACS server not running
+      A-alias  Failed: cat command failed because TACACS server not running
+      B-plain  Failed: cat command failed because TACACS server not running
+tacacs.test_rw_user::test_rw_user[vlab-01]                                                       pass   FAIL   FAIL    FAIL   
+      arm64    Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+      A-alias  Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+      B-plain  Failed: Warning: Permanently added '10.250.0.101' (RSA) to the list of known hosts.
+tacacs.test_rw_user::test_rw_user_ipv6[vlab-01]                                                  pass   FAIL+te FAIL+te FAIL+te
+      arm64    Failed: cat command failed because TACACS server not running
+      A-alias  Failed: cat command failed because TACACS server not running
+      B-plain  Failed: cat command failed because TACACS server not running
+telemetry.test_events::test_events[vlab-01-False]                                                pass   FAIL   pass    FAIL   
+      arm64    tests.common.errors.RunAnsibleModuleFail: run module shell failed, Ansible Results =>
+      B-plain  tests.common.errors.RunAnsibleModuleFail: run module shell failed, Ansible Results =>
+vlan.test_autostate_disabled.TestAutostateDisabled::test_autostate_disabled[vlab-01]             pass   pass+la pass    pass   
+      arm64    vlab-01 ERR systemd[1]: Failed to start process-reboot-cause.service - Retrieve the reboot cause from the history files and save them to StateDB.

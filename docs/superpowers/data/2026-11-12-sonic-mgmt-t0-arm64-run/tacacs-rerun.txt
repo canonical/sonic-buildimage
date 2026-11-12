@@ -1,0 +1,4 @@
+files: tacacs/test_authorization.py tacacs/test_ro_user.py tacacs/test_rw_user.py tacacs/test_jit_user.py tacacs/test_accounting.py tacacs/test_ro_disk.py generic_config_updater/test_aaa.py ip/test_mgmt_ipv6_only.py ssh/test_ssh_limit.py
+amd64: {'passed': 22, 'skipped': 18, 'failed': 4}  arm64 rerun: {'passed': 22, 'skipped': 18, 'failed': 4}
+44 cases; 0 differ
+teardown differs: []

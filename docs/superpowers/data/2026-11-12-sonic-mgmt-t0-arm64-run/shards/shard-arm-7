@@ -1,0 +1,17 @@
+acl/test_acl.py
+acl/test_stress_acl.py
+bmp/test_bmp_statedb.py
+dhcp_server/test_dhcp_server_stress.py
+fips/test_fips.py
+generic_config_updater/test_lo_interface.py
+generic_config_updater/test_multiasic_idf.py
+generic_config_updater/test_portchannel_interface.py
+ipfwd/test_dip_sip.py
+l2/test_l2_configure.py
+pfcwd/test_pfcwd_cli.py
+platform_tests/link_flap/test_cont_link_flap.py
+platform_tests/test_platform_info.py
+portstat/test_portstat.py
+ssh/test_ssh_ciphers.py
+tacacs/test_ro_disk.py
+vlan/test_host_vlan.py

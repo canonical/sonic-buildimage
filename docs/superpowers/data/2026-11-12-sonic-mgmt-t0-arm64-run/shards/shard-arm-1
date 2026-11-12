@@ -1,0 +1,14 @@
+arp/test_arp_extended.py
+arp/test_unknown_mac.py
+autorestart/test_container_autorestart.py
+bgp/test_bgp_session.py
+cacl/test_cacl_function.py
+generic_config_updater/test_multiasic_linkcrc.py
+gnmi/test_gnmi.py
+gnmi/test_gnmi_smartswitch.py
+platform_tests/test_kdump.py
+route/test_route_consistency.py
+route/test_route_flap.py
+snmp/test_snmp_v2mib.py
+test_nbr_health.py
+test_pktgen.py

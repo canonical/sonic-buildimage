@@ -1,0 +1,33 @@
+[
+ {
+  "from": "tb01",
+  "from_label": "t0-arm-1",
+  "to": "tb14",
+  "to_label": "t0-arm-x1",
+  "files": [
+   "snmp/test_snmp_v2mib.py",
+   "test_nbr_health.py",
+   "test_pktgen.py"
+  ]
+ },
+ {
+  "from": "tb10",
+  "from_label": "t0-arm-10",
+  "to": "tb16",
+  "to_label": "t0-arm-x2",
+  "files": [
+   "route/test_route_bgp_ecmp.py",
+   "vxlan/test_vxlan_decap.py"
+  ]
+ },
+ {
+  "from": "tb09",
+  "from_label": "t0-arm-9",
+  "to": "tb04",
+  "to_label": "t0-arm-x3",
+  "files": [
+   "vlan/test_secondary_subnet.py",
+   "wol/test_wol.py"
+  ]
+ }
+]

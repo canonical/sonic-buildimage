@@ -1,0 +1,17 @@
+crm/test_crm.py
+dhcp_relay/test_dhcp_relay.py
+dhcp_relay/test_dhcpv6_relay.py
+generic_config_updater/test_incremental_qos.py
+generic_config_updater/test_pg_headroom_update.py
+generic_config_updater/test_syslog.py
+macsec/test_dataplane.py
+ntp/test_ntp.py
+platform_tests/counterpoll/test_counterpoll_watermark.py
+platform_tests/test_link_down.py
+radv/test_radv_ipv6_ra.py
+snmp/test_snmp_interfaces.py
+snmp/test_snmp_memory.py
+syslog/test_syslog.py
+tacacs/test_authorization.py
+vlan/test_autostate_disabled.py
+vxlan/test_vnet_vxlan.py

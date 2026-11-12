@@ -1,0 +1,17 @@
+bgp/test_bgp_operation_in_ro.py
+crm/test_crm_available.py
+dhcp_relay/test_dhcp_relay_stress.py
+everflow/test_everflow_ipv6.py
+fdb/test_fdb.py
+generic_config_updater/test_cacl.py
+generic_config_updater/test_vlan_interface.py
+macsec/test_interop_protocol.py
+platform_tests/link_flap/test_link_flap.py
+platform_tests/sfp/test_sfputil.py
+qos/test_buffer.py
+route/test_forced_mgmt_route.py
+srv6/test_srv6_static_config.py
+telemetry/test_events.py
+telemetry/test_telemetry_poll.py
+test_interfaces.py
+vlan/test_vlan.py

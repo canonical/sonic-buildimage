@@ -1,0 +1,24 @@
+--- ansible/library/sonic_basic_facts.py	2026-11-10 07:25:30.394834832 +0000
++++ /home/sheldon-qi/scratch/mgmt-ab/arm/eval-sonic_basic_facts.py	2026-11-12 17:50:31.182985155 +0000
+@@ -361,6 +361,9 @@
+                        'asic_type': 'vs', 'asic_count': 1}
+     """
+     basic_facts = device_info.get_platform_info()
++    # evaluation only: report the arm64 vs alias under the x86 vs name that sonic-mgmt checks for
++    if basic_facts.get('platform') == 'arm64-qemu_armv8a-r0':
++        basic_facts['platform'] = 'x86_64-kvm_x86_64-r0'
+ 
+     # Augment with platform.json if available
+     platform = basic_facts.get('platform', '')
+--- ansible/library/dut_basic_facts.py	2026-11-10 07:25:30.393834836 +0000
++++ /home/sheldon-qi/scratch/mgmt-ab/arm/eval-dut_basic_facts.py	2026-11-12 17:50:31.184081519 +0000
+@@ -43,6 +43,9 @@
+ 
+     try:
+         results['platform'], results['hwsku'] = device_info.get_platform_and_hwsku()
++        # evaluation only: report the arm64 vs alias under the x86 vs name that sonic-mgmt checks for
++        if results['platform'] == 'arm64-qemu_armv8a-r0':
++            results['platform'] = 'x86_64-kvm_x86_64-r0'
+         results['is_multi_asic'] = device_info.is_multi_npu()
+         results['num_asic'] = device_info.get_num_npus()
+         results.update(device_info.get_sonic_version_info())

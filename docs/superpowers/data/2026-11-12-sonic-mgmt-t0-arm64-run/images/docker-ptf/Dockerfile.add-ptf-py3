@@ -1,0 +1,5 @@
+FROM docker-ptf:arm64-202605
+# ptf-py3 is a pure-Python wheel SONiC builds from src/ptf-py3 + ptf-py3.patch; taken from the amd64 docker-ptf:202605 image
+ADD ptf-files.tar /root/env-python3/
+RUN ln -sf /root/env-python3/bin/ptf /usr/local/bin/ptf && ln -sf /root/env-python3/bin/ptf_nn_agent.py /usr/local/bin/ptf_nn_agent.py \
+    && /root/env-python3/bin/python -c "import ptf, ptf.dataplane, ptf.testutils, ptf_macsec; print(ptf.__file__)"
