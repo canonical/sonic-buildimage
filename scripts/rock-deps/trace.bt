@@ -1,0 +1,23 @@
+// Record every execve/openat path per cgroup id, deduplicated in maps and printed on exit (SIGINT/SIGTERM).
+// Run: bpftrace scripts/rock-deps/trace.bt   (collect.sh runs it inside the rockdeps-bpftrace image)
+// Needs: bpftrace >= 0.21, BTF kernel. Output: "CGROUP <id> <path>" lines, then @x/@o maps keyed [cgroup id, path].
+config = {
+    max_map_keys = 2000000;
+    // > 64-byte strings use a per-CPU scratch map that the 7.0 verifier rejects on small-CPU hosts (dut2: EACCES);
+    // keeping them on the stack avoids it. Paths longer than 200 bytes are truncated.
+    max_strlen = 200;
+    on_stack_limit = 256;
+}
+
+BEGIN { printf("BEGIN\n"); }
+
+tracepoint:cgroup:cgroup_mkdir { printf("CGROUP %llu %s\n", args.id, str(args.path)); }
+
+// sched_process_exec carries a kernel copy of the path, so it never fails to read
+tracepoint:sched:sched_process_exec { @x[cgroup, str(args.filename)] = count(); }
+
+// Read the user string at exit: the kernel has faulted the page in by then (enter-time reads miss rodata strings)
+tracepoint:syscalls:sys_enter_openat { @fn[tid] = args.filename; }
+tracepoint:syscalls:sys_exit_openat /@fn[tid]/ { @o[cgroup, str(@fn[tid])] = count(); delete(@fn[tid]); }
+
+END { clear(@fn); print(@x); print(@o); clear(@x); clear(@o); }
