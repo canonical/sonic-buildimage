@@ -81,6 +81,7 @@ eventd 的 `start.sh` 只做 `pebble start eventd` 和 `eventdb_wrapper.sh`（ba
 |---|---|---|
 | mgmt-framework | `dash_bins`（`/bin/sh`） | `sonic-cli` 的 klish 通过 `/bin/sh` 执行动作 |
 | mgmt-framework | `libcurl4t64`、`libxml2-16`、`libcjson1` 及其依赖 | klish（`/usr/sbin/cli/clish`）需要 |
+| mgmt-framework | `ca-certificates_data` | `cli` 路径打开 `/usr/lib/ssl/cert.pem` → `/etc/ssl/certs/ca-certificates.crt`；该文件由 deb 的维护脚本生成，`analyze.py` 把它归为非 archive 文件，没给出 slice（Task 11 补上） |
 | 全部 | `procps_bins`、`procps_ps-bin` | host 侧 `show services`（`docker exec <c> ps aux`）、`pgrep -x pebble`、`kill` |
 | database | `procps_sysctl`、`iproute2_ip-bin` | `docker_image_ctl.j2` 的 `sysctl`，init 脚本的 `ip -4 -o addr` |
 

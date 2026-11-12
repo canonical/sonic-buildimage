@@ -53,7 +53,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 删除 | `install-python` part（config-engine 的 5 个 wheel，以及 jinjanator、click、pyangbind、lxml）；python3 相关 slice；`python3-swsscommon`、`python3-libyang` 两个自建 deb；随之不再有 `container_startup.py`、`sonic-cfggen`、`jinjanate` |
+| 删除 | `install-python` part（config-engine 的 5 个 wheel，以及 jinjanator、click、pyangbind、lxml）；python3 相关 slice；`python3-swsscommon`、`python3-libyang` 两个自建 deb；随之不再有 `container_startup.py`、`swss_vars.j2`（只给 `sonic-cfggen` 用）、`sonic-cfggen`、`jinjanate`；`sonic-eventd` deb 里的 Python 测试工具 `/usr/bin/events_publish_tool.py` 在 stage 排除。jinjanator 仍在构建期用来渲染 rsyslog 插件配置，不进 rock |
 | 动态 | 六条路径、两个平台都没有 Python 进程，也没有打开任何 `.py` 或 `python3.14` 下的文件 |
 | 静态 | `start.sh`：`pgrep`、`pebble add/start`、`eventdb_wrapper.sh`；`eventdb_wrapper.sh`：`jq`、`exec /usr/bin/eventdb`。eventd 的 `start.sh` 不调用 `container_startup.py`（radv 的会调） |
 | 判断错时的症状 | KubeSonic 或其他运行时若期望 eventd 里执行 `container_startup.py`、`sonic-cfggen`，会报 `python3: not found` 或文件不存在；host 侧若有工具 `docker exec eventd python3 ...` 也会失败 |
@@ -75,7 +75,10 @@
 | database | `iproute2_bins` | `iproute2_ip-bin`、`iproute2_config` | `ss`、`bridge`、`tc` 等找不到 | 加 `iproute2_bins` |
 | database | `python3.14_standard` | `libpython3.14_libs`、`libpython3.14-stdlib_{data-types,internet,zstd}` 及其 essential | 某个 Python 路径 `ModuleNotFoundError: No module named '<stdlib 模块>'` | 按模块所在加 `libpython3.14-stdlib_<组>`（`grep -n '<模块>.py' slices/libpython3.14-stdlib.yaml`），或整个 `python3.14_standard` |
 | database | `python3-venv` 整包依赖链（`python3.14-venv` → `python3-pip-whl` → `ca-certificates` → `openssl`） | 只保留 `openssl_config`（import `swsscommon` 时打开 `/usr/lib/ssl/openssl.cnf`） | 容器内需要 CA 证书的 TLS 客户端校验失败；需要 `openssl` 命令的脚本找不到 | 加 `ca-certificates_data-with-certs`、`openssl_bins` |
-
 | radv | `coreutils_bins` | `coreutils_{cat,chmod,cut,echo,env,mkdir,rm-bin,sleep,touch}` | 进容器排障或新脚本调用 `ls`、`mv`、`date` 等报 `executable file not found` / `command not found` | 加对应的 `coreutils_<命令>`，或整个 `coreutils_bins` |
 | radv | `python3.14_standard` | `libpython3.14_libs`、`python3-yaml_libs`、`python3-cffi-backend_libs` 及其 essential | 某个 Python 路径 `ModuleNotFoundError: No module named '<stdlib 模块>'` | 同 database 行 |
 | radv | `python3-venv` 整包依赖链 | 只保留 `openssl_config` | 同 database 行 | 同 database 行 |
+| eventd | `coreutils_bins` | `coreutils_{cat,echo,env,ls-bin,mkdir,rm-bin,touch}` | 进容器排障或新脚本调用 `sleep`、`head`、`cp` 等报 `executable file not found` / `command not found` | 加对应的 `coreutils_<命令>`，或整个 `coreutils_bins` |
+| mgmt-framework | `coreutils_bins` | `coreutils_{cat,echo,env,mkdir,rm-bin,touch}` | 进容器排障或新脚本调用 `ls`、`grep`、`sleep` 等报 `executable file not found` / `command not found` | 加对应的 `coreutils_<命令>`，或整个 `coreutils_bins` |
+| mgmt-framework | `python3.14_standard` | `libpython3.14_libs`、`python3-yaml_libs`、`python3-cffi-backend_libs` 及其 essential | 某个 Python 路径 `ModuleNotFoundError: No module named '<stdlib 模块>'` | 同 database 行 |
+| mgmt-framework | `python3-venv` 整包依赖链 | 保留 `openssl_config` 与 `ca-certificates_data`（只有 `/etc/ssl/certs/ca-certificates.crt`，CLI 的 Python 经 `/usr/lib/ssl/cert.pem` 打开它） | 需要 `openssl` 命令的脚本找不到；需要单个证书文件（`/usr/share/ca-certificates/`）或 `update-ca-certificates` 的场景失败 | 加 `openssl_bins`、`ca-certificates_data-with-certs` |
