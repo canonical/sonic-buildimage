@@ -73,5 +73,7 @@ $(DOCKER_PLATFORM_MONITOR)_aboot_RUN_OPT += -v /usr/lib/python3/dist-packages/ar
 $(DOCKER_PLATFORM_MONITOR)_aboot_RUN_OPT += -v /usr/lib/python3/dist-packages/sonic_platform:/usr/lib/python3/dist-packages/sonic_platform:ro
 
 $(DOCKER_PLATFORM_MONITOR)_BASE_IMAGE_FILES += cmd_wrapper:/usr/bin/sensors
+ifeq ($(CONFIGURED_ARCH),amd64)
 $(DOCKER_PLATFORM_MONITOR)_BASE_IMAGE_FILES += cmd_wrapper:/usr/sbin/iSmart
 $(DOCKER_PLATFORM_MONITOR)_BASE_IMAGE_FILES += cmd_wrapper:/usr/sbin/SmartCmd
+endif
