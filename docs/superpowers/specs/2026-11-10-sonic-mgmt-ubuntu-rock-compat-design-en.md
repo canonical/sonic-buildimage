@@ -240,45 +240,31 @@ The classification is written up in this repository and is the input to the next
 
 ## 7. Branch and commits
 
-`202605_resolute` on `canonical/sonic-mgmt`, from `sonic-net/sonic-mgmt` `202605` at `36c29fc`. GPG-signed commits in this order, each passing the unit tests on its own:
+`202605_resolute` on `canonical/sonic-mgmt` is upstream `sonic-net/sonic-mgmt` `202605` at `36c29fc`. The changes are draft PR [canonical/sonic-mgmt#2](https://github.com/canonical/sonic-mgmt/pull/2), branch `feat/resolute-ubuntu-rock-compat`: 21 GPG-signed commits in this order, one topic each, each passing the unit tests on its own:
 
-1. OS profile module and its unit tests
-2. Container process module, its unit tests and the captured probe output
-3. `SonicHost` interface, and the common helpers in `sonic.py` and `dut_utils.py` moved onto it, with their unit tests
-4. The OS call sites
-5. The test-local helpers in `autorestart` and `process_monitoring`
-6. The sshd banner regex
-7. The start-time rule relative to the container, with the probe output after deploy-mg
-8. The monit sanity check accepting `Waiting`
-9. `modify_syslog_rate_limit()`, `is_service_running()` and `verify_orchagent_running_or_assert()`
-10. The two remaining supervisorctl calls in autorestart
-11. memory_checker's monit readiness check accepting `Waiting`
-12. `kill_process_by_pid()` refusing a pid that is not positive
-13. The 60 s bound on each batched probe
-14. A service never taking a child that another unresolved service lists
-15. The supervisorctl helpers' edge cases, and `error` instead of an exception on pebble output of an unexpected shape
-16. The Dockerfile probe output and the parity tests against the old supervisorctl parsing
-17. Pebble pids that stay correct across a clock step
-18. `os_profile()` failing on a missing `os-release`, not on a missing `debian_version`
-19. The `critical_processes` parsing checked against `36c29fc`, and exact probe tests
-
-The t0 run added, one area per commit:
-
-20. `build_signal_command()` and `SonicHost.signal_container_process()`
-21. The SNMP subagent check
-22. dhcp_relay program states and pids
-23. The gnmi helpers
-24. arp_update and rsyslogd control in arp, crm, dualtor, vlan, pc and syslog
-25. The like-bgp container's entrypoint, and the fpmsyncd restart
-26. bmp program states
-27. The radvd SIGHUP
-28. thermalctld, lm-sensors and lldpmgrd
-29. The telemetry event helpers
-30. Program and signal names checked against the whole string
+1. The OS profile module, `SonicHost.os_profile()` and their unit tests
+2. The OS call sites
+3. The sshd banner regex
+4. The monit sanity check and memory_checker accepting `Waiting`
+5. The container process module (probe, parsing, pid rules, control and signal commands), its unit tests, the captured probe output and the parity tests against the supervisorctl parsing it replaces
+6. The `SonicHost` interface, and the common helpers in `sonic.py`, `dut_utils.py` and `multi_asic.py` moved onto it, with their unit tests
+7. The test-local helpers in `autorestart` and `process_monitoring`
+8. `kill_process_by_pid()` refusing a pid that is not positive
+9. The SNMP subagent check
+10. dhcp_relay program states and pids
+11. The gnmi helpers
+12. arp_update and rsyslogd control in arp, crm, dualtor, vlan, pc and syslog
+13. The like-bgp container's entrypoint, and the fpmsyncd restart
+14. bmp program states
+15. The radvd SIGHUP
+16. thermalctld, lm-sensors and lldpmgrd
+17. The telemetry event helpers
+18. arp_update and ycabled in the dualtor tests
+19. The qos_sai service control
+20. The dhcp_server fixture
+21. Two diagnostics that log the process table
 
 The A/B results are in [../2026-11-10-sonic-mgmt-resolute-ab-report-en.md](../2026-11-10-sonic-mgmt-resolute-ab-report-en.md), and the t0 run in [../2026-11-11-sonic-mgmt-t0-run-report-en.md](../2026-11-11-sonic-mgmt-t0-run-report-en.md).
-
-Pushing the branch needs a separate go-ahead.
 
 ## 8. Risks
 

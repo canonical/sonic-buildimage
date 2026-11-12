@@ -240,45 +240,31 @@ SonicHost 的方法和 `dut_utils` 的辅助函数用 `ast` 加载,在一个返�
 
 ## 7. 分支与提交
 
-`canonical/sonic-mgmt` 上的 `202605_resolute`,从 `sonic-net/sonic-mgmt` `202605` 的 `36c29fc` 开出。GPG 签名提交,顺序如下,每个提交单独都能通过单元测试:
+`canonical/sonic-mgmt` 上的 `202605_resolute` 就是上游 `sonic-net/sonic-mgmt` `202605` 的 `36c29fc`。改动在 draft PR [canonical/sonic-mgmt#2](https://github.com/canonical/sonic-mgmt/pull/2) 里,分支 `feat/resolute-ubuntu-rock-compat`:共 21 个 GPG 签名提交,顺序如下,每个提交一个主题,单独都能通过单元测试:
 
-1. OS 画像模块及其单元测试
-2. 容器进程模块、其单元测试和抓取的探针样本
-3. `SonicHost` 接口,以及迁移到它上面的 `sonic.py` 与 `dut_utils.py` 公共辅助函数,连同单元测试
-4. OS 调用点
-5. `autorestart` 与 `process_monitoring` 里的测试内辅助函数
-6. sshd banner 正则
-7. 以容器为基准的启动时间规则,以及 deploy-mg 之后的探针样本
-8. monit 的 sanity 检查接受 `Waiting`
-9. `modify_syslog_rate_limit()`、`is_service_running()` 与 `verify_orchagent_running_or_assert()`
-10. autorestart 里剩下的两处 supervisorctl 调用
-11. memory_checker 的 monit 就绪检查接受 `Waiting`
-12. `kill_process_by_pid()` 拒绝非正数的 pid
-13. 批量探针每个限时 60 秒
-14. 服务绝不认领另一个未解析服务也列出的子进程
-15. supervisorctl 辅助函数的边界情况,以及 pebble 输出结构不符合预期时设置 `error` 而不抛异常
-16. Dockerfile 版探针样本,以及与旧 supervisorctl 解析的对照测试
-17. 时钟跳变后 pebble 的 pid 仍然正确
-18. `os_profile()` 在缺少 `os-release` 时失败,而不是在缺少 `debian_version` 时失败
-19. 对照 `36c29fc` 检查 `critical_processes` 解析,以及精确的探针测试
-
-t0 运行又增加了以下提交,每个领域一个:
-
-20. `build_signal_command()` 与 `SonicHost.signal_container_process()`
-21. SNMP 子代理检查
-22. dhcp_relay 的程序状态与 pid
-23. gnmi helper
-24. arp、crm、dualtor、vlan、pc、syslog 里对 arp_update 和 rsyslogd 的控制
-25. like-bgp 容器的入口,以及 fpmsyncd 重启
-26. bmp 的程序状态
-27. radvd 的 SIGHUP
-28. thermalctld、lm-sensors 和 lldpmgrd
-29. telemetry 事件 helper
-30. 程序名与 signal 名按整串校验
+1. OS 画像模块、`SonicHost.os_profile()` 及其单元测试
+2. OS 调用点
+3. sshd banner 正则
+4. monit 的 sanity 检查和 memory_checker 接受 `Waiting`
+5. 容器进程模块(探针、解析、pid 规则、控制和 signal 命令)、其单元测试、抓取的探针样本,以及与被替换的 supervisorctl 解析的对照测试
+6. `SonicHost` 接口,以及迁移到它上面的 `sonic.py`、`dut_utils.py` 和 `multi_asic.py` 公共辅助函数,连同单元测试
+7. `autorestart` 与 `process_monitoring` 里的测试内辅助函数
+8. `kill_process_by_pid()` 拒绝非正数的 pid
+9. SNMP 子代理检查
+10. dhcp_relay 的程序状态与 pid
+11. gnmi helper
+12. arp、crm、dualtor、vlan、pc、syslog 里对 arp_update 和 rsyslogd 的控制
+13. like-bgp 容器的入口,以及 fpmsyncd 重启
+14. bmp 的程序状态
+15. radvd 的 SIGHUP
+16. thermalctld、lm-sensors 和 lldpmgrd
+17. telemetry 事件 helper
+18. dualtor 测试里的 arp_update 与 ycabled
+19. qos_sai 的服务控制
+20. dhcp_server fixture
+21. 两处改为记录进程表的诊断输出
 
 A/B 实测结果见 [../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md](../2026-11-10-sonic-mgmt-resolute-ab-report-zh.md),t0 运行结果见 [../2026-11-11-sonic-mgmt-t0-run-report-zh.md](../2026-11-11-sonic-mgmt-t0-run-report-zh.md)。
-
-推送分支需要另行确认。
 
 ## 8. 风险
 

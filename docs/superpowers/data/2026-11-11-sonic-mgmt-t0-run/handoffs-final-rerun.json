@@ -1,0 +1,38 @@
+[
+ {
+  "from": "t0r6",
+  "from_label": "t0-rock-6",
+  "to": "t0r1",
+  "to_label": "t0-rock-x1",
+  "files": [
+   "telemetry/test_telemetry_cert_rotation.py",
+   "vlan/test_autostate_disabled.py",
+   "vlan/test_vlan_ping.py",
+   "vlan/test_vlan_ports_down.py",
+   "vxlan/test_vnet_vxlan.py"
+  ]
+ },
+ {
+  "from": "t0r3",
+  "from_label": "t0-rock-3",
+  "to": "t0r6",
+  "to_label": "t0-rock-x2",
+  "files": [
+   "tacacs/test_rw_user.py",
+   "test_pktgen.py",
+   "testbed_setup/test_populate_fdb.py"
+  ]
+ },
+ {
+  "from": "t0d3",
+  "from_label": "t0-df-3",
+  "to": "t0d6",
+  "to_label": "t0-df-x3",
+  "files": [
+   "tacacs/test_jit_user.py",
+   "tacacs/test_rw_user.py",
+   "test_pktgen.py",
+   "testbed_setup/test_populate_fdb.py"
+  ]
+ }
+]

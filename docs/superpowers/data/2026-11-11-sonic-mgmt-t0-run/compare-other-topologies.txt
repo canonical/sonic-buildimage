@@ -1,0 +1,18 @@
+== dualtor (vms-kvm-dual-t0)
+rock: call {'passed': 61, 'skipped': 137, 'failed': 6} | teardown {'ok': 204}
+df:   call {'passed': 61, 'skipped': 137, 'failed': 6} | teardown {'ok': 204}
+cases that differ (the DUT name in dualtor case ids normalised): 0
+  failing on rock: tests.arp.test_arp_dualtor::test_ipv6_na_after_failed_neighbor_moves_to_incomplete[active-standby-configured-server] | Failed: Neighbor fc02:1000::6 was not moved to INCOMPLETE through the failed-neighbor path on all target ToRs | df: failed
+  failing on rock: tests.arp.test_arp_dualtor::test_ipv6_na_after_failed_neighbor_moves_to_incomplete[active-standby-unconfigured-vlan] | Failed: Neighbor fc02:1000::1a was not moved to INCOMPLETE through the failed-neighbor path on all target ToRs | df: failed
+  failing on rock: tests.arp.test_arp_dualtor::test_ipv6_na_before_failed_neighbor_moves_to_incomplete[active-standby-configured-server] | AssertionError: Expected packet was not received on device 0, port 9. | df: failed
+  failing on rock: tests.arp.test_arp_dualtor::test_ipv6_na_before_failed_neighbor_moves_to_incomplete[active-standby-unconfigured-vlan] | AssertionError: Expected packet was not received on device 0, port 5. | df: failed
+  failing on rock: tests.dualtor.test_mux_port_iptables_entries::test_multivlan_mux_port_iptables_entries | Failed: Unexpected iptables nat rules: {'-N DOCKER', '-A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER', '-A OUTPUT  | df: failed
+  failing on rock: tests.dualtor.test_mux_port_iptables_entries::test_mux_port_iptables_entries | Failed: Unexpected iptables nat rules: {'-N DOCKER', '-A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER', '-A OUTPUT  | df: failed
+== t0-2vlans (vms-kvm-t0, vlan_config=two_vlan_a)
+rock: call {'skipped': 6, 'passed': 2} | teardown {'ok': 6, 'la-noise': 2}
+df:   call {'skipped': 6, 'passed': 2} | teardown {'ok': 6, 'la-noise': 2}
+cases that differ (the DUT name in dualtor case ids normalised): 0
+== t0-sonic (vms-kvm-t0-64-32, vSONiC neighbours, macsec)
+rock: call {'passed': 45, 'skipped': 11} | teardown {'la-noise': 31, 'ok': 25}
+df:   call {'passed': 45, 'skipped': 11} | teardown {'la-noise': 31, 'ok': 25}
+cases that differ (the DUT name in dualtor case ids normalised): 0

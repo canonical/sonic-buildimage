@@ -1,0 +1,3 @@
+Rerun of qos/test_qos_sai.py, dhcp_server/test_dhcp_server*.py (3), arp/test_arp_extended.py, snmp/test_snmp_lldp.py at the final branch code
+rock: call {'skipped': 343, 'passed': 23} | teardown {'ok': 343, 'la-noise': 23}
+df: call {'skipped': 343, 'passed': 23} | teardown {'ok': 343, 'la-noise': 23}

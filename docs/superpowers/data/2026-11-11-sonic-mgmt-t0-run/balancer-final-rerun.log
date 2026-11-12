@@ -1,0 +1,8 @@
+07:03:48 t0r1 takes 5 files from t0r6 as t0-rock-x1: telemetry/test_telemetry_cert_rotation.py .. vxlan/test_vnet_vxlan.py
+07:16:54 t0r6 takes 3 files from t0r3 as t0-rock-x2: tacacs/test_rw_user.py .. testbed_setup/test_populate_fdb.py
+07:49:08 manual: t0r2 runs audit-rock-1 (qos/test_qos_sai.py dhcp_server/test_dhcp_server.py dhcp_server/test_dhcp_server_multi_vlans.py dhcp_server/test_dhcp_server_stress.py)
+07:49:09 manual: t0r3 runs audit-rock-2 (arp/test_arp_extended.py snmp/test_snmp_lldp.py)
+08:02:34 t0d6 takes 4 files from t0d3 as t0-df-x3: tacacs/test_jit_user.py .. testbed_setup/test_populate_fdb.py
+08:44:07 all runs finished
+08:45:05 manual: t0d2 runs audit-df-1 (qos/test_qos_sai.py dhcp_server/test_dhcp_server.py dhcp_server/test_dhcp_server_multi_vlans.py dhcp_server/test_dhcp_server_stress.py)
+08:45:05 manual: t0d3 runs audit-df-2 (arp/test_arp_extended.py snmp/test_snmp_lldp.py)
