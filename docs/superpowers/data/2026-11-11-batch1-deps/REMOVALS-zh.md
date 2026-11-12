@@ -47,7 +47,6 @@
 | radv、eventd、mgmt-framework | `libdaemon0`、`libdbus-1-3`、`libjansson4` | 0 次；无任何 ELF 需要 | — | 加载某个自建程序时报缺 `.so` | `libdaemon0_libs`、`libdbus-1-3_libs`、`libjansson4_libs` |
 | radv、eventd、mgmt-framework | `python3-redis` | 0 次（无 `redis/` 模块被打开） | 无 `import redis` | Python 脚本 `ModuleNotFoundError: No module named 'redis'` | `python3-redis_libs` |
 | radv、eventd、mgmt-framework | `redis-tools` | 0 次 | 无 `redis-cli` | 进容器排障时 `redis-cli` 找不到 | `redis-tools_bins` |
-| radv | `jq` | 0 次 | 只有 `/usr/bin/readiness_probe.sh`（KubeSonic readiness 探针）用 | KubeSonic 部署下 readiness 探针失败，容器被判未就绪 | `jq_bins` |
 | eventd | `python3-yaml`、`python3-cffi-backend`、`python3`、`libpython3.14` | 0 次 | 见第 3 节 | 见第 3 节 | 见第 3 节 |
 
 ## 3 · eventd 的整个 Python 运行时
@@ -77,3 +76,6 @@
 | database | `python3.14_standard` | `libpython3.14_libs`、`libpython3.14-stdlib_{data-types,internet,zstd}` 及其 essential | 某个 Python 路径 `ModuleNotFoundError: No module named '<stdlib 模块>'` | 按模块所在加 `libpython3.14-stdlib_<组>`（`grep -n '<模块>.py' slices/libpython3.14-stdlib.yaml`），或整个 `python3.14_standard` |
 | database | `python3-venv` 整包依赖链（`python3.14-venv` → `python3-pip-whl` → `ca-certificates` → `openssl`） | 只保留 `openssl_config`（import `swsscommon` 时打开 `/usr/lib/ssl/openssl.cnf`） | 容器内需要 CA 证书的 TLS 客户端校验失败；需要 `openssl` 命令的脚本找不到 | 加 `ca-certificates_data-with-certs`、`openssl_bins` |
 
+| radv | `coreutils_bins` | `coreutils_{cat,chmod,cut,echo,env,mkdir,rm-bin,sleep,touch}` | 进容器排障或新脚本调用 `ls`、`mv`、`date` 等报 `executable file not found` / `command not found` | 加对应的 `coreutils_<命令>`，或整个 `coreutils_bins` |
+| radv | `python3.14_standard` | `libpython3.14_libs`、`python3-yaml_libs`、`python3-cffi-backend_libs` 及其 essential | 某个 Python 路径 `ModuleNotFoundError: No module named '<stdlib 模块>'` | 同 database 行 |
+| radv | `python3-venv` 整包依赖链 | 只保留 `openssl_config` | 同 database 行 | 同 database 行 |

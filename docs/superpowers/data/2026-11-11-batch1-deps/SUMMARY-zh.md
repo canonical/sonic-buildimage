@@ -61,13 +61,13 @@ VS 的 warm 失败在改动前就存在，与本批次无关。按设计“基�
 | 容器 | 删除 |
 |---|---|
 | database | `libnl-cli-3-200`（及 `_cls`、`_qdisc` slice）、`python3-venv`、`grep`（只在 DPU 分支用） |
-| radv | `iproute2`、`jq`、`libdaemon0`、`libdbus-1-3`、`libjansson4`、`libnl-cli-3-200`、`net-tools`、`python3-redis`、`redis-tools`、`python3-venv` |
+| radv | `iproute2`、`libdaemon0`、`libdbus-1-3`、`libjansson4`、`libnl-cli-3-200`、`net-tools`、`python3-redis`、`redis-tools`、`python3-venv` |
 | eventd | `iproute2`、`libdaemon0`、`libdbus-1-3`、`libjansson4`、`libnl-cli-3-200`、`net-tools`、`python3-redis`、`python3-yaml`、`python3-cffi-backend`、`redis-tools`、`python3`、`libpython3.14`、`python3-venv` |
 | mgmt-framework | `iproute2`、`libdaemon0`、`libdbus-1-3`、`libjansson4`、`libnl-cli-3-200`、`net-tools`、`python3-redis`、`redis-tools`、`python3-venv` |
 
 `radvd` 在 radv 里保留：trace 没抓到是因为两台设备都不是 ToR 且没有 IPv6 VLAN，`start.sh` 在那种配置下才会启动它。
 
-`jq` 在 radv、database 里没有消费者，但四个容器都带着 `/usr/bin/readiness_probe.sh`（KubeSonic 的 readiness 探针，用 jq 和 awk）。我们的部署不走 k8s，所以按口径删掉 radv 的 jq；database 本来就没有 jq。若要保留 KubeSonic 兼容，需要给 radv、database 加回 `jq_bins`。
+`jq` 在 radv、database 里的唯一消费者是 `/usr/bin/readiness_probe.sh`（KubeSonic readiness 探针）：pebble 分支用 jq 解析 `pebble services --format json`。缺 jq 时探针 stderr 打 `jq: command not found`，并且把 `start` 失败看成 ready（exit 0）。为不改共享脚本，radv、database 都切 `jq_bins`：radv 是保留原有的 jq；database 的基线 `stage-packages` 本来没有 jq（基线就有上述误判），这里是新增。eventd、mgmt-framework 自己的脚本也用 jq，slice 保留。
 
 ### 3.3 eventd 去掉整个 Python 运行时
 
