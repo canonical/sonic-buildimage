@@ -1,0 +1,2 @@
+OPEN /etc/supervisor/watchdog_processes
+OPEN /proc/self/stat

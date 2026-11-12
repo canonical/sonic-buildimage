@@ -1,0 +1,27 @@
+services:
+    proc-exit-listener:
+        startup: enabled
+        override: replace
+        command: /usr/bin/supervisor-proc-exit-listener-rs --pebble
+        after:
+            - rsyslogd
+        requires:
+            - rsyslogd
+        on-success: ignore
+    rsyslogd:
+        startup: enabled
+        override: replace
+        command: /usr/sbin/rsyslogd -n -iNONE
+    start:
+        startup: enabled
+        override: replace
+        command: /usr/bin/start.sh
+        on-success: ignore
+        on-failure: ignore
+log-targets:
+    host-syslog:
+        type: syslog
+        location: udp://127.0.0.1:514/
+        services:
+            - all
+        override: replace

@@ -1,0 +1,17 @@
+EXEC /usr/bin/bash
+OPEN 3
+OPEN 8
+OPEN /dev/pts/ptmx
+OPEN /dev/tty
+OPEN /etc/ld.so.cache
+OPEN /etc/nsswitch.conf
+OPEN /etc/passwd
+OPEN /etc/resolv.conf
+OPEN /etc/supervisor/watchdog_processes
+OPEN /lib/x86_64-linux-gnu/glibc-hwcaps/x86-64-v2/libtinfo.so.6
+OPEN /lib/x86_64-linux-gnu/glibc-hwcaps/x86-64-v3/libtinfo.so.6
+OPEN /lib/x86_64-linux-gnu/libc.so.6
+OPEN /lib/x86_64-linux-gnu/libtinfo.so.6
+OPEN /proc/filesystems
+OPEN /proc/self/stat
+OPEN /proc/sys/kernel/cap_last_cap

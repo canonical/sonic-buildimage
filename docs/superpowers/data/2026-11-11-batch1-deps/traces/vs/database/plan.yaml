@@ -1,0 +1,47 @@
+services:
+    flushdb:
+        override: replace
+        command: bash -c "sleep 300 && /usr/local/bin/flush_unused_database"
+        on-success: ignore
+        on-failure: ignore
+    init:
+        startup: enabled
+        override: replace
+        command: docker-database-init.sh
+        environment:
+            INCLUDE_SYSTEM_EVENTD: "y"
+        on-success: ignore
+    proc-exit-listener:
+        startup: enabled
+        override: replace
+        command: /usr/bin/supervisor-proc-exit-listener-rs --pebble
+        after:
+            - rsyslogd
+        requires:
+            - rsyslogd
+        on-success: ignore
+    redis:
+        override: replace
+        command: bash -c "{ [[ -s /var/lib/redis/dump.rdb ]] || rm -f /var/lib/redis/dump.rdb; } && mkdir -p /var/lib/redis && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6379 --unixsocket /var/run/redis/redis.sock --pidfile /var/run/redis/redis.pid --dir /var/lib/redis"
+        user: redis
+        group: redis
+        on-success: ignore
+        on-failure: shutdown
+    redis_bmp:
+        override: replace
+        command: bash -c "{ [[ -s /var/lib/redis_bmp/dump.rdb ]] || rm -f /var/lib/redis_bmp/dump.rdb; } && mkdir -p /var/lib/redis_bmp && exec /usr/bin/redis-server /etc/redis/redis.conf --bind 127.0.0.1 --port 6400 --unixsocket /var/run/redis/redis_bmp.sock --pidfile /var/run/redis/redis_bmp.pid --dir /var/lib/redis_bmp"
+        user: redis
+        group: redis
+        on-success: ignore
+        on-failure: shutdown
+    rsyslogd:
+        startup: enabled
+        override: replace
+        command: /usr/sbin/rsyslogd -n -iNONE
+log-targets:
+    host-syslog:
+        type: syslog
+        location: udp://127.0.0.1:514/
+        services:
+            - all
+        override: replace

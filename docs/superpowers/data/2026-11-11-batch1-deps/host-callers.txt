@@ -1,0 +1,56 @@
+files/build_templates/docker_image_ctl.j2:150:    docker exec -i ${DOCKERNAME} $SONIC_DB_CLI CHASSIS_APP_DB SET "SYSTEM_LAG_ID_START" "$lag_id_start"
+files/build_templates/docker_image_ctl.j2:151:    docker exec -i ${DOCKERNAME} $SONIC_DB_CLI CHASSIS_APP_DB SET "SYSTEM_LAG_ID_END" "$lag_id_end"
+files/build_templates/docker_image_ctl.j2:152:    docker exec -i ${DOCKERNAME} $SONIC_DB_CLI CHASSIS_APP_DB EVAL "
+files/build_templates/docker_image_ctl.j2:205:        docker exec -i database$DEV sed -i -e "s/^net.ipv4.conf.eth0.forwarding=0/net.ipv4.conf.eth0.forwarding=1/;
+files/build_templates/docker_image_ctl.j2:207:        docker exec -i database$DEV sysctl --system -e
+files/build_templates/docker_image_ctl.j2:263:        midplane_ip=$(docker exec -i ${DOCKERNAME} ip addr show eth1-midplane | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)
+files/build_templates/docker_image_ctl.j2:285:        until [[ ($(docker exec -i database$DEV pgrep -x -c pebble) -gt 0 || $(docker exec -i database$DEV pgrep -x -c supervisord) -gt 0) && ($($SONIC_DB_CLI PING | grep -c PONG) -gt 0) &&
+files/build_templates/docker_image_ctl.j2:286:                 ($(docker exec -i database$DEV sonic-db-cli PING | grep -c PONG) -gt 0) ]]; do
+files/build_templates/docker_image_ctl.j2:344:              docker exec -i ${DOCKERNAME} $SONIC_DB_CLI CHASSIS_APP_DB HMSET "BGP_DEVICE_GLOBAL|STATE" tsa_enabled ${tsa_cfg}
+files/build_templates/docker_image_ctl.j2:357:        until [[ ($(docker exec -i ${DOCKERNAME} pgrep -x -c supervisord) -gt 0 || $(docker exec -i ${DOCKERNAME} pgrep -x -c pebble) -gt 0) &&
+files/build_templates/docker_image_ctl.j2:358:                 ($(docker exec -i ${DOCKERNAME} $SONIC_DB_CLI CHASSIS_APP_DB PING | grep -c True) -gt 0) ]]; do
+files/build_templates/docker_image_ctl.j2:408:        for f in $(docker exec -i eventd ls /etc/rsyslog.d/rsyslog_plugin_conf); do docker cp eventd:/etc/rsyslog.d/rsyslog_plugin_conf/$f /etc/rsyslog.d/; done
+files/image_config/resolv-config/update-containers:60:    if ! docker exec -t ${container} bash -c "echo '${RESOLV_CONTENT}' > /etc/resolv.conf"; then
+files/scripts/teamd.sh:100:        while docker exec -i ${SERVICE}$DEV pgrep -f ${TEAMD_CMD} > /dev/null; do
+files/scripts/teamd.sh:91:        docker exec -i ${SERVICE}$DEV pkill -USR1 -f ${TEAMD_CMD} > /dev/null || [ $? == 1 ]
+files/scripts/teamd.sh:96:        docker exec -i ${SERVICE}$DEV pkill -USR2 -f ${TEAMD_CMD} || [ $? == 1 ]
+src/sonic-host-services/host_modules/debug_info.py:125:        ('docker exec -i database '
+src/sonic-host-services/host_modules/debug_info.py:270:        ('docker exec -i database '
+src/sonic-host-services/host_modules/debug_info.py:272:        ('docker exec -i database '
+src/sonic-host-services/host_modules/debug_info.py:274:        ('docker exec -i database '
+src/sonic-host-services/host_modules/debug_info.py:276:        ('docker exec -i database '
+src/sonic-utilities/config/plugins/mlnx.py:107:    command = ['docker', 'exec', str(CONTAINER_NAME), 'bash', '-c', 'touch ' + str(SNIFFER_CONF_FILE)]
+src/sonic-utilities/config/syslog.py:41:        ['docker', 'exec', '-i', feature_name, 'supervisorctl', 'status', 'containercfgd'],
+src/sonic-utilities/config/syslog.py:606:                ['docker', 'exec', '-i', feature_name, 'pebble', 'add', '--combine', 'containercfgd',
+src/sonic-utilities/config/syslog.py:608:                ['docker', 'exec', '-i', feature_name, 'pebble', 'start', 'containercfgd']
+src/sonic-utilities/config/syslog.py:614:                ['docker', 'exec', '-i', feature_name, 'supervisorctl', 'reread'],
+src/sonic-utilities/config/syslog.py:615:                ['docker', 'exec', '-i', feature_name, 'supervisorctl', 'update'],
+src/sonic-utilities/config/syslog.py:616:                ['docker', 'exec', '-i', feature_name, 'supervisorctl', 'start', 'containercfgd']
+src/sonic-utilities/config/syslog.py:655:                ['docker', 'exec', '-i', feature_name, 'pebble', 'stop', 'containercfgd'],
+src/sonic-utilities/config/syslog.py:658:                ['docker', 'exec', '-i', feature_name, 'pebble', 'add', '--combine', 'containercfgd',
+src/sonic-utilities/config/syslog.py:660:                ['docker', 'exec', '-i', feature_name, 'rm', '-f', CONTAINERCFGD_PEBBLE_LAYER,
+src/sonic-utilities/config/syslog.py:665:                ['docker', 'exec', '-i', feature_name, 'supervisorctl', 'stop', 'containercfgd'],
+src/sonic-utilities/config/syslog.py:666:                ['docker', 'exec', '-i', feature_name, 'rm', '-f', '/etc/supervisor/conf.d/containercfgd.conf'],
+src/sonic-utilities/config/syslog.py:667:                ['docker', 'exec', '-i', feature_name, 'supervisorctl', 'reread'],
+src/sonic-utilities/config/syslog.py:668:                ['docker', 'exec', '-i', feature_name, 'supervisorctl', 'update']
+src/sonic-utilities/config/syslog.py:726:            command = ['docker', 'exec', '-i', container, 'supervisorctl', 'signal', 'HUP', program]
+src/sonic-utilities/config/syslog.py:728:            command = ['docker', 'exec', '-i', container, 'kill', '-s', 'SIGHUP', pid]
+src/sonic-utilities/config/syslog.py:734:        command = ['docker', 'exec', '-i', container, 'pebble', 'signal', 'HUP', program]
+src/sonic-utilities/scripts/fast-reboot:500:    STATE=$(timeout 5s docker exec database$DEV rm /var/lib/$target_db_inst/$REDIS_FILE; if [[ $? == 124 ]]; then echo "timed out"; fi)
+src/sonic-utilities/scripts/fast-reboot:725:    STATE=$(timeout 1s docker exec ${container}$DEV echo "success"; if [[ $? == 124 ]]; then echo "timed out"; fi)
+src/sonic-utilities/scripts/generate_dump:1454:            ${CMD_PREFIX}docker exec $container_name mkdir -p $sai_dump_folder
+src/sonic-utilities/scripts/generate_dump:1455:            ${CMD_PREFIX}docker exec $container_name saisdkdump -f $sai_dump_filename
+src/sonic-utilities/scripts/generate_dump:1467:            ${CMD_PREFIX}docker exec $container_name rm -rf $sai_dump_folder
+src/sonic-utilities/scripts/generate_dump:2153:        echo "docker exec ${dpu_container_name} /nic/tools/collect_techsupport.sh"
+src/sonic-utilities/scripts/generate_dump:2155:        output=$(docker exec ${dpu_container_name} /nic/tools/collect_techsupport.sh 2>&1)
+src/sonic-utilities/scripts/generate_dump:354:    local touch_cmd="sudo docker exec ${docker} touch ${filename}"
+src/sonic-utilities/scripts/sonic-dpu-flow-dump.py:133:    cmd = ["docker", "exec", SWSS_CONTAINER, SWSS_CONFIG_CMD, "-e", endpoint, config_path]
+src/sonic-utilities/scripts/teamd_increase_retry_count.py:188:    (processStdout, _) = getCmdOutput(["docker", "exec", container, "lldpctl", "-f", "json"])
+src/sonic-utilities/show/main.py:2267:                cmd0 = ["sudo", "docker", "exec", line.rstrip(), "ps", "aux"]
+src/sonic-utilities/show/plugins/mlnx.py:101:    DOCKER_CAT_COMMAND = ['docker', 'exec', container_name, 'cat', sai_profile_path]
+src/sonic-utilities/show/plugins/mlnx.py:119:    DOCKER_CAT_COMMAND = ['docker', 'exec', container_name, 'cat', sai_xml_path]
+src/sonic-utilities/show/plugins/mlnx.py:74:    command = ["docker", "exec", CONTAINER_NAME, "bash", "-c", 'touch {}'.format(SNIFFER_CONF_FILE)]
+src/sonic-utilities/sonic-utilities-data/templates/dump.sh.j2:21:    docker exec -t "${container_id}" ${dump_command} &> "${tmp_dump_dir}/${container_id}"
+src/sonic-utilities/sonic-utilities-data/templates/service_mgmt.sh.j2:100:    docker exec -t ${SERVICE}${DEV} {{ manifest.service["post-start-action"] }}
+src/sonic-utilities/sonic-utilities-data/templates/service_mgmt.sh.j2:118:    docker exec -t ${SERVICE}${DEV} {{ manifest.service["pre-shutdown-action"] }}
+src/sonic-utilities/utilities_common/cli.py:751:    output, _ = run_command(['docker', 'exec', '-i', container, 'pebble', 'services', '--format', 'json', service],
