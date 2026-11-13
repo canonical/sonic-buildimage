@@ -48,4 +48,10 @@ $(LINUX_HEADERS)_URL = $(KERNEL_PPA_URL)/$(LINUX_HEADERS)
 $(LINUX_IMAGE)_DEPENDS += $(LINUX_MODULES)
 $(LINUX_HEADERS)_DEPENDS += $(LINUX_HEADERS_COMMON)
 
-SONIC_ONLINE_DEBS += $(LINUX_HEADERS_COMMON) $(LINUX_IMAGE) $(LINUX_MODULES) $(LINUX_HEADERS)
+KERNEL_DEBS = $(LINUX_HEADERS_COMMON) $(LINUX_IMAGE) $(LINUX_MODULES) $(LINUX_HEADERS)
+
+# Stalled downloads time out and retry; skip the build hook, whose md5 pre-download has no timeout
+$(foreach deb,$(KERNEL_DEBS),$(eval $(deb)_CURL_OPTIONS = --connect-timeout 30 --speed-limit 1024 --speed-time 60 --remove-on-error))
+$(foreach deb,$(KERNEL_DEBS),$(eval $(deb)_SKIP_VERSION = y))
+
+SONIC_ONLINE_DEBS += $(KERNEL_DEBS)
