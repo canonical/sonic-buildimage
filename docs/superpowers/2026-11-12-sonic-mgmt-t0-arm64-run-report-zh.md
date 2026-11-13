@@ -1,9 +1,9 @@
 # sonic-mgmt t0 测试清单在 202605_resolute arm64 vs 镜像上的运行结果
 
 - 日期:2026-11-12
-- 镜像:`canonical/sonic-buildimage` `202605_resolute` 的 `7a081af43c`,加上 draft PR #18(`feat/resolute-arm64-vs`,`d3b6c4c08b`)的 9 个提交。PR #18 基于较早的 `d2f9ae8502`;它的提交可以无冲突地应用到 `7a081af43c` 上,得到的 diff 相同(15 个文件,+56/−6)。构建用的就是这次重放,即本地分支 `test/arm64-vs-on-7a081af43c`(`ddac4b7eec`),没有推送。镜像版本 `test_arm64-vs-on-7a081af43c.0-ddac4b7ee`,Dockerfile 模式,supervisord。没有 arm64 的 rock 镜像:所有 `rockcraft.yaml` 都只声明了 `platforms: amd64`,`build_rocks.sh` 写的也是 `_amd64.rock`。
+- 镜像:`canonical/sonic-buildimage` `202605_resolute` 的 `7a081af43c`,加上 draft PR #18(`feat/resolute-arm64-vs`,`d3b6c4c08b`)的 9 个提交。PR #18 基于较早的 `d2f9ae8502`;它的提交可以无冲突地应用到 `7a081af43c` 上,得到的 diff 相同(15 个文件,+56/−6)。构建用的就是这次重放,即 `ddac4b7eec`,它现在是 PR #18 的头部。镜像版本 `test_arm64-vs-on-7a081af43c.0-ddac4b7ee`,Dockerfile 模式,supervisord。没有 arm64 的 rock 镜像:所有 `rockcraft.yaml` 都只声明了 `platforms: amd64`,`build_rocks.sh` 写的也是 `_amd64.rock`。
 - 基线:同一提交的 amd64 Dockerfile 镜像 `HEAD.0-7a081af4`,即 [t0 报告](2026-11-11-sonic-mgmt-t0-run-report-zh.md) §5 的最终重跑。
-- 测试代码:[canonical/sonic-mgmt#2](https://github.com/canonical/sonic-mgmt/pull/2) 的 `7b70925`,另加一个支持 aarch64 DUT 的本地提交(`sonic-mgmt-aarch64-testbed.patch`,§2)。
+- 测试代码:[canonical/sonic-mgmt#2](https://github.com/canonical/sonic-mgmt/pull/2) 的 `7b70925`,另加一个支持 aarch64 DUT 的本地提交(`sonic-mgmt-aarch64-testbed.patch`,§2)。§6 用 [canonical/sonic-mgmt#3](https://github.com/canonical/sonic-mgmt/pull/3) 重跑了整个清单,该 PR 为 sonic-mgmt 加入了 arm64 vs 支持。
 - 测试清单:与之前相同的上游 t0 PR 测试清单,271 个文件,`run_tests.sh -m individual`。
 - 原始结果与脚本:[data/2026-11-12-sonic-mgmt-t0-arm64-run/](data/2026-11-12-sonic-mgmt-t0-arm64-run/)
 - 本文为中文版;以英文版 `-en.md` 为准
@@ -14,7 +14,8 @@
 2. 这 71 个里没有一个是镜像在 arm64 上的功能故障。45 个来自测试侧:14 个是哈希用例随机抽取参数,26 个是 sonic-mgmt 不认识 arm64 vs 的平台名,5 个是 dualtor helper 里的抓包竞争。19 个 TACACS 用例来自本次自建的 arm64 ptf 镜像的缺陷,1 个来自较新的 cEOS 邻居,2 个是偶发测试(§4)。
 3. 有 4 个重启用例在 arm64 上偶发失败。lldp、pmon 和 snmp 在开机两到三分钟后才启动,离测试的 300 秒等待很近,开机稍慢就会超时(§5)。
 4. arm64 上用例耗时的中位数是 amd64 的 1.33 倍(§3)。
-5. sonic-mgmt 按现在发布的形态跑不了 arm64:docker-sonic-mgmt 和 docker-ptf 只有 amd64 版,在 qemu-user 下运行慢得无法使用;cEOS 4.32.5M 没有 arm64 版;DUT 需要 aarch64 的 libvirt domain。§2 列出了本次构建或改动的内容。
+5. 用 canonical/sonic-mgmt#3(让 sonic-mgmt 把 arm64 vs 平台当作 vs 对待)重跑后,结果是 1080 通过、1933 跳过、24 失败、3 个 setup 错误:跳过数与 amd64 相同,仍然不同的 26 个用例来自 §4 和 §5 的原因,或来自之前测试遗留在 testbed 上的状态(§6)。
+6. sonic-mgmt 按现在发布的形态跑不了 arm64:docker-sonic-mgmt 和 docker-ptf 只有 amd64 版,在 qemu-user 下运行慢得无法使用;cEOS 4.32.5M 没有 arm64 版;DUT 需要 aarch64 的 libvirt domain。§2 列出了本次构建或改动的内容。
 
 ## 1. 环境
 
@@ -98,9 +99,31 @@ DUT 磁盘的制作方式与 `build_kvm_image.sh` 制作 amd64 磁盘相同:用 
 
 `platform_tests/test_reboot`(gNOI 冷启动、gNOI 热启动、连续重启)和 `gnmi/test_gnoi_system_reboot` 冷启动都报 "Not all critical processes are healthy":重启 300 秒后,lldp-syncd、lldpd 和 lldpmgrd 仍未运行,pmon 也还没有启动。不同运行的结果不一样:重跑 A 中 4 个失败 2 个,重跑 B 一个也没有失败。在两台重启过的 DUT 上,内核和 systemd 在开机后 37 秒和 41 秒就绪,而 SONiC 延后启动的 lldp、pmon 和 snmp 分别在开机后 166 秒和 116 秒才启动。宿主繁忙时,测试的 300 秒等待余量很小。
 
-## 6. 没有做的
+## 6. 用 canonical/sonic-mgmt#3 重跑
+
+[canonical/sonic-mgmt#3](https://github.com/canonical/sonic-mgmt/pull/3) 叠在 #2 之上,包含三个提交:§2 的 aarch64 DUT domain;一个包含两个名字的 `KVM_PLATFORMS` 常量,供 §4.1 的代码检查和 advanced-reboot 的 ptf 端使用;以及在 24 条 mark 条件里 x86 名字旁边加上 arm64 名字。只适用于 VPP 的条件和检查不变。用它在同样的 16 个 testbed 上把 271 个文件全部重跑了一遍,事先做了 deploy-mg,并带有 §4.2 的 TACACS 修复(`compare-pr3-amd64-vs-arm64.txt`、`handoffs-pr3.json`):
+
+| | 通过 | 跳过 | 失败 | setup 错误 |
+|---|---|---|---|---|
+| amd64 | 1088 | 1933 | 16 | 3 |
+| arm64,只有 #2(§3) | 1046 | 1943 | 35 | 16 |
+| arm64,#3 | 1080 | 1933 | 24 | 3 |
+
+§4.1 的 26 个平台名用例不再有差异,TACACS 也没有差异。仍然不同的 26 个用例:
+
+| 用例 | 原因 |
+|---|---|
+| `hash/test_generic_hash` 14 个 | 随机参数 |
+| `platform_tests/test_reboot` 5 个 | "Not all pmon daemons running":pmon 里有一个 FATAL 的 `platform_api_server`,是主运行中 `test_techsupport` 在这台 testbed 上留下的。`start_platform_api_service` 在 pmon 里 `import sonic_platform` 失败时写入 python2 命令。pmon 只从平台 device 目录里的 wheel 安装 `sonic_platform`,而 amd64 和 arm64 的 vs 镜像在那里都没有这个 wheel。pmon 容器在 deploy-mg 后仍然保留,所以这一项还在 |
+| 2 个:`test_reboot` 的 gNOI 热启动、`gnmi/test_gnoi_system_reboot` 冷启动 | 重启时间(§5) |
+| dualtor 2 个 | 抓包竞争(§4.3) |
+| `pc/test_lag_2` 的 lacp_rate | cEOS 4.35(§4.4) |
+| `dhcpv6_multicast_recv`、`disk/test_disk_exhaustion` | 在 amd64 上失败、在 arm64 上通过;两者都是偶发 |
+
+除重启用例的 teardown 外,teardown 结果以及已知 AppArmor 噪声之外的 loganalyzer 匹配都与 amd64 相同。
+
+## 7. 没有做的
 
 - 没有 arm64 的 rock 镜像(没有 arm64 的 `rockcraft.yaml`)。
-- 没有 rebase PR #18;本次用的是在 `7a081af43c` 上的本地重放。
-- sonic-mgmt 按名字识别 vs(§4.1)、aarch64 DUT domain 和 cEOS 4.35 的 lacp 退回(§4.4)都没有在 sonic-mgmt 里修改;aarch64 domain 只以本次的本地补丁存在。
+- cEOS 4.35 的 lacp 退回(§4.4)和 dualtor 抓包竞争(§4.3)没有在 sonic-mgmt 里修复。
 - 两台 arm64 DUT 上出现的 dhcpmon core 文件在 amd64 上也有(Dockerfile 和 rock 都有),这里没有跟进。

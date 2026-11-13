@@ -1,0 +1,13 @@
+[
+ {
+  "from": "tb16",
+  "from_label": "t0-arm2-16",
+  "to": "tb02",
+  "to_label": "t0-arm-x1",
+  "files": [
+   "srv6/test_srv6_dataplane.py",
+   "ssh/test_ssh_limit.py",
+   "sub_port_interfaces/test_show_subinterface.py"
+  ]
+ }
+]
