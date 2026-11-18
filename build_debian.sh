@@ -678,6 +678,7 @@ fi
 ## Version file part 2
 export build_version="${SONIC_IMAGE_VERSION}"
 export debian_version="$(cat $FILESYSTEM_ROOT/etc/debian_version)"
+export distribution="$(. $FILESYSTEM_ROOT/etc/lsb-release && echo "$DISTRIB_ID $DISTRIB_RELEASE")"
 export kernel_version="${kversion}"
 export asic_type="${sonic_asic_platform}"
 export asic_subtype="${TARGET_MACHINE}"
