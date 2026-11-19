@@ -1,4 +1,3 @@
-# Removed dependencies and why: see sonic-buildimage 202605_resolute_doc docs/superpowers/data/2026-11-11-batch1-deps/REMOVALS-zh.md
 name: docker-sonic-mgmt-framework
 summary: SONiC sonic-mgmt-framework container
 description: A Chiselled rock for SONiC sonic-mgmt-framework container
