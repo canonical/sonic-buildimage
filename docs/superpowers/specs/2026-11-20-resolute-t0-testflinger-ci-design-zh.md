@@ -88,7 +88,7 @@ resolute-t0.yml，small runner 上的一个 job，超时 1440 分钟
 | `workflow_run` | `resolute-build` 以 `success` 结束，事件为 `push`，分支为 `202605_resolute` 或 `v*` tag | 触发它的那次 run |
 | `issue_comment` | PR 上的评论，正文以 `/test-t0` 开头 | head SHA 等于该 PR head SHA 的最近一次成功的 `resolute-build` run |
 | `workflow_dispatch` | 手动；输入 `run_id`（一次 `resolute-build` run）；输入 `scope`，取值 `full` 或 `smoke` | 指定的 run |
-| `push` | 名为 `ci-workflow/t0-*` 的分支，仅供开发使用。固定为 `smoke`，不写 commit 状态，已知失败清单取自所推送的 commit | `202605_resolute` 上事件为 `push` 的最近一次成功的 `resolute-build` run |
+| `push` | 名为 `ci-workflow/t0-*` 的分支，仅供开发使用。默认 `smoke`；分支名为 `ci-workflow/t0-full-*` 时跑 `full`。commit 状态和已知失败清单都用所推送的 commit | `202605_resolute` 上事件为 `push` 的最近一次成功的 `resolute-build` run |
 
 评论触发时，先调用 `GET /repos/{repo}/collaborators/{user}/permission`，结果不是 `admin`、`maintain` 或 `write` 就停止。然后给评论加一个"eyes"表情。如果该 head SHA 没有成功的构建，或者它的 artifact 已过期（7 天），就在 PR 里回复说明并停止。
 

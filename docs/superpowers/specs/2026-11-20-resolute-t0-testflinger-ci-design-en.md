@@ -88,7 +88,7 @@ Trust boundary: every script that runs on the machine comes from the default bra
 | `workflow_run` | `resolute-build` completed with `success`, event `push`, on `202605_resolute` or a `v*` tag | The triggering run |
 | `issue_comment` | Comment on a pull request whose body starts with `/test-t0` | The latest successful `resolute-build` run whose head SHA equals the PR head SHA |
 | `workflow_dispatch` | Manual; input `run_id` (a `resolute-build` run); input `scope` = `full` or `smoke` | The given run |
-| `push` | A branch named `ci-workflow/t0-*`; development only. Always `smoke`, no commit status, and the known-failures list comes from the pushed commit | The latest successful `resolute-build` run of event `push` on `202605_resolute` |
+| `push` | A branch named `ci-workflow/t0-*`; development only. `smoke`, or `full` when the branch is named `ci-workflow/t0-full-*`. The commit status and the known-failures list both use the pushed commit | The latest successful `resolute-build` run of event `push` on `202605_resolute` |
 
 For a comment trigger, the workflow first checks `GET /repos/{repo}/collaborators/{user}/permission` and stops unless the result is `admin`, `maintain` or `write`. Next it adds an "eyes" reaction to the comment. If no successful build exists for the head SHA, or its artifact has expired (7 days), it replies on the pull request and stops.
 
