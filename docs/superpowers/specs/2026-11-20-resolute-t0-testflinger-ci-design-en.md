@@ -31,7 +31,7 @@ Run the upstream KVM t0 PR-checker test list against the vs image that `resolute
 | Where things live | Everything in `canonical/sonic-buildimage`, including the pinned sonic-mgmt commit |
 | Runner | One job on `self-hosted-linux-amd64-noble-private-endpoint-small`, from submission to report |
 | Machines | Testflinger queue `sonic-ci-large` |
-| cEOS | `ghcr.io/canonical/sonic-ceos:4.32.5M`, visibility internal. The machine pulls it with a classic PAT that has only `read:packages`, stored as a Testflinger secret |
+| cEOS | `ghcr.io/canonical/sonic-ceos:4.32.5M-1`, visibility internal. This is the `ceosimage:4.32.5M-1` image that sonic-mgmt itself builds from the cEOS tarball; sonic-mgmt finds it locally under that tag and skips its own cEOS preparation. The machine pulls it with a classic PAT that has only `read:packages`, stored as a Testflinger secret |
 | Logs | All results and logs, compressed with zstd, returned through Testflinger artifacts |
 | Chunk durations | Taken from the latest nightly run's artifact; not committed |
 
@@ -50,6 +50,10 @@ Run the upstream KVM t0 PR-checker test list against the vs image that `resolute
 | On a reserved machine: nested KVM is enabled; MAAS configures the apt proxy `http://10.239.8.11:8000/`; GitHub, download.docker.com, azurecr.io, ghcr.io, PyPI and Testflinger are reachable directly; downloads from GitHub run at about 5.9 MB/s | Probe job on romano, 2026-11-20 |
 | A queue added in the C3 "Customized queues" field reaches the agent only after the certification bot syncs `testflinger-agent-charm-configs`, and the sync has no fixed schedule | Commit history of `server-cert/data-tor3-dh1` |
 | `author_association` in event payloads shows private org members as `CONTRIBUTOR` | 3 of 4 active members of this repository have private membership |
+| `get_test_scripts.py --features "" --location <tests>` run in the docker-sonic-mgmt image gives the same 392-file `t0_checker` list | Run at `a88d1d5f93`, compared with the list of 2026-11-19 |
+| sonic-mgmt uses a local image tagged `ceosimage:4.32.5M-1` and then skips downloading, importing and building cEOS | `ansible/roles/vm_set/tasks/add_ceos_list.yml` |
+| Until sonic-buildimage PR #30 merges, the run has dozens of loganalyzer teardown errors whose only matched line is `nss_tacplus: /etc/tacplus_nss.conf fopen failed`, on different cases each time | 36 such errors on 2026-11-19; PR #30 is open |
+| JUnit test cases have `classname="tests.<module path in dots>[.<class>]"`; `run_tests.sh -m individual` writes one JUnit file per test file, at the test file's path | The results of 2026-11-19 |
 
 ## 4. Architecture
 
@@ -84,6 +88,7 @@ Trust boundary: every script that runs on the machine comes from the default bra
 | `workflow_run` | `resolute-build` completed with `success`, event `push`, on `202605_resolute` or a `v*` tag | The triggering run |
 | `issue_comment` | Comment on a pull request whose body starts with `/test-t0` | The latest successful `resolute-build` run whose head SHA equals the PR head SHA |
 | `workflow_dispatch` | Manual; input `run_id` (a `resolute-build` run); input `scope` = `full` or `smoke` | The given run |
+| `push` | A branch named `ci-workflow/t0-*`; development only. Always `smoke`, no commit status, and the known-failures list comes from the pushed commit | The latest successful `resolute-build` run of event `push` on `202605_resolute` |
 
 For a comment trigger, the workflow first checks `GET /repos/{repo}/collaborators/{user}/permission` and stops unless the result is `admin`, `maintain` or `write`. Next it adds an "eyes" reaction to the comment. If no successful build exists for the head SHA, or its artifact has expired (7 days), it replies on the pull request and stops.
 
@@ -128,9 +133,9 @@ test_data:
 The agent side does as little as possible:
 
 1. Copy the attachment to the machine (`ubuntu@$DEVICE_IP`, `BatchMode=yes`).
-2. Start `run-t0.sh` there with the image URL, its SHA-256 and the run scope. `GHCR_TOKEN` goes over the SSH session's stdin, not on a command line.
-3. Stream the progress lines that the machine prints.
-4. Copy `results.tar.zst`, `summary.json`, `durations.json` and the harness log into `artifacts/`, whatever the exit status.
+2. Start `run-t0.sh` there, detached (`setsid nohup`), with the image URL, its SHA-256 and the run scope. `GHCR_TOKEN` goes over the SSH session's stdin into the environment of the detached process, never onto a command line. A dropped SSH connection therefore does not stop the run.
+3. Every minute, fetch the new lines of the machine's `progress.log` and print them, until the harness writes its `EXIT` file.
+4. Copy `results.tar.zst`, `run-meta.json` and the harness logs into `artifacts/`, whatever the exit status.
 
 ### 6.3 Harness on the machine (`run-t0.sh`)
 
@@ -142,21 +147,22 @@ The agent side does as little as possible:
    - after the first install of openvswitch-switch, run `reset-failed` and restart it;
    - pull `publicmirror.azurecr.io/debian:trixie` before add-topo;
    - disable `apt-daily*` and `unattended-upgrades` in the VMs;
-   - create the LXD storage pool on the root SSD, never on a rotational disk.
-2. **Sizing.** Testbeds T = min(⌊(RAM GiB − 16) / 18⌋, ⌊threads / 8⌋, ⌊free root GB / 60⌋). Each VM gets ⌊threads / T⌋ vCPUs, 18 GiB of RAM and a 140 GiB disk. T is printed and recorded in `summary.json`.
+   - put the VMs on a zfs pool built from the spare SSDs of at least 200 GB when the machine has any, otherwise on the LXD `default` dir pool on the root SSD; rotational disks are never used.
+2. **Sizing.** Testbeds T = min(⌊(RAM GiB − 16) / 18⌋, ⌊threads / 8⌋, ⌊free pool GB / 40⌋). Each VM gets ⌊threads / T⌋ vCPUs, 18 GiB of RAM and a 140 GiB sparse disk. In `scope=smoke`, T is at most 2. T is printed and recorded in `run-meta.json`.
 3. **Payload.**
    - Download the vs image from the release and check its SHA-256.
-   - `docker pull` cEOS with `GHCR_TOKEN`, then `docker logout`, and export the image to the share that the VMs mount read-only. The token is never written to disk and never enters a VM.
-   - Download sonic-mgmt as a tarball of the pinned commit. Add the git-ignored `ansible/password.txt`. Pack the tree with `--transform='flags=r;…'` so that symlink targets are not rewritten.
-4. **Test list.** Run `get_test_scripts.py --features ""` at the pinned commit, filtered to the t0 topology. In `scope=smoke` the list is a fixed set of 6 files (pretest, 4 short files, posttest).
-5. **Chunks.** Pack the files into chunks of about 50 minutes, longest first, using `durations.json` (480 s for a file with no entry). Chunks go into a shared queue; each testbed takes the next chunk with an atomic rename.
-6. **Execution.** Each testbed runs add-topo and deploy-mg once, then runs its chunks file by file with `run_tests.sh`. When a chunk has failed or errored files, the testbed restores the DUT configuration with deploy-mg and reruns those files once. The final result of a file is the result of its last run. The first result is kept for the report.
-7. **Time guard.** 10.5 hours after the test phase starts, no new chunks are handed out. The files that were never started are recorded as "not run".
-8. **Progress.** Every 5 minutes, print one line with the chunks done, the chunks running, and the failures so far. This line also keeps `output_timeout` from firing.
+   - `docker pull` the cEOS image with `GHCR_TOKEN`, using a docker config directory in `/dev/shm` that is deleted right after the pull, so the token is never written to disk and never enters a VM. Tag the image `ceosimage:4.32.5M-1` and save it to the share that the VMs mount read-only.
+   - Download sonic-mgmt as a GitHub tarball of the pinned commit into the share. Apply the testbed settings of the upstream KVM guide with `configure_sonic_mgmt.py`: the VM host user and password, `ansible_python_interpreter`, and the git-ignored `ansible/password.txt`. The VMs copy the tree with `cp -a`, which keeps every symlink.
+4. **Test list.** Run `get_test_scripts.py --features ""` in the docker-sonic-mgmt image at the pinned commit and take its `t0_checker` list. In `scope=smoke` the list is `smoke.txt`: 4 short files; `run_tests.sh` adds pretest and posttest itself.
+5. **Chunks.** Pack the files into chunks of about 50 minutes, longest first, using `durations.json` (480 s for a file with no entry). In `scope=smoke` every file is its own chunk. Chunks go into a shared queue; each testbed takes the next chunk with an atomic rename.
+6. **Execution.** Each testbed runs add-topo and deploy-mg once, then runs its chunks with `run_tests.sh -m individual`. After a chunk, `verdict.py rerun-files` lists the files with failures or errors that the known-failures list does not cover; the testbed restores the DUT configuration with deploy-mg and reruns those files once. The final result of a case is the result of its last run. The first result is kept for the report. If a testbed dies in the middle of a chunk, the chunk goes back to the queue once.
+7. **Time guard.** 10.5 hours after the harness starts, no new chunks are handed out. The files that were never started are recorded as "not run".
+8. **Progress.** Every 5 minutes, append one line with the chunks pending, running and done, and the testbeds finished, to `progress.log`. The agent prints these lines, which also keeps `output_timeout` from firing.
 9. **Output.**
-   - `results.tar.zst`: every JUnit file and every log;
-   - `summary.json`: the machine, T, the image SHA, the sonic-mgmt SHA, phase times, and per-case results with first and final outcomes;
-   - `durations.json`: per-file times from this run.
+   - `results.tar.zst`: every JUnit file and log, per testbed and chunk, plus the start and end time of each chunk;
+   - `run-meta.json`: the machine, T, the image SHA-256, the sonic-mgmt commit, the scope, the full file list, phase times, whether the time guard fired, and the harness exit code.
+
+The runner, not the machine, parses the JUnit files: `verdict.py report` writes `summary.json` (outcome and per-case results) and `durations.json` (per-file times of this run).
 
 ### 6.4 Files
 
@@ -164,13 +170,15 @@ The agent side does as little as possible:
 .github/workflows/resolute-t0.yml
 .github/testflinger/t0/
   job.yaml.in            job template (6.1)
+  render_job.py          renders job.yaml.in
   agent.sh               agent side (6.2)
   run-t0.sh              entry on the machine (6.3)
-  host-setup.sh          host fixes, sizing, VMs
+  host-setup.sh          host fixes, storage pool, sizing
+  configure_sonic_mgmt.py  testbed settings for the sonic-mgmt tree
   tb-run.sh              per-testbed worker: add-topo, deploy-mg, chunk loop, rerun
   make_chunks.py         chunk packing
-  verdict.py             verdict and report rendering (7)
-  tests/                 pytest unit tests for make_chunks.py and verdict.py
+  verdict.py             rerun selection, verdict and report rendering (7)
+  tests/                 pytest unit tests for the Python files
   known-failures.yaml    reviewed known failures (7.1)
   sonic-mgmt.ref         pinned canonical/sonic-mgmt commit SHA
   smoke.txt              the smoke list
@@ -181,17 +189,22 @@ The agent side does as little as possible:
 ### 7.1 `known-failures.yaml`
 
 ```yaml
-- id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib"
-  kind: fail
-  reason: "sysDescr names Debian; product issue, see sonic-mgmt PR #4"
-- id: "generic_hash/test_generic_hash.py::*"
-  kind: flaky
-  reason: "Random parameter sets; the same cases are unstable on upstream vs"
+known:
+  - id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib[vlab-01]"
+    kind: fail
+    reason: "sysDescr names Debian; product issue, see sonic-mgmt PR #4"
+  - id: "generic_hash/test_generic_hash.py::*"
+    kind: flaky
+    reason: "Random parameter sets; the same cases are unstable on upstream vs"
+loganalyzer_noise:
+  - pattern: 'nss_tacplus: (/etc/tacplus_nss\.conf fopen failed|bad config or server line)'
+    reason: "AppArmor stops unix_chkpwd reading tacplus_nss.conf; fixed by sonic-buildimage PR #30"
 ```
 
-- `id`: pytest node id relative to `tests/`. `*` matches like `fnmatch`.
+- `id`: pytest node id relative to `tests/`, as built from the JUnit file path, class name and test name. `*` matches any text; every other character, including `[` and `]`, matches itself.
 - `kind`: `fail` (test failure), `error` (setup or teardown error), or `flaky` (any outcome is accepted, and passing produces no notice).
 - `reason`: required, written in English.
+- `loganalyzer_noise`: regular expressions for syslog lines. A loganalyzer teardown error whose matched lines all match one of these patterns is ignored. Any other matched line keeps the error.
 - Every change to the list goes through a pull request.
 
 ### 7.2 Classification of each case
@@ -199,7 +212,7 @@ The agent side does as little as possible:
 A case whose final outcome is failure or error is **covered** when an entry with a matching `id` has the same `kind` or `flaky`. Otherwise it is **new**. Entries are reported in two more groups:
 
 - **now passing**: entries of kind `fail` or `error` whose `id` matches at least one case, where every matching case passed;
-- **stale**: entries whose `id` matches no case at all.
+- **stale**: entries whose `id` matches no case, although their file part matches a file that ran. Entries for files outside this run's list (for example in `scope=smoke`) are not reported.
 
 ### 7.3 Outcome of a run
 
@@ -207,7 +220,7 @@ A case whose final outcome is failure or error is **covered** when an entry with
 |---|---|---|
 | At least one new failure or error | `failure` | Regressions |
 | No new failures, and some files were not run | `error` | Incomplete |
-| Provision failed after the retries, the job timed out, or no `summary.json` came back | `error` | Infrastructure |
+| Provision failed after the retries, the job timed out, no `run-meta.json` came back, or the harness exited non-zero | `error` | Infrastructure |
 | Otherwise | `success` | Pass |
 
 "Now passing" and "stale" entries never change the outcome; they are listed so that the list can be cleaned up.
@@ -241,7 +254,7 @@ pytest with small JUnit fixtures covers:
 
 | # | Step | Owner |
 |---|---|---|
-| 1 | Push cEOS 4.32.5M to `ghcr.io/canonical/sonic-ceos:4.32.5M` (internal) | Agent |
+| 1 | Push the local `ceosimage:4.32.5M-1` to `ghcr.io/canonical/sonic-ceos:4.32.5M-1` (internal) | Agent |
 | 2 | Create a classic PAT with only `read:packages`, set to expire in one year; prove that `docker pull` works with it | User creates it; agent tests it |
 | 3 | Write the PAT to Testflinger secret `sonic-buildimage/ghcr-read-token` with the CI client id | Agent |
 | 4 | Add repository secrets `TESTFLINGER_CLIENT_ID` and `TESTFLINGER_SECRET_KEY` | User (needs repository admin) |
@@ -255,7 +268,7 @@ Until the workflow is on the default branch, the `schedule`, `workflow_run` and 
 
 | Stage | What | Accepted when |
 |---|---|---|
-| M1 | `run-t0.sh` by hand on one `sonic-ci-large` machine, `scope=smoke` | All smoke files run on every testbed; `results.tar.zst` and `summary.json` are complete |
+| M1 | `run-t0.sh` by hand on one `sonic-ci-large` machine, `scope=smoke` | Every smoke file has a JUnit result, each of the 2 testbeds ran at least one chunk, and `verdict.py report` on the results gives the expected outcome |
 | M2 | Full workflow on a `ci-workflow/*` branch, `scope=smoke` | Commit status, job summary, workflow artifact and the Testflinger artifact all appear, and agree with each other |
 | M3 | Full workflow, `scope=full` | The run finishes within 6 hours on a 16-testbed machine; the first `known-failures.yaml` is written (7.5) |
 | M4 | Pull request to `202605_resolute`, then after the merge | One nightly run, one `workflow_run` run after a merge, and one run from a `/test-t0` comment each finish with a report |

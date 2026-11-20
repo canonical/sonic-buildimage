@@ -31,7 +31,7 @@
 | 放在哪里 | 全部放在 `canonical/sonic-buildimage`，sonic-mgmt 的锁定 commit 也在这里 |
 | Runner | 一个跑在 `self-hosted-linux-amd64-noble-private-endpoint-small` 上的 job，从提交一直等到出报告 |
 | 机器 | Testflinger 队列 `sonic-ci-large` |
-| cEOS | `ghcr.io/canonical/sonic-ceos:4.32.5M`，可见性 internal。测试机用只有 `read:packages` 权限的 classic PAT 拉取，PAT 存在 Testflinger secret 里 |
+| cEOS | `ghcr.io/canonical/sonic-ceos:4.32.5M-1`，可见性 internal。它就是 sonic-mgmt 自己从 cEOS tarball 构建出来的 `ceosimage:4.32.5M-1` 镜像；sonic-mgmt 在本地找到这个标签的镜像后，会跳过自己的 cEOS 准备流程。测试机用只有 `read:packages` 权限的 classic PAT 拉取，PAT 存在 Testflinger secret 里 |
 | 日志 | 全部结果和日志用 zstd 压缩，经 Testflinger artifacts 取回 |
 | 分块用的耗时数据 | 取最近一次 nightly 的 artifact，不提交进仓库 |
 
@@ -50,6 +50,10 @@
 | 分到的测试机上：嵌套 KVM 已开启；MAAS 配好了 apt 代理 `http://10.239.8.11:8000/`；GitHub、download.docker.com、azurecr.io、ghcr.io、PyPI、Testflinger 都能直连；从 GitHub 下载约 5.9 MB/s | 2026-11-20 在 romano 上的探测 job |
 | 在 C3 "Customized queues" 里添加的队列，要等认证团队的机器人同步 `testflinger-agent-charm-configs` 后才会到达 agent，而这个同步没有固定周期 | `server-cert/data-tor3-dh1` 的提交历史 |
 | 事件 payload 里的 `author_association` 会把组织私密成员显示为 `CONTRIBUTOR` | 本仓库 4 个活跃成员中有 3 个是私密成员 |
+| 在 docker-sonic-mgmt 镜像里执行 `get_test_scripts.py --features "" --location <tests>`，得到的 `t0_checker` 列表就是那 392 个文件 | 在 `a88d1d5f93` 下执行，与 2026-11-19 的列表比对一致 |
+| sonic-mgmt 发现本地已有 `ceosimage:4.32.5M-1` 标签的镜像时，会跳过 cEOS 的下载、导入和构建 | `ansible/roles/vm_set/tasks/add_ceos_list.yml` |
+| 在 sonic-buildimage PR #30 合入之前，每次测试都会有几十个 loganalyzer teardown 错误，匹配到的唯一一行是 `nss_tacplus: /etc/tacplus_nss.conf fopen failed`，而且每次落在不同的用例上 | 2026-11-19 有 36 个；PR #30 仍未合入 |
+| JUnit 用例的 `classname` 形如 `tests.<用点分隔的模块路径>[.<类名>]`；`run_tests.sh -m individual` 为每个测试文件单独写一个 JUnit 文件，路径与测试文件相同 | 2026-11-19 的结果 |
 
 ## 4. 架构
 
@@ -84,6 +88,7 @@ resolute-t0.yml，small runner 上的一个 job，超时 1440 分钟
 | `workflow_run` | `resolute-build` 以 `success` 结束，事件为 `push`，分支为 `202605_resolute` 或 `v*` tag | 触发它的那次 run |
 | `issue_comment` | PR 上的评论，正文以 `/test-t0` 开头 | head SHA 等于该 PR head SHA 的最近一次成功的 `resolute-build` run |
 | `workflow_dispatch` | 手动；输入 `run_id`（一次 `resolute-build` run）；输入 `scope`，取值 `full` 或 `smoke` | 指定的 run |
+| `push` | 名为 `ci-workflow/t0-*` 的分支，仅供开发使用。固定为 `smoke`，不写 commit 状态，已知失败清单取自所推送的 commit | `202605_resolute` 上事件为 `push` 的最近一次成功的 `resolute-build` run |
 
 评论触发时，先调用 `GET /repos/{repo}/collaborators/{user}/permission`，结果不是 `admin`、`maintain` 或 `write` 就停止。然后给评论加一个"eyes"表情。如果该 head SHA 没有成功的构建，或者它的 artifact 已过期（7 天），就在 PR 里回复说明并停止。
 
@@ -128,9 +133,9 @@ test_data:
 agent 端只做最少的事：
 
 1. 把附件复制到测试机（`ubuntu@$DEVICE_IP`，`BatchMode=yes`）。
-2. 在测试机上启动 `run-t0.sh`，传入镜像 URL、它的 SHA-256 和测试范围。`GHCR_TOKEN` 经 SSH 会话的 stdin 传过去，不出现在命令行上。
-3. 转发测试机打印的进度行。
-4. 不管退出码是多少，都把 `results.tar.zst`、`summary.json`、`durations.json` 和测试脚本日志复制到 `artifacts/`。
+2. 在测试机上以脱离会话的方式（`setsid nohup`）启动 `run-t0.sh`，传入镜像 URL、它的 SHA-256 和测试范围。`GHCR_TOKEN` 经 SSH 会话的 stdin 进入这个后台进程的环境变量，不出现在任何命令行上。这样即使 SSH 连接中断，测试也不会停。
+3. 每分钟取一次测试机上 `progress.log` 新增的行并打印出来，直到测试脚本写出 `EXIT` 文件。
+4. 不管退出码是多少，都把 `results.tar.zst`、`run-meta.json` 和测试脚本日志复制到 `artifacts/`。
 
 ### 6.3 测试机上的脚本（`run-t0.sh`）
 
@@ -142,21 +147,22 @@ agent 端只做最少的事：
    - openvswitch-switch 首次安装后先 `reset-failed` 再重启；
    - add-topo 之前先拉好 `publicmirror.azurecr.io/debian:trixie`；
    - 在虚拟机里关掉 `apt-daily*` 和 `unattended-upgrades`；
-   - LXD 存储池建在系统 SSD 上，绝不放在机械盘上。
-2. **定规模。** 测试床数 T = min(⌊(内存 GiB − 16) / 18⌋, ⌊线程数 / 8⌋, ⌊系统盘可用 GB / 60⌋)。每个虚拟机分 ⌊线程数 / T⌋ 个 vCPU、18 GiB 内存、140 GiB 磁盘。T 会打印出来，也记进 `summary.json`。
+   - 机器有 200 GB 以上的空闲 SSD 时，用它们组一个 zfs 池放虚拟机；没有就放在系统 SSD 上的 LXD `default` 目录池里；机械盘一律不用。
+2. **定规模。** 测试床数 T = min(⌊(内存 GiB − 16) / 18⌋, ⌊线程数 / 8⌋, ⌊存储池可用 GB / 40⌋)。每个虚拟机分 ⌊线程数 / T⌋ 个 vCPU、18 GiB 内存、140 GiB 稀疏磁盘。`scope=smoke` 时 T 最多为 2。T 会打印出来，也记进 `run-meta.json`。
 3. **准备测试材料。**
    - 从 release 下载 vs 镜像并校验 SHA-256。
-   - 用 `GHCR_TOKEN` `docker pull` cEOS，随即 `docker logout`，把镜像导出到虚拟机只读挂载的共享目录。token 不落盘，也不进任何虚拟机。
-   - 按锁定 commit 下载 sonic-mgmt 的 tarball。补上被 git 忽略的 `ansible/password.txt`。打包时用 `--transform='flags=r;…'`，避免改写软链接目标。
-4. **测试列表。** 在锁定 commit 下运行 `get_test_scripts.py --features ""`，只取 t0 拓扑。`scope=smoke` 时改用固定的 6 个文件（pretest、4 个短文件、posttest）。
-5. **分块。** 根据 `durations.json` 把文件打包成每块约 50 分钟的块，先放耗时长的；没有记录的文件按 480 秒估算。所有块放进一个共享队列，每个测试床通过原子 rename 领取下一块。
-6. **执行。** 每个测试床先做一次 add-topo 和 deploy-mg，然后逐个文件用 `run_tests.sh` 跑自己领到的块。某块里有失败或出错的文件时，先用 deploy-mg 恢复 DUT 配置，再把这些文件重跑一次。文件的最终结果以最后一次运行为准，第一次的结果保留下来写进报告。
-7. **时间保护。** 测试阶段开始 10.5 小时后不再派发新块，从未开始的文件记为"未执行"。
-8. **进度。** 每 5 分钟打印一行：已完成的块数、正在跑的块数、目前的失败数。这一行同时防止触发 `output_timeout`。
+   - 用 `GHCR_TOKEN` `docker pull` cEOS 镜像。docker 配置目录放在 `/dev/shm` 里，拉完立即删除，所以 token 不落盘，也不进任何虚拟机。把镜像打上 `ceosimage:4.32.5M-1` 标签，导出到虚拟机只读挂载的共享目录。
+   - 把锁定 commit 的 sonic-mgmt 以 GitHub tarball 形式下载到共享目录，再用 `configure_sonic_mgmt.py` 做上游 KVM 测试床文档要求的配置：VM 宿主机的用户名和密码、`ansible_python_interpreter`、被 git 忽略的 `ansible/password.txt`。虚拟机用 `cp -a` 复制这棵目录树，软链接全部保留。
+4. **测试列表。** 在 docker-sonic-mgmt 镜像里、锁定 commit 下运行 `get_test_scripts.py --features ""`，取其中的 `t0_checker` 列表。`scope=smoke` 时改用 `smoke.txt`：4 个短文件，pretest 和 posttest 由 `run_tests.sh` 自动加上。
+5. **分块。** 根据 `durations.json` 把文件打包成每块约 50 分钟的块，先放耗时长的；没有记录的文件按 480 秒估算。`scope=smoke` 时每个文件单独一块。所有块放进一个共享队列，每个测试床通过原子 rename 领取下一块。
+6. **执行。** 每个测试床先做一次 add-topo 和 deploy-mg，然后用 `run_tests.sh -m individual` 跑领到的块。每跑完一块，用 `verdict.py rerun-files` 列出有失败或错误、且不在已知失败清单里的文件；测试床先用 deploy-mg 恢复 DUT 配置，再把这些文件重跑一次。用例的最终结果以最后一次运行为准，首次结果保留下来写进报告。如果某个测试床在跑一块的中途挂掉，这一块会退回队列，但只退一次。
+7. **时间保护。** 测试脚本启动 10.5 小时后不再派发新块，从未开始的文件记为"未执行"。
+8. **进度。** 每 5 分钟往 `progress.log` 追加一行：待领、在跑、已完成的块数，以及已结束的测试床数。agent 会把这些行打印出来，这同时防止触发 `output_timeout`。
 9. **输出。**
-   - `results.tar.zst`：所有 JUnit 文件和全部日志；
-   - `summary.json`：机器名、T、镜像 SHA、sonic-mgmt SHA、各阶段耗时，以及每个用例的首次结果和最终结果；
-   - `durations.json`：本次每个文件的耗时。
+   - `results.tar.zst`：按测试床和块组织的全部 JUnit 文件和日志，以及每块的开始、结束时间；
+   - `run-meta.json`：机器名、T、镜像 SHA-256、sonic-mgmt commit、测试范围、完整文件列表、各阶段耗时、是否触发了时间保护、测试脚本的退出码。
+
+解析 JUnit 的是 runner，不是测试机：`verdict.py report` 生成 `summary.json`（结论和每个用例的结果）和 `durations.json`（本次每个文件的耗时）。
 
 ### 6.4 文件布局
 
@@ -164,13 +170,15 @@ agent 端只做最少的事：
 .github/workflows/resolute-t0.yml
 .github/testflinger/t0/
   job.yaml.in            job 模板（6.1）
+  render_job.py          渲染 job.yaml.in
   agent.sh               agent 端（6.2）
   run-t0.sh              测试机入口（6.3）
-  host-setup.sh          宿主机修正、定规模、建虚拟机
+  host-setup.sh          宿主机修正、存储池、定规模
+  configure_sonic_mgmt.py  sonic-mgmt 目录树的测试床配置
   tb-run.sh              每个测试床的工作循环：add-topo、deploy-mg、领块、重跑
   make_chunks.py         分块
-  verdict.py             判定和报告渲染（7）
-  tests/                 make_chunks.py 和 verdict.py 的 pytest 单元测试
+  verdict.py             重跑选择、判定和报告渲染（7）
+  tests/                 各 Python 文件的 pytest 单元测试
   known-failures.yaml    经过审查的已知失败（7.1）
   sonic-mgmt.ref         锁定的 canonical/sonic-mgmt commit SHA
   smoke.txt              冒烟列表
@@ -181,17 +189,22 @@ agent 端只做最少的事：
 ### 7.1 `known-failures.yaml`
 
 ```yaml
-- id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib"
-  kind: fail
-  reason: "sysDescr names Debian; product issue, see sonic-mgmt PR #4"
-- id: "generic_hash/test_generic_hash.py::*"
-  kind: flaky
-  reason: "Random parameter sets; the same cases are unstable on upstream vs"
+known:
+  - id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib[vlab-01]"
+    kind: fail
+    reason: "sysDescr names Debian; product issue, see sonic-mgmt PR #4"
+  - id: "generic_hash/test_generic_hash.py::*"
+    kind: flaky
+    reason: "Random parameter sets; the same cases are unstable on upstream vs"
+loganalyzer_noise:
+  - pattern: 'nss_tacplus: (/etc/tacplus_nss\.conf fopen failed|bad config or server line)'
+    reason: "AppArmor stops unix_chkpwd reading tacplus_nss.conf; fixed by sonic-buildimage PR #30"
 ```
 
-- `id`：相对 `tests/` 的 pytest 节点 ID，`*` 按 `fnmatch` 规则匹配。
+- `id`：相对 `tests/` 的 pytest 节点 ID，由 JUnit 文件路径、类名和测试名拼成。`*` 匹配任意文本；其他字符（包括 `[` 和 `]`）都只匹配自身。
 - `kind`：`fail`（测试失败）、`error`（setup 或 teardown 出错）或 `flaky`（任何结果都接受，通过了也不提示）。
 - `reason`：必填，用英文写。
+- `loganalyzer_noise`：针对 syslog 行的正则表达式。loganalyzer 引起的 teardown 错误，如果它匹配到的行全部命中这些规则，就忽略这个错误；只要有一行不命中，错误就保留。
 - 对清单的任何修改都必须走 PR。
 
 ### 7.2 每个用例的归类
@@ -199,7 +212,7 @@ agent 端只做最少的事：
 最终结果是失败或错误的用例，如果有一条 `id` 匹配的条目，且其 `kind` 相同或为 `flaky`，就算**已覆盖**；否则就是**新失败**。清单条目还会被归入另外两组：
 
 - **已通过**：`kind` 为 `fail` 或 `error` 的条目，其 `id` 至少匹配到一个用例，且匹配到的用例全部通过；
-- **已失效**：`id` 一个用例都没匹配到的条目。
+- **已失效**：`id` 没有匹配到任何用例、但其文件部分匹配到了本次跑过的某个文件的条目。文件不在本次列表里的条目（例如 `scope=smoke` 时）不报告。
 
 ### 7.3 一次测试的结论
 
@@ -207,7 +220,7 @@ agent 端只做最少的事：
 |---|---|---|
 | 至少有一个新失败或新错误 | `failure` | Regressions（回归） |
 | 没有新失败，但有文件未执行 | `error` | Incomplete（不完整） |
-| 装机重试后仍失败、job 超时，或没有拿回 `summary.json` | `error` | Infrastructure（基础设施问题） |
+| 装机重试后仍失败、job 超时、没有拿回 `run-meta.json`，或测试脚本以非零退出 | `error` | Infrastructure（基础设施问题） |
 | 其他情况 | `success` | Pass（通过） |
 
 "已通过"和"已失效"的条目不影响结论，只是列出来，方便清理清单。
@@ -241,7 +254,7 @@ job summary 和 PR 评论包含：
 
 | # | 步骤 | 负责人 |
 |---|---|---|
-| 1 | 把 cEOS 4.32.5M 推到 `ghcr.io/canonical/sonic-ceos:4.32.5M`（internal） | Agent |
+| 1 | 把本地的 `ceosimage:4.32.5M-1` 推到 `ghcr.io/canonical/sonic-ceos:4.32.5M-1`（internal） | Agent |
 | 2 | 生成只勾 `read:packages`、有效期一年的 classic PAT，并实测能用它 `docker pull` | 用户生成，Agent 验证 |
 | 3 | 用 CI client id 把 PAT 写入 Testflinger secret `sonic-buildimage/ghcr-read-token` | Agent |
 | 4 | 添加仓库 secret `TESTFLINGER_CLIENT_ID` 和 `TESTFLINGER_SECRET_KEY` | 用户（需要仓库管理员权限） |
@@ -255,7 +268,7 @@ workflow 进入默认分支之前，`schedule`、`workflow_run`、`issue_comment
 
 | 阶段 | 内容 | 通过标准 |
 |---|---|---|
-| M1 | 在一台 `sonic-ci-large` 机器上手动执行 `run-t0.sh`，`scope=smoke` | 每个测试床都跑完全部冒烟文件；`results.tar.zst` 和 `summary.json` 完整 |
+| M1 | 在一台 `sonic-ci-large` 机器上手动执行 `run-t0.sh`，`scope=smoke` | 每个冒烟文件都有 JUnit 结果，2 个测试床各自至少跑了一块，对结果执行 `verdict.py report` 得到预期的结论 |
 | M2 | 在 `ci-workflow/*` 分支上跑完整 workflow，`scope=smoke` | commit 状态、job summary、workflow artifact、Testflinger artifact 都出现，且彼此一致 |
 | M3 | 完整 workflow，`scope=full` | 在 16 个测试床的机器上 6 小时内跑完；写出第一版 `known-failures.yaml`（7.5） |
 | M4 | 向 `202605_resolute` 提 PR，合入后验证 | 一次 nightly、一次合入后的 `workflow_run`、一次 `/test-t0` 评论触发，各自完整跑完并出报告 |
