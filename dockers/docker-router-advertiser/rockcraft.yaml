@@ -69,9 +69,15 @@ parts:
         libboost-serialization1.83.0_libs \
         libc6_gconv \
         libc-bin_locale \
+        libgcc-s1_libs \
         libhiredis1.1.0_libs \
+        libnl-3-200_libs \
         libnl-nf-3-200_libs \
+        libnl-route-3-200_libs \
+        libpcre2-8-0_libs \
         libpython3.14_libs \
+        libstdc++6_libs \
+        libuuid1_libs \
         libxxhash0_libs \
         libzmq5_libs \
         mount_bins \
@@ -115,9 +121,15 @@ parts:
   #     - libboost-serialization1.83.0_libs
   #     - libc6_gconv
   #     - libc-bin_locale
+  #     - libgcc-s1_libs
   #     - libhiredis1.1.0_libs
+  #     - libnl-3-200_libs
   #     - libnl-nf-3-200_libs
+  #     - libnl-route-3-200_libs
+  #     - libpcre2-8-0_libs
   #     - libpython3.14_libs
+  #     - libstdc++6_libs
+  #     - libuuid1_libs
   #     - libxxhash0_libs
   #     - libzmq5_libs
   #     - mount_bins

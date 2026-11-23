@@ -90,12 +90,18 @@ parts:
         iproute2_ip-bin \
         jq_bins \
         libboost-serialization1.83.0_libs \
+        libgcc-s1_libs \
         libhiredis1.1.0_libs \
+        libnl-3-200_libs \
         libnl-nf-3-200_libs \
+        libnl-route-3-200_libs \
+        libpcre2-8-0_libs \
         libpython3.14_libs \
         libpython3.14-stdlib_data-types \
         libpython3.14-stdlib_internet \
         libpython3.14-stdlib_zstd \
+        libstdc++6_libs \
+        libuuid1_libs \
         libxxhash0_libs \
         libzmq5_libs \
         openssl_config \
@@ -139,12 +145,18 @@ parts:
   #     - iproute2_ip-bin
   #     - jq_bins
   #     - libboost-serialization1.83.0_libs
+  #     - libgcc-s1_libs
   #     - libhiredis1.1.0_libs
+  #     - libnl-3-200_libs
   #     - libnl-nf-3-200_libs
+  #     - libnl-route-3-200_libs
+  #     - libpcre2-8-0_libs
   #     - libpython3.14_libs
   #     - libpython3.14-stdlib_data-types
   #     - libpython3.14-stdlib_internet
   #     - libpython3.14-stdlib_zstd
+  #     - libstdc++6_libs
+  #     - libuuid1_libs
   #     - libxxhash0_libs
   #     - libzmq5_libs
   #     - openssl_config
