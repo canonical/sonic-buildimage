@@ -1,4 +1,31 @@
-known: []
+known:
+  - id: "database/test_state_db_flush.py::test_state_db_cleanup_after_swss_restart[*]"
+    kind: fail
+    reason: "branch predates upstream 202605 backport #28740: swss.sh does not clean STATE_DB PROCESS_HEALTH on cold start"
+  - id: "gnmi/test_gnmi_aaa.py::test_gnmi_audit_*"
+    kind: fail
+    reason: "sonic-gnmi predates upstream #750 (no RPC_COMPLETION audit log); on rock the gnmi.log rsyslog rule misses Pebble's tag"
+  - id: "pc/test_po_cleanup.py::test_po_cleanup[*]"
+    kind: error
+    reason: "rock: Pebble stops rsyslogd in parallel with teammgrd, so the cleanTeamProcesses syslog lines are lost"
+  - id: "pc/test_po_cleanup.py::test_po_cleanup_after_reload[*]"
+    kind: fail
+    reason: "rock: Pebble stops rsyslogd in parallel with teammgrd, so the cleanTeamProcesses syslog lines are lost"
+  - id: "process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes"
+    kind: fail
+    reason: "rock: on-failure: shutdown ignores auto_restart=disabled, so killing zebra stops the whole bgp container"
+  - id: "radv/test_radv_run.py::test_radv_deployment_id"
+    kind: fail
+    reason: "test race: radvd respawns 6-7 s after the restart and on resolute the check runs after that"
+  - id: "tacacs/test_authorization.py::test_authorization_tacacs_only[*]"
+    kind: fail
+    reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
+  - id: "tacacs/test_authorization.py::test_authorization_tacacs_only_some_server_down[*]"
+    kind: fail
+    reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
+  - id: "tacacs/test_authorization.py::test_tacacs_authorization_wildcard[*]"
+    kind: fail
+    reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
 loganalyzer_noise:
   - pattern: 'nss_tacplus: (/etc/tacplus_nss\.conf fopen failed|bad config or server line)'
     reason: "AppArmor stops unix_chkpwd reading tacplus_nss.conf; fixed by sonic-buildimage PR #30"
