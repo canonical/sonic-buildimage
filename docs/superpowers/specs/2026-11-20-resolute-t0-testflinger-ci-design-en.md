@@ -269,7 +269,7 @@ The job summary and the PR comment show:
 
 ### 7.5 First version of the list
 
-The first list comes from M3 (run 45114609003: image `d47807d2e1`, the head of sonic-buildimage PR #34; sonic-mgmt `a88d1d5f93`; alarmmonkey with 16 testbeds). After the loganalyzer noise filter, 44 cases failed. All 44 also failed on the rock run of 2026-11-19, and 41 of them also failed on that day's Dockerfile image. 16 of them are in physical-only tests, which M3 ran because it did not pass `--device_type=vs`; the harness now skips them as upstream does. The remaining 28 cases form the list (11 entries), and judged against it M3 has no new failures.
+The first list comes from M3 (run 45114609003: image `d47807d2e1`, the head of sonic-buildimage PR #34; sonic-mgmt `a88d1d5f93`; alarmmonkey with 16 testbeds). After the loganalyzer noise filter, 44 cases failed. All 44 also failed on the rock run of 2026-11-19, and 41 of them also failed on that day's Dockerfile image. 16 of them are in physical-only tests, which M3 ran because it did not pass `--device_type=vs`; the harness now skips them as upstream does. The remaining 28 cases form the list (11 entries). Judged against it, the only M3 failures it does not cover are those 16 physical-only cases.
 
 | Group | Cases | Reason |
 |---|---|---|
