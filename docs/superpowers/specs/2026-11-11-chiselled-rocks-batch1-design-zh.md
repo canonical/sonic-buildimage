@@ -169,7 +169,7 @@
 ### 6.3 补齐 slice
 
 - 已知缺口：rsyslog、rsyslog-relp、libestr0、libfastjson4、librelp0（#1104）；radvd（#1169）；python3-cffi-backend（条件见 6.2，#1509 已于 2026-11-14 合并进上游 `ubuntu-26.04`）；socat 及其 archive 依赖若有缺口也要补（socat 本身自建，不切）。
-- `logger`（2026-11-23）：26.04 上 `/usr/bin/logger` 属于 util-linux，现有 util-linux slice 都不含它。新增 `util-linux_logger`（`libc6_libs`、`libsystemd0_libs`），并加入 `util-linux_bins`；spread 测试让 logger 经 `--socket` 发一条到 rootfs 里的 unix socket 并核对内容。分支 `jy5275/chisel-releases:feat-26.04-util-linux-logger`，已 merge 进 `sonic-26.04`，上游 PR 待提。
+- `logger`（2026-11-23）：26.04 上 `/usr/bin/logger` 属于 util-linux，现有 util-linux slice 都不含它。新增 `util-linux_logger`（`libc6_libs`、`libsystemd0_libs`），并加入 `util-linux_bins`；spread 测试让 logger 经 `--socket` 发一条到 rootfs 里的 unix socket 并核对内容。分支 `jy5275/chisel-releases:feat-26.04-util-linux-logger`，已 merge 进 `sonic-26.04`；上游 PR #1525（26.04），forward port #1526（26.10）。
 - 6.2 新发现的缺口，按 chisel-releases 的 `AGENTS.md` 要求用 chisel-slicer skill 编写，带 spread 测试。
 - 每个包同时提 26.04 与 26.10（上游 forward-port 规则）。
 - slice 粒度：只选运行期需要的 slice，例如 Python 优先 `python3.14_core` 加需要的 stdlib 功能 slice，而不是 `python3.14_standard`；以 6.2 的 Python 模块清单为准。
