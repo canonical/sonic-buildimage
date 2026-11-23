@@ -38,6 +38,7 @@ parts:
   # INTERIM: Ubuntu slices are cut from jy5275/chisel-releases@sonic-26.04
   # (upstream ubuntu-26.04 + pending PRs) because these slices are not upstream yet:
   #   rsyslog, rsyslog-relp, libestr0, libfastjson4, librelp0  <- canonical/chisel-releases#1104
+  #   util-linux_logger                                        <- canonical/chisel-releases#1525
   # Once ALL PRs above are merged into canonical/chisel-releases ubuntu-26.04:
   #   1. delete this `slices-interim` part
   #   2. uncomment the `ubuntu-slices` part below (same slice list)
@@ -61,17 +62,25 @@ parts:
         coreutils_ls-bin \
         coreutils_mkdir \
         coreutils_rm-bin \
+        coreutils_sleep \
         coreutils_touch \
+        grep_bins \
         jq_bins \
         libboost-serialization1.83.0_libs \
         libhiredis1.1.0_libs \
         libnl-nf-3-200_libs \
+        libpython3.14_libs \
         libxxhash0_libs \
         libzmq5_libs \
+        mount_bins \
         netbase_config \
         procps_bins \
+        python3.14_core \
+        python3-minimal_python3 \
         rsyslog_bins \
-        rsyslog-relp_modules
+        rsyslog-relp_modules \
+        sysvinit-utils_bins \
+        util-linux_logger
     stage:
       - -etc/rsyslog.d/50-default.conf
 
@@ -89,17 +98,25 @@ parts:
   #     - coreutils_ls-bin
   #     - coreutils_mkdir
   #     - coreutils_rm-bin
+  #     - coreutils_sleep
   #     - coreutils_touch
+  #     - grep_bins
   #     - jq_bins
   #     - libboost-serialization1.83.0_libs
   #     - libhiredis1.1.0_libs
   #     - libnl-nf-3-200_libs
+  #     - libpython3.14_libs
   #     - libxxhash0_libs
   #     - libzmq5_libs
+  #     - mount_bins
   #     - netbase_config
   #     - procps_bins
+  #     - python3.14_core
+  #     - python3-minimal_python3
   #     - rsyslog_bins
   #     - rsyslog-relp_modules
+  #     - sysvinit-utils_bins
+  #     - util-linux_logger
   #   stage:
   #     - -etc/rsyslog.d/50-default.conf
 
@@ -111,6 +128,8 @@ parts:
       dpkg -x sonic-supervisord-utilities-rs_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x libyang3_*.deb ${CRAFT_PART_INSTALL}
       dpkg -x sonic-eventd_*.deb ${CRAFT_PART_INSTALL}
+      # sonic-mgmt runs events_publish_tool.py (imports swsscommon) in this container
+      dpkg -x python3-swsscommon_*.deb ${CRAFT_PART_INSTALL}
     organize:
       # base-files_var makes /var/run a symlink to /run; libswsscommon ships a real var/run/
       var/run/redis: run/redis
@@ -118,8 +137,6 @@ parts:
       - -var/run
       - -usr/share/doc
       - -usr/share/man
-      # Python test tool; the rock has no Python
-      - -usr/bin/events_publish_tool.py
 
   setup-eventd:
     plugin: dump
@@ -132,6 +149,10 @@ parts:
 
       # Build-time only: jinjanator renders the rsyslog plugin confs; it is not staged
       pip install --break-system-packages jinjanator
+
+      # sonic-mgmt's syslog log generator imports sonic_py_common.logger (stdlib only); unpack the
+      # wheel without pip so its declared dependencies (natsort, pyyaml, redis-dump-load) stay out
+      python3 -m zipfile -e python-wheels/sonic_py_common-1.0-py3-none-any.whl ${CRAFT_PART_INSTALL}/usr/lib/python3/dist-packages/
 
       # Render rsyslog plugin conf files from j2 templates
       conf_dir=${CRAFT_PART_INSTALL}/etc/rsyslog.d/rsyslog_plugin_conf

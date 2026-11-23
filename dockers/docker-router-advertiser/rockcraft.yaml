@@ -34,6 +34,7 @@ parts:
   # (upstream ubuntu-26.04 + pending PRs) because these slices are not upstream yet:
   #   rsyslog, rsyslog-relp, libestr0, libfastjson4, librelp0  <- canonical/chisel-releases#1104
   #   radvd                                                    <- canonical/chisel-releases#1169
+  #   util-linux_logger                                        <- canonical/chisel-releases#1525
   # Once ALL PRs above are merged into canonical/chisel-releases ubuntu-26.04:
   #   1. delete this `slices-interim` part
   #   2. uncomment the `ubuntu-slices` part below (same slice list)
@@ -53,12 +54,15 @@ parts:
         bash_bins \
         coreutils_cat \
         coreutils_chmod \
+        coreutils_cp-bin \
         coreutils_cut \
         coreutils_echo \
         coreutils_env \
+        coreutils_ls-bin \
         coreutils_mkdir \
         coreutils_rm-bin \
         coreutils_sleep \
+        coreutils_test \
         coreutils_touch \
         grep_bins \
         jq_bins \
@@ -70,13 +74,16 @@ parts:
         libpython3.14_libs \
         libxxhash0_libs \
         libzmq5_libs \
+        mount_bins \
         openssl_config \
         procps_bins \
         python3-cffi-backend_libs \
         python3-yaml_libs \
         radvd_bins \
         rsyslog_bins \
-        rsyslog-relp_modules
+        rsyslog-relp_modules \
+        sysvinit-utils_bins \
+        util-linux_logger
     stage:
       # Debian's apport hook (apport is not in the rock); install-python ships the sitecustomize.py
       # that adds its site-packages
@@ -93,12 +100,15 @@ parts:
   #     - bash_bins
   #     - coreutils_cat
   #     - coreutils_chmod
+  #     - coreutils_cp-bin
   #     - coreutils_cut
   #     - coreutils_echo
   #     - coreutils_env
+  #     - coreutils_ls-bin
   #     - coreutils_mkdir
   #     - coreutils_rm-bin
   #     - coreutils_sleep
+  #     - coreutils_test
   #     - coreutils_touch
   #     - grep_bins
   #     - jq_bins
@@ -110,6 +120,7 @@ parts:
   #     - libpython3.14_libs
   #     - libxxhash0_libs
   #     - libzmq5_libs
+  #     - mount_bins
   #     - openssl_config
   #     - procps_bins
   #     - python3-cffi-backend_libs
@@ -117,6 +128,8 @@ parts:
   #     - radvd_bins
   #     - rsyslog_bins
   #     - rsyslog-relp_modules
+  #     - sysvinit-utils_bins
+  #     - util-linux_logger
   #   stage:
   #     - -usr/lib/python3.14/sitecustomize.py
   #     - -etc/rsyslog.d/50-default.conf

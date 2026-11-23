@@ -54,6 +54,7 @@ parts:
   # INTERIM: Ubuntu slices are cut from jy5275/chisel-releases@sonic-26.04
   # (upstream ubuntu-26.04 + pending PRs) because these slices are not upstream yet:
   #   rsyslog, rsyslog-relp, libestr0, libfastjson4, librelp0  <- canonical/chisel-releases#1104
+  #   util-linux_logger                                        <- canonical/chisel-releases#1525
   # Once ALL PRs above are merged into canonical/chisel-releases ubuntu-26.04:
   #   1. delete this `slices-interim` part
   #   2. uncomment the `ubuntu-slices` part below (same slice list)
@@ -103,7 +104,9 @@ parts:
         redis-server_bins \
         rsyslog_bins \
         rsyslog-relp_modules \
-        sed_bins
+        sed_bins \
+        sysvinit-utils_bins \
+        util-linux_logger
     stage:
       # Debian's apport hook (apport is not in the rock); install-python ships the sitecustomize.py
       # that adds its site-packages
@@ -151,6 +154,8 @@ parts:
   #     - rsyslog_bins
   #     - rsyslog-relp_modules
   #     - sed_bins
+  #     - sysvinit-utils_bins
+  #     - util-linux_logger
   #   stage:
   #     - -usr/lib/python3.14/sitecustomize.py
   #     - -etc/rsyslog.d/50-default.conf
