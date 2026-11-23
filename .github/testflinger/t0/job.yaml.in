@@ -1,0 +1,18 @@
+job_queue: sonic-ci
+global_timeout: 43200
+output_timeout: 7200
+tags:
+  - sonic-buildimage-t0
+  - "sha:${SHA12}"
+  - "gh-run:${GH_RUN}"
+provision_data:
+  distro: resolute
+test_data:
+  attachments:
+    - local: t0-harness.tar.gz
+  secrets:
+    GH_TOKEN: ${SECRET}
+  test_cmds: |
+    set -u
+    mkdir -p t0 && tar -xzf attachments/test/t0-harness.tar.gz -C t0
+    REPO='${REPO}' ARTIFACT_ID='${ARTIFACT_ID}' ARTIFACT_DIGEST='${ARTIFACT_DIGEST}' SCOPE='${SCOPE}' bash t0/agent.sh
