@@ -53,7 +53,7 @@
 | 即使仓库是公开的，下载 workflow artifact 也需要令牌（匿名返回 401；只有 `read:packages` 的 classic PAT 返回 403，提示需要 actions 权限）。API 返回一个跳转到签名 blob URL 的重定向，有效期只有几分钟。带 `actions: read` 的 `GITHUB_TOKEN` 在任何主机上都能用 | 2026-11-23 的测试；M2，run 45107247028 |
 | 个人令牌中 GHCR 只接受 classic PAT。workflow 的 `GITHUB_TOKEN` 可以拉取给该仓库开了 Actions 访问权限的包。用令牌登录时 GHCR 不检查用户名 | GitHub 文档；故意用错误用户名拉取的测试；M2 |
 | 组织成员 push 时创建的 GHCR 包可见性为 internal；匿名拉取被拒绝 | 探测包 `ghcr.io/canonical/sonic-ci-probe`（测试后已删除） |
-| 在预留的机器上：嵌套 KVM 已开启；MAAS 配置了 apt 代理 `http://10.239.8.11:8000/`，它走 HTTPS 时解析不了 download.docker.com；GitHub、download.docker.com、azurecr.io、ghcr.io、PyPI 和 Testflinger 都能直连；从 GitHub 下载约 5.9 MB/s | 2026-11-20 在 romano 上的探测任务；M1 |
+| 在预留的机器上：嵌套 KVM 已开启；MAAS 配置了 apt 代理，它走 HTTPS 时解析不了 download.docker.com；GitHub、download.docker.com、azurecr.io、ghcr.io、PyPI 和 Testflinger 都能直连；从 GitHub 下载约 5.9 MB/s | 2026-11-20 在 romano 上的探测任务；M1 |
 | 在 C3 的「Customized queues」里加的队列，要等认证机器人同步 `testflinger-agent-charm-configs` 后才会到达 agent，而同步没有固定时间 | `server-cert/data-tor3-dh1` 的提交历史 |
 | 事件负载里的 `author_association` 会把私密身份的组织成员显示为 `CONTRIBUTOR` | 本仓库 4 名活跃成员中有 3 名是私密身份 |
 | 在 docker-sonic-mgmt 镜像里运行 `get_test_scripts.py --features "" --location <tests>`，得到同样的 392 个文件的 `t0_checker` 清单。`run_tests.sh` 会悄悄丢掉其 `SKIP_FOLDERS`（`ptftests acstests saitests scripts k8s sai_qualify`）下的所有文件，因此去掉了 3 个 k8s 文件 | 在 `a88d1d5f93` 上运行；`tests/run_tests.sh` |
