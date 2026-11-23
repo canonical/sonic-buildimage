@@ -2602,7 +2602,26 @@ git -C $W branch -D $b
 
 **Files:** none new.
 
-- [ ] **Step 1: Ask the user before pushing and opening the pull request**
+- [ ] **Step 1: Rebuild the branch as six review commits**
+
+The task commits above keep the history of the work. Reviewers get six commits, one per part, each of which passes the unit tests on its own:
+
+1. `test: pack sonic-mgmt test files into chunks by expected duration`: `make_chunks.py`, `tests/conftest.py`, `tests/test_make_chunks.py`
+2. `test: judge t0 results against a known-failures list`: `verdict.py`, `tests/test_verdict.py`, and `known-failures.yaml` with `known: []` and the noise pattern
+3. `test: run sonic-mgmt t0 on a Testflinger machine`: the job template, `render_job.py`, `agent.sh`, the machine-side scripts, `configure_sonic_mgmt.py`, `durations.json`, `smoke.txt`, `sonic-mgmt.ref` and their tests
+4. `test: run t0 on Testflinger nightly, after builds and on /test-t0`: `resolute-t0.yml`, `actionlint.yaml`, `submit.sh`, `tests/test_submit.py`
+5. `build: keep the vs image artifact for 30 days`: `resolute-build.yml`
+6. `test: first t0 known-failures list, from M3`: the full `known-failures.yaml`
+
+Build them on a new branch from `canonical/202605_resolute` with `git checkout <old tip> -- <files>` per commit, run `python3 -m pytest -q .github/testflinger/t0/tests` before each commit, and check that the result equals the old tip:
+
+```bash
+git -C ~/scratch/wt-t0 diff --stat <old tip> HEAD
+```
+
+Expected: no output. Rename the old branch to `archive/feat-resolute-t0-testflinger-23commits` and the new one to `feat/resolute-t0-testflinger`.
+
+- [ ] **Step 2: Ask the user before pushing and opening the pull request**
 
 With the user's go-ahead:
 
@@ -2614,7 +2633,7 @@ gh pr create -R canonical/sonic-buildimage --base 202605_resolute --head feat/re
 
 The body states the current state only: what runs when, where the results appear, the one-time setup already done (Task 7), the M1–M3 results with run links, and how to maintain `known-failures.yaml`, `durations.json` and `sonic-mgmt.ref`. It ends with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 
-- [ ] **Step 2: After the user merges, check M4**
+- [ ] **Step 3: After the user merges, check M4**
 
 ```bash
 gh run list -R canonical/sonic-buildimage -w resolute-t0.yml -L 10 --json databaseId,event,conclusion,createdAt
@@ -2624,6 +2643,6 @@ Expected within about a day: one `schedule` run, one `workflow_run` run after a 
 
 Result: M4 is open.
 
-- [ ] **Step 3: Record the outcome**
+- [ ] **Step 4: Record the outcome**
 
 Update the memory file `resolute-nightly-testflinger-design.md` with the PR number, the M1–M4 results and anything the runs taught that is not in the code.

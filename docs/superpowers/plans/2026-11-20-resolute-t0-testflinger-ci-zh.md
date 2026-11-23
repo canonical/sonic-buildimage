@@ -2604,7 +2604,26 @@ git -C $W branch -D $b
 
 **文件：** 没有新文件。
 
-- [ ] **第 1 步：推送和开 pull request 之前先问用户**
+- [ ] **第 1 步：把分支重建为 6 个审阅用提交**
+
+上面各任务的提交保留了开发过程。给审阅者的是 6 个提交，每个对应一部分，单独拿出来都能通过单元测试：
+
+1. `test: pack sonic-mgmt test files into chunks by expected duration`：`make_chunks.py`、`tests/conftest.py`、`tests/test_make_chunks.py`
+2. `test: judge t0 results against a known-failures list`：`verdict.py`、`tests/test_verdict.py`，以及只有 `known: []` 和噪声规则的 `known-failures.yaml`
+3. `test: run sonic-mgmt t0 on a Testflinger machine`：任务模板、`render_job.py`、`agent.sh`、测试机上的脚本、`configure_sonic_mgmt.py`、`durations.json`、`smoke.txt`、`sonic-mgmt.ref` 及其测试
+4. `test: run t0 on Testflinger nightly, after builds and on /test-t0`：`resolute-t0.yml`、`actionlint.yaml`、`submit.sh`、`tests/test_submit.py`
+5. `build: keep the vs image artifact for 30 days`：`resolute-build.yml`
+6. `test: first t0 known-failures list, from M3`：完整的 `known-failures.yaml`
+
+从 `canonical/202605_resolute` 拉一个新分支，每个提交用 `git checkout <old tip> -- <files>` 取文件，提交前运行 `python3 -m pytest -q .github/testflinger/t0/tests`，最后确认结果与旧分支顶端一致：
+
+```bash
+git -C ~/scratch/wt-t0 diff --stat <old tip> HEAD
+```
+
+预期：没有输出。把旧分支改名为 `archive/feat-resolute-t0-testflinger-23commits`，新分支改名为 `feat/resolute-t0-testflinger`。
+
+- [ ] **第 2 步：推送和开 pull request 之前先问用户**
 
 得到用户同意后：
 
@@ -2616,7 +2635,7 @@ gh pr create -R canonical/sonic-buildimage --base 202605_resolute --head feat/re
 
 PR 描述只写当前状态：什么时候跑什么、结果出现在哪里、已完成的一次性准备（任务 7）、M1–M3 的结果及 run 链接，以及如何维护 `known-failures.yaml`、`durations.json` 和 `sonic-mgmt.ref`。结尾是 `🤖 Generated with [Claude Code](https://claude.com/claude-code)`。
 
-- [ ] **第 2 步：用户合入后，检查 M4**
+- [ ] **第 3 步：用户合入后，检查 M4**
 
 ```bash
 gh run list -R canonical/sonic-buildimage -w resolute-t0.yml -L 10 --json databaseId,event,conclusion,createdAt
@@ -2626,6 +2645,6 @@ gh run list -R canonical/sonic-buildimage -w resolute-t0.yml -L 10 --json databa
 
 结果：M4 未完成。
 
-- [ ] **第 3 步：记录结果**
+- [ ] **第 4 步：记录结果**
 
 更新 memory 文件 `resolute-nightly-testflinger-design.md`：写入 PR 编号、M1–M4 的结果，以及这几次测试中学到、但代码里没有体现的东西。
