@@ -4,3 +4,4 @@ self-hosted-runner:
     - resolute
     - amd64
     - large
+    - self-hosted-linux-amd64-noble-medium

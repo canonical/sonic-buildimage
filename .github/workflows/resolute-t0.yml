@@ -1,0 +1,326 @@
+name: resolute-t0
+
+on:
+  schedule:
+    - cron: "0 15 * * *"
+  workflow_run:
+    workflows: [resolute-build]
+    types: [completed]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: resolute-build run id to test (empty = latest successful push build of 202605_resolute)
+        type: string
+        default: ""
+      scope:
+        description: Test list
+        type: choice
+        options: [full, smoke]
+        default: full
+  push:
+    branches: ["ci-workflow/t0-*"]
+
+permissions: {}
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: ${{ github.repository }}
+  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  resolve:
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request && startsWith(github.event.comment.body, '/test-t0'))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+      pull-requests: write
+      statuses: write
+    outputs:
+      run_id: ${{ steps.r.outputs.run_id }}
+      sha: ${{ steps.r.outputs.sha }}
+      sha12: ${{ steps.r.outputs.sha12 }}
+      status_sha: ${{ steps.r.outputs.status_sha }}
+      known_ref: ${{ steps.r.outputs.known_ref }}
+      scope: ${{ steps.r.outputs.scope }}
+      pr: ${{ steps.r.outputs.pr }}
+      art: ${{ steps.r.outputs.art }}
+      art_digest: ${{ steps.r.outputs.art_digest }}
+    steps:
+      - name: Pick the build to test
+        id: r
+        env:
+          EVENT: ${{ github.event_name }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+          WR_OK: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && (github.event.workflow_run.head_branch == '202605_resolute' || startsWith(github.event.workflow_run.head_branch, 'v')) }}
+          IN_RUN: ${{ inputs.run_id }}
+          IN_SCOPE: ${{ inputs.scope }}
+          PR: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT: ${{ github.event.comment.body }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          latest_push_build() {
+            gh api "repos/$REPO/actions/workflows/resolute-build.yml/runs?branch=202605_resolute&event=push&status=success&per_page=1" \
+              --jq '.workflow_runs[0].id // empty'
+          }
+          run_id="" scope=full pr="" known_ref="" status_sha=""
+          say() { [ -z "$pr" ] || gh api -X POST "repos/$REPO/issues/$pr/comments" -f body="resolute-t0: $1" >/dev/null; echo "$1"; }
+          case "$EVENT" in
+            workflow_run)
+              if [ "$WR_OK" != true ]; then echo "not a successful push or tag build; nothing to test"; exit 0; fi
+              run_id=$WR_ID ;;
+            schedule) run_id=$(latest_push_build) ;;
+            workflow_dispatch) run_id=${IN_RUN:-$(latest_push_build)}; scope=$IN_SCOPE ;;
+            push)
+              known_ref=$GITHUB_SHA; status_sha=$GITHUB_SHA
+              case "$GITHUB_REF_NAME" in ci-workflow/t0-full-*) scope=full ;; *) scope=smoke ;; esac
+              case "$GITHUB_REF_NAME" in *-run[0-9]*) run_id=${GITHUB_REF_NAME##*-run} ;; *) run_id=$(latest_push_build) ;; esac ;;
+            issue_comment)
+              perm=$(gh api "repos/$REPO/collaborators/$COMMENTER/permission" --jq .permission 2>/dev/null || echo none)
+              case "$perm" in admin|maintain|write) ;; *) echo "$COMMENTER has $perm permission; ignoring the comment"; exit 0 ;; esac
+              gh api -X POST "repos/$REPO/issues/comments/$COMMENT_ID/reactions" -f content=eyes >/dev/null
+              pr=$PR
+              case "$(printf '%s\n' "$COMMENT" | head -1)" in *smoke*) scope=smoke ;; esac
+              head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
+              run_id=$(gh api "repos/$REPO/actions/workflows/resolute-build.yml/runs?head_sha=$head&status=success&per_page=1" \
+                --jq '.workflow_runs[0].id // empty')
+              [ -n "$run_id" ] || { say "no successful resolute-build run for \`${head:0:12}\` yet; nothing to test."; exit 0; } ;;
+          esac
+          [ -n "$run_id" ] || { echo "no build to test"; exit 0; }
+          sha=$(gh api "repos/$REPO/actions/runs/$run_id" --jq .head_sha)
+          read -r art digest < <(gh api "repos/$REPO/actions/runs/$run_id/artifacts" \
+            --jq '[.artifacts[] | select(.name == "sonic-vs-img" and (.expired | not))][0] // empty | "\(.id) \(.digest)"') || true
+          [ -n "${art:-}" ] || { say "build run $run_id has no unexpired sonic-vs-img artifact; nothing to test."; exit 0; }
+          {
+            echo "run_id=$run_id"; echo "sha=$sha"; echo "sha12=${sha:0:12}"; echo "scope=$scope"; echo "pr=$pr"
+            echo "known_ref=${known_ref:-$sha}"; echo "status_sha=${status_sha:-$sha}"
+            echo "art=$art"; echo "art_digest=$digest"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Mark the commit pending
+        if: steps.r.outputs.run_id != ''
+        env:
+          STATUS_SHA: ${{ steps.r.outputs.status_sha }}
+          SCOPE: ${{ steps.r.outputs.scope }}
+        run: |
+          gh api -X POST "repos/$REPO/statuses/$STATUS_SHA" -f state=pending -f context=resolute-t0 \
+            -f target_url="$RUN_URL" -f description="t0 ($SCOPE) on Testflinger: running" >/dev/null
+
+  t0:
+    needs: resolve
+    if: needs.resolve.outputs.run_id != ''
+    runs-on: [self-hosted-linux-amd64-noble-medium]
+    timeout-minutes: 1440
+    # The machine gets this job's token, so it may only read.
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+    concurrency:
+      group: resolute-t0-${{ needs.resolve.outputs.sha }}
+      cancel-in-progress: false
+    outputs:
+      state: ${{ steps.verdict.outputs.state }}
+      description: ${{ steps.verdict.outputs.description }}
+    env:
+      SHA12: ${{ needs.resolve.outputs.sha12 }}
+      KNOWN_REF: ${{ needs.resolve.outputs.known_ref }}
+      SCOPE: ${{ needs.resolve.outputs.scope }}
+      SECRET: sonic-buildimage/t0-run-${{ github.run_id }}-${{ github.run_attempt }}
+      T0: .github/testflinger/t0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+
+      - name: Install tools
+        run: |
+          missing=()
+          command -v gh >/dev/null || missing+=(gh)
+          command -v zstd >/dev/null || missing+=(zstd)
+          python3 -c 'import yaml, pytest' 2>/dev/null || missing+=(python3-yaml python3-pytest)
+          [ "${#missing[@]}" -eq 0 ] || { sudo apt-get update -q && sudo apt-get install -y -q "${missing[@]}"; }
+
+      - name: Unit tests of the harness
+        run: python3 -m pytest -q "$T0/tests"
+
+      - name: Chunk durations from the latest run
+        run: |
+          set -uo pipefail
+          cp "$T0/durations.json" durations.json
+          for id in $(gh run list -R "$REPO" -w resolute-t0.yml -s completed -L 10 --json databaseId --jq '.[].databaseId'); do
+            rm -rf prev
+            if gh run download "$id" -R "$REPO" -p 'resolute-t0-*' -D prev 2>/dev/null; then
+              f=$(find prev -name durations.json -size +2c | head -1)
+              if [ -n "$f" ]; then
+                python3 -c 'import json, sys; d = json.load(open(sys.argv[1])); d.update(json.load(open(sys.argv[2]))); json.dump(d, open(sys.argv[1], "w"))' durations.json "$f"
+                echo "durations from run $id over the committed ones"; break
+              fi
+            fi
+          done
+
+      - name: Pack the harness and render the job
+        env:
+          ART: ${{ needs.resolve.outputs.art }}
+          ART_DIGEST: ${{ needs.resolve.outputs.art_digest }}
+        run: |
+          set -euo pipefail
+          rm -rf pack && mkdir pack
+          cp -a "$T0/." pack/
+          rm -rf pack/tests pack/__pycache__
+          if gh api "repos/$REPO/contents/$T0/known-failures.yaml?ref=$KNOWN_REF" --jq .content > kf.b64 2>/dev/null; then
+            base64 -d kf.b64 > pack/known-failures.yaml
+          fi
+          cp durations.json pack/durations.json
+          tar -czf t0-harness.tar.gz -C pack .
+          python3 "$T0/render_job.py" --sha12 "$SHA12" --gh-run "$GITHUB_RUN_ID" --repo "$REPO" --artifact-id "$ART" \
+            --artifact-digest "$ART_DIGEST" --scope "$SCOPE" --secret "$SECRET" > job.yaml
+          cat job.yaml
+
+      - name: Set up the Testflinger CLI
+        uses: canonical/testflinger/.github/actions/testflinger-setup@257ef71c8042a41925d7185d46fc3171ea2112f5 # submit/v1.6.0
+
+      - name: Submit to Testflinger and wait for provisioning
+        id: tf
+        continue-on-error: true
+        env:
+          TESTFLINGER_CLIENT_ID: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          TESTFLINGER_SECRET_KEY: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+          PROVISION_LIMIT: "25"
+          RETRIES: "2"
+        run: |
+          testflinger secret write --expire-after 86400 "$SECRET" "$GH_TOKEN"
+          bash "$T0/submit.sh" job.yaml
+
+      - name: Follow the test phase
+        if: steps.tf.outcome == 'success'
+        continue-on-error: true
+        env:
+          TESTFLINGER_CLIENT_ID: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          TESTFLINGER_SECRET_KEY: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+          JOB_ID: ${{ steps.tf.outputs.id }}
+        run: |
+          testflinger poll --phase test "$JOB_ID" 2>/dev/null
+          until [[ "$(testflinger status "$JOB_ID")" =~ ^(complete|cancelled)$ ]]; do sleep 30; done
+
+      - name: Cancel the Testflinger job
+        if: cancelled() && steps.tf.outputs.id != ''
+        env:
+          TESTFLINGER_CLIENT_ID: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          TESTFLINGER_SECRET_KEY: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+          JOB_ID: ${{ steps.tf.outputs.id }}
+        run: testflinger cancel "$JOB_ID"
+
+      - name: Remove the token from Testflinger
+        if: always()
+        env:
+          TESTFLINGER_CLIENT_ID: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          TESTFLINGER_SECRET_KEY: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+        run: testflinger secret delete "$SECRET" || true
+
+      - name: Fetch the Testflinger results
+        if: always() && steps.tf.outputs.id != ''
+        env:
+          TESTFLINGER_CLIENT_ID: ${{ secrets.TESTFLINGER_CLIENT_ID }}
+          TESTFLINGER_SECRET_KEY: ${{ secrets.TESTFLINGER_SECRET_KEY }}
+          JOB_ID: ${{ steps.tf.outputs.id }}
+        run: |
+          set -uo pipefail
+          mkdir -p out/results
+          testflinger results "$JOB_ID" > out/tf-results.json || true
+          if testflinger artifacts --filename out/artifacts.tgz "$JOB_ID"; then
+            tar -xzf out/artifacts.tgz -C out && rm -f out/artifacts.tgz
+          fi
+          if [ -f out/artifacts/results.tar.zst ]; then
+            zstd -dc out/artifacts/results.tar.zst | tar -x -C out/results --strip-components=1
+          fi
+
+      - name: Judge
+        id: verdict
+        if: always()
+        env:
+          JOB_ID: ${{ steps.tf.outputs.id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -uo pipefail
+          mkdir -p out/results
+          infra=""
+          if [ "$JOB_STATUS" = cancelled ]; then
+            infra="the workflow run was cancelled"
+          elif [ -z "$JOB_ID" ]; then
+            infra="the Testflinger job was not submitted"
+          elif [ "$(jq -r '.provision_status // 1' out/tf-results.json 2>/dev/null)" != 0 ]; then
+            infra="provisioning failed or overran on every attempt"
+          fi
+          args=()
+          [ ! -f out/artifacts/run-meta.json ] || args+=(--meta out/artifacts/run-meta.json)
+          [ -z "$infra" ] || args+=(--infra "$infra")
+          known=pack/known-failures.yaml
+          [ -f "$known" ] || known=$T0/known-failures.yaml
+          python3 "$T0/verdict.py" report --results out/results --known "$known" "${args[@]}" \
+            --out-json out/summary.json --out-md out/report.md --out-durations out/durations.json
+          cat out/report.md >> "$GITHUB_STEP_SUMMARY"
+          echo "state=$(jq -r .state out/summary.json)" >> "$GITHUB_OUTPUT"
+          echo "description=$(jq -r .description out/summary.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resolute-t0-${{ env.SHA12 }}-${{ github.run_attempt }}
+          path: |
+            out/summary.json
+            out/report.md
+            out/durations.json
+            out/artifacts/
+          retention-days: 30
+          if-no-files-found: warn
+
+  report:
+    needs: [resolve, t0]
+    if: always() && needs.resolve.outputs.run_id != ''
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+      pull-requests: write
+      statuses: write
+    env:
+      STATUS_SHA: ${{ needs.resolve.outputs.status_sha }}
+      PR: ${{ needs.resolve.outputs.pr }}
+    steps:
+      - name: Download the report
+        if: needs.resolve.outputs.pr != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: resolute-t0-${{ needs.resolve.outputs.sha12 }}-${{ github.run_attempt }}
+          path: out
+
+      - name: Report
+        env:
+          STATE: ${{ needs.t0.outputs.state }}
+          DESC: ${{ needs.t0.outputs.description }}
+        run: |
+          set -uo pipefail
+          state=${STATE:-error}
+          desc=${DESC:-"resolute-t0 did not finish (cancelled or timed out)"}
+          gh api -X POST "repos/$REPO/statuses/$STATUS_SHA" -f state="$state" -f context=resolute-t0 \
+            -f target_url="$RUN_URL" -f description="${desc:0:140}" >/dev/null
+          if [ -n "$PR" ]; then
+            body="<!-- resolute-t0 -->"$'\n'"$(cat out/report.md 2>/dev/null || echo "$desc")"$'\n\n'"[Workflow run]($RUN_URL)"
+            cid=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- resolute-t0 -->"))) | .id' | tail -1)
+            if [ -n "$cid" ]; then
+              gh api -X PATCH "repos/$REPO/issues/comments/$cid" -f body="${body:0:65000}" >/dev/null
+            else
+              gh api -X POST "repos/$REPO/issues/$PR/comments" -f body="${body:0:65000}" >/dev/null
+            fi
+          fi
+          [ "$state" = success ]
