@@ -142,15 +142,34 @@
 - 顺带确定 socat、python3-libyang 是否是真依赖；python3-libyang 是真依赖时，python3-cffi-backend 才需要 slice。
 - 采集与反查脚本固化为可重跑的产物（脚本头部写清用途、用法、依赖；参数走环境变量），后续批次复用。
 
-**准入标准**：清单里每个包都有至少一个运行期消费者的证据；只在 Docker 镜像里出现、无消费者的包不进清单。
+**准入标准**：清单里每个包都有至少一个运行期消费者的证据；只在 Docker 镜像里出现、无消费者的包不进清单。sonic-mgmt 测试在容器里执行的命令也算消费者（2026-11-23 修订，见下文“测试框架依赖”）。
 
 **自建 deb 同样适用**（作者决定）：`dpkg -x` 的自建 deb 也要过准入标准。静态、动态两条都找不到消费者的，从配方里删除，并在 PR 描述里逐个写明证据。理由：目标 3 不区分来源；多余的自建 deb 还会连带要求切它们的 archive 依赖，增加 slice 工作量。
+
+**测试框架依赖**（2026-11-23 修订，来自 PR #31 的 [review](https://github.com/canonical/sonic-buildimage/pull/31#issuecomment-7029375493)）：上面的静态、动态采集只覆盖生产路径，漏掉了 sonic-mgmt 测试通过 `docker exec` 在容器里运行的工具，导致 t0 的 4 组测试在 chiselled 镜像上失败。按测试实际执行的命令加回：
+
+| 工具 | slice | database | radv | eventd | mgmt-framework | 测试 |
+|---|---|---|---|---|---|---|
+| `[` / `test` | `coreutils_test` | | ✓ | | | `radv/test_radv_ipv6_ra.py` |
+| `cp` | `coreutils_cp-bin` | | ✓ | | | 同上 |
+| `ls` | `coreutils_ls-bin` | | ✓ | 已有 | ✓ | `container_hardening` |
+| `mount` | `mount_bins` | | ✓ | ✓ | ✓ | 同上 |
+| `grep` | `grep_bins` | | 已有 | ✓ | ✓ | 同上 |
+| `pidof` | `sysvinit-utils_bins` | ✓ | ✓ | ✓ | ✓ | `syslog/test_syslog_rate_limit.py` |
+| `logger` | `util-linux_logger`（新写，见 6.3） | ✓ | ✓ | ✓ | ✓ | 同上 |
+| `sleep` | `coreutils_sleep` | 已有 | 已有 | ✓ | ✓ | `test_auto_techsupport`（`sleep 10 & kill -6 $!`） |
+| Python | `python3.14_core`、`libpython3.14_libs`、`python3-minimal_python3`；`dpkg -x python3-swsscommon`；`sonic_py_common` wheel 解包；保留 `/usr/bin/events_publish_tool.py` | | | ✓ | | `telemetry/test_events.py`、syslog 限速测试 |
+
+- container_hardening 不测 database，所以 database 只加 `pidof`、`logger`。
+- eventd 不恢复整套 Python 运行时（旧镜像 `install-python` 的 config-engine wheel、jinjanator、click、pyangbind、lxml、python3-redis/yaml 等都不加回）。两个脚本只需要：`events_publish_tool.py` 用 `argparse`、`json`、`logging`、`ipaddress`、`random`、`time` 与 swsscommon 绑定（`_swsscommon.so` 链接 `libpython3.14.so`）；sonic-mgmt 的 `log_generator.py` 只用 `sonic_py_common.logger`（`os`、`sys`、`syslog`，包的 `__init__.py` 为空）。`python3.14_core` 已覆盖这些标准库模块。`sonic_py_common` 用 `python3 -m zipfile` 解包而不是 `pip install`，避免带进它声明的 natsort、pyyaml、redis-dump-load。
+- 由于 #22 的跨容器硬链接，加回的二进制和库与其他容器共用 inode，设备上几乎不增加占用；不再经 pip 安装 wheel，也就没有各 rock 各自编译、无法共享的 `.pyc`。
 
 **基线先行**（作者决定）：采集前先在 dut2 和 sonic-vs 的现有 rock 镜像上分别确认冷启动、`config reload`、warm reboot、容器重启四条路径本身正常。某条路径在基线上就不工作的，记录下来并从本批的采集与验收里剔除，不在本设计内修复。
 
 ### 6.3 补齐 slice
 
-- 已知缺口：rsyslog、rsyslog-relp、libestr0、libfastjson4、librelp0（#1104）；radvd（#1169）；python3-cffi-backend（条件见 6.2）；socat 及其 archive 依赖若有缺口也要补（socat 本身自建，不切）。
+- 已知缺口：rsyslog、rsyslog-relp、libestr0、libfastjson4、librelp0（#1104）；radvd（#1169）；python3-cffi-backend（条件见 6.2，#1509 已于 2026-11-14 合并进上游 `ubuntu-26.04`）；socat 及其 archive 依赖若有缺口也要补（socat 本身自建，不切）。
+- `logger`（2026-11-23）：26.04 上 `/usr/bin/logger` 属于 util-linux，现有 util-linux slice 都不含它。新增 `util-linux_logger`（`libc6_libs`、`libsystemd0_libs`），并加入 `util-linux_bins`；spread 测试让 logger 经 `--socket` 发一条到 rootfs 里的 unix socket 并核对内容。分支 `jy5275/chisel-releases:feat-26.04-util-linux-logger`，已 merge 进 `sonic-26.04`，上游 PR 待提。
 - 6.2 新发现的缺口，按 chisel-releases 的 `AGENTS.md` 要求用 chisel-slicer skill 编写，带 spread 测试。
 - 每个包同时提 26.04 与 26.10（上游 forward-port 规则）。
 - slice 粒度：只选运行期需要的 slice，例如 Python 优先 `python3.14_core` 加需要的 stdlib 功能 slice，而不是 `python3.14_standard`；以 6.2 的 Python 模块清单为准。
@@ -236,8 +255,9 @@
    - radv：确认发出 RA（抓包或看邻居）。
    - mgmt-framework：REST 端点响应。
 5. 覆盖 6.2 的四条路径：冷启动、`config reload`、warm reboot、容器重启（基线上就不工作的路径除外，见 6.2“基线先行”）。
-6. VS：在 sonic-vs 虚拟机上重复第 3 至 5 步；CI 的 `test-vs` job 也会跑 `vs_rock_runtime_check.sh`，必须通过。
-7. 体积：与 4.1 的基线对比，记录结果。
+6. sonic-mgmt 测试在容器内执行的命令（6.2“测试框架依赖”）：逐条回放，确认工具都在、`logger` 与 `log_generator.py` 的日志到达 host 的 `/var/log/syslog`、`events_publish_tool.py -c 1` 返回 0。
+7. VS：在 sonic-vs 虚拟机上重复第 3 至 6 步；CI 的 `test-vs` job 也会跑 `vs_rock_runtime_check.sh`，必须通过。
+8. 体积：与 4.1 的基线对比，记录结果。
 
 ## 7 · 风险
 
@@ -267,4 +287,5 @@
 - bare 不能用 overlay：rockcraft 源码 `rockcraft/models/project.py` 的 `_validate_base_and_overlay`。
 - git source 与自带 chisel：`grep -n pattern /snap/rockcraft/current/lib/python3*/site-packages/craft_parts/sources/git_source.py`；`/snap/rockcraft/current/libexec/rockcraft/chisel version`。
 - 过渡写法先例：`git show ad9aa27c2:dockers/docker-database/rockcraft.yaml | sed -n 70,102p`。
+- 测试框架依赖：sonic-mgmt 里 `grep -n "docker exec" tests/container_hardening/test_container_hardening.py tests/syslog/test_syslog_rate_limit.py tests/telemetry/events/event_utils.py`；logger 的归属：`dpkg -S /usr/bin/logger`（26.04 上为 util-linux）；chisel-releases 下 `git cat-file -e origin/ubuntu-26.04:slices/util-linux.yaml && git show origin/ubuntu-26.04:slices/util-linux.yaml | grep -c logger`（为 0 即上游没有）。
 - VS 镜像对应的 commit：`gh api repos/canonical/sonic-buildimage/actions/artifacts/13654753860 --jq .workflow_run.head_sha`；本机文件完整性：`sha256sum ~/Downloads/sonic-vs-img.zip`。
