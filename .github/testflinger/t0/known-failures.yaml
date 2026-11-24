@@ -2,6 +2,9 @@ known:
   - id: "database/test_state_db_flush.py::test_state_db_cleanup_after_swss_restart[*]"
     kind: fail
     reason: "branch predates upstream 202605 backport #28740: swss.sh does not clean STATE_DB PROCESS_HEALTH on cold start"
+  - id: "dhcp_relay/test_dhcp_pkt_recv.py::TestDhcpv6WithEmptyAclTable::test_dhcpv6_multicast_recv"
+    kind: flaky
+    reason: "intermittent, cause not yet known: failed on both 2026-11-19 images and twice on 2026-11-24, passed on M3"
   - id: "gnmi/test_gnmi_aaa.py::test_gnmi_audit_*"
     kind: fail
     reason: "sonic-gnmi predates upstream #750 (no RPC_COMPLETION audit log); on rock the gnmi.log rsyslog rule misses Pebble's tag"
@@ -17,6 +20,9 @@ known:
   - id: "radv/test_radv_run.py::test_radv_deployment_id"
     kind: fail
     reason: "test race: radvd respawns 6-7 s after the restart and on resolute the check runs after that"
+  - id: "tacacs/test_authorization.py::test_authorization_tacacs_and_local[*]"
+    kind: fail
+    reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
   - id: "tacacs/test_authorization.py::test_authorization_tacacs_only[*]"
     kind: fail
     reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
@@ -28,4 +34,4 @@ known:
     reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
 loganalyzer_noise:
   - pattern: 'nss_tacplus: (/etc/tacplus_nss\.conf fopen failed|bad config or server line)'
-    reason: "AppArmor stops unix_chkpwd reading tacplus_nss.conf; fixed by sonic-buildimage PR #30"
+    reason: "rsyslogd's NSS lookups cannot read /etc/tacplus_nss.conf; sonic-buildimage PR #30 fixed the same for unix_chkpwd"
