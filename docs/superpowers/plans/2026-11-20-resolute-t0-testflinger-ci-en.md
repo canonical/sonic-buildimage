@@ -26,7 +26,7 @@
   - permissions `{}` at workflow level; `t0` gets `actions`, `contents` and `packages` read only; `resolve` and `report` get `actions: read` and write on `issues`, `pull-requests` and `statuses`
   - Testflinger CLI setup action `canonical/testflinger/.github/actions/testflinger-setup@257ef71c8042a41925d7185d46fc3171ea2112f5` (submit/v1.6.0); `submit.sh` allows 25 minutes per provision attempt and 2 retries, with no limit on the queue wait
   - schedule `cron: "0 15 * * *"`; job file `global_timeout: 43200`, `output_timeout: 7200`
-  - sonic-mgmt pin `a88d1d5f9323833d8cf2e050c84904deb22ed3bc` (`canonical/sonic-mgmt`)
+  - sonic-mgmt pin `2c54e7096838d2c9323a8f64328abe5da96ef32d` (`canonical/sonic-mgmt`)
   - testbed `vms-kvm-t0`, DUT `vlab-01`, VM user `tb`; chunk target = estimated total / (2 × testbeds), unknown file 480 s
   - sizing T = min(⌊(RAM GiB − 16) / 18⌋, ⌊threads / 8⌋, ⌊free pool GB / 40⌋), at most 2 for smoke; dispatch stops 37800 s after the harness starts, hard stop at 41400 s
 
@@ -1041,10 +1041,10 @@ Expected: `5 passed`.
 Then apply it to a clean copy of the pinned sonic-mgmt and compare with the settings that worked on 2026-11-19:
 
 ```bash
-d=$(mktemp -d) && git -C ~/scratch/pr2-split/run2 archive a88d1d5f9323833d8cf2e050c84904deb22ed3bc ansible | tar -x -C $d
+d=$(mktemp -d) && git -C ~/scratch/pr2-split/run2 archive 2c54e7096838d2c9323a8f64328abe5da96ef32d ansible | tar -x -C $d
 python3 ~/scratch/wt-t0/.github/testflinger/t0/configure_sonic_mgmt.py $d tb pw
 diff <(git -C ~/scratch/pr2-split/run2 diff -U0 -- ansible/veos_vtb | grep '^[+-] ' | sed 's/sheldon-qi/tb/') \
-     <(diff -U0 <(git -C ~/scratch/pr2-split/run2 show a88d1d5f9323833d8cf2e050c84904deb22ed3bc:ansible/veos_vtb) $d/ansible/veos_vtb | grep '^[+-] ')
+     <(diff -U0 <(git -C ~/scratch/pr2-split/run2 show 2c54e7096838d2c9323a8f64328abe5da96ef32d:ansible/veos_vtb) $d/ansible/veos_vtb | grep '^[+-] ')
 rm -rf $d
 ```
 
@@ -1592,7 +1592,7 @@ fi
 `.github/testflinger/t0/sonic-mgmt.ref`:
 
 ```
-a88d1d5f9323833d8cf2e050c84904deb22ed3bc
+2c54e7096838d2c9323a8f64328abe5da96ef32d
 ```
 
 `.github/testflinger/t0/smoke.txt`:
@@ -1880,12 +1880,26 @@ def test_failed_provisioning_uses_up_the_retries(tmp_path):
     assert p.returncode != 0
     assert [c[0] for c in calls].count("submit") == 2
     assert out == "id=job2\n"
+
+
+def test_a_job_taken_by_an_agent_is_followed(tmp_path):
+    p, calls, out = run(tmp_path, [{"states": ["waiting", "running", "setup", "provision", "test"], "results": {}}])
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert [c[0] for c in calls].count("submit") == 1
+    assert not any(c[0] == "cancel" for c in calls)
+
+
+def test_a_failed_attempt_is_cancelled_before_resubmitting(tmp_path):
+    failed = {"states": ["provision", "complete"], "results": {"setup_status": 0, "provision_status": 1}}
+    p, calls, _ = run(tmp_path, [failed, {"states": ["test"], "results": OK}], RETRIES="1")
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert calls.index(["cancel", "job1"]) < [i for i, c in enumerate(calls) if c[0] == "submit"][1]
 ```
 
 - [ ] **Step 2: Run the test to see it fail**
 
 Run: `cd ~/scratch/wt-t0 && python3 -m pytest -q .github/testflinger/t0/tests/test_submit.py`
-Expected: FAIL, `4 failed`, each with `FileNotFoundError` for `state.json`: without `submit.sh` the fake CLI is never called.
+Expected: FAIL, `6 failed`, each with `FileNotFoundError` for `state.json`: without `submit.sh` the fake CLI is never called.
 
 - [ ] **Step 3: Write `submit.sh`**
 
@@ -1904,15 +1918,15 @@ for attempt in $(seq 0 "$retries"); do
     while :; do
         state=$(testflinger status "$id") || state=""
         case "$state" in
-            ""|waiting|setup) ;;
             provision)
                 since=${since:-$SECONDS}
                 if [ $((SECONDS - since)) -ge "$limit" ]; then
                     echo "::warning::$id has been provisioning for over $((limit / 60)) minutes; cancelling it"
-                    testflinger cancel "$id"
                     break
                 fi ;;
-            *) break ;;
+            test|allocate|allocated|reserve|cleanup|complete|completed|cancelled) break ;;
+            # Anything else is still on its way to provisioning, e.g. "running": an agent has taken the job.
+            *) ;;
         esac
         sleep "$poll"
     done
@@ -1921,6 +1935,7 @@ for attempt in $(seq 0 "$retries"); do
         exit 0
     fi
     echo "::error::$id did not get through setup and provisioning ($state)"
+    testflinger cancel "$id" >/dev/null 2>&1 || true
 done
 exit 1
 ```
@@ -1928,7 +1943,7 @@ exit 1
 - [ ] **Step 4: Run the tests and shellcheck**
 
 Run: `cd ~/scratch/wt-t0 && python3 -m pytest -q .github/testflinger/t0/tests`
-Expected: `49 passed` (44 + 4 submit cases + 1 shell syntax case).
+Expected: `51 passed` (44 + 6 submit cases + 1 shell syntax case).
 
 Run: `docker run --rm -v ~/scratch/wt-t0/.github/testflinger/t0:/t0:ro koalaman/shellcheck:stable -S warning /t0/submit.sh`
 Expected: no output.
@@ -1953,6 +1968,9 @@ in MAAS and at most 19.6 minutes for the whole provision phase.
 submit.sh submits, cancels and resubmits a job whose provision phase
 passes 25 minutes, retries failed setup or provisioning twice, and
 cancels the job when it is interrupted. Queue waiting is not limited.
+States it does not know, such as \"running\" (the server's state once
+an agent has taken the job, before setup), count as still on the way,
+and a failed attempt is cancelled before the next one is submitted.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -2427,6 +2445,7 @@ git -C ~/scratch/wt-t0 branch -D $b
 **Files:**
 - Modify: `.github/testflinger/t0/durations.json`
 - Modify: `.github/testflinger/t0/known-failures.yaml`
+- Modify: `.github/testflinger/t0/sonic-mgmt.ref`
 
 **Interfaces:**
 - Consumes: the workflow (Task 9); the 2026-11-19 rock results in `~/scratch/pr2-split/farm/analysis/rock-*` and `~/scratch/pr2-split/farm/compare-full-a88d1d5f9.txt`.
@@ -2509,9 +2528,10 @@ For every line of `new.tsv`, compare with the 2026-11-19 results of the same cas
 - a case in a file marked `device_type('physical')` gets no entry: the harness passes `--device_type=vs`, as the upstream PR checker does, so these files are skipped;
 - a case that also failed on 2026-11-19 for the same reason becomes an entry with `kind: fail` or `error` and an English `reason` that names the cause;
 - a parametrised family with random parameters becomes one `*` entry with `kind: flaky`;
-- a case that did not fail on 2026-11-19 is investigated before it goes into the list: a new image or environment problem gets a written reason, or it is fixed first.
+- a case that did not fail on 2026-11-19 is investigated before it goes into the list: a new image or environment problem gets a written reason, or it is fixed first;
+- a case whose cause is in the test code gets no entry: it is fixed in `canonical/sonic-mgmt` (Step 5).
 
-M3 had 44 failing cases after the loganalyzer noise filter, and all 44 also failed on the 2026-11-19 rock run. 16 of them sit in physical-only files. The other 28 make 11 entries in `.github/testflinger/t0/known-failures.yaml`:
+M3 had 44 failing cases after the loganalyzer noise filter, and all 44 also failed on the 2026-11-19 rock run. 16 of them sit in physical-only files, and 15 have their cause in the test code. The other 13 make 9 entries in `.github/testflinger/t0/known-failures.yaml`:
 
 ```yaml
 known:
@@ -2533,12 +2553,6 @@ known:
   - id: "radv/test_radv_run.py::test_radv_deployment_id"
     kind: fail
     reason: "test race: radvd respawns 6-7 s after the restart and on resolute the check runs after that"
-  - id: "sflow/test_sflow.py::*"
-    kind: error
-    reason: "setup calls pkgutil.find_loader on the DUT, which Python 3.14 removed"
-  - id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib[*]"
-    kind: fail
-    reason: "SNMP sysDescr distribution: the image side is fixed by sonic-buildimage #34, the test side by sonic-mgmt #4"
   - id: "tacacs/test_authorization.py::test_authorization_tacacs_only[*]"
     kind: fail
     reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
@@ -2562,38 +2576,60 @@ python3 ~/scratch/wt-t0/.github/testflinger/t0/verdict.py report --results resul
   --out-json s.json --out-md r.md --out-durations d.json && jq '.outcome, (.new | length), (.covered | length), .not_run' s.json
 ```
 
-Expected: `"regressions"`, `16`, `28`, and the three `k8s/` files. M3 ran without `--device_type=vs` and with the 392-file list. The 16 new cases are all in physical-only files, and the three `k8s/` files are under `run_tests.sh`'s `SKIP_FOLDERS`. The harness of Task 6 leaves out both groups, so only the 28 covered cases remain.
+Expected: `"regressions"`, `31`, `13`, and the three `k8s/` files. M3 ran without `--device_type=vs`, with the 392-file list, and at the sonic-mgmt commit `a88d1d5f93`. The 31 new cases are the 16 in physical-only files (`dhcp_relay` 4, `platform_tests` 12) and the 15 that Step 5 fixes in sonic-mgmt (`sflow` 14, `snmp` 1); the three `k8s/` files are under `run_tests.sh`'s `SKIP_FOLDERS`. The harness of Task 6 skips the physical-only files, leaves out `SKIP_FOLDERS` and runs the pinned sonic-mgmt, so only the 13 covered cases remain.
 
-- [ ] **Step 5: Commit and clean up**
+- [ ] **Step 5: Fix the test-side causes in sonic-mgmt**
+
+Two groups fail because of the test code, not the image:
+
+- sflow (14 cases): the setup runs `pkgutil.find_loader` on the DUT, and Python 3.14 removed it. In sonic-mgmt PR #5 (`feat/resolute-mgmt-1-ubuntu`), `tests/sflow/test_sflow.py` and `tests/bgp/test_traffic_shift_sup.py` use `importlib.util.find_spec` instead; #6–#9 are restacked on it.
+- SNMP sysDescr (1 case): `test_snmp_v2mib` expects Debian in the distribution field. sonic-mgmt PR #4 (`fix/resolute-snmp-distribution`) expects the Ubuntu release on Ubuntu-based SONiC; the image side is sonic-buildimage #34. #4 is retargeted onto #9 (`feat/resolute-mgmt-5-unit-tests`).
+
+Each force-push of a sonic-mgmt PR branch needs the user's go-ahead. `sonic-mgmt.ref` (Task 6) pins the head of #4, `2c54e7096838d2c9323a8f64328abe5da96ef32d`, which carries both fixes; M1–M3 ran at the earlier pin `a88d1d5f93`, which lacked them. Check the two files on the M3 image with a development branch `ci-workflow/t0-mgmtfix-run44220583196` whose `smoke.txt` lists only `sflow/test_sflow.py` and `snmp/test_snmp_v2mib.py`, pushed and watched as in Task 10.
+
+Result: run 45184346540: 15 passed, 1 skipped, outcome `Pass`.
+
+- [ ] **Step 6: Commit and clean up**
 
 ```bash
 W=~/scratch/wt-t0
-git -C $W add .github/testflinger/t0/known-failures.yaml
-git -C $W commit -m "test: first t0 known-failures list, from M3 and the 11-19 run
+git -C $W add .github/testflinger/t0/known-failures.yaml .github/testflinger/t0/sonic-mgmt.ref
+git -C $W commit -F - <<'EOF'
+test: first t0 known-failures list, from M3
 
-M3 (run 45114609003, PR #34 image d47807d2e1, sonic-mgmt a88d1d5f93,
-alarmmonkey, 16 testbeds) had 44 failing cases once the loganalyzer
-noise filter caught the tests with their own analyzer. All 44 also
-failed on the 11-19 rock run. 16 of them come from the 23 physical-only
-files of the t0_checker list, which --device_type=vs skips. The other
-28 make 11 entries; 25 of them failed on the 11-19 Dockerfile image
-too.
+M3 (run 45114609003: PR #34 image d47807d2e1, sonic-mgmt a88d1d5f93,
+alarmmonkey with 16 testbeds) had 44 failing cases. All of them also
+failed on the 11-19 rock run, and 41 on that day's Dockerfile image.
+16 were physical-only tests, which the harness now skips with
+--device_type=vs. 15 pass with the pinned sonic-mgmt 2c54e70968, which
+looks modules up with importlib.util.find_spec because Python 3.14
+dropped pkgutil.find_loader (sflow setup, 14) and includes sonic-mgmt
+#4 (SNMP sysDescr, 1); run 45184346540 ran both files on the same
+image: 15 passed. The other 13 make up these 9 entries:
 
-Known causes: per-command TACACS authorization bypassed through uutils
-paths; SNMP sysDescr distribution (sonic-buildimage #34 plus sonic-mgmt
-#4); Python 3.14 dropping pkgutil.find_loader (sflow setup); a radv
-test race; our branch forking from upstream 202605 at ba3fb8d5f5,
-before #28740 added PROCESS_HEALTH to the STATE_DB cleanup in swss.sh;
-src/sonic-gnmi 3ce95be predating upstream #750 (RPC_COMPLETION
-records), while on rock Pebble tags gnmi-native so the gnmi.log rule
-never fires; the teamd rock stopping rsyslogd in parallel with
-teammgrd (test_po_cleanup); and on-failure: shutdown ignoring
-auto_restart, so killing zebra stops the whole bgp container.
+- TACACS per-command authorization (3): the bash plugin realpath()s
+  /usr/bin/* to the uutils binaries, so no server rule matches.
+- radv deployment id (1): test race; radvd has already respawned.
+- STATE_DB PROCESS_HEALTH (1): the branch forked from upstream 202605
+  on 2026-07-26, five days before #28740 (7bee05ff51) added it to the
+  swss.sh cleanup; all 30 other sentinels were cleaned.
+- gNMI audit log (5): src/sonic-gnmi 3ce95be predates upstream #750
+  (RPC_COMPLETION records); on rock, Pebble sends gnmi-native to the
+  host rsyslog with the program name as the tag, so the
+  `$msg startswith " gnmi-native"` rule never creates gnmi.log.
+- test_po_cleanup (2, rock): teammgrd, teamsyncd and tlm_teamd have no
+  requires/after on rsyslogd, so Pebble stops them in parallel and
+  teammgrd's cleanup lines are lost.
+- staticd state (1, rock): rock services use on-failure: shutdown and
+  pebble_mode.rs ignores auto_restart, so killing zebra stops the whole
+  bgp container.
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
-b=$(git -C $W branch --list 'ci-workflow/t0-full-m3-run*' --format='%(refname:short)')
-git -C $W push -q canonical --delete $b
-git -C $W branch -D $b
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+EOF
+for b in $(git -C $W branch --list 'ci-workflow/t0-full-m3-run*' 'ci-workflow/t0-mgmtfix-run*' --format='%(refname:short)'); do
+  git -C $W push -q canonical --delete $b
+  git -C $W branch -D $b
+done
 ```
 
 ---

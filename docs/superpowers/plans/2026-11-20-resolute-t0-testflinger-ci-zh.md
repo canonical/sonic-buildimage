@@ -28,7 +28,7 @@
   - workflow 级权限为 `{}`；`t0` 只有 `actions`、`contents`、`packages` 的读权限；`resolve` 和 `report` 有 `actions: read`，以及 `issues`、`pull-requests`、`statuses` 的写权限
   - Testflinger CLI 安装 action `canonical/testflinger/.github/actions/testflinger-setup@257ef71c8042a41925d7185d46fc3171ea2112f5`（submit/v1.6.0）；`submit.sh` 每次装机尝试最多 25 分钟，重试 2 次，排队等待不限时
   - 定时 `cron: "0 15 * * *"`；job 文件 `global_timeout: 43200`、`output_timeout: 7200`
-  - sonic-mgmt 锁定版本 `a88d1d5f9323833d8cf2e050c84904deb22ed3bc`（`canonical/sonic-mgmt`）
+  - sonic-mgmt 锁定版本 `2c54e7096838d2c9323a8f64328abe5da96ef32d`（`canonical/sonic-mgmt`）
   - 测试床 `vms-kvm-t0`，DUT `vlab-01`，虚拟机用户 `tb`；块的目标时长 = 预计总时长 / (2 × 测试床数)，没有记录的文件按 480 秒估算
   - 定规模 T = min(⌊(内存 GiB − 16) / 18⌋, ⌊线程数 / 8⌋, ⌊存储池可用 GB / 40⌋)，冒烟时最多为 2；测试脚本启动 37800 秒后停止派发，41400 秒时强制停止
 
@@ -1043,10 +1043,10 @@ if __name__ == "__main__":
 然后把它应用到锁定版本 sonic-mgmt 的一份干净副本上，与 2026-11-19 实际可用的配置对比：
 
 ```bash
-d=$(mktemp -d) && git -C ~/scratch/pr2-split/run2 archive a88d1d5f9323833d8cf2e050c84904deb22ed3bc ansible | tar -x -C $d
+d=$(mktemp -d) && git -C ~/scratch/pr2-split/run2 archive 2c54e7096838d2c9323a8f64328abe5da96ef32d ansible | tar -x -C $d
 python3 ~/scratch/wt-t0/.github/testflinger/t0/configure_sonic_mgmt.py $d tb pw
 diff <(git -C ~/scratch/pr2-split/run2 diff -U0 -- ansible/veos_vtb | grep '^[+-] ' | sed 's/sheldon-qi/tb/') \
-     <(diff -U0 <(git -C ~/scratch/pr2-split/run2 show a88d1d5f9323833d8cf2e050c84904deb22ed3bc:ansible/veos_vtb) $d/ansible/veos_vtb | grep '^[+-] ')
+     <(diff -U0 <(git -C ~/scratch/pr2-split/run2 show 2c54e7096838d2c9323a8f64328abe5da96ef32d:ansible/veos_vtb) $d/ansible/veos_vtb | grep '^[+-] ')
 rm -rf $d
 ```
 
@@ -1594,7 +1594,7 @@ fi
 `.github/testflinger/t0/sonic-mgmt.ref`：
 
 ```
-a88d1d5f9323833d8cf2e050c84904deb22ed3bc
+2c54e7096838d2c9323a8f64328abe5da96ef32d
 ```
 
 `.github/testflinger/t0/smoke.txt`：
@@ -1882,12 +1882,26 @@ def test_failed_provisioning_uses_up_the_retries(tmp_path):
     assert p.returncode != 0
     assert [c[0] for c in calls].count("submit") == 2
     assert out == "id=job2\n"
+
+
+def test_a_job_taken_by_an_agent_is_followed(tmp_path):
+    p, calls, out = run(tmp_path, [{"states": ["waiting", "running", "setup", "provision", "test"], "results": {}}])
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert [c[0] for c in calls].count("submit") == 1
+    assert not any(c[0] == "cancel" for c in calls)
+
+
+def test_a_failed_attempt_is_cancelled_before_resubmitting(tmp_path):
+    failed = {"states": ["provision", "complete"], "results": {"setup_status": 0, "provision_status": 1}}
+    p, calls, _ = run(tmp_path, [failed, {"states": ["test"], "results": OK}], RETRIES="1")
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert calls.index(["cancel", "job1"]) < [i for i, c in enumerate(calls) if c[0] == "submit"][1]
 ```
 
 - [ ] **第 2 步：运行测试，确认失败**
 
 运行：`cd ~/scratch/wt-t0 && python3 -m pytest -q .github/testflinger/t0/tests/test_submit.py`
-预期：FAIL，`4 failed`，每个都报找不到 `state.json` 的 `FileNotFoundError`：没有 `submit.sh`，假 CLI 从未被调用。
+预期：FAIL，`6 failed`，每个都报找不到 `state.json` 的 `FileNotFoundError`：没有 `submit.sh`，假 CLI 从未被调用。
 
 - [ ] **第 3 步：编写 `submit.sh`**
 
@@ -1906,15 +1920,15 @@ for attempt in $(seq 0 "$retries"); do
     while :; do
         state=$(testflinger status "$id") || state=""
         case "$state" in
-            ""|waiting|setup) ;;
             provision)
                 since=${since:-$SECONDS}
                 if [ $((SECONDS - since)) -ge "$limit" ]; then
                     echo "::warning::$id has been provisioning for over $((limit / 60)) minutes; cancelling it"
-                    testflinger cancel "$id"
                     break
                 fi ;;
-            *) break ;;
+            test|allocate|allocated|reserve|cleanup|complete|completed|cancelled) break ;;
+            # Anything else is still on its way to provisioning, e.g. "running": an agent has taken the job.
+            *) ;;
         esac
         sleep "$poll"
     done
@@ -1923,6 +1937,7 @@ for attempt in $(seq 0 "$retries"); do
         exit 0
     fi
     echo "::error::$id did not get through setup and provisioning ($state)"
+    testflinger cancel "$id" >/dev/null 2>&1 || true
 done
 exit 1
 ```
@@ -1930,7 +1945,7 @@ exit 1
 - [ ] **第 4 步：运行测试和 shellcheck**
 
 运行：`cd ~/scratch/wt-t0 && python3 -m pytest -q .github/testflinger/t0/tests`
-预期：`49 passed`（44 + 4 个 submit 用例 + 1 个 shell 语法用例）。
+预期：`51 passed`（44 + 6 个 submit 用例 + 1 个 shell 语法用例）。
 
 运行：`docker run --rm -v ~/scratch/wt-t0/.github/testflinger/t0:/t0:ro koalaman/shellcheck:stable -S warning /t0/submit.sh`
 预期：没有输出。
@@ -1955,6 +1970,9 @@ in MAAS and at most 19.6 minutes for the whole provision phase.
 submit.sh submits, cancels and resubmits a job whose provision phase
 passes 25 minutes, retries failed setup or provisioning twice, and
 cancels the job when it is interrupted. Queue waiting is not limited.
+States it does not know, such as \"running\" (the server's state once
+an agent has taken the job, before setup), count as still on the way,
+and a failed attempt is cancelled before the next one is submitted.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -2429,6 +2447,7 @@ git -C ~/scratch/wt-t0 branch -D $b
 **文件：**
 - 修改：`.github/testflinger/t0/durations.json`
 - 修改：`.github/testflinger/t0/known-failures.yaml`
+- 修改：`.github/testflinger/t0/sonic-mgmt.ref`
 
 **接口：**
 - 使用：workflow（任务 9）；`~/scratch/pr2-split/farm/analysis/rock-*` 和 `~/scratch/pr2-split/farm/compare-full-a88d1d5f9.txt` 中 2026-11-19 的 rock 版结果。
@@ -2511,9 +2530,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - 位于标记了 `device_type('physical')` 的文件中的用例，不写条目：测试脚本像上游 PR checker 一样传 `--device_type=vs`，这些文件会被跳过；
 - 2026-11-19 也因同样原因失败的用例，写成一条 `kind: fail` 或 `error` 的条目，英文 `reason` 写明原因；
 - 参数随机的一组参数化用例，写成一条带 `*`、`kind: flaky` 的条目；
-- 2026-11-19 没有失败的用例，进清单之前先调查：新的镜像或环境问题要写明原因，否则就先修好。
+- 2026-11-19 没有失败的用例，进清单之前先调查：新的镜像或环境问题要写明原因，否则就先修好；
+- 原因在测试代码里的用例，不写条目，而是到 `canonical/sonic-mgmt` 里修好（第 5 步）。
 
-经过 loganalyzer 噪声过滤后，M3 有 44 个失败用例，这 44 个在 2026-11-19 的 rock 版测试中也都失败了。其中 16 个位于只适用于物理设备的文件中。其余 28 个构成 `.github/testflinger/t0/known-failures.yaml` 中的 11 条条目：
+经过 loganalyzer 噪声过滤后，M3 有 44 个失败用例，这 44 个在 2026-11-19 的 rock 版测试中也都失败了。其中 16 个位于只适用于物理设备的文件中，15 个的原因在测试代码里。其余 13 个构成 `.github/testflinger/t0/known-failures.yaml` 中的 9 条条目：
 
 ```yaml
 known:
@@ -2535,12 +2555,6 @@ known:
   - id: "radv/test_radv_run.py::test_radv_deployment_id"
     kind: fail
     reason: "test race: radvd respawns 6-7 s after the restart and on resolute the check runs after that"
-  - id: "sflow/test_sflow.py::*"
-    kind: error
-    reason: "setup calls pkgutil.find_loader on the DUT, which Python 3.14 removed"
-  - id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib[*]"
-    kind: fail
-    reason: "SNMP sysDescr distribution: the image side is fixed by sonic-buildimage #34, the test side by sonic-mgmt #4"
   - id: "tacacs/test_authorization.py::test_authorization_tacacs_only[*]"
     kind: fail
     reason: "per-command authorization is bypassed: the bash plugin resolves /usr/bin/* to the uutils binaries, so no rule matches"
@@ -2564,38 +2578,60 @@ python3 ~/scratch/wt-t0/.github/testflinger/t0/verdict.py report --results resul
   --out-json s.json --out-md r.md --out-durations d.json && jq '.outcome, (.new | length), (.covered | length), .not_run' s.json
 ```
 
-预期：`"regressions"`、`16`、`28`，以及那 3 个 `k8s/` 文件。M3 运行时没有传 `--device_type=vs`，用的是 392 个文件的列表。16 个新用例全部位于只适用于物理设备的文件中，3 个 `k8s/` 文件属于 `run_tests.sh` 的 `SKIP_FOLDERS`。任务 6 的测试脚本把这两组都排除在外，所以只剩下 28 个已覆盖的用例。
+预期：`"regressions"`、`31`、`13`，以及那 3 个 `k8s/` 文件。M3 运行时没有传 `--device_type=vs`，用的是 392 个文件的列表，sonic-mgmt 提交是 `a88d1d5f93`。31 个新用例包括位于只适用于物理设备的文件中的 16 个（`dhcp_relay` 4 个、`platform_tests` 12 个），以及第 5 步在 sonic-mgmt 里修好的 15 个（`sflow` 14 个、`snmp` 1 个）；3 个 `k8s/` 文件属于 `run_tests.sh` 的 `SKIP_FOLDERS`。任务 6 的测试脚本跳过只适用于物理设备的文件、排除 `SKIP_FOLDERS`，并且运行锁定的 sonic-mgmt，所以只剩下 13 个已覆盖的用例。
 
-- [ ] **第 5 步：提交并清理**
+- [ ] **第 5 步：在 sonic-mgmt 里修好测试侧的原因**
+
+有两组失败的原因在测试代码，而不在镜像：
+
+- sflow（14 个用例）：setup 在 DUT 上调用 `pkgutil.find_loader`，而 Python 3.14 已删除它。在 sonic-mgmt PR #5（`feat/resolute-mgmt-1-ubuntu`）里，`tests/sflow/test_sflow.py` 和 `tests/bgp/test_traffic_shift_sup.py` 改用 `importlib.util.find_spec`；#6–#9 重新叠在它上面。
+- SNMP sysDescr（1 个用例）：`test_snmp_v2mib` 期望发行版字段是 Debian。sonic-mgmt PR #4（`fix/resolute-snmp-distribution`）在基于 Ubuntu 的 SONiC 上期望 Ubuntu 的版本号；镜像侧的修复是 sonic-buildimage #34。#4 的目标分支改为 #9（`feat/resolute-mgmt-5-unit-tests`）。
+
+每次强推 sonic-mgmt 的 PR 分支都要先得到用户同意。`sonic-mgmt.ref`（任务 6）锁定的是 #4 的顶端 `2c54e7096838d2c9323a8f64328abe5da96ef32d`，它包含这两处修复；M1–M3 用的是更早的锁定提交 `a88d1d5f93`，那时还没有这两处修复。用开发分支 `ci-workflow/t0-mgmtfix-run44220583196` 在 M3 的镜像上检查这两个文件：该分支的 `smoke.txt` 只列 `sflow/test_sflow.py` 和 `snmp/test_snmp_v2mib.py`，按任务 10 的做法推送并跟踪。
+
+结果：run 45184346540，15 个通过，1 个跳过，结论 `Pass`。
+
+- [ ] **第 6 步：提交并清理**
 
 ```bash
 W=~/scratch/wt-t0
-git -C $W add .github/testflinger/t0/known-failures.yaml
-git -C $W commit -m "test: first t0 known-failures list, from M3 and the 11-19 run
+git -C $W add .github/testflinger/t0/known-failures.yaml .github/testflinger/t0/sonic-mgmt.ref
+git -C $W commit -F - <<'EOF'
+test: first t0 known-failures list, from M3
 
-M3 (run 45114609003, PR #34 image d47807d2e1, sonic-mgmt a88d1d5f93,
-alarmmonkey, 16 testbeds) had 44 failing cases once the loganalyzer
-noise filter caught the tests with their own analyzer. All 44 also
-failed on the 11-19 rock run. 16 of them come from the 23 physical-only
-files of the t0_checker list, which --device_type=vs skips. The other
-28 make 11 entries; 25 of them failed on the 11-19 Dockerfile image
-too.
+M3 (run 45114609003: PR #34 image d47807d2e1, sonic-mgmt a88d1d5f93,
+alarmmonkey with 16 testbeds) had 44 failing cases. All of them also
+failed on the 11-19 rock run, and 41 on that day's Dockerfile image.
+16 were physical-only tests, which the harness now skips with
+--device_type=vs. 15 pass with the pinned sonic-mgmt 2c54e70968, which
+looks modules up with importlib.util.find_spec because Python 3.14
+dropped pkgutil.find_loader (sflow setup, 14) and includes sonic-mgmt
+#4 (SNMP sysDescr, 1); run 45184346540 ran both files on the same
+image: 15 passed. The other 13 make up these 9 entries:
 
-Known causes: per-command TACACS authorization bypassed through uutils
-paths; SNMP sysDescr distribution (sonic-buildimage #34 plus sonic-mgmt
-#4); Python 3.14 dropping pkgutil.find_loader (sflow setup); a radv
-test race; our branch forking from upstream 202605 at ba3fb8d5f5,
-before #28740 added PROCESS_HEALTH to the STATE_DB cleanup in swss.sh;
-src/sonic-gnmi 3ce95be predating upstream #750 (RPC_COMPLETION
-records), while on rock Pebble tags gnmi-native so the gnmi.log rule
-never fires; the teamd rock stopping rsyslogd in parallel with
-teammgrd (test_po_cleanup); and on-failure: shutdown ignoring
-auto_restart, so killing zebra stops the whole bgp container.
+- TACACS per-command authorization (3): the bash plugin realpath()s
+  /usr/bin/* to the uutils binaries, so no server rule matches.
+- radv deployment id (1): test race; radvd has already respawned.
+- STATE_DB PROCESS_HEALTH (1): the branch forked from upstream 202605
+  on 2026-07-26, five days before #28740 (7bee05ff51) added it to the
+  swss.sh cleanup; all 30 other sentinels were cleaned.
+- gNMI audit log (5): src/sonic-gnmi 3ce95be predates upstream #750
+  (RPC_COMPLETION records); on rock, Pebble sends gnmi-native to the
+  host rsyslog with the program name as the tag, so the
+  `$msg startswith " gnmi-native"` rule never creates gnmi.log.
+- test_po_cleanup (2, rock): teammgrd, teamsyncd and tlm_teamd have no
+  requires/after on rsyslogd, so Pebble stops them in parallel and
+  teammgrd's cleanup lines are lost.
+- staticd state (1, rock): rock services use on-failure: shutdown and
+  pebble_mode.rs ignores auto_restart, so killing zebra stops the whole
+  bgp container.
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
-b=$(git -C $W branch --list 'ci-workflow/t0-full-m3-run*' --format='%(refname:short)')
-git -C $W push -q canonical --delete $b
-git -C $W branch -D $b
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+EOF
+for b in $(git -C $W branch --list 'ci-workflow/t0-full-m3-run*' 'ci-workflow/t0-mgmtfix-run*' --format='%(refname:short)'); do
+  git -C $W push -q canonical --delete $b
+  git -C $W branch -D $b
+done
 ```
 
 ---
