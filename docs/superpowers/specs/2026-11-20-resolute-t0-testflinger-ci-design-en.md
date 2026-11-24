@@ -2,7 +2,7 @@
 
 - Date: 2026-11-20
 - Repository: `canonical/sonic-buildimage` `202605_resolute` holds the workflow, the Testflinger harness and the known-failures list
-- Test code: `canonical/sonic-mgmt` at a pinned commit. The first pin is `a88d1d5f93`, the head of the PR stack #5–#9
+- Test code: `canonical/sonic-mgmt` at a pinned commit, `2c54e70968`: PR #4 on top of the PR stack #5–#9
 - Image under test: the rock vs image (`sonic-vs-img` artifact) produced by the `resolute-build` workflow
 - This English version is the single source of truth; the Chinese version (`-zh.md`) is a translation
 
@@ -23,7 +23,7 @@ Run the upstream KVM t0 PR-checker test list against the vs image that `resolute
 
 | Topic | Decision |
 |---|---|
-| Size of a run | One Testflinger machine, the rock vs image, and the full upstream t0 checker list. The list comes from `get_test_scripts.py` at the pinned sonic-mgmt commit, minus the folders `run_tests.sh` never runs (389 files at `a88d1d5f93`) |
+| Size of a run | One Testflinger machine, the rock vs image, and the full upstream t0 checker list. The list comes from `get_test_scripts.py` at the pinned sonic-mgmt commit, minus the folders `run_tests.sh` never runs (389 files at `2c54e70968`) |
 | Image | The latest successful `sonic-vs-img` artifact. No rebuild. `resolute-build` keeps the artifact for 30 days |
 | Triggers | Nightly schedule; `resolute-build` success on a push to `202605_resolute` or a `v*` tag; a `/test-t0` pull request comment; manual dispatch |
 | Who may trigger from a comment | Users whose permission on the repository is `write`, `maintain` or `admin` |
@@ -120,7 +120,7 @@ For a comment trigger, the workflow first checks `GET /repos/{repo}/collaborator
 3. Build `t0-harness.tar.gz`: the contents of `.github/testflinger/t0/` from the default branch, `known-failures.yaml` from the commit under test, and `durations.json`.
 4. Render the Testflinger job (6.1).
 5. Write the job's `GITHUB_TOKEN` to the Testflinger secret `sonic-buildimage/t0-run-<run id>-<attempt>`, expiring after one day, with the CI client id and key from repository secrets.
-6. `submit.sh` submits the job and returns when its test phase starts. A provision phase longer than 25 minutes is cancelled; a cancelled or failed setup or provision is submitted again, at most twice. If the step is interrupted, it cancels the Testflinger job.
+6. `submit.sh` submits the job and returns when its test phase starts. A provision phase longer than 25 minutes is cancelled; a cancelled or failed setup or provision is submitted again, at most twice. The states before provisioning, including `running` (an agent has taken the job and not yet started setup), have no limit. A failed attempt is cancelled before the next one is submitted, so it cannot keep holding a machine. If the step is interrupted, it cancels the Testflinger job.
 7. Follow the test phase until the job completes; if the workflow is cancelled, cancel the Testflinger job.
 8. Delete the secret, whatever happened before.
 9. Download the Testflinger results and artifacts (`testflinger results`, `testflinger artifacts`).
@@ -221,12 +221,12 @@ The runner, not the machine, parses the JUnit files: `verdict.py report` writes 
 
 ```yaml
 known:
-  - id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib[*]"
-    kind: fail
-    reason: "SNMP sysDescr distribution: the image side is fixed by sonic-buildimage #34, the test side by sonic-mgmt #4"
-  - id: "sflow/test_sflow.py::*"
+  - id: "pc/test_po_cleanup.py::test_po_cleanup[*]"
     kind: error
-    reason: "setup calls pkgutil.find_loader on the DUT, which Python 3.14 removed"
+    reason: "rock: Pebble stops rsyslogd in parallel with teammgrd, so the cleanTeamProcesses syslog lines are lost"
+  - id: "radv/test_radv_run.py::test_radv_deployment_id"
+    kind: fail
+    reason: "test race: radvd respawns 6-7 s after the restart and on resolute the check runs after that"
 loganalyzer_noise:
   - pattern: 'nss_tacplus: (/etc/tacplus_nss\.conf fopen failed|bad config or server line)'
     reason: "AppArmor stops unix_chkpwd reading tacplus_nss.conf; fixed by sonic-buildimage PR #30"
@@ -269,13 +269,11 @@ The job summary and the PR comment show:
 
 ### 7.5 First version of the list
 
-The first list comes from M3 (run 45114609003: image `d47807d2e1`, the head of sonic-buildimage PR #34; sonic-mgmt `a88d1d5f93`; alarmmonkey with 16 testbeds). After the loganalyzer noise filter, 44 cases failed. All 44 also failed on the rock run of 2026-11-19, and 41 of them also failed on that day's Dockerfile image. 16 of them are in physical-only tests, which M3 ran because it did not pass `--device_type=vs`; the harness now skips them as upstream does. The remaining 28 cases form the list (11 entries). Judged against it, the only M3 failures it does not cover are those 16 physical-only cases.
+The first list comes from M3 (run 45114609003: image `d47807d2e1`, the head of sonic-buildimage PR #34; sonic-mgmt `a88d1d5f93`; alarmmonkey with 16 testbeds). After the loganalyzer noise filter, 44 cases failed. All 44 also failed on the rock run of 2026-11-19, and 41 of them also failed on that day's Dockerfile image. 16 of them are in physical-only tests, which M3 ran because it did not pass `--device_type=vs`; the harness now skips them as upstream does. 15 failed because of the test code and are fixed at the pinned sonic-mgmt `2c54e70968`: the sflow setup called `pkgutil.find_loader`, which Python 3.14 removed (14 cases; sonic-mgmt #5 uses `importlib.util.find_spec`), and `test_snmp_v2mib` expected Debian in sysDescr (1 case; sonic-mgmt #4, with the image side in sonic-buildimage #34). At that pin both files pass on the same image (run 45184346540: 15 passed, 1 skipped). The remaining 13 cases form the list (9 entries). Judged against it, the M3 failures it does not cover are the 16 physical-only cases and the 15 fixed in sonic-mgmt.
 
 | Group | Cases | Reason |
 |---|---|---|
 | TACACS per-command authorization | 3 | The bash plugin resolves `/usr/bin/*` to the uutils binaries, so no server rule matches; a product issue |
-| SNMP sysDescr distribution | 1 | Image side fixed by sonic-buildimage #34, test side by sonic-mgmt #4 |
-| sflow | 14 | Setup calls `pkgutil.find_loader`, which Python 3.14 removed |
 | radv deployment id | 1 | Test race: the check runs after radvd has respawned |
 | STATE_DB `PROCESS_HEALTH` after a swss restart | 1 | The branch forked from upstream 202605 before the backport #28740 that cleans it in `swss.sh` |
 | gNMI audit log | 5 | `src/sonic-gnmi` predates upstream #750, which writes the `RPC_COMPLETION` records; on rock, the rsyslog rule for `/var/log/gnmi.log` matches the supervisord message format and misses Pebble's tag |
@@ -295,7 +293,7 @@ pytest covers:
 - final results after a rerun;
 - `make_chunks.py`: no chunk exceeds the target unless a single file does, every file appears exactly once, and the automatic target gives two rounds per testbed;
 - `render_job.py`: the rendered job and the validation of every value;
-- `submit.sh` against a fake Testflinger CLI: a normal run, a provision phase over the limit, an unlimited queue wait, and failed provisioning that uses up the retries;
+- `submit.sh` against a fake Testflinger CLI: a normal run, a provision phase over the limit, an unlimited queue wait, a job in the `running` state, failed provisioning that uses up the retries, and the cancellation of a failed attempt before the next submission;
 - the shell syntax of every script.
 
 ## 8. One-time setup

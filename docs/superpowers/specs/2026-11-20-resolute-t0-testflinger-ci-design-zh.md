@@ -2,7 +2,7 @@
 
 - 日期：2026-11-20
 - 仓库：`canonical/sonic-buildimage` 的 `202605_resolute` 存放 workflow、Testflinger 脚本和已知失败清单
-- 测试代码：`canonical/sonic-mgmt` 的一个锁定提交。首次锁定 `a88d1d5f93`，即 PR #5–#9 这一串的顶端
+- 测试代码：`canonical/sonic-mgmt` 的锁定提交 `2c54e70968`，即叠在 PR #5–#9 这一串之上的 PR #4
 - 被测镜像：`resolute-build` workflow 产出的 rock 版 vs 镜像（artifact `sonic-vs-img`）
 - 英文版是唯一的权威版本；中文版（本文件）是翻译
 
@@ -23,7 +23,7 @@
 
 | 主题 | 决定 |
 |---|---|
-| 一次运行的规模 | 一台 Testflinger 机器、rock 版 vs 镜像、上游完整的 t0 检查清单。清单由锁定的 sonic-mgmt 提交里的 `get_test_scripts.py` 生成，去掉 `run_tests.sh` 永远不会运行的目录（`a88d1d5f93` 下为 389 个文件） |
+| 一次运行的规模 | 一台 Testflinger 机器、rock 版 vs 镜像、上游完整的 t0 检查清单。清单由锁定的 sonic-mgmt 提交里的 `get_test_scripts.py` 生成，去掉 `run_tests.sh` 永远不会运行的目录（`2c54e70968` 下为 389 个文件） |
 | 镜像 | 最近一次成功构建的 `sonic-vs-img` artifact，不重新构建。`resolute-build` 将该 artifact 保留 30 天 |
 | 触发方式 | 每晚定时；`202605_resolute` 的 push 或 `v*` tag 触发的 `resolute-build` 成功后；PR 评论 `/test-t0`；手动触发 |
 | 谁能通过评论触发 | 对仓库有 `write`、`maintain` 或 `admin` 权限的用户 |
@@ -120,7 +120,7 @@ report（ubuntu-latest）：最终提交状态；PR 置顶评论
 3. 打包 `t0-harness.tar.gz`：默认分支上 `.github/testflinger/t0/` 的内容、被测提交里的 `known-failures.yaml`，以及 `durations.json`。
 4. 渲染 Testflinger 任务（6.1）。
 5. 把本 job 的 `GITHUB_TOKEN` 写入 Testflinger secret `sonic-buildimage/t0-run-<run id>-<attempt>`，一天后过期；用的是仓库 secrets 里的 CI client id 和密钥。
-6. `submit.sh` 提交任务，在测试阶段开始时返回。装机阶段超过 25 分钟就取消；被取消或失败的 setup、装机会重新提交，最多再交两次。这一步被中断时，它会取消 Testflinger 任务。
+6. `submit.sh` 提交任务，在测试阶段开始时返回。装机阶段超过 25 分钟就取消；被取消或失败的 setup、装机会重新提交，最多再交两次。装机之前的各个状态都不设时限，包括 `running`（agent 已接下任务、还没开始 setup）。失败的那次尝试会先取消再提交下一次，免得它继续占着机器。这一步被中断时，它会取消 Testflinger 任务。
 7. 跟踪测试阶段直到任务结束；workflow 被取消时，取消 Testflinger 任务。
 8. 无论前面发生了什么，都删除这个 secret。
 9. 下载 Testflinger 的结果和 artifacts（`testflinger results`、`testflinger artifacts`）。
@@ -221,12 +221,12 @@ Agent 端做的事尽量少：
 
 ```yaml
 known:
-  - id: "snmp/test_snmp_v2mib.py::test_snmp_v2mib[*]"
-    kind: fail
-    reason: "SNMP sysDescr distribution: the image side is fixed by sonic-buildimage #34, the test side by sonic-mgmt #4"
-  - id: "sflow/test_sflow.py::*"
+  - id: "pc/test_po_cleanup.py::test_po_cleanup[*]"
     kind: error
-    reason: "setup calls pkgutil.find_loader on the DUT, which Python 3.14 removed"
+    reason: "rock: Pebble stops rsyslogd in parallel with teammgrd, so the cleanTeamProcesses syslog lines are lost"
+  - id: "radv/test_radv_run.py::test_radv_deployment_id"
+    kind: fail
+    reason: "test race: radvd respawns 6-7 s after the restart and on resolute the check runs after that"
 loganalyzer_noise:
   - pattern: 'nss_tacplus: (/etc/tacplus_nss\.conf fopen failed|bad config or server line)'
     reason: "AppArmor stops unix_chkpwd reading tacplus_nss.conf; fixed by sonic-buildimage PR #30"
@@ -269,13 +269,11 @@ Job summary 和 PR 评论包含：
 
 ### 7.5 清单的第一版
 
-第一版清单来自 M3（run 45114609003：镜像 `d47807d2e1`，即 sonic-buildimage PR #34 的顶端；sonic-mgmt `a88d1d5f93`；alarmmonkey，16 个测试床）。经 loganalyzer 噪声过滤后有 44 个用例失败。这 44 个在 2026-11-19 的 rock 版运行里也全都失败，其中 41 个在当天的 Dockerfile 版镜像上同样失败。其中 16 个属于只能在物理机上跑的测试，M3 因为没有传 `--device_type=vs` 才跑了它们；脚本现在像上游一样跳过它们。剩下的 28 个用例组成清单（11 条）。对照这份清单判定，M3 里没被覆盖的失败只有那 16 个物理机专用的用例。
+第一版清单来自 M3（run 45114609003：镜像 `d47807d2e1`，即 sonic-buildimage PR #34 的顶端；sonic-mgmt `a88d1d5f93`；alarmmonkey，16 个测试床）。经 loganalyzer 噪声过滤后有 44 个用例失败。这 44 个在 2026-11-19 的 rock 版运行里也全都失败，其中 41 个在当天的 Dockerfile 版镜像上同样失败。其中 16 个属于只能在物理机上跑的测试，M3 因为没有传 `--device_type=vs` 才跑了它们；脚本现在像上游一样跳过它们。另有 15 个是测试代码的问题，在锁定的 sonic-mgmt `2c54e70968` 里已经修好：sflow 的 setup 调用了 Python 3.14 已删除的 `pkgutil.find_loader`（14 个；sonic-mgmt #5 改用 `importlib.util.find_spec`），`test_snmp_v2mib` 期望 sysDescr 里是 Debian（1 个；sonic-mgmt #4，镜像侧由 sonic-buildimage #34 修复）。在这个锁定提交下，这两个文件在同一镜像上全部通过（run 45184346540：15 个通过，1 个跳过）。剩下的 13 个用例组成清单（9 条）。对照这份清单判定，M3 里没被覆盖的失败是那 16 个物理机专用的用例和在 sonic-mgmt 里修好的 15 个。
 
 | 分组 | 用例数 | 原因 |
 |---|---|---|
 | TACACS 逐命令授权 | 3 | bash 插件把 `/usr/bin/*` 解析成 uutils 的二进制，任何服务器规则都匹配不上；这是产品问题 |
-| SNMP sysDescr 里的发行版 | 1 | 镜像侧由 sonic-buildimage #34 修复，测试侧由 sonic-mgmt #4 修复 |
-| sflow | 14 | setup 调用了 Python 3.14 已删除的 `pkgutil.find_loader` |
 | radv deployment id | 1 | 测试竞态：检查发生在 radvd 已经重新拉起之后 |
 | swss 重启后 STATE_DB 的 `PROCESS_HEALTH` | 1 | 本分支从上游 202605 分出的时间早于在 `swss.sh` 里清理它的回移 #28740 |
 | gNMI 审计日志 | 5 | `src/sonic-gnmi` 早于写 `RPC_COMPLETION` 记录的上游 #750；rock 上，`/var/log/gnmi.log` 的 rsyslog 规则按 supervisord 的消息格式匹配，对不上 Pebble 的标签 |
@@ -295,7 +293,7 @@ pytest 覆盖：
 - 重跑之后的最终结果；
 - `make_chunks.py`：除非单个文件就超过目标，否则没有测试块超过目标；每个文件恰好出现一次；自动目标让每个测试床跑两轮；
 - `render_job.py`：渲染出的任务，以及每个值的校验；
-- 用假的 Testflinger 命令测 `submit.sh`：正常运行、装机超过上限、排队时间不设限、装机失败用完重试次数；
+- 用假的 Testflinger 命令测 `submit.sh`：正常运行、装机超过上限、排队时间不设限、处于 `running` 状态的任务、装机失败用完重试次数，以及失败的尝试在下一次提交前被取消；
 - 所有脚本的 shell 语法。
 
 ## 8. 一次性准备
