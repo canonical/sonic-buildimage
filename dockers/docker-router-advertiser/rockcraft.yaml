@@ -88,6 +88,7 @@ parts:
         radvd_bins \
         rsyslog_bins \
         rsyslog-relp_modules \
+        sed_bins \
         sysvinit-utils_bins \
         util-linux_logger
     stage:
@@ -140,6 +141,7 @@ parts:
   #     - radvd_bins
   #     - rsyslog_bins
   #     - rsyslog-relp_modules
+  #     - sed_bins
   #     - sysvinit-utils_bins
   #     - util-linux_logger
   #   stage:
