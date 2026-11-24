@@ -11,7 +11,7 @@ ARGS = dict(sha12="0123456789ab", gh_run="42", repo="canonical/sonic-buildimage"
 
 def test_render_gives_a_valid_job():
     job = yaml.safe_load(render_job.render(**ARGS))
-    assert job["job_queue"] == "sonic-ci"
+    assert job["job_queue"] == "kroop"
     assert job["global_timeout"] == 43200 and job["output_timeout"] == 7200
     assert job["provision_data"] == {"distro": "resolute"}
     assert job["test_data"]["secrets"] == {"GH_TOKEN": "sonic-buildimage/run-42-1"}

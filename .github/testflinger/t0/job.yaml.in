@@ -1,4 +1,4 @@
-job_queue: sonic-ci
+job_queue: kroop
 global_timeout: 43200
 output_timeout: 7200
 tags:
