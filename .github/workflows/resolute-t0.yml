@@ -165,6 +165,17 @@ jobs:
             fi
           done
 
+      - name: Snapshot the GitHub issues named in the mark conditions
+        run: |
+          set -uo pipefail
+          ref=$(cat "$T0/sonic-mgmt.ref") d=tests/common/plugins/conditional_mark
+          rm -rf conds && mkdir conds
+          for f in $(gh api "repos/canonical/sonic-mgmt/contents/$d?ref=$ref" --jq '.[].name | select(test("^tests_mark_conditions.*[.]yaml$"))'); do
+            gh api -H 'Accept: application/vnd.github.raw' "repos/canonical/sonic-mgmt/contents/$d/$f?ref=$ref" > "conds/$f"
+          done
+          python3 "$T0/issue_states.py" snapshot --out issue-states.json conds/*.yaml ||
+            echo "::warning::the issue snapshot is incomplete; sonic-mgmt asks GitHub itself for the missing issues"
+
       - name: Pack the harness and render the job
         env:
           ART: ${{ needs.resolve.outputs.art }}
@@ -178,6 +189,7 @@ jobs:
             base64 -d kf.b64 > pack/known-failures.yaml
           fi
           cp durations.json pack/durations.json
+          [ ! -s issue-states.json ] || cp issue-states.json pack/
           tar -czf t0-harness.tar.gz -C pack .
           python3 "$T0/render_job.py" --sha12 "$SHA12" --gh-run "$GITHUB_RUN_ID" --repo "$REPO" --artifact-id "$ART" \
             --artifact-digest "$ART_DIGEST" --scope "$SCOPE" --secret "$SECRET" > job.yaml
@@ -250,6 +262,7 @@ jobs:
         run: |
           set -uo pipefail
           mkdir -p out/results
+          [ ! -s issue-states.json ] || cp issue-states.json out/
           infra=""
           if [ "$JOB_STATUS" = cancelled ]; then
             infra="the workflow run was cancelled"
@@ -279,6 +292,7 @@ jobs:
             out/report.md
             out/durations.json
             out/artifacts/
+            out/issue-states.json
           retention-days: 30
           if-no-files-found: warn
 
