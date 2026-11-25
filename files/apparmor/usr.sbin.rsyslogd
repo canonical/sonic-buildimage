@@ -7,3 +7,5 @@ capability chown,
 /etc/sonic/** r,
 /var/run/redis/** r,
 /usr/share/sonic/** r,
+# libnss_tacplus (nsswitch "passwd: tacplus files") reads its configuration when rsyslogd looks up a user.
+/etc/tacplus_nss.conf r,
