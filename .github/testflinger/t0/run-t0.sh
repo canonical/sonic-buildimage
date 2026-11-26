@@ -82,6 +82,13 @@ openssl rand -hex 12 > $S/tb-pass
 python3 "$T0/configure_sonic_mgmt.py" $S/sonic-mgmt tb "$(cat $S/tb-pass)"
 rm -rf $S/t0
 cp -a "$T0" $S/t0
+rm -f $S/issue-proxy
+if [ -s "$T0/issue-states.json" ]; then
+    gw=$(sudo lxc network get lxdbr0 ipv4.address | cut -d/ -f1)
+    setsid nohup python3 "$T0/issue_states.py" serve --states "$T0/issue-states.json" --host "$gw" --port 8737 \
+        > "$OUT/issue-proxy.log" 2>&1 < /dev/null &
+    echo "http://$gw:8737" > $S/issue-proxy
+fi
 
 enter test-list
 if [ "$SCOPE" = smoke ]; then

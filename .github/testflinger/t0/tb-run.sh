@@ -61,7 +61,9 @@ docker image inspect publicmirror.azurecr.io:443/debian:trixie >/dev/null 2>&1 |
 chown -R $U:$U $H
 ip link show br1 >/dev/null 2>&1 || (cd $H/sonic-mgmt/ansible && ./setup-management-network.sh >/dev/null)
 docker rm -f sonic-mgmt >/dev/null 2>&1 || true
-su - $U -c "cd $H/sonic-mgmt && ./setup-container.sh -n sonic-mgmt -i sonicdev-microsoft.azurecr.io:443/docker-sonic-mgmt:latest -d /data" | tail -3
+proxy=""
+[ ! -s $S/issue-proxy ] || proxy="-e SONIC_AUTOMATION_PROXY_GITHUB_ISSUES_URL=$(cat $S/issue-proxy)"
+su - $U -c "cd $H/sonic-mgmt && ./setup-container.sh -n sonic-mgmt -i sonicdev-microsoft.azurecr.io:443/docker-sonic-mgmt:latest -d /data $proxy" | tail -3
 mgmt() { docker exec --user $U sonic-mgmt bash -c "$1"; }
 tbcli="cd /data/sonic-mgmt/ansible && ./testbed-cli.sh -t vtestbed.yaml -m veos_vtb"
 mgmt "$tbcli add-topo $TB password.txt" > "$R/add-topo.log" 2>&1

@@ -23,7 +23,7 @@ while :; do
     fi
     [ "$finished" = yes ] && break
 done
-for f in results.tar.zst run-meta.json run-t0.log host-setup.log 'tb-*.log'; do
+for f in results.tar.zst run-meta.json run-t0.log host-setup.log issue-proxy.log 'tb-*.log'; do
     scp "${opts[@]}" "$m:t0-out/$f" artifacts/ || true
 done
 rc=$(on 'cat t0-out/EXIT' 2>/dev/null)
