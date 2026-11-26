@@ -4,9 +4,13 @@ services:
   wait_for_link:
     command: /usr/bin/wait_for_link.sh
     override: replace
+    # gid 1001 is the host's redis group, which owns /var/run/redis/redis.sock (mode 0760)
+    user-id: 584792
+    group-id: 1001
     on-success: ignore
     on-failure: ignore
   radvd:
+    # Stays root: the ICMPv6 raw socket needs CAP_NET_RAW, which a non-root service cannot get
     command: /usr/sbin/radvd -n
     override: replace
     on-success: ignore

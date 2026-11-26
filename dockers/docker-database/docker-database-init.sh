@@ -133,7 +133,6 @@ if [[ "$USE_PEBBLE" != "true" ]]; then
     -t /usr/share/sonic/templates/supervisord.conf.j2,/etc/supervisor/conf.d/supervisord.conf \
     -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
 else
-    mkdir -p /etc/supervisor/
     sonic-cfggen -j "$db_cfg_file_tmp" \
     -t /usr/share/sonic/templates/critical_processes.j2,/etc/supervisor/critical_processes
 fi
@@ -160,13 +159,19 @@ do
         echo -n > /var/lib/$inst/dump.rdb
     fi
     # the Redis process is operating under the 'redis' user in supervisord and make redis user own /var/lib/$inst inside db container.
-    chown -R redis:redis /var/lib/$inst
+    # Under pebble nothing is chowned at runtime: the rock ships /var/lib/redis* owned by the uid redis
+    # runs as, and the host's preStartAction (docker_image_ctl.j2) creates /var/run/redis with that owner.
+    if [[ "$USE_PEBBLE" != "true" ]]; then
+        chown -R redis:redis /var/lib/$inst
+    fi
 done
 
-chown -R redis:redis $REDIS_DIR
-REDIS_BMP_DIR="/var/lib/redis_bmp"
-if [[ -d $REDIS_BMP_DIR ]]; then
-    chown -R redis:redis $REDIS_BMP_DIR
+if [[ "$USE_PEBBLE" != "true" ]]; then
+    chown -R redis:redis $REDIS_DIR
+    REDIS_BMP_DIR="/var/lib/redis_bmp"
+    if [[ -d $REDIS_BMP_DIR ]]; then
+        chown -R redis:redis $REDIS_BMP_DIR
+    fi
 fi
 
 if [[ "$USE_PEBBLE" == "true" ]]; then
