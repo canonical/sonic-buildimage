@@ -18,6 +18,9 @@ services:
   proc-exit-listener:
     command: /usr/bin/supervisor-proc-exit-listener-rs --pebble
     override: replace
+    # Reads pebble's service list and CONFIG_DB over TCP; needs no root
+    user-id: 584792
+    group-id: 584792
     startup: enabled
     on-success: ignore
     requires: [rsyslogd]
