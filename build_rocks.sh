@@ -113,14 +113,14 @@ sonic_labels()
 }
 
 # rockcraft puts no timeout on its downloads (e.g. the pebble snap), so bound each pack and retry it from clean
-pack_rock()
+pack_rock_with_retry()
 {
-    local attempt status
-    for attempt in 1 2 3; do
+    local attempts=$1 attempt status
+    for ((attempt = 1; attempt <= attempts; attempt++)); do
         status=0
         timeout -k 1m "${ROCK_PACK_TIMEOUT:-30m}" rockcraft pack || status=$?
         [ "$status" -ne 0 ] || return 0
-        echo "rockcraft pack attempt $attempt of 3 failed with status $status (124 means it timed out)" >&2
+        echo "rockcraft pack attempt $attempt of $attempts failed with status $status (124 means it timed out)" >&2
         rockcraft clean
     done
     return 1
@@ -157,9 +157,9 @@ do
 
     rockcraft clean
     if [ -n "$APT_CACHER_URL" ]; then
-        http_proxy="$APT_CACHER_URL" pack_rock
+        http_proxy="$APT_CACHER_URL" pack_rock_with_retry 3
     else
-        pack_rock
+        pack_rock_with_retry 3
     fi
     sudo rockcraft.skopeo --insecure-policy copy oci-archive:$rockfullname docker-daemon:$rockname:rock
     rockcraft clean
